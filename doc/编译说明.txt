@@ -1,0 +1,3 @@
+编译脚本：
+BES2700IH : tools/com_sdk/cust/build_pro_1306p_0004.sh
+BES2710IHC: tools/com_sdk/cust/build_pro_1503_0001.sh
