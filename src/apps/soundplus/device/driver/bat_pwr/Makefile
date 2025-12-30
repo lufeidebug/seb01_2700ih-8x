@@ -7,7 +7,3 @@ endif
 ifeq ($(SNDP_BAT_CUMULATIVE),1)
 obj-y += cumulative/
 endif
-
-ifeq ($(SNDP_BAT_COULOMETER),1)
-obj-y += coulometer/
-endif
