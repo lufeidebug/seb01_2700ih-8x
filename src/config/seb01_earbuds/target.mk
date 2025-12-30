@@ -367,7 +367,8 @@ endif
 ifeq ($(INTSRAM_RUN),1)
 LDS_FILE ?= best1000_intsram.lds
 else
-LDS_FILE ?= best1000.lds
+//LDS_FILE ?= best1000.lds
+LDS_FILE ?= best1000_sndp.lds
 endif
 
 export OTA_SUPPORT_SLAVE_BIN ?= 0
