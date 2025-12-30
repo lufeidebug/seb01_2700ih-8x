@@ -866,7 +866,7 @@ static void sndp_ui_dev_status_print(void)
 	
 	SNDP_TRACE_IMM(0, "\n");
 	SNDP_TRACE(0, "-------------------------------------------------------------");
-	SNDP_TRACE(3, "[con sta] tws:%4d, mobi:%4d, role:%s", sndp_is_tws_link_connected(), sndp_is_mobile_connected(), role);
+	SNDP_TRACE(3, "[con sta] tws:%4d, mobi:%4d, ibrt:%4d, role:%s", sndp_is_tws_link_connected(), sndp_is_master_mobile_link_connected(), sndp_is_slave_ibrt_link_connected(), role);
 	if(sndp_is_besaud_connected()) {
         SNDP_TRACE(2, "[chgplug] loc:%4d, peer:%4d", sndp_dev_charger_is_plugin(false), sndp_dev_charger_is_plugin(true));
 		SNDP_TRACE(2, "[chg sta] loc:%4d, peer:%4d", sndp_dev_charger_get_charging_status(false), sndp_dev_charger_get_charging_status(true));

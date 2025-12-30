@@ -13,6 +13,96 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
+ 
+#if defined(__SNDP_PROJ__)
+#include "stdio.h"
+#include "string.h"
+#include "cmsis_os.h"
+    
+#include "hal_timer.h"
+#include "hal_trace.h"
+#include "hal_sleep.h"
+    
+#include "app_battery.h"
+#include "sndp_if_device.h"
+    
+    
+int app_battery_get_info(APP_BATTERY_MV_T *currvolt, uint8_t *currlevel, enum APP_BATTERY_STATUS_T *status)
+{
+    uint16_t voltage;
+    uint8_t level;
+    APP_BATTERY_STATUS_T bat_sta;
+    
+    
+    voltage = sndp_dev_get_bat_voltage(false);
+    level = sndp_dev_get_bat_level(false);
+
+    if(sndp_dev_charger_is_plugin(false)) {
+        bat_sta = APP_BATTERY_STATUS_PLUGINOUT;
+        
+    } else {
+        switch(sndp_dev_charger_get_charging_status(false)) {
+            case SNDP_DEV_CHARGER_NOT_CHARGING:
+                bat_sta = APP_BATTERY_STATUS_NORMAL;
+                break;
+            case SNDP_DEV_CHARGER_CHARGING:
+                bat_sta = APP_BATTERY_STATUS_CHARGING;
+                break;
+            case SNDP_DEV_CHARGER_CHARGING_FULL:
+                bat_sta = APP_BATTERY_STATUS_OVERVOLT;
+                break;
+            default:
+                bat_sta = APP_BATTERY_STATUS_NORMAL;
+                break;
+        }
+    }
+    
+    SNDP_TRACE(0, "%s, %d, %d, %d", __func__, voltage, level, bat_sta);
+
+    if (currvolt) {
+        *currvolt = (APP_BATTERY_MV_T)voltage;
+    }
+
+    if (currlevel) {
+        *currlevel = level;
+    }
+
+    if (status) {
+        *status = bat_sta;
+    }
+    
+    return 0;
+}
+
+int app_battery_open(void)
+{
+    return 0;
+}
+
+int app_battery_stop(void)
+{
+    return 0;
+}
+
+int app_battery_close(void)
+{
+    return 0;
+}
+
+int8_t app_battery_is_charging(void)
+{
+    return (sndp_dev_charger_is_charging(false));
+}
+
+int8_t app_battery_current_level(void)
+{
+    return sndp_dev_get_bat_level(false);
+}
+
+
+    
+#else /* __SNDP_PROJ__ */
+
 #include "cmsis_os.h"
 #include "tgt_hardware.h"
 #include "pmu.h"
@@ -1438,3 +1528,6 @@ int app_battery_start(void)
     return 0;
 }
 #endif
+
+#endif /* __SNDP_PROJ__ */
+

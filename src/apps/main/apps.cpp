@@ -2113,6 +2113,90 @@ static int app_sn_global_tag_handler(char *buf, unsigned int buf_len)
 #ifdef BESUI_STEREO_EN
 bool app_ui_charging_io_read(HAL_GPIO_PIN_T hal_pin);
 #endif
+
+
+#if defined(__SNDP_PROJ__)
+#define APP_HEARTBEAT_INTERVAL_MS					(10*1000)
+
+
+static void app_heartbeat_timer_timeout_handler(void const* param);
+osTimerDef(APP_HEARTBEAT_TIMER, app_heartbeat_timer_timeout_handler);
+static osTimerId app_heartbeat_timer = NULL;
+
+
+static int app_heartbeat_msg_handler(APP_MESSAGE_BODY *msg_body)
+{
+    MAIN_TRACE(1, "%s.", __func__);
+
+#if defined(__SNDP_UI__)
+    sndp_ui_timing_to_do();
+#endif
+
+#if defined(__BTIF_EARPHONE__)
+    app_10_second_timer_check();
+#endif
+
+    if (app_is_stack_ready()) {
+        
+        uint8_t level = sndp_dev_get_bat_report_level();
+        
+// #if (HF_CUSTOM_FEATURE_SUPPORT & HF_CUSTOM_FEATURE_BATTERY_REPORT) || (HF_SDK_FEATURES & HF_FEATURE_HF_INDICATORS)
+#if defined(SUPPORT_BATTERY_REPORT) || defined(SUPPORT_HF_INDICATORS)
+#if defined(IBRT) && !defined(BT_SOURCE) && defined(BT_HFP_SUPPORT)
+        int hfp_device_id = bes_bt_me_select_device(BT_SELECT_CURR_A2DP_DEVICE);
+        if (hfp_device_id != BT_DEVICE_INVALID_ID && bes_bt_hfp_get_state(hfp_device_id).hfp_is_connected)
+        {
+            bes_bt_hfp_set_battery_level(level);
+        }
+#elif defined(BT_HFP_SUPPORT)
+        bes_bt_hfp_set_battery_level(level);
+#endif
+#else
+        MAIN_TRACE(1,"[%s] Can not enable SUPPORT_BATTERY_REPORT", __func__);
+#endif
+        bes_bt_osapi_notify_evm();
+    }
+
+    return 0;
+}
+
+static void app_heartbeat_send_msg(void)
+{
+    APP_MESSAGE_BLOCK msg;
+
+    msg.mod_id = APP_MODUAL_HEARTBEAT;
+    msg.msg_body.message_id = (uint32_t)0;
+    msg.msg_body.message_ptr = (uint32_t)0;
+    msg.msg_body.message_Param0 = (uint32_t)0;
+    msg.msg_body.message_Param1 = (uint32_t)0;
+    app_mailbox_put(&msg);
+}
+
+static void app_heartbeat_timer_timeout_handler(void const* param)
+{
+	MAIN_TRACE(1, "%s.", __func__);
+    app_heartbeat_send_msg();
+}
+
+static void app_heartbeat_init(void)
+{
+    MAIN_TRACE(1, "%s.", __func__);
+	
+	app_set_threadhandle(APP_MODUAL_HEARTBEAT, app_heartbeat_msg_handler);
+	
+    if (app_heartbeat_timer == NULL) {
+        app_heartbeat_timer = osTimerCreate(osTimer(APP_HEARTBEAT_TIMER), osTimerPeriodic, NULL);
+		ASSERT(app_heartbeat_timer != NULL, "%s, app_heartbeat_timer == NUL", __func__);
+    }
+
+    osTimerStart(app_heartbeat_timer, APP_HEARTBEAT_INTERVAL_MS);
+	app_heartbeat_send_msg();
+}
+
+#endif /* __SNDP_PROJ__ */
+
+
+
 int app_init(void)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_APP_INIT, APP_SYSFREQ_208M);
@@ -2154,6 +2238,10 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
     MAIN_TRACE(0,"app_init 0x%02x \n",pmu_ntc_temperature_reference_get());
 #else
     MAIN_TRACE(0,"app_init\n");
+#endif
+
+#if defined(__SNDP_PROJ__)
+    MAIN_TRACE(1, "I am %s earbuds.\n", (sndp_dev_get_local_earside() == SNDP_DEV_EARSIDE_LEFT) ? "LEFT" : "RIGHT");
 #endif
 
 #ifdef VIO_VOLTAGE_CONFIG_EN
@@ -2306,6 +2394,12 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #ifdef BESUI_STEREO_EN
     stereoui_init();
 #endif
+
+#if defined(__SNDP_PROJ__)
+        //do nothing
+        
+#else	/*__SNDP_PROJ__*/
+
     nRet = app_battery_open();
     MAIN_TRACE(1,"BATTERY %d",nRet);
     if (pwron_case != APP_POWERON_CASE_TEST){
@@ -2357,6 +2451,8 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
                 break;
         }
     }
+#endif	/* __SNDP_PROJ__ */
+
 #if defined(BESUI_STEREO_EN) 
 #if defined(STEREO_HALL_EN)
     if (app_ui_charging_io_read((enum HAL_GPIO_PIN_T)HAL_IOMUX_PIN_P1_7))
@@ -2634,6 +2730,11 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
         bes_bt_me_write_access_mode(BTIF_BAM_NOT_ACCESSIBLE,1);
 #endif
 #endif
+
+#if defined(__SNDP_COMM_MGR__)
+        sndp_comm_main_init(SNDP_COMM_INIT_FOR_RF_TEST);
+#endif
+
 #if defined(__SNDP_UI__)
         sndp_ui_init();
 #endif
@@ -2642,7 +2743,13 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #ifdef BESUI_TWS_EN
         uicom.poweron_bat_det_flag = true;
 #endif
+
+#if defined(__SNDP_PROJ__)
+        app_heartbeat_init();
+#else
         app_battery_start();
+#endif
+
 #if defined(APP_10_SECOND_TIMER_EN) && defined(__BTIF_AUTOPOWEROFF__)
 #ifndef BESUI_TWS_EN
         app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
@@ -2869,6 +2976,9 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #endif
             }
             
+#if defined(__SNDP_COMM_MGR__)
+            sndp_comm_main_init(SNDP_COMM_INIT_ALL);
+#endif            
 #if defined(__SNDP_UI__)
             sndp_ui_init();
 #endif            
@@ -2876,7 +2986,12 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #ifdef BESUI_TWS_EN
             uicom.poweron_bat_det_flag = true;
 #endif
+#if defined(__SNDP_PROJ__)
+            app_heartbeat_init();
+#else
             app_battery_start();
+#endif
+
 #if defined(APP_10_SECOND_TIMER_EN) && defined(__BTIF_AUTOPOWEROFF__)
 #ifndef BESUI_TWS_EN
             app_start_10_second_timer(APP_POWEROFF_TIMER_ID);

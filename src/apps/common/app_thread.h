@@ -112,6 +112,7 @@ enum APP_MODULE_ID_T {
 #endif
 
 #if defined(__SNDP_PROJ__)
+    APP_MODUAL_HEARTBEAT,
     APP_MODULE_SNDP_APP,
 #endif
 

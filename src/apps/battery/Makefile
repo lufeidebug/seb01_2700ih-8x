@@ -35,3 +35,9 @@ subdir-ccflags-y += -Iapps/besui \
 		            -Iapps/besui/stereo_ui
 endif
 
+ifeq ($(SNDP_PROJ),1)
+ccflags-y += \
+	-Iapps/soundplus/interface
+endif
+
+
