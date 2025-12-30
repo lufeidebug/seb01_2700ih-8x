@@ -368,6 +368,15 @@ extern "C" {
 #include "lwh.h"
 #endif
 
+#if defined(__SNDP_PROJ__)
+#include "sndp_if_data_access.h"
+#endif
+
+#if defined(__SNDP_UI__)
+#include "sndp_ui.h"
+#endif
+
+
 #define APP_SIGNAL_POWERON        0x2
 #define APP_SIGNAL_BT_HOST_READY  0x3
 
@@ -2271,6 +2280,16 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
     }
 #endif
 
+#if defined(__SNDP_PROJ__)
+    sndp_da_init();
+#endif
+#if defined(__SNDP_COMM_MGR__)
+    sndp_comm_main_init(SNDP_COMM_INIT_ALL);
+#endif
+#if defined(__SNDP_UI__)
+    sndp_ui_init_pre();
+#endif
+
 #if !defined(IS_CUSTOM_UART_APPLICATION_ENABLED)
 #ifdef APP_UART_MODULE
     app_uart_init();
@@ -2615,6 +2634,9 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
         bes_bt_me_write_access_mode(BTIF_BAM_NOT_ACCESSIBLE,1);
 #endif
 #endif
+#if defined(__SNDP_UI__)
+        sndp_ui_init();
+#endif
 
         app_key_init();
 #ifdef BESUI_TWS_EN
@@ -2846,9 +2868,13 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
                 app_poweron_wait_finished();
 #endif
             }
+            
+#if defined(__SNDP_UI__)
+            sndp_ui_init();
+#endif            
             app_key_init();
 #ifdef BESUI_TWS_EN
-        uicom.poweron_bat_det_flag = true;
+            uicom.poweron_bat_det_flag = true;
 #endif
             app_battery_start();
 #if defined(APP_10_SECOND_TIMER_EN) && defined(__BTIF_AUTOPOWEROFF__)
@@ -2858,8 +2884,8 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #endif
 
 #ifdef BESUI_TWS_EN
-        uicom.power_off2on_flag = true;  //poweron do not need other msg
-        app_poweron_init_send_msg_timer_onoff(true); //delay init msg
+            uicom.power_off2on_flag = true;  //poweron do not need other msg
+            app_poweron_init_send_msg_timer_onoff(true); //delay init msg
 #endif
 
 #ifdef __THIRDPARTY

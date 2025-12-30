@@ -1,0 +1,65 @@
+#!/bin/bash
+
+
+TARGET_LIST="seb01_earbuds"
+CHIPID="best1503"
+COMMAND=$1
+
+LIB_DIR_CFG="BES_LIB_DIR=lib/bes/"$CHIPID"/PRO_0001"
+
+# BES2700IH软件需求：
+# 1、用于TWS耳机。
+# 2、支持BLE，支持GATT_OVER_BR_EDR；支持主从切换后BLE也无缝切换（主耳广播），快速连接APP。
+# 3、支持Hybrid ANC，通过SPP连接校准。
+# 4、支持BLE OTA固件升级。（是否支持remap方式，固件压缩？）
+# 5、支持有线单线UART固件升级。
+# 6、支持一拖二，可以通过宏开关。
+# 7、音频编码只需要SBC和AAC。
+# 8、支持BECO NPU, 有demo可以验证。
+POWER_ON_CFG="POWER_ON_ENTER_TWS_PAIRING_ENABLED=1 FREE_TWS_PAIRING_ENABLED=1"
+
+AUDIO_CODEC_CFG="A2DP_AAC_ON=1 A2DP_LDAC_ON=1 A2DP_LHDC_ON=0 A2DP_LHDC_V3=0 A2DP_LHDCV5_ON=0"
+AUDIO_PROCESS_CFG="A2DP_VIRTUAL_SURROUND=0 A2DP_VIRTUAL_SURROUND_STEREO=0 AUDIO_BASS_ENHANCER=0 AUDIO_LIMITER=0 AUDIO_DRC=0"
+
+COM_CFG="DEBUG=1 APP_TRACE_RX_ENABLE=1 APP_RX_API_ENABLE=1 TRACE_BUF_SIZE=36*1024"
+
+OTA_BASE="OTA_BIN_COMPRESSED=1 OTA_REBOOT_FLASH_REMAP=0"
+OTA_APP_CFG="$OTA_BASE BES_OTA=1 FREEMAN_OTA_ENABLE=1 FLASH_REMAP=0"
+OTA_BOOTLOADER_CFG="$OTA_BASE"
+
+ANC_CFG="ANC_ENABLE=1 ANC_FF_ENABLED=1 ANC_FB_ENABLED=1"
+
+BT_APP_FEATURE_CFG="SPEECH_NS_BECO=1 BLE=1 GATT_OVER_BR_EDR=1 BT_SVC_MODULE_TWS_BLE_SEAMLESS_SWITCH=1 BLE_SEEMLESS_ENABLED=1"
+
+DEBUG_LIB_CFG="$LIB_DIR_CFG/DEBUG"
+NO_DEBUG_LIB_CFG="$LIB_DIR_CFG/NODEBUG"
+
+set -e
+
+BUILD_CUSTOMER_CFG="$POWER_ON_CFG $AUDIO_CODEC_CFG $AUDIO_PROCESS_CFG $COM_CFG $OTA_APP_CFG $ANC_CFG $BT_APP_FEATURE_CFG"
+
+if [[ "$COMMAND" == "clean" ]];
+then
+    make T=$TARGET_LIST clean ||{ echo "$LINENO command failed"; exit 1; }
+elif [[ "$COMMAND" == "gen_lib" ]];
+then
+        make T=$TARGET_LIST $BUILD_CUSTOMER_CFG -sj DEBUG=0 $NO_DEBUG_LIB_CFG GEN_LIB=1 ||{ echo "$LINENO command failed"; exit 1; }
+        make T=prod_test/ota_copy CHIP=$CHIPID $OTA_BOOTLOADER_CFG DEBUG=0 -sj GEN_LIB=1 $NO_DEBUG_LIB_CFG ||{ echo "$LINENO command failed"; exit 1; }
+
+        make T=$TARGET_LIST $BUILD_CUSTOMER_CFG -sj GEN_LIB=1 DEBUG=1 $DEBUG_LIB_CFG ||{ echo "$LINENO command failed"; exit 1; }
+        make T=prod_test/ota_copy CHIP=$CHIPID $OTA_BOOTLOADER_CFG DEBUG=1 -sj GEN_LIB=1 $DEBUG_LIB_CFG ||{ echo "$LINENO command failed"; exit 1; }
+elif [[ "$COMMAND" == 'lst' ]];
+then
+    make T=$TARGET_LIST $BUILD_CUSTOMER_CFG -j64 lst all ||{ echo "$LINENO command failed"; exit 1; }
+elif [[ "$COMMAND" == 'debugoff' ]];
+then
+    make T=$TARGET_LIST $BUILD_CUSTOMER_CFG DEBUG=0 $NO_DEBUG_LIB_CFG -j64 ||{ echo "$LINENO command failed"; exit 1; }
+    make T=prod_test/ota_copy CHIP=$CHIPID $OTA_BOOTLOADER_CFG DEBUG=0 $NO_DEBUG_LIB_CFG -j64 ||{ echo "$LINENO command failed"; exit 1; }
+else
+    echo "Build Bootloader"
+    make T=prod_test/ota_copy CHIP=$CHIPID $OTA_BOOTLOADER_CFG DEBUG=1 $DEBUG_LIB_CFG -j64 ||{ echo "$LINENO command failed"; exit 1; }
+    
+    echo "Build App"
+    make T=$TARGET_LIST $BUILD_CUSTOMER_CFG DEBUG=1 $DEBUG_LIB_CFG -j64 ||{ echo "$LINENO command failed"; exit 1; }
+fi
+echo "make T=$TARGET_LIST $BUILD_CUSTOMER_CFG"

@@ -61,6 +61,10 @@ enum NORFLASH_API_MODULE_ID_T
     NORFLASH_API_MODULE_ID_MAX = 24,
     // 24 ~ 32 is used for app alloc
     NORFLASH_API_MODULE_ID_COUNT = 32,
+#if defined(__SNDP_PROJ__)
+    NORFLASH_API_MODULE_ID_SNDP_PARAM,
+#endif
+    
 };
 
 enum NORFLASH_API_RET_T

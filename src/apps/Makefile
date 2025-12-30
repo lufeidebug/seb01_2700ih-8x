@@ -141,3 +141,6 @@ endif
 ifeq ($(HEAD_TRACK_ENABLE),1)
 subdir-ccflags-y += -Imultimedia/algorithms/src/audio/process/head_track
 endif
+ifeq ($(SNDP_PROJ),1)
+obj-y += soundplus/
+endif

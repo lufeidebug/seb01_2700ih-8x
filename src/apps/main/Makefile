@@ -299,3 +299,8 @@ ifeq ($(BESUI_STEREO_EN),1)
 subdir-ccflags-y += -Iapps/besui \
                     -Iapps/besui/stereo_ui
 endif
+
+ifeq ($(SNDP_UI),1)
+subdir-ccflags-y += -Iapps/soundplus/interface \
+                    -Iapps/soundplus/application
+endif

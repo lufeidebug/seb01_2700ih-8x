@@ -143,6 +143,11 @@
 #define BESUI_TRACE_ENABLE
 #endif
 
+#if defined(__SNDP_PROJ__)
+#define SNDP_TRACE_ENABLE
+#endif
+
+
 #ifdef ACTIVITY_MANAGER_TRACE_ENABLE
 #define ACTIVITY_MANAGER_TRACE(attr, str, ...)   TR_INFO(attr, str, ##__VA_ARGS__)
 #define ACTIVITY_MANAGER_TRACE_IMM(attr, str, ...)   TR_INFO((attr) | TR_ATTR_IMM, str, ##__VA_ARGS__)
@@ -2257,3 +2262,21 @@
 #define BESUI_DUMP32(str, buf, cnt)
 #endif
 #endif
+
+#if defined(__SNDP_PROJ__)
+#ifdef SNDP_TRACE_ENABLE
+#define SNDP_TRACE(attr, str, ...)          TR_INFO(attr, str, ##__VA_ARGS__)
+#define SNDP_TRACE_IMM(attr, str, ...)      TR_INFO((attr) | TR_ATTR_IMM, str, ##__VA_ARGS__)
+#define SNDP_DUMP8(str, buf, cnt)           DUMP8(str, buf, cnt)
+#define SNDP_DUMP16(str, buf, cnt)          DUMP16(str, buf, cnt)
+#define SNDP_DUMP32(str, buf, cnt)          DUMP32(str, buf, cnt)
+#else
+#define SNDP_TRACE(attr, str, ...)
+#define SNDP_TRACE_IMM(attr, str, ...)
+#define SNDP_DUMP8(str, buf, cnt)
+#define SNDP_DUMP16(str, buf, cnt)
+#define SNDP_DUMP32(str, buf, cnt)
+#endif
+
+#endif
+

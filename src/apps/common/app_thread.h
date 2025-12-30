@@ -110,6 +110,12 @@ enum APP_MODULE_ID_T {
     APP_MODUAL_UI,
     APP_MODUAL_UI_CHARG,
 #endif
+
+#if defined(__SNDP_PROJ__)
+    APP_MODULE_SNDP_APP,
+#endif
+
+
 //-------------------------------------------------------------------------------------------------------
     APP_MODULE_NUM
 };

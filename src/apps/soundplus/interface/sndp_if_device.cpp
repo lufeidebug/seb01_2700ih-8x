@@ -1,0 +1,1402 @@
+#if defined(__SNDP_PROJ__)
+#include "stdio.h"
+#include "string.h"
+#include "cmsis_os.h"
+#include "hal_timer.h"
+#include "hal_trace.h"
+#include "hal_sleep.h"
+#include "pmu.h"
+#include "app_thread.h"
+#include "tgt_hardware.h"
+#include "factory_section.h"
+
+#include "sndp_if_common.h"
+#include "sndp_if_device.h"
+#include "sndp_if_platform.h"
+#include "sndp_if_data_access.h"
+#include "sndp_hal_common.h"
+
+
+#if defined(__SNDP_BATTERY_MGR__)
+#include "sndp_hal_battery.h"
+#endif
+
+#if defined(__SNDP_CHARGER_PLUG_MGR__)   
+#include "sndp_hal_charger_plug.h"
+#endif 
+
+#if defined(__SNDP_CHARGER_MGR__)
+#include "sndp_hal_charger.h"
+#endif
+
+#if defined(__SNDP_TEMPERATURE_MGR__)
+#include "sndp_hal_temperature.h"
+#endif
+
+#if defined(__SNDP_COVER_SWITCH_MGR__)
+#include "sndp_hal_cover_switch.h"
+#endif
+
+#if defined(__SNDP_IOBOX_MGR__)
+#include "sndp_hal_iobox.h"
+#endif
+
+#if defined(__SNDP_WEAR_DETECT_MGR__)
+#include "sndp_hal_wear_detect.h"
+#endif
+
+#if defined(__SNDP_GESTURE_MGR__)
+#include "sndp_hal_gesture.h"
+#endif
+
+#if defined(__SNDP_COMM_SPP__)
+#include "sndp_comm_spp.h"
+#endif
+
+#if defined(__SNDP_COMM_MGR__)
+#include "sndp_comm_main.h"
+#include "sndp_comm_cmd.h"
+#endif
+
+#if defined(__SNDP_COMM_POGOPIN__)	
+#include "sndp_hal_pogopin_comm.h"
+#endif    
+
+
+
+/**************************************************************************************************
+* Constant
+**************************************************************************************************/
+//#define __SNDP_EARSIDE_BY_BT_ADDR__
+
+#ifndef SW_VERSION1
+#define SW_VERSION1                     (0)
+#endif
+
+#ifndef SW_VERSION2
+#define SW_VERSION2                     (0)
+#endif
+
+#ifndef SW_VERSION3
+#define SW_VERSION3                     (0)
+#endif
+
+#ifndef SW_VERSION4
+#define SW_VERSION4                     (0)
+#endif
+
+#ifndef HW_VERSION1
+#define HW_VERSION1                     (0)
+#endif
+
+#ifndef HW_VERSION2
+#define HW_VERSION2                     (0)
+#endif
+
+
+
+
+/**************************************************************************************************
+* Prototype
+**************************************************************************************************/
+
+
+/**************************************************************************************************
+* Extern
+**************************************************************************************************/
+static void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status);
+
+
+/**************************************************************************************************
+* Variable
+**************************************************************************************************/
+static sndp_dev_context_s sndp_dev_ctx;
+static sndp_dev_bat_pwr_measure_cb sndp_dev_bat_pwr_measure_cb_ptr = NULL;
+static sndp_dev_temperature_measure_cb sndp_dev_temperature_measure_cb_ptr = NULL;
+static sndp_dev_cover_status_changed_cb sndp_dev_cover_status_changed_cb_ptr = NULL;
+static sndp_dev_iobox_status_changed_cb sndp_dev_iobox_status_changed_cb_ptr = NULL;
+static sndp_dev_wear_status_changed_cb sndp_dev_wear_status_changed_cb_prt = NULL;
+static sndp_dev_gesture_event_cb sndp_dev_gesture_event_cb_ptr = NULL;
+static sndp_dev_charger_plug_cb sndp_dev_charger_plug_cb_ptr = NULL;
+
+static const char *sndp_dev_dev_model_name = "EAGLEPLUS\0";    //SNDP_BT_NAME;
+
+/**************************************************************************************************
+* Function
+**************************************************************************************************/
+
+#if defined(__SNDP_TOUCH_CALI__)
+static int32_t sndp_dev_touch_calibration_send_data(uint8_t* data, uint16_t data_len)
+{
+	SNDP_IF_TRACE(1, "data_len=%d", data_len);
+#if defined(__SNDP_COMM_MGR__)
+    sndp_comm_cmd_send_pt_test_touch(data, data_len);
+#endif    
+    
+    return 0;
+}
+
+int32_t sndp_dev_touch_calibration_recv_data(uint8_t* data, uint16_t data_len)
+{
+	SNDP_IF_TRACE(1, "data_len=%d", data_len);
+    sndp_hal_wear_detection_recv_calibration_data(data, data_len);
+    return 0;
+}
+
+
+bool sndp_dev_is_in_touch_calibration(void)
+{
+	SNDP_IF_TRACE(1, "touch_calib_enable=%d", sndp_dev_ctx.touch_calib_enable);
+	return sndp_dev_ctx.touch_calib_enable;
+}
+
+void sndp_dev_enable_touch_calibration(bool enable)
+{
+	SNDP_IF_TRACE(1, "enable=%d", enable);
+	sndp_dev_ctx.touch_calib_enable = enable;
+
+	if(enable) {
+		sndp_hal_wear_detection_set_calibration_send_data_func(sndp_dev_touch_calibration_send_data);
+	} else {
+		sndp_hal_wear_detection_set_calibration_send_data_func(NULL);
+	}
+}
+
+#endif
+
+/************************************************** Wear Info Start **************************************************/
+
+bool sndp_dev_wear_is_worn(bool peer)
+{
+	sndp_dev_wear_status_e wear_status;
+
+	wear_status = (peer) ? (sndp_dev_ctx.peer.wear_status) : (sndp_dev_ctx.local.wear_status);
+	return (wear_status == SNDP_DEV_WEAR_ON) ? (true) : (false);
+}
+
+sndp_dev_wear_status_e sndp_dev_wear_get_status(bool peer)
+{
+	return (peer) ? (sndp_dev_ctx.peer.wear_status) : (sndp_dev_ctx.local.wear_status);
+}
+
+void sndp_dev_wear_set_status(bool peer, sndp_dev_wear_status_e wear_status)
+{
+	SNDP_IF_TRACE(2, "peer=%d, wear_status=%d", peer, wear_status);
+	if(peer) 
+		sndp_dev_ctx.peer.wear_status = wear_status;
+	else
+		sndp_dev_ctx.local.wear_status = wear_status;
+}
+
+
+void sndp_dev_wear_check_curr_status(void)
+{
+	SNDP_IF_TRACE_ENTER();
+
+#if 0   //for test
+    sndp_dev_set_wear_status(false, SNDP_DEV_WEAR_ON);
+    return;
+#endif
+    
+#if defined(__SNDP_WEAR_DETECT_MGR__)
+	sndp_hal_wear_detection_check_curr_status();
+#endif
+
+}
+
+void sndp_dev_wear_enable_detection(void)
+{
+	SNDP_IF_TRACE(0, "enter");
+	
+#if defined(__SNDP_WEAR_DETECT_MGR__)	
+	sndp_hal_wear_detection_enter_detection_mode();
+#endif
+
+}
+
+void sndp_dev_wear_disable_detection(void)
+{
+	SNDP_IF_TRACE(0, "enter");
+	
+#if defined(__SNDP_WEAR_DETECT_MGR__)		
+	sndp_hal_wear_detection_enter_standby_mode();
+#endif
+
+}
+
+void sndp_dev_wear_status_changed_handler(sndp_dev_wear_status_e status)
+{
+	sndp_dev_wear_status_e curr_status;
+
+	curr_status = sndp_dev_wear_get_status(false);
+	SNDP_IF_TRACE(1, "curr_status=%d, new_status=%d", curr_status, status);
+
+	if(status != curr_status) {
+		sndp_dev_wear_set_status(false, status);
+		if(sndp_dev_wear_status_changed_cb_prt) {
+            sndp_call_func_in_app_thread((uint32_t)sndp_dev_wear_status_changed_cb_prt, status, 0, 0);
+		}
+	}
+}
+
+#if defined(__SNDP_WEAR_DETECT_MGR__)
+static void sndp_dev_wear_status_changed(sndp_hal_wear_status_e status)
+{
+	sndp_dev_wear_status_e wear_status = SNDP_DEV_WEAR_UNKNOWN;
+
+	if(SNDP_HAL_WEAR_ON == status)
+		wear_status = SNDP_DEV_WEAR_ON;
+	else if(SNDP_HAL_WEAR_OFF == status)
+		wear_status = SNDP_DEV_WEAR_OFF;
+
+	SNDP_IF_TRACE(1, "status=%d, wear_status=%d", status, wear_status);
+	
+#if 0   //for test
+    return;
+#endif
+
+	if(wear_status != SNDP_DEV_WEAR_UNKNOWN) {
+#if defined(__SNDP_TOUCH_CALI__)  
+#if defined(__SNDP_COMM_MGR__)
+        sndp_comm_cmd_send_pt_report_wear_status(wear_status);
+#endif
+#endif        
+		sndp_dev_wear_status_changed_handler(wear_status);
+
+	}
+}
+#endif
+
+void sndp_dev_wear_init(sndp_dev_wear_status_changed_cb callback)
+{
+	SNDP_IF_TRACE_ENTER();
+    sndp_dev_wear_status_changed_cb_prt = callback;	
+	sndp_dev_wear_set_status(false, SNDP_DEV_WEAR_UNKNOWN);
+#if defined(__SNDP_WEAR_DETECT_MGR__)
+	sndp_hal_wear_detection_init();
+	sndp_hal_wear_detection_set_wear_status_changed_callback(sndp_dev_wear_status_changed);
+	if(sndp_dev_iobox_is_in_box(false)) {
+		sndp_dev_wear_disable_detection();
+	} else {
+		sndp_dev_wear_enable_detection();
+	}
+#endif
+#if defined(__SNDP_PWRON_ENTER_TOUCH_CALI__)
+	sndp_dev_enable_touch_calibration(true);
+#endif
+
+}
+
+/************************************************** Wear Info End **************************************************/
+
+
+/************************************************** Gesture Info Start **************************************************/
+
+#if defined(__SNDP_GESTURE_MGR__)
+void sndp_dev_gesture_event_callback(sndp_hal_gesture_event_e event)
+{
+	sndp_dev_gesture_event_e gesture = SNDP_DEV_GESTURE_EVENT_NONE;
+
+	switch(event) {
+		case SNDP_HAL_GESTURE_EVENT_PRESS_DOWN:
+			gesture = SNDP_DEV_GESTURE_EVENT_PRESS_DOWN;
+			break;
+		case SNDP_HAL_GESTURE_EVENT_PRESS_UP:
+			gesture = SNDP_DEV_GESTURE_EVENT_PRESS_UP;
+			break;
+		case SNDP_HAL_GESTURE_EVENT_1_CLICK:
+			gesture = SNDP_DEV_GESTURE_EVENT_1_CLICK;
+			break;
+		case SNDP_HAL_GESTURE_EVENT_2_CLICK:
+			gesture = SNDP_DEV_GESTURE_EVENT_2_CLICK;
+			break;
+		case SNDP_HAL_GESTURE_EVENT_3_CLICK:
+			gesture = SNDP_DEV_GESTURE_EVENT_3_CLICK;
+			break;
+		case SNDP_HAL_GESTURE_EVENT_4_CLICK:
+			gesture = SNDP_DEV_GESTURE_EVENT_4_CLICK;
+			break;
+		case SNDP_HAL_GESTURE_EVENT_5_CLICK:
+			gesture = SNDP_DEV_GESTURE_EVENT_5_CLICK;
+			break;
+		case SNDP_HAL_GESTURE_EVENT_LONG_PRESS:
+			gesture = SNDP_DEV_GESTURE_EVENT_LONG_PRESS;
+			break;
+		case SNDP_HAL_GESTURE_EVENT_LLONG_PRESS:
+			gesture = SNDP_DEV_GESTURE_EVENT_LLONG_PRESS;
+			break;
+		case SNDP_HAL_GESTURE_EVENT_REPEAT:
+			gesture = SNDP_DEV_GESTURE_EVENT_REPEAT;
+			break;
+		case SNDP_HAL_GESTURE_EVENT_SLIDE_UP:
+			gesture = SNDP_DEV_GESTURE_EVENT_SLIDE_UP;
+			break;
+		case SNDP_HAL_GESTURE_EVENT_SLIDE_DOWN:
+			gesture = SNDP_DEV_GESTURE_EVENT_SLIDE_DOWN;
+			break;
+		default:
+			break;
+	}
+
+	if(gesture != SNDP_DEV_GESTURE_EVENT_NONE && sndp_dev_gesture_event_cb_ptr != NULL) {
+        sndp_call_func_in_app_thread((uint32_t)sndp_dev_gesture_event_cb_ptr, gesture, 0, 0);
+	}
+}
+#endif
+
+void sndp_dev_gesture_init(sndp_dev_gesture_event_cb callback)
+{
+	SNDP_IF_TRACE_ENTER();
+    sndp_dev_gesture_event_cb_ptr = callback;
+#if defined(__SNDP_GESTURE_MGR__)
+	sndp_hal_gesture_init();
+	sndp_hal_gesture_set_event_callback(sndp_dev_gesture_event_callback);
+#endif
+}
+
+/************************************************** Gesture Info End **************************************************/
+
+
+/************************************************** InOut Box Info Start **************************************************/
+bool sndp_dev_iobox_is_in_box(bool peer)
+{
+	sndp_dev_iobox_status_e inout_status;
+	
+	inout_status =  (peer) ? (sndp_dev_ctx.peer.inout_status) : (sndp_dev_ctx.local.inout_status);
+	return (inout_status == SNDP_DEV_IOBOX_IN) ? (true) : (false);
+}
+
+bool sndp_dev_iobox_is_out_box(bool peer)
+{
+	sndp_dev_iobox_status_e inout_status;
+	
+	inout_status =  (peer) ? (sndp_dev_ctx.peer.inout_status) : (sndp_dev_ctx.local.inout_status);
+	return (inout_status == SNDP_DEV_IOBOX_OUT) ? (true) : (false);
+}
+
+
+sndp_dev_iobox_status_e sndp_dev_iobox_get_status(bool peer)
+{
+	return (peer) ? (sndp_dev_ctx.peer.inout_status) : (sndp_dev_ctx.local.inout_status);
+}
+
+void sndp_dev_iobox_set_status(bool peer, sndp_dev_iobox_status_e inout_status)
+{
+	SNDP_IF_TRACE(2, "peer=%d, inout_status=%d", peer, inout_status);
+	
+	if(peer) 
+		sndp_dev_ctx.peer.inout_status = inout_status;
+	else
+		sndp_dev_ctx.local.inout_status = inout_status;
+}
+
+void sndp_dev_iobox_check_curr_status(void)
+{
+	SNDP_IF_TRACE_ENTER();
+	
+#if defined(__SNDP_IOBOX_MGR__)
+	sndp_hal_iobox_check_curr_status();
+#endif
+
+}
+
+POSSIBLY_UNUSED static void sndp_dev_iobox_status_changed_handler(sndp_dev_iobox_status_e status)
+{
+	SNDP_IF_TRACE(0, "status=%d", status);
+
+	if(status != SNDP_DEV_IOBOX_UNKNOWN) {
+		sndp_dev_iobox_set_status(false, status);
+        
+#if defined(__SNDP_COMM_POGOPIN__)			
+        if(SNDP_DEV_IOBOX_OUT == status) {
+    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
+    	} else {
+    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_RX);
+    	}
+#endif
+
+		if(sndp_dev_iobox_status_changed_cb_ptr) {
+            sndp_call_func_in_app_thread((uint32_t)sndp_dev_iobox_status_changed_cb_ptr, status, 0, 0);
+		}
+
+	}
+}
+
+#if defined(__SNDP_IOBOX_MGR__)
+static void sndp_dev_iobox_status_changed(sndp_hal_iobox_status_e status)
+{
+	sndp_dev_iobox_status_e iobox_status;
+
+	if(SNDP_HAL_IOBOX_IN == status)
+		iobox_status = SNDP_DEV_IOBOX_IN;
+	else
+		iobox_status = SNDP_DEV_IOBOX_OUT;
+	
+	//SNDP_IF_TRACE(2, "status=%d, iobox_status=%d", status, iobox_status);
+	sndp_dev_iobox_status_changed_handler(iobox_status);
+}
+#endif
+
+void sndp_dev_iobox_init(sndp_dev_iobox_status_changed_cb callback)
+{
+	SNDP_IF_TRACE_ENTER();
+    sndp_dev_iobox_status_changed_cb_ptr = callback;
+	sndp_dev_iobox_set_status(false, SNDP_DEV_IOBOX_UNKNOWN);
+
+#if defined(__SNDP_IOBOX_MGR__)
+	sndp_hal_iobox_init();
+	sndp_hal_iobox_set_status_changed_callback(sndp_dev_iobox_status_changed);
+#endif
+}
+
+
+/************************************************** InOut Box Info End **************************************************/
+
+
+/************************************************** Cover Switch Info Start **************************************************/
+
+bool sndp_dev_cover_is_opened(bool peer)
+{
+	sndp_dev_cover_status_e cover_status;
+
+	cover_status =  (peer) ? (sndp_dev_ctx.peer.cover_status) : (sndp_dev_ctx.local.cover_status);
+	return (cover_status == SNDP_DEV_COVER_OPENED) ? (true) : (false);
+}
+
+bool sndp_dev_cover_is_closed(bool peer)
+{
+	sndp_dev_cover_status_e cover_status;
+
+	cover_status =  (peer) ? (sndp_dev_ctx.peer.cover_status) : (sndp_dev_ctx.local.cover_status);
+	return (cover_status == SNDP_DEV_COVER_COLSED) ? (true) : (false);
+}
+
+sndp_dev_cover_status_e sndp_dev_cover_get_status(bool peer)
+{
+	return (peer) ? (sndp_dev_ctx.peer.cover_status) : (sndp_dev_ctx.local.cover_status);
+}
+
+void sndp_dev_cover_set_status(bool peer, sndp_dev_cover_status_e cover_status)
+{
+	SNDP_IF_TRACE(2, "peer=%d, cover_status=%d", peer, cover_status);
+	if(peer) 
+		sndp_dev_ctx.peer.cover_status = cover_status;
+	else
+		sndp_dev_ctx.local.cover_status = cover_status;
+}
+
+void sndp_dev_cover_check_curr_status(void)
+{
+	SNDP_IF_TRACE_ENTER();
+	
+#if defined(__SNDP_COVER_SWITCH_MGR__)
+	sndp_hal_cover_switch_check_curr_status();
+#else
+    sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_OPENED);
+#endif
+
+}
+
+static void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status)
+{
+	sndp_dev_cover_status_e curr_status;
+
+	curr_status = sndp_dev_cover_get_status(false);
+	
+	SNDP_IF_TRACE(1, "curr_status=%d, new_status=%d(0=close, 1:open)", curr_status, status);
+
+    
+	if(status != SNDP_DEV_COVER_UNKNOWN) {
+		sndp_dev_cover_set_status(false, status);
+        
+#if defined(__SNDP_COMM_POGOPIN__)			
+        if(SNDP_DEV_COVER_COLSED == status) {
+    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
+    	} else {
+    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_RX);
+    	}
+#endif
+
+		if(sndp_dev_cover_status_changed_cb_ptr) {
+			sndp_call_func_in_app_thread((uint32_t)sndp_dev_cover_status_changed_cb_ptr, status, 0, 0);
+		}
+	}
+}
+
+#if defined(__SNDP_COVER_SWITCH_MGR__)
+static void sndp_dev_cover_status_changed(sndp_hal_cover_status_e status)
+{
+	sndp_dev_cover_status_e cover_status;
+	
+	if(SNDP_HAL_COVER_COLSED == status)
+		cover_status = SNDP_DEV_COVER_COLSED;
+	else
+		cover_status = SNDP_DEV_COVER_OPENED;
+	
+	SNDP_IF_TRACE(1, "status=%d, cover_status=%d(0=close, 1:open)", status, cover_status);
+	sndp_dev_cover_status_changed_handler(cover_status);
+}
+#endif
+
+void sndp_dev_cover_init(sndp_dev_cover_status_changed_cb callback)
+{
+	SNDP_IF_TRACE_ENTER();	
+    sndp_dev_cover_status_changed_cb_ptr = callback;
+
+    sndp_dev_cover_set_status(false, SNDP_DEV_COVER_UNKNOWN);
+    
+#if defined(__SNDP_COVER_SWITCH_MGR__)
+	sndp_hal_cover_switch_init();
+	sndp_hal_cover_switch_set_status_changed_callback(sndp_dev_cover_status_changed);
+#endif
+}
+
+/************************************************** Cover Switch Info End **************************************************/
+
+
+/************************************************** Temperature Info Start **************************************************/
+
+int16_t sndp_dev_temperature_get_value(bool peer)
+{
+	return (peer) ? (sndp_dev_ctx.peer.temperature) : (sndp_dev_ctx.local.temperature);
+}
+
+void sndp_dev_temperature_set_value(bool peer, int16_t temperature)
+{
+	if(peer) 
+		sndp_dev_ctx.peer.temperature = temperature;
+	else
+		sndp_dev_ctx.local.temperature = temperature;
+}
+
+void sndp_dev_temperature_measure(void)
+{
+	SNDP_IF_TRACE_ENTER();
+#if defined(__SNDP_TEMPERATURE_MGR__)	
+	sndp_hal_temperature_measure();
+#endif
+}
+
+#if defined(__SNDP_TEMPERATURE_MGR__)
+static void sndp_dev_temperature_measure_callback(int16_t temperature)
+{
+	SNDP_IF_TRACE(1, "temperature=%d", temperature);
+
+	sndp_dev_temperature_set_value(false, temperature);
+
+	if(sndp_dev_temperature_measure_cb_ptr) {
+        sndp_call_func_in_app_thread((uint32_t)sndp_dev_temperature_measure_cb_ptr, temperature, 0, 0);
+	}
+}
+#endif
+
+void sndp_dev_temperature_init(sndp_dev_temperature_measure_cb callback)
+{
+	SNDP_IF_TRACE_ENTER();
+    sndp_dev_temperature_measure_cb_ptr = callback;
+	sndp_dev_temperature_set_value(false, 25);
+#if defined(__SNDP_TEMPERATURE_MGR__)
+	sndp_hal_temperature_init();
+	sndp_hal_temperature_set_measure_callback(sndp_dev_temperature_measure_callback);
+#endif
+}
+
+/************************************************** Temperature Info End **************************************************/
+
+
+/************************************************** Charger Info Start **************************************************/
+bool sndp_dev_charger_is_charging(bool peer)
+{
+	sndp_dev_charging_status_e charging_status;
+
+	charging_status = (peer) ? (sndp_dev_ctx.peer.charging_status) : (sndp_dev_ctx.local.charging_status);
+	return (charging_status == SNDP_DEV_CHARGER_CHARGING) ? (true) : (false);
+}
+
+bool sndp_dev_charger_is_charging_full(bool peer)
+{
+	sndp_dev_charging_status_e charging_status;
+
+	charging_status = (peer) ? (sndp_dev_ctx.peer.charging_status) : (sndp_dev_ctx.local.charging_status);
+	if(SNDP_DEV_CHARGER_CHARGING_FULL == charging_status)
+		return true;
+
+#if 0	
+	uint8_t bat_per = (peer) ? (sndp_dev_ctx.peer.bat_info.bat_per) : (sndp_dev_ctx.local.bat_info.bat_per);
+	if(bat_per == 100)
+		return true;
+#endif
+
+    return false;
+}
+
+void sndp_dev_charger_set_charging_status(bool peer, sndp_dev_charging_status_e charging_status)
+{
+	if(peer) 
+		sndp_dev_ctx.peer.charging_status = charging_status;
+	else
+		sndp_dev_ctx.local.charging_status = charging_status;
+}
+
+sndp_dev_charging_status_e sndp_dev_charger_get_charging_status(bool peer)
+{
+	return (peer) ? (sndp_dev_ctx.peer.charging_status) : (sndp_dev_ctx.local.charging_status);
+}
+
+void sndp_dev_charger_set_charging_current(void)
+{
+#if defined(__SNDP_CHARGER_MGR__)	
+	static sndp_hal_charging_current_e curr_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
+	sndp_hal_charging_current_e set_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
+	
+	if(sndp_dev_charger_is_plugin(false)) {
+		uint8_t temp = sndp_dev_temperature_get_value(false);
+		if(temp <= 0)
+			set_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
+		else if(temp < 15)
+			set_current = SNDP_HAL_CHARGING_CURRENT_HALF;
+		else if(temp <= 45)
+			set_current = SNDP_HAL_CHARGING_CURRENT_1C;
+		else
+			set_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
+	} else {
+		set_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
+	}
+
+	/* Avoid dupicate settings */
+	if(set_current != curr_current) {
+		curr_current = set_current;
+		sndp_hal_charger_set_charging_current(set_current);
+	}
+#endif	
+}
+
+void sndp_dev_charger_check_curr_status(void)
+{
+	SNDP_IF_TRACE_ENTER();
+	
+#if defined(__SNDP_CHARGER_PLUG_MGR__)   
+    sndp_hal_charger_check_curr_status();
+#endif 
+
+}
+
+bool sndp_dev_charger_is_charging_enabled(void) 
+{  
+#if defined(__SNDP_CHARGER_MGR__)	
+	return sndp_hal_charger_is_charging_enabled();
+#endif
+
+    return false;
+}
+
+#if defined(__SNDP_CHARGER_MGR__)
+static void sndp_dev_charger_charging_mode_changed(sndp_hal_charger_mode_e mode)
+{	
+    SNDP_IF_TRACE(0, "mode=%d", mode);
+    
+	switch(mode) {
+		case SNDP_HAL_CHARGER_MODE_STANDBY:
+			sndp_dev_charger_set_charging_status(false, SNDP_DEV_CHARGER_NOT_CHARGING);
+			break;
+		case SNDP_HAL_CHARGER_MODE_SHIPMODE:
+			break;
+		case SNDP_HAL_CHARGER_MODE_COMMUNICATION:
+			break;
+		case SNDP_HAL_CHARGER_MODE_NOT_CHARGING:
+			sndp_dev_charger_set_charging_status(false, SNDP_DEV_CHARGER_NOT_CHARGING);        
+			break;
+		case SNDP_HAL_CHARGER_MODE_TRICKLE_CHARGING:
+			sndp_dev_charger_set_charging_status(false, SNDP_DEV_CHARGER_CHARGING);
+			break;
+		case SNDP_HAL_CHARGER_MODE_CC_CHARGING:
+			sndp_dev_charger_set_charging_status(false, SNDP_DEV_CHARGER_CHARGING);
+			break;
+		case SNDP_HAL_CHARGER_MODE_CV_CHARGING:
+			sndp_dev_charger_set_charging_status(false, SNDP_DEV_CHARGER_CHARGING);
+			break;
+		case SNDP_HAL_CHARGER_MODE_FULL_CHARGING:
+			sndp_dev_charger_set_charging_status(false, SNDP_DEV_CHARGER_CHARGING_FULL);
+            sndp_dev_bat_pwr_measure();
+			break;
+	}
+}
+#endif
+
+void sndp_dev_charger_init(void)
+{
+	SNDP_IF_TRACE_ENTER();
+    sndp_dev_charger_set_charging_status(false, SNDP_DEV_CHARGER_NOT_CHARGING);
+#if defined(__SNDP_CHARGER_MGR__)	
+	sndp_hal_charger_init();
+	sndp_hal_charger_set_charging_mode_changed_callback(sndp_dev_charger_charging_mode_changed);
+    sndp_hal_charger_check_curr_status();
+#endif	
+}
+
+/************************************************** Charger Info End **************************************************/
+
+
+/************************************************** Charger Plug Info Start **************************************************/
+bool sndp_dev_charger_is_plugin(bool peer)
+{
+    if(peer) {
+	    return (sndp_dev_ctx.peer.charger_status == SNDP_DEV_CHARGER_PLUG_IN) ? true : false;
+    } else {
+        return (sndp_dev_ctx.local.charger_status == SNDP_DEV_CHARGER_PLUG_IN) ? true : false;
+    }
+}
+
+void sndp_dev_charger_plug_set_status(bool peer, sndp_dev_charger_plug_e state)
+{
+	if(peer) 
+		sndp_dev_ctx.peer.charger_status = state;
+	else
+		sndp_dev_ctx.local.charger_status = state;
+}
+
+void sndp_dev_charger_plug_check_curr_status(void)
+{
+	SNDP_IF_TRACE_ENTER();
+	
+#if defined(__SNDP_CHARGER_PLUG_MGR__)   
+    sndp_hal_charger_plug_check_curr_status();
+#endif 
+
+}
+
+#if defined(__SNDP_CHARGER_PLUG_MGR__)   
+void sndp_dev_charger_plug_status_changed(sndp_hal_charger_plug_status_e status)
+{
+    sndp_dev_charger_plug_e charger_plug = SNDP_DEV_CHARGER_PLUG_UNKNOWN;
+       
+    SNDP_IF_TRACE(1, "status=%d", status);
+
+    if(status == SNDP_HAL_CHARGER_PLUGIN) {
+        charger_plug = SNDP_DEV_CHARGER_PLUG_IN;
+    } else if(status == SNDP_HAL_CHARGER_PLUGOUT) {
+        charger_plug = SNDP_DEV_CHARGER_PLUG_OUT;
+    }
+    
+    if(charger_plug != SNDP_DEV_CHARGER_PLUG_UNKNOWN) {
+        sndp_dev_charger_plug_set_status(false, charger_plug);
+        if(sndp_dev_charger_plug_cb_ptr) {
+    		sndp_dev_charger_plug_cb_ptr(charger_plug);
+        }
+#if defined(__SNDP_CHARGER_MGR__)
+        sndp_hal_charger_check_curr_status();
+#endif
+    }
+}
+#endif 
+
+void sndp_dev_charger_plug_init(sndp_dev_charger_plug_cb callback)
+{
+	SNDP_IF_TRACE_ENTER();
+    sndp_dev_charger_plug_cb_ptr = callback;
+    
+#if defined(__SNDP_CHARGER_PLUG_MGR__)   
+    sndp_hal_charger_plug_init();
+	sndp_hal_charger_plug_set_status_changed_callback(sndp_dev_charger_plug_status_changed);
+#endif    
+}
+
+/************************************************** Charger Plug Info End **************************************************/
+
+
+
+/************************************************** Battery Info Start **************************************************/
+uint8_t sndp_dev_get_bat_report_level(void) 
+{
+#if 1    
+	uint8_t local_level = sndp_dev_get_bat_level(false);
+	uint8_t peer_level = sndp_dev_get_bat_level(true);
+
+    
+	if(sndp_is_tws_link_connected()) {
+		if(local_level > peer_level)
+			return peer_level;
+		else
+			return local_level;
+	} else {
+		return local_level;
+	}
+#else
+    return sndp_dev_get_bat_level(false);
+#endif
+}
+
+uint8_t sndp_dev_get_bat_percentage(bool peer)
+{
+	return (peer) ? (sndp_dev_ctx.peer.bat_info.bat_per) : (sndp_dev_ctx.local.bat_info.bat_per);
+}
+
+uint16_t sndp_dev_get_bat_voltage(bool peer)
+{
+	return (peer) ? (sndp_dev_ctx.peer.bat_info.bat_volt) : (sndp_dev_ctx.local.bat_info.bat_volt);
+}
+
+uint8_t sndp_dev_get_bat_level(bool peer)
+{
+	return (peer) ? (sndp_dev_ctx.peer.bat_info.bat_level) : (sndp_dev_ctx.local.bat_info.bat_level);
+}
+
+bool sndp_dev_get_bat_info(bool peer, sndp_dev_bat_info_s * bat_info)
+{
+	if(bat_info == NULL)
+		return false;
+	
+	if(peer)
+		memcpy((void *)bat_info, (void *)&sndp_dev_ctx.peer.bat_info, sizeof(sndp_dev_bat_info_s));
+	else
+		memcpy((void *)bat_info, (void *)&sndp_dev_ctx.local.bat_info, sizeof(sndp_dev_bat_info_s));
+
+	return true;
+}
+
+void sndp_dev_set_bat_info(bool peer, sndp_dev_bat_info_s bat_info)
+{
+	if(peer)
+		memcpy((void *)&sndp_dev_ctx.peer.bat_info, (void *)&bat_info, sizeof(sndp_dev_bat_info_s));
+	else
+		memcpy((void *)&sndp_dev_ctx.local.bat_info, (void *)&bat_info, sizeof(sndp_dev_bat_info_s));
+}
+
+bool sndp_dev_get_box_bat_info(sndp_dev_bat_info_s *bat_info)
+{
+	if(bat_info == NULL)
+		return false;
+	
+	memcpy((void *)bat_info, (void *)&sndp_dev_ctx.box.bat_info, sizeof(sndp_dev_bat_info_s));
+	return true;
+}
+
+bool sndp_dev_set_box_bat_info(sndp_dev_bat_info_s bat_info)
+{
+	memcpy((void *)&sndp_dev_ctx.box.bat_info, (void *)&bat_info, sizeof(sndp_dev_bat_info_s));
+	return true;
+}
+
+sndp_dev_charging_status_e sndp_dev_get_box_charging_sta(void)
+{
+	return sndp_dev_ctx.box.charging_status;
+}
+
+bool sndp_dev_set_box_charging_sta(sndp_dev_charging_status_e sta)
+{
+	sndp_dev_ctx.box.charging_status = sta;
+	return true;
+}
+
+
+#if defined(__SNDP_BATTERY_MGR__)	
+static void sndp_dev_bat_pwr_measure_callback(sndp_hal_bat_info_s bat_info)
+{
+	sndp_dev_bat_info_s old_bat_info;
+	sndp_dev_bat_info_s new_bat_info;
+
+	SNDP_IF_TRACE(3, "bat_volt=%d, bat_per=%d, bat_level=%d", bat_info.bat_volt, bat_info.bat_per, bat_info.bat_level);
+	
+	sndp_dev_get_bat_info(false, &old_bat_info);
+	
+	new_bat_info.bat_per = bat_info.bat_per;
+	new_bat_info.bat_volt = bat_info.bat_volt;
+	new_bat_info.bat_level = bat_info.bat_level;
+	sndp_dev_set_bat_info(false, new_bat_info);
+
+	if(sndp_dev_bat_pwr_measure_cb_ptr) {
+		sndp_dev_bat_pwr_measure_cb_ptr(old_bat_info, new_bat_info);
+	}
+}
+#endif
+
+void sndp_dev_bat_pwr_measure(void)
+{
+	SNDP_IF_TRACE_ENTER();
+	
+#if defined(__SNDP_BATTERY_MGR__)	
+	sndp_hal_battery_measure((sndp_hal_bat_charging_status_e)sndp_dev_charger_get_charging_status(false));
+#endif
+}
+
+void sndp_dev_bat_pwr_init(sndp_dev_bat_pwr_measure_cb callback)
+{
+	SNDP_IF_TRACE_ENTER();
+    sndp_dev_bat_pwr_measure_cb_ptr = callback;
+#if defined(__SNDP_BATTERY_MGR__)	
+	sndp_hal_battery_init((sndp_hal_bat_charging_status_e)sndp_dev_charger_is_charging(false), sndp_dev_get_bat_percentage(false));
+	sndp_hal_battery_set_measure_callback(sndp_dev_bat_pwr_measure_callback);
+#endif	
+}
+
+/************************************************** Battery Info End **************************************************/
+
+
+/************************************************** EarSide Info Start **************************************************/
+sndp_dev_earside_e sndp_dev_get_local_earside(void)
+{
+#if 0    
+	static sndp_dev_earside_e earside = SNDP_DEV_EARSIDE_UNKNOWN;
+	uint8_t val;
+	
+	if(earside == SNDP_DEV_EARSIDE_UNKNOWN) {
+
+#if defined(__SNDP_DEV_EARSIDE_BY_BT_ADDR__)
+		uint8_t mac_addr[6] = {0};
+		factory_section_original_btaddr_get(mac_addr);
+		SNDP_IF_TRACE(1, "mac_addr:");
+		DUMP8("%02x ", mac_addr, 6);
+
+		if(mac_addr[0] % 2 == 0) 
+			val = 1;
+		else
+			val = 0;
+
+#else
+        struct HAL_IOMUX_PIN_FUNCTION_MAP earside_pin_cfg;
+
+        memcpy(&earside_pin_cfg, &app_ear_side_pin_cfg, sizeof(struct HAL_IOMUX_PIN_FUNCTION_MAP));
+
+        if (earside_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+            hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&earside_pin_cfg, 1);
+            hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)earside_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
+        }
+        
+        if(app_ear_side_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
+		    val = hal_gpio_pin_get_val((enum HAL_GPIO_PIN_T)app_ear_side_pin_cfg.pin);
+        } else {
+            val = 0;
+        }
+
+        // 原理图配置：右耳悬空，左耳拉低。读取电平后配置为拉低可以省电。
+        if (earside_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+            earside_pin_cfg.pull_sel = HAL_IOMUX_PIN_PULLDOWN_ENABLE;
+            hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&earside_pin_cfg, 1);
+            hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)earside_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
+        }
+#endif
+
+		if(val) {
+			earside = SNDP_DEV_EARSIDE_RIGHT;
+		} else {
+			earside = SNDP_DEV_EARSIDE_LEFT;
+		}
+	}
+	
+	return earside;
+#else
+    return SNDP_DEV_EARSIDE_UNKNOWN;
+#endif
+}
+
+sndp_dev_earside_e sndp_dev_get_earside(bool peer)
+{
+	static bool inited = false;
+	
+	if(inited == false) {
+		if(sndp_dev_get_local_earside() == SNDP_DEV_EARSIDE_RIGHT) {
+			sndp_dev_ctx.local.ear_side = SNDP_DEV_EARSIDE_RIGHT;
+			sndp_dev_ctx.peer.ear_side = SNDP_DEV_EARSIDE_LEFT;
+		} else {
+			sndp_dev_ctx.local.ear_side = SNDP_DEV_EARSIDE_LEFT;
+			sndp_dev_ctx.peer.ear_side = SNDP_DEV_EARSIDE_RIGHT;
+		}
+		
+		inited = true;
+	}
+	
+	return (peer) ? (sndp_dev_ctx.peer.ear_side) : (sndp_dev_ctx.local.ear_side);
+}
+
+bool sndp_dev_is_right_earphone(void)
+{
+	return (SNDP_DEV_EARSIDE_RIGHT == sndp_dev_get_local_earside());
+}
+
+bool sndp_dev_is_left_earphone(void)
+{
+	return (SNDP_DEV_EARSIDE_LEFT == sndp_dev_get_local_earside());
+}
+
+
+/************************************************** EarSide Info End **************************************************/
+
+
+/************************************************** Device Info Start **************************************************/
+
+uint8_t *sndp_dev_get_fw_ver(bool peer) 
+{
+	if(peer)
+		return &sndp_dev_ctx.peer.fw_ver[0];
+	else
+		return &sndp_dev_ctx.local.fw_ver[0];
+}
+
+char *sndp_dev_get_fw_ver_str(bool peer)
+{
+    static char temp[20] = {0};
+    uint8_t *fw_ver;
+    
+    if(peer)
+		fw_ver = &sndp_dev_ctx.peer.fw_ver[0];
+	else
+		fw_ver = &sndp_dev_ctx.local.fw_ver[0];
+    
+    sprintf(temp, "%d.%d.%d.%d", fw_ver[0], fw_ver[1], fw_ver[2], fw_ver[3]);
+    return temp;
+}
+
+void sndp_dev_set_fw_ver(bool peer, uint8_t *fw_ver) 
+{
+	if(fw_ver == NULL)
+		return;
+		
+	if(peer)
+		memcpy(&sndp_dev_ctx.peer.fw_ver[0], fw_ver, 4);
+	else
+		memcpy(&sndp_dev_ctx.local.fw_ver[0], fw_ver, 4);
+}
+
+uint8_t *sndp_dev_get_hw_ver(bool peer) 
+{
+	if(peer)
+		return &sndp_dev_ctx.peer.hw_ver[0];
+	else
+		return &sndp_dev_ctx.local.hw_ver[0];
+}
+
+char *sndp_dev_get_hw_ver_str(bool peer)
+{
+    static char temp[10] = {0};
+    uint8_t *hw_ver;
+    
+    if(peer)
+        hw_ver = &sndp_dev_ctx.peer.hw_ver[0];
+    else
+        hw_ver = &sndp_dev_ctx.local.hw_ver[0];
+    
+    sprintf(temp, "%d.%d", hw_ver[0], hw_ver[1]);
+    return temp;
+}
+
+
+bool sndp_dev_set_hw_ver(bool peer, uint8_t *hw_ver) 
+{
+	if(hw_ver == NULL)
+		return false;
+	
+	if(peer)
+		memcpy(&sndp_dev_ctx.peer.hw_ver[0], hw_ver, 2);
+	else
+		memcpy(&sndp_dev_ctx.local.hw_ver[0], hw_ver, 2);
+	
+	return true;
+}
+
+uint8_t *sndp_dev_get_box_fw_ver(void) 
+{
+	return &sndp_dev_ctx.box.fw_ver[0];
+}
+
+bool sndp_dev_set_box_fw_ver(uint8_t *fw_ver) 
+{
+	if(fw_ver == NULL)
+		return false;
+	
+	memcpy(&sndp_dev_ctx.box.fw_ver[0], fw_ver, 4);
+	return true;
+}
+
+uint8_t *sndp_dev_get_bt_addr(bool peer) 
+{
+	if(peer)
+		return &sndp_dev_ctx.peer.bt_addr[0];
+	else
+		return &sndp_dev_ctx.local.bt_addr[0];
+	
+}
+
+bool sndp_dev_set_bt_addr(bool peer, uint8_t *bt_addr) 
+{
+	if(bt_addr == NULL)
+		return false;
+	
+	if(peer)
+		memcpy(&sndp_dev_ctx.peer.bt_addr[0], bt_addr, 6);
+	else
+		memcpy(&sndp_dev_ctx.local.bt_addr[0], bt_addr, 6);
+	
+	return true;
+}
+
+uint8_t *sndp_dev_get_ble_addr(bool peer) 
+{
+	if(peer)
+		return &sndp_dev_ctx.peer.ble_addr[0];
+	else
+		return &sndp_dev_ctx.local.ble_addr[0];
+}
+
+bool sndp_dev_set_ble_addr(bool peer, uint8_t *ble_addr) 
+{
+	if(ble_addr == NULL)
+		return false;
+	
+	if(peer)
+		memcpy(&sndp_dev_ctx.peer.ble_addr[0], ble_addr, 6);
+	else
+		memcpy(&sndp_dev_ctx.local.ble_addr[0], ble_addr, 6);
+	
+	return true;
+}
+
+#if defined(__SNDP_APP_MODIFY_BT_NAME__)
+static sndp_da_field_bt_name_s field_bt_name;
+
+#if 0   //for test
+unsigned char test_bt_name[100] = {
+	0xE4, 0xBB, 0x96, 0xE7, 0x9A, 0x84, 0xE8, 0x93, 0x9D, 0xE7, 0x89, 0x99, 0xE8, 0x80, 0xB3, 0xE6, 
+	0x9C, 0xBA, 0xE4, 0xB8, 0x80, 0xE4, 0xBA, 0x8C, 0xE4, 0xB8, 0x89, 0xE5, 0x9B, 0x9B, 0xE4, 0xBA, 
+	0x94, 0xE5, 0x85, 0xAD, 0xE4, 0xB8, 0x83, 0xE5, 0x85, 0xAB, 0xE4, 0xB9, 0x9D, 0xE5, 0x8D, 0x81, 
+	0xE4, 0xB8, 0x80, 0xE4, 0xBA, 0x8C, 0xE4, 0xB8, 0x89, 0xE5, 0x9B, 0x9B, 0x00
+};
+#endif
+
+char *sndp_dev_get_bt_name(void)
+{
+    bool name_type = 0;
+    char *bt_name;
+    uint8_t len;
+
+    memset(&field_bt_name, 0, sizeof(sndp_da_field_bt_name_s));
+    if(sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_BT_NAME, &field_bt_name, sizeof(sndp_da_field_bt_name_s)) == 0) {
+        if(field_bt_name.key == SNDP_DA_PARAM_FIELD_VALID) {
+            if(field_bt_name.len > SNDP_DA_BT_NAME_LEN)
+                len = SNDP_DA_BT_NAME_LEN;
+            else
+                len = field_bt_name.len;
+            
+            field_bt_name.name[len] = '\0';
+            bt_name = (char *)field_bt_name.name;
+            name_type = 1;
+        }
+    }
+    
+    if(name_type == 0) {
+       bt_name = (char *)factory_section_get_bt_name();
+    }
+
+#if 0   //for test
+    bt_name = (char *)test_bt_name;
+#endif
+
+
+    SNDP_IF_TRACE(2, "name_type=%d, name=%s", name_type, bt_name);
+    return bt_name;
+}
+
+
+bool sndp_dev_modify_bt_name(uint8_t *name , uint16_t len)
+{
+    SNDP_IF_TRACE(1, "len=%d, name=%s", len, name);
+
+    if(len > SNDP_DA_BT_NAME_LEN) {
+        len = SNDP_DA_BT_NAME_LEN;
+    }
+
+    memset(&field_bt_name, 0, sizeof(sndp_da_field_bt_name_s));
+    field_bt_name.len = len;
+    memcpy(field_bt_name.name, name, len);
+    if(sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_BT_NAME, &field_bt_name, sizeof(sndp_da_field_bt_name_s), true) == 0) {
+        memset(&field_bt_name, 0, sizeof(sndp_da_field_bt_name_s));
+        if(sndp_da_read_field_data_from_backup_param(SNDP_DA_FIELD_BT_NAME, &field_bt_name, sizeof(sndp_da_field_bt_name_s), true) == 0) {
+            if((len == field_bt_name.len) && (memcmp(name, field_bt_name.name, len) == 0)) {
+                SNDP_IF_TRACE(0, "bt name saved successfully.");
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+#endif
+
+static uint8_t sndp_dev_dev_sn[SNDP_DEV_DEV_SN_LEN + 1];
+#define SNDP_SN_VALID_FLAG          (0xA1B2C3D4)
+
+void sndp_dev_get_default_sn(uint8_t *buf, uint16_t buf_size)
+{
+    uint8_t local_bt_addr[6] = {0};
+
+    if(buf_size < SNDP_DEV_DEV_SN_LEN) {
+        return;
+    }
+    
+    memset(buf, 0, buf_size);  
+	factory_section_original_btaddr_get(local_bt_addr);
+    sprintf((char *)buf, "TMH01%02X%02X%02X%02X%02X%02X", 
+        local_bt_addr[5],
+        local_bt_addr[4],
+        local_bt_addr[3],
+        local_bt_addr[2],
+        local_bt_addr[1],
+        local_bt_addr[0]);
+   
+}
+
+uint8_t *sndp_dev_get_dev_sn(void) 
+{
+    sndp_da_field_sn_s field_sn;
+
+    memset(sndp_dev_dev_sn, 0, sizeof(sndp_dev_dev_sn));    
+    if(sndp_da_read_field_data_from_backup_param(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), false) == 0) {
+        if(field_sn.valid == 0xA1B2C3D4 ) {
+            memcpy(sndp_dev_dev_sn, field_sn.sn, SNDP_DEV_DEV_SN_LEN);
+        } else {
+            sndp_dev_get_default_sn(sndp_dev_dev_sn, sizeof(sndp_dev_dev_sn));
+        }
+    }
+    return sndp_dev_dev_sn;
+}
+
+bool sndp_dev_save_dev_sn(uint8_t *sn, uint16_t sn_len) 
+{
+    sndp_da_field_sn_s field_sn;
+    
+	if(sn == NULL)
+		return false;
+    if(sn_len > SNDP_DEV_DEV_SN_LEN)
+        return false;
+
+    SNDP_IF_TRACE(2, "sn_len=%d, sn:%s", sn_len, sn);
+
+    memset(&field_sn.sn, 0, SNDP_DEV_DEV_SN_LEN);
+    field_sn.valid = SNDP_SN_VALID_FLAG;
+    strncpy((char *)field_sn.sn, (char *)sn, sn_len);
+    if(sndp_da_write_field_data_to_backup_param(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
+        memset(&field_sn, 0, sizeof(sndp_da_field_sn_s));
+        if(sndp_da_read_field_data_from_backup_param(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
+            if(memcmp(sn, field_sn.sn, SNDP_DEV_DEV_SN_LEN) == 0) {
+                SNDP_IF_TRACE(0, "sn saved successfully.");
+                return true;
+            }
+        }
+    }
+    
+	return false;
+}
+
+
+#ifdef FIRMWARE_REV
+extern "C" void system_get_info(uint8_t *fw_rev_0, uint8_t *fw_rev_1,
+    uint8_t *fw_rev_2, uint8_t *fw_rev_3);
+
+#endif
+
+
+void sndp_dev_init_device_info(void)
+{
+	uint8_t fw_ver[4] = {0};
+	uint8_t hw_ver[2] = {0};
+	uint8_t local_bt_addr[6] = {0};
+	uint8_t local_ble_addr[6] = {0};
+    uint8_t box_ver[4] = {0};
+    sndp_dev_bat_info_s bat_info = {4200, 100, 9};
+
+    sndp_dev_set_box_fw_ver(box_ver);
+    sndp_dev_set_fw_ver(true, fw_ver);
+    sndp_dev_set_hw_ver(true, hw_ver);
+    sndp_dev_set_bt_addr(true, local_bt_addr);
+    sndp_dev_set_ble_addr(true, local_ble_addr);
+    sndp_dev_set_bat_info(true, bat_info);
+
+
+	fw_ver[0] = SW_VERSION1;
+	fw_ver[1] = SW_VERSION2;
+	fw_ver[2] = SW_VERSION3;
+	fw_ver[3] = SW_VERSION4;
+
+	hw_ver[0] = HW_VERSION1;
+	hw_ver[1] = HW_VERSION2;
+
+	factory_section_original_btaddr_get(local_bt_addr);
+	//factory_section_original_bleaddr_get(local_ble_addr);
+
+    sndp_dev_set_fw_ver(false, fw_ver);
+	sndp_dev_set_hw_ver(false, hw_ver);
+	sndp_dev_set_bt_addr(false, local_bt_addr);
+	sndp_dev_set_ble_addr(false, local_ble_addr);	
+	sndp_dev_set_bat_info(false, bat_info);
+    
+
+	SNDP_IF_TRACE(3, "fw_ver=%d.%d.%d.%d", fw_ver[0], fw_ver[1], fw_ver[2], fw_ver[3]);
+	SNDP_IF_TRACE(3, "hw_ver=%d.%d", hw_ver[0], hw_ver[1]);
+	SNDP_IF_TRACE(6, "bt_addr=%02x,%02x,%02x,%02x,%02x,%02x",
+			local_bt_addr[0], local_bt_addr[1], local_bt_addr[2],
+			local_bt_addr[3], local_bt_addr[4], local_bt_addr[5]);
+	SNDP_IF_TRACE(6, "ble_addr=%02x,%02x,%02x,%02x,%02x,%02x", 
+			local_ble_addr[0], local_ble_addr[1], local_ble_addr[2],
+			local_ble_addr[3], local_ble_addr[4], local_ble_addr[5]);
+
+    SNDP_IF_TRACE(6, "bat_info, %d, %d, %d", 
+			bat_info.bat_volt, bat_info.bat_per, bat_info.bat_level);
+}
+
+
+void sndp_dev_clear_device_info(bool peer)
+{
+	sndp_dev_earbuds_param_s *param;
+
+	if(peer)
+		param = &sndp_dev_ctx.peer;
+	else
+		param = &sndp_dev_ctx.local;
+
+	memset(&param->bat_info, 0, sizeof(sndp_dev_bat_info_s));
+	param->temperature = 0;
+	param->charging_status = SNDP_DEV_CHARGER_NOT_CHARGING;
+	param->cover_status = SNDP_DEV_COVER_UNKNOWN;
+	param->wear_status = SNDP_DEV_WEAR_UNKNOWN;
+	param->inout_status = SNDP_DEV_IOBOX_UNKNOWN;
+	
+}
+
+char *sndp_dev_get_dev_model_name(void)
+{
+    return (char *)sndp_dev_dev_model_name;
+}
+
+
+/************************************************** Device Info End **************************************************/
+
+/************************************************** Working Mode Start **************************************************/
+
+void sndp_dev_set_working_mode(sndp_dev_working_mode_e mode)
+{
+    sndp_dev_ctx.working_mode |= mode;
+    SNDP_IF_TRACE(0, "mode=%d, working_mode=%d", mode, sndp_dev_ctx.working_mode);
+}
+
+void sndp_dev_clear_working_mode(sndp_dev_working_mode_e mode)
+{
+    sndp_dev_ctx.working_mode &= ~mode;
+    SNDP_IF_TRACE(0, "mode=%d, working_mode=%d", mode, sndp_dev_ctx.working_mode);
+}
+
+uint32_t sndp_dev_get_working_mode(void)
+{
+    return sndp_dev_ctx.working_mode;
+}
+
+bool sndp_dev_is_working_mode(sndp_dev_working_mode_e mode)
+{
+    return (sndp_dev_ctx.working_mode == mode);
+}
+/**************************************************  Working Mode End **************************************************/
+
+
+
+
+#endif	/* __SNDP_UI__ */
+
+
