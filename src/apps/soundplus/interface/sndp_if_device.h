@@ -183,14 +183,6 @@ typedef void (*sndp_dev_gesture_event_cb)(sndp_dev_gesture_event_e gesture_event
 typedef void (*sndp_dev_charger_plug_cb)(sndp_dev_charger_plug_e plug_status);
 
 
-
-#if defined(__SNDP_TOUCH_CALI__)
-int32_t sndp_dev_touch_calibration_recv_data(uint8_t* data, uint16_t data_len);
-bool sndp_dev_is_in_touch_calibration(void);
-void sndp_dev_enable_touch_calibration(bool enable);
-#endif
-
-
 /************************************************** Wear Info Start **************************************************/
 bool sndp_dev_wear_is_worn(bool peer);
 sndp_dev_wear_status_e sndp_dev_wear_get_status(bool peer);

@@ -272,7 +272,7 @@ static void sndp_ui_wear_on_play_tone(void)
 
 }
 
-void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
+static void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 {
 	SPUI_TRACE(2, "wear_action=%d, remote=%d", wear_action, remote);
 
@@ -339,7 +339,7 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 }
 
 //---------------------------------------- bat ctrl --------------------------------------------
-void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
+static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 {
     struct nvrecord_env_t *nvrecord_env;
     nv_record_env_get(&nvrecord_env);   
@@ -369,7 +369,7 @@ void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 }
 
 
-void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
+static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
 {
     SPUI_TRACE(1, "%s", (SNDP_DEV_IOBOX_IN == inout_status) ? "IN_BOX" : "OUT_BOX");
 
@@ -432,7 +432,7 @@ void sndp_ui_gesture_event_sent_to_peer(sndp_dev_gesture_event_e gesture_event)
 #endif
 }
 
-void sndp_ui_gesture_event_generated(sndp_dev_gesture_event_e gesture_event)
+static void sndp_ui_gesture_event_generated(sndp_dev_gesture_event_e gesture_event)
 {
     bool peerProcess = false;
 
@@ -574,7 +574,7 @@ static void sndp_ui_bat_charging_check(void)
 }
 
 
-void sndp_ui_enable_lowpwr_check(void)
+POSSIBLY_UNUSED void sndp_ui_enable_lowpwr_check(void)
 {
     sndp_ui_ctx.lowpwr_check_enable = true;
 }
@@ -626,7 +626,7 @@ static void sndp_ui_bat_lowpwr_check(void)
 
 }
 
-POSSIBLY_UNUSED static void sndp_ui_working_temperature_check(void)
+static void sndp_ui_working_temperature_check(void)
 {
 	if(!sndp_ui_ctx.temperature_check_enable)
 		return;
@@ -647,7 +647,7 @@ POSSIBLY_UNUSED static void sndp_ui_working_temperature_check(void)
 	}
 }
 
-void sndp_ui_temperature_measure_callback(int16_t temperature)
+static void sndp_ui_temperature_measure_callback(int16_t temperature)
 {
 	SPUI_TRACE(1, "T=%d", temperature);
 	sndp_ui_ctx.lowpwr_check_enable = true;
@@ -808,7 +808,7 @@ void sndp_ui_bt_enter_mobile_pairing(bool play_tone)
     }
 }
 
-void sndp_ui_bt_event_exec_after_power_on(void)
+static void sndp_ui_bt_event_exec_after_power_on(void)
 {
     if(sndp_dev_cover_is_closed(false)) {
         SPUI_TRACE(0, "%d, rtn", __LINE__);

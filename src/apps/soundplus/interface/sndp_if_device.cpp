@@ -125,44 +125,6 @@ static const char *sndp_dev_dev_model_name = "EAGLEPLUS\0";    //SNDP_BT_NAME;
 * Function
 **************************************************************************************************/
 
-#if defined(__SNDP_TOUCH_CALI__)
-static int32_t sndp_dev_touch_calibration_send_data(uint8_t* data, uint16_t data_len)
-{
-	SNDP_IF_TRACE(1, "data_len=%d", data_len);
-#if defined(__SNDP_COMM_MGR__)
-    sndp_comm_cmd_send_pt_test_touch(data, data_len);
-#endif    
-    
-    return 0;
-}
-
-int32_t sndp_dev_touch_calibration_recv_data(uint8_t* data, uint16_t data_len)
-{
-	SNDP_IF_TRACE(1, "data_len=%d", data_len);
-    sndp_hal_wear_detection_recv_calibration_data(data, data_len);
-    return 0;
-}
-
-
-bool sndp_dev_is_in_touch_calibration(void)
-{
-	SNDP_IF_TRACE(1, "touch_calib_enable=%d", sndp_dev_ctx.touch_calib_enable);
-	return sndp_dev_ctx.touch_calib_enable;
-}
-
-void sndp_dev_enable_touch_calibration(bool enable)
-{
-	SNDP_IF_TRACE(1, "enable=%d", enable);
-	sndp_dev_ctx.touch_calib_enable = enable;
-
-	if(enable) {
-		sndp_hal_wear_detection_set_calibration_send_data_func(sndp_dev_touch_calibration_send_data);
-	} else {
-		sndp_hal_wear_detection_set_calibration_send_data_func(NULL);
-	}
-}
-
-#endif
 
 /************************************************** Wear Info Start **************************************************/
 

@@ -1152,9 +1152,7 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
 	{ COMM_CMDID_PT_READ_ANC_CALIB_STATUS       , "PT_R_ANC_CALIB_STA"      , sndp_comm_cmd_recv_pt_read_anc_calib_status       },
     { COMM_CMDID_PT_READ_ALGO_AUTH_RESULT       , "PT_R_ALGO_AUTH_RST"      , sndp_comm_cmd_recv_pt_read_algo_auth_result       },
     { COMM_CMDID_PT_SWITCH_LOG_OUTPUT           , "PT_S_LOG_OUTPUT"         , sndp_comm_cmd_recv_pt_log_output_switch           },
-    { COMM_CMDID_PT_SWITCH_HEARHAD              , "PT_S_HAD"                , sndp_comm_cmd_recv_pt_hearhad_switch              },        
     { COMM_CMDID_PT_SWITCH_WEAR_STATUS_REPORT   , "PT_S_WEAR_STA_RPT"       , sndp_comm_cmd_recv_pt_switch_wear_status_report   },
-    //{ COMM_CMDID_PT_CHECK_SY5501_INIT_STATUS    , "PT_C_SY5501_INIT_STA"    , sndp_comm_cmd_recv_pt_check_sy5501_init_status    },
     { COMM_CMDID_PT_CHECK_EARSIDE               , "PT_C_EARSIDE"            , sndp_comm_cmd_recv_pt_check_earside               },
     { COMM_CMDID_PT_READ_HALL_STATUS            , "PT_R_HALL_STA"           , sndp_comm_cmd_recv_pt_read_hall_status            },
     

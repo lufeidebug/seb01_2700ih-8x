@@ -14,10 +14,6 @@
 #endif
 
 
-#if defined(__SNDP_IOBOX_CHARGER_SY5501__)
-extern const sndp_hal_iobox_s sndp_hal_iobox_sy5501;
-#endif
-
 #if defined(__SNDP_IOBOX_GPIO_INT__)
 #include "sndp_iobox_gpio_int.h"
 #endif
@@ -48,13 +44,6 @@ uint32_t sndp_hal_iobox_init(void)
 #if defined(__SNDP_IOBOX_PMU_INT__)	
 	if((sndp_hal_iobox_pmu_int.init != NULL) && (sndp_hal_iobox_pmu_int.init() == SNDP_HAL_RET_OK)) {
 		p_sndp_hal_iobox = (sndp_hal_iobox_s *)&sndp_hal_iobox_pmu_int;
-		return SNDP_HAL_RET_OK;
-	}
-#endif
-
-#if defined(__SNDP_IOBOX_CHARGER_SY5501__)
-	if((sndp_hal_iobox_sy5501.init != NULL) && (sndp_hal_iobox_sy5501.init() == SNDP_HAL_RET_OK)) {
-		p_sndp_hal_iobox = (sndp_hal_iobox_s *)&sndp_hal_iobox_sy5501;
 		return SNDP_HAL_RET_OK;
 	}
 #endif
