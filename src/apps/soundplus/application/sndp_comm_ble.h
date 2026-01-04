@@ -12,9 +12,9 @@ extern "C" {
 #define __SNDP_COMM_BLE_TRACE__
 
 #if defined(__SNDP_COMM_BLE_TRACE__)
-#define COMM_BLE_ENTER()                    TRACE(2, 		"[COMM_BLE] %s, line=%d, enter", __func__, __LINE__)
-#define COMM_BLE_TRACE(num, str, ...)       TRACE(1 + num,	"[COMM_BLE] %s, " str, __func__, ##__VA_ARGS__)
-#define COMM_BLE_EXIT()                     TRACE(2, 		"[COMM_BLE] %s, line=%d, exit", __func__, __LINE__)
+#define COMM_BLE_ENTER()                    SNDP_TRACE(2, 		"[COMM_BLE] %s, line=%d, enter", __func__, __LINE__)
+#define COMM_BLE_TRACE(num, str, ...)       SNDP_TRACE(1 + num,	"[COMM_BLE] %s, " str, __func__, ##__VA_ARGS__)
+#define COMM_BLE_EXIT()                     SNDP_TRACE(2, 		"[COMM_BLE] %s, line=%d, exit", __func__, __LINE__)
 
 #else
 #define COMM_BLE_ENTER() 

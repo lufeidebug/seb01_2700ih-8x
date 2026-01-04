@@ -162,7 +162,7 @@ extern void app_bis_selfscan_cmd_init(void);
 #endif
 
 #ifdef TILE_DATAPATH
-#include "tile_target_ble.h"
+//#include "tile_target_ble.h"
 #endif
 
 #if defined(IBRT)
@@ -374,6 +374,9 @@ extern "C" {
 
 #if defined(__SNDP_UI__)
 #include "sndp_ui.h"
+#endif
+#if defined(__SNDP_COMM_MGR__)
+#include "sndp_comm_main.h"
 #endif
 
 

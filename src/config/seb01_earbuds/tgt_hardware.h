@@ -188,6 +188,7 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_dummy_load_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_hall_int_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_vmic_enable_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_shipmode_cnt_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_iobox_det_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_enable_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_quick_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_status_pin_cfg;

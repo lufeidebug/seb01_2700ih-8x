@@ -443,6 +443,12 @@ void __assert_func(const char *file, int line, const char *func, const char *exp
 #else
 #  define assert(f) ASSERT(f,"%s:%d",__func__,__LINE__)
 #endif
+
+#if defined(__SNDP_COMM_TRACE_UART__)
+int sndp_hal_trace_output(const unsigned char *buf, unsigned int buf_len);
+#endif
+
+
 #ifdef __cplusplus
 }
 #endif

@@ -10,7 +10,7 @@ extern "C" {
 #define __BAT_CUMULATIVE_TRACE__
 
 #ifdef __BAT_CUMULATIVE_TRACE__
-#define BAT_CUMU_TRACE(num, str, ...)   TRACE(1 + num, "[BAT_CUMU] %s, " str, __func__, ##__VA_ARGS__)
+#define BAT_CUMU_TRACE(num, str, ...)   SNDP_TRACE(1 + num, "[BAT_CUMU] %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define BAT_CUMU_TRACE(num, str, ...)
 #endif

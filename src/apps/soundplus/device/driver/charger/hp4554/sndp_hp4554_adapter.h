@@ -11,7 +11,7 @@ extern "C" {
 #define __HP4554_TRACE__
 
 #ifdef __HP4554_TRACE__
-#define HP4554_TRACE(num, str, ...)   TRACE(1 + num, "[HP4554] %s, " str, __func__, ##__VA_ARGS__)
+#define HP4554_TRACE(num, str, ...)   SNDP_TRACE(1 + num, "[HP4554] %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define HP4554_TRACE(num, str, ...)
 #endif

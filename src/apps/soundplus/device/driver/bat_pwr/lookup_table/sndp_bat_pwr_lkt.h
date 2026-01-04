@@ -12,7 +12,7 @@ extern "C" {
 #define __BAT_LKT_TRACE__
 
 #ifdef __BAT_LKT_TRACE__
-#define BAT_LKT_TRACE(num, str, ...)   TRACE(1 + num, "[BAT_LKT] %s, " str, __func__, ##__VA_ARGS__)
+#define BAT_LKT_TRACE(num, str, ...)   SNDP_TRACE(1 + num, "[BAT_LKT] %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define BAT_LKT_TRACE(num, str, ...)
 #endif

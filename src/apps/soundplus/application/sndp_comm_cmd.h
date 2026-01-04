@@ -12,7 +12,7 @@ extern "C" {
 
 #define __SNDP_COMM_CMD_TRACE__
 #if defined(__SNDP_COMM_CMD_TRACE__)
-#define COMM_CMD_TRACE(num, str, ...)            TRACE(1 + num, "[COMM_CMD] %s, " str, __func__, ##__VA_ARGS__)
+#define COMM_CMD_TRACE(num, str, ...)            SNDP_TRACE(1 + num, "[COMM_CMD] %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define COMM_CMD_TRACE(num, str, ...)
 #endif

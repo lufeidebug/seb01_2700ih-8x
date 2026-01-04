@@ -27,7 +27,7 @@
         
 #if defined(__SNDP_POGOPIN_DAUL_UART_TRACE__)
 #define PGP_UART_LOG_TAG					"[PGP_DUAL_UART]"
-#define PGP_UART_TRACE(num, str, ...)   	TRACE(1 + num, PGP_UART_LOG_TAG" %s, " str, __func__, ##__VA_ARGS__)
+#define PGP_UART_TRACE(num, str, ...)   	SNDP_TRACE(1 + num, PGP_UART_LOG_TAG" %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define PGP_UART_TRACE(num, str, ...)
 #endif
@@ -133,11 +133,11 @@ static const struct HAL_IOMUX_PIN_FUNCTION_MAP pgp_tx_pin_gpio_cfg = {
 };
 
 static const struct HAL_IOMUX_PIN_FUNCTION_MAP pgp_rx_pin_uart_cfg = {
-    PGP_DUAL_UART_RX_PIN, HAL_IOMUX_FUNC_BTH_UART1_RX, HAL_IOMUX_PIN_VOLTAGE_MEM, HAL_IOMUX_PIN_PULLUP_ENABLE,
+    PGP_DUAL_UART_RX_PIN, HAL_IOMUX_FUNC_MCU_UART1_RX, HAL_IOMUX_PIN_VOLTAGE_MEM, HAL_IOMUX_PIN_PULLUP_ENABLE,
 };
 
 static const struct HAL_IOMUX_PIN_FUNCTION_MAP pgp_tx_pin_uart_cfg[] = {
-    PGP_DUAL_UART_TX_PIN, HAL_IOMUX_FUNC_BTH_UART1_TX, HAL_IOMUX_PIN_VOLTAGE_MEM, HAL_IOMUX_PIN_NOPULL,
+    PGP_DUAL_UART_TX_PIN, HAL_IOMUX_FUNC_MCU_UART1_TX, HAL_IOMUX_PIN_VOLTAGE_MEM, HAL_IOMUX_PIN_NOPULL,
 };
 
 

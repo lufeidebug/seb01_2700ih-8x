@@ -1100,6 +1100,17 @@ static void hal_trace_cp_force_unlock(void)
 }
 #endif
 
+#if defined(__SNDP_COMM_TRACE_UART__)
+int sndp_hal_trace_output(const unsigned char *buf, unsigned int buf_len)
+{
+#if defined(CP_IN_SAME_EE) && !defined(CP_TRACE_ENABLE)
+    if(get_cpu_id())
+        return 0;
+#endif
+    return hal_trace_output_internal(buf,buf_len);
+}
+#endif
+
 int hal_trace_output(const unsigned char *buf, unsigned int buf_len)
 {
 #if defined(CP_IN_SAME_EE) && !defined(CP_TRACE_ENABLE)

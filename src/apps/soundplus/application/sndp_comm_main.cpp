@@ -459,7 +459,7 @@ int32_t sndp_comm_main_send_cmd(sndp_comm_cmd_info_s *cmd)
         return -1;
     }
 
-    TRACE_IMM(0, "\n");
+    SNDP_TRACE_IMM(0, "\n");
     COMM_MIAN_TRACE(4, "from=%02X, to=%02X, path=%02X, cmd_id=%02X, data_len=%d", 
             COMM_GET_FROM(cmd->fromto), COMM_GET_TO(cmd->fromto), cmd->path, cmd->cmd_id, cmd->data_len);
 
@@ -469,7 +469,7 @@ int32_t sndp_comm_main_send_cmd(sndp_comm_cmd_info_s *cmd)
     }
 
     DUMP8("%02X ", sndp_comm_send_frame, (send_frame_len > 32) ? (32) : (send_frame_len));
-    TRACE(0, "\n");
+    SNDP_TRACE(0, "\n");
     
 
     uint8_t from = COMM_GET_FROM(cmd->fromto);

@@ -7,8 +7,7 @@
 #include "hal_trace.h"
 #include "hal_sleep.h"
 #include "app_ibrt_customif_cmd.h"
-#include "app_tws_ctrl_thread.h"
-
+#include "bts_core_if.h"
 
 #include "sndp_if_common.h"
 #include "sndp_if_platform.h"

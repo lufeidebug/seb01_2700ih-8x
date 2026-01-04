@@ -12,7 +12,7 @@ extern "C" {
 #define __SNDP_IOBOX_GPIO_TRACE__
 
 #ifdef __SNDP_IOBOX_GPIO_TRACE__
-#define IOB_GPIO_TRACE(num, str, ...)   TRACE(1 + num, "[IOB_GPIO] %s, " str, __func__, ##__VA_ARGS__)
+#define IOB_GPIO_TRACE(num, str, ...)   SNDP_TRACE(1 + num, "[IOB_GPIO] %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define IOB_GPIO_TRACE(num, str, ...)
 #endif

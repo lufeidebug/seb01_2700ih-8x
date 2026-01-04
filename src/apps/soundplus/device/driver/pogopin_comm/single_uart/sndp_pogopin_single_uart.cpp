@@ -26,7 +26,7 @@
     
 #if defined(__SNDP_POGOPIN_SINGLE_UART_TRACE__)
 #define PGP_SUART_LOG_TAG					"[PGP_S_UART]"
-#define PGP_SUART_TRACE(num, str, ...)   	TRACE(1 + num, PGP_SUART_LOG_TAG" %s, " str, __func__, ##__VA_ARGS__)
+#define PGP_SUART_TRACE(num, str, ...)   	SNDP_TRACE(1 + num, PGP_SUART_LOG_TAG" %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define PGP_SUART_TRACE(num, str, ...)
 #endif

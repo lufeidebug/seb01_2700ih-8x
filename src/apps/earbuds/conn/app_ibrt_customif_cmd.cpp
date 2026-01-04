@@ -57,6 +57,9 @@
 #endif
 #include "bts_tws_api.h"
 #include "bts_core_if.h"
+#if defined(__SNDP_COMM_MS__)    
+#include "sndp_comm_ms.h"
+#endif 
 
 #if defined(IBRT)
 
@@ -578,6 +581,21 @@ static void imu_data_rcv_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t len
 
 #endif //#ifdef BESUI_TWS_EN
 
+#if defined(__SNDP_COMM_MS__)    
+static void app_ibrt_customif_sndp_ms_sync_send_handler(uint8_t *p_buff, uint16_t length)
+{
+    SNDP_TRACE(0, "%s, %d", __func__, length);
+	bts_tws_if_send_cmd_without_rsp(APP_TWS_CMD_SNDP_MS_SYNC, p_buff, length);
+}
+
+static void app_ibrt_customif_sndp_ms_sync_recv_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
+{  
+    SNDP_TRACE(0, "%s, %d", __func__, length);
+    sndp_comm_ms_recv_data(p_buff, length);
+    
+}
+#endif  
+
 #if defined(CUSTOM_BITRATE) && !defined(FREEMAN_ENABLED_STERO)
 static void app_ibrt_codec_user_info_sync(uint8_t *p_buff, uint16_t length);
 static void app_ibrt_codec_user_info_sync_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
@@ -741,6 +759,15 @@ static const bt_tws_cmd_instance_t g_ibrt_custom_cmd_handler_table[]=
     },
 #endif
 #endif //#ifdef BESUI_TWS_EN
+#if defined(__SNDP_COMM_MS__)
+	{
+        APP_TWS_CMD_SNDP_MS_SYNC,                               "TWS_CMD_SNDP_MS_SYNC",
+        app_ibrt_customif_sndp_ms_sync_send_handler,
+        app_ibrt_customif_sndp_ms_sync_recv_handler,	        0,
+        app_ibrt_custom_cmd_rsp_timeout_handler_null,			app_ibrt_cmd_rsp_handler_null
+    },
+#endif 
+
 };
 
 /****************************function defination****************************/

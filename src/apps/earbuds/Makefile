@@ -103,3 +103,6 @@ ifeq ($(BESUI_COMM_EN),1)
 ccflags-y += -Iapps/besui
 endif
 
+ifeq ($(SNDP_COMM_MS),1)
+ccflags-y += -Iapps/soundplus/application
+endif

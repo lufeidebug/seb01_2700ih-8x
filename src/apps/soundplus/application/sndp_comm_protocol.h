@@ -9,7 +9,7 @@ extern "C" {
 
 #define __SNDP_COMM_PROTOCOL_TRACE__
 #if defined(__SNDP_COMM_PROTOCOL_TRACE__)
-#define COMM_PROTOCOL_TRACE(num, str, ...)            TRACE(1 + num, "[COMM_PROTOCOL] %s, " str, __func__, ##__VA_ARGS__)
+#define COMM_PROTOCOL_TRACE(num, str, ...)            SNDP_TRACE(1 + num, "[COMM_PROTOCOL] %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define COMM_PROTOCOL_TRACE(num, str, ...)
 #endif

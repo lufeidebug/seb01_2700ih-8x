@@ -53,11 +53,11 @@ static sndp_hal_iobox_status_e sndp_iobox_gpio_get_iob_status(void)
 {
 	uint8_t val;
 	
-	if(app_5v_det_pin_cfg.pin == HAL_IOMUX_PIN_NUM) {
+	if(app_iobox_det_pin_cfg.pin == HAL_IOMUX_PIN_NUM) {
 		return SNDP_HAL_IOBOX_UNKNOWN;
 	}
 		
-	val = hal_gpio_pin_get_val((enum HAL_GPIO_PIN_T)app_5v_det_pin_cfg.pin);
+	val = hal_gpio_pin_get_val((enum HAL_GPIO_PIN_T)app_iobox_det_pin_cfg.pin);
 	return (val == IOBOX_INT_IN_BOX_VAL) ? (SNDP_HAL_IOBOX_IN) : (SNDP_HAL_IOBOX_OUT);
 }
 
@@ -106,16 +106,16 @@ static void sndp_iobox_gpio_int_debounce_start(void)
 
 static void sndp_iobox_gpio_int_disable(void)
 {
-	if(app_5v_det_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
+	if(app_iobox_det_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
 	    iob_gpio_irq_cfg.irq_enable = false;
-	    hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_5v_det_pin_cfg.pin, &iob_gpio_irq_cfg);
+	    hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_iobox_det_pin_cfg.pin, &iob_gpio_irq_cfg);
 	}
 }
 
 static void sndp_iobox_gpio_int_enable(void)
 {
-	if(app_5v_det_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
-		uint8_t val = hal_gpio_pin_get_val((enum HAL_GPIO_PIN_T) app_5v_det_pin_cfg.pin);
+	if(app_iobox_det_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
+		uint8_t val = hal_gpio_pin_get_val((enum HAL_GPIO_PIN_T) app_iobox_det_pin_cfg.pin);
 		
 		if(val)
 	    	iob_gpio_irq_cfg.irq_polarity = HAL_GPIO_IRQ_POLARITY_LOW_FALLING;
@@ -123,7 +123,7 @@ static void sndp_iobox_gpio_int_enable(void)
 			iob_gpio_irq_cfg.irq_polarity = HAL_GPIO_IRQ_POLARITY_HIGH_RISING;
 
 		iob_gpio_irq_cfg.irq_enable = true;
-	    hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_5v_det_pin_cfg.pin, &iob_gpio_irq_cfg);
+	    hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_iobox_det_pin_cfg.pin, &iob_gpio_irq_cfg);
 	}
 }
 
@@ -151,7 +151,7 @@ static void sndp_iobox_gpio_int_irq_handler(enum HAL_GPIO_PIN_T pin)
 
 static int32_t sndp_iobox_gpio_int_init(void)
 {
-	if(app_5v_det_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
+	if(app_iobox_det_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
 	    iob_gpio_irq_cfg.irq_enable = true;
 	    iob_gpio_irq_cfg.irq_debounce = true;
 		iob_gpio_irq_cfg.irq_type = HAL_GPIO_IRQ_TYPE_EDGE_SENSITIVE;
@@ -160,7 +160,7 @@ static int32_t sndp_iobox_gpio_int_init(void)
 	    
 	    sndp_iobox_gpio_int_enable();
 
-		sndp_iobox_gpio_int_irq_handler((enum HAL_GPIO_PIN_T)app_5v_det_pin_cfg.pin);
+		sndp_iobox_gpio_int_irq_handler((enum HAL_GPIO_PIN_T)app_iobox_det_pin_cfg.pin);
 		return 0;
 	} 
 

@@ -14,7 +14,7 @@ extern "C" {
 #define __TEMP_NTC_DEBUG__
 #if defined(__TEMP_NTC_DEBUG__)
 #define TEMP_NTC_LOG_TAG					"[TEMP_NTC]"
-#define TEMP_NTC_TRACE(num, str, ...)   	TRACE(1 + num, TEMP_NTC_LOG_TAG" %s, " str, __func__, ##__VA_ARGS__)
+#define TEMP_NTC_TRACE(num, str, ...)   	SNDP_TRACE(1 + num, TEMP_NTC_LOG_TAG" %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define TEMP_NTC_TRACE(num, str, ...)	
 #endif

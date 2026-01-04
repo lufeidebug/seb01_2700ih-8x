@@ -259,7 +259,7 @@ static int32_t bat_cumulative_conver_volt_to_percentage(void)
     		per = bat_cumulative_ctx.charging_cap * 100 / BAT_TOTAL_CAPACITY;
         }
 
-        TRACE(1, "volt2per: cnt=%d, v=%d, p=%d, cap=%d", 
+        SNDP_TRACE(1, "volt2per: cnt=%d, v=%d, p=%d, cap=%d", 
             bat_cumulative_ctx.charging_cnt,
             volt,
             per,
@@ -290,7 +290,7 @@ static int32_t bat_cumulative_conver_volt_to_percentage(void)
 		bat_cumulative_ctx.curr.bat_level = 9;
 	}
 
-	TRACE(1, "volt2per: sta=%d, lv=%4d, lp=%3d, cv=%4d, cp=%3d", 
+	SNDP_TRACE(1, "volt2per: sta=%d, lv=%4d, lp=%3d, cv=%4d, cp=%3d", 
             bat_cumulative_ctx.charge_status,
             bat_cumulative_ctx.last.bat_volt, bat_cumulative_ctx.last.bat_per,
             bat_cumulative_ctx.curr.bat_volt, bat_cumulative_ctx.curr.bat_per);

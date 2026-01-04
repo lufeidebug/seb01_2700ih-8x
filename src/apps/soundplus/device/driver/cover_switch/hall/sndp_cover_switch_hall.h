@@ -12,7 +12,7 @@ extern "C" {
 #define __SNDP_CS_HALL_TRACE__
 
 #ifdef __SNDP_CS_HALL_TRACE__
-#define CS_HALL_TRACE(num, str, ...)   TRACE(1 + num, "[CS_HALL] %s, " str, __func__, ##__VA_ARGS__)
+#define CS_HALL_TRACE(num, str, ...)   SNDP_TRACE(1 + num, "[CS_HALL] %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define CS_HALL_TRACE(num, str, ...)
 #endif

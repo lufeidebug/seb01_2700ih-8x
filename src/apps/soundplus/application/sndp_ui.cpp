@@ -272,7 +272,7 @@ static void sndp_ui_wear_on_play_tone(void)
 
 }
 
-static void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
+void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 {
 	SPUI_TRACE(2, "wear_action=%d, remote=%d", wear_action, remote);
 
@@ -428,7 +428,7 @@ void sndp_ui_gesture_event_recv_from_peer(sndp_dev_gesture_event_e gesture_event
 void sndp_ui_gesture_event_sent_to_peer(sndp_dev_gesture_event_e gesture_event)
 {
 #if defined(__SNDP_COMM_MGR__)    
-    sndp_comm_cmd_send_lr_sync_gesture_event(gesture_event);
+    sndp_comm_cmd_send_lr_sync_gesture(gesture_event);
 #endif
 }
 

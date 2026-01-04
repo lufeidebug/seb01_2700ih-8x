@@ -19,7 +19,7 @@
 **************************************************************************************************/
 #define __HAL_PMU_TRACE__
 #ifdef __HAL_PMU_TRACE__
-#define HAL_PMU_TRACE(num, str, ...)   TRACE(1 + num, "[SNDP_HAL_PMU] %s, " str, __func__, ##__VA_ARGS__)
+#define HAL_PMU_TRACE(num, str, ...)   SNDP_TRACE(1 + num, "[SNDP_HAL_PMU] %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define HAL_PMU_TRACE(num, str, ...)
 #endif

@@ -46,6 +46,16 @@ void app_datapath_server_send_data_via_indication(uint16_t connhdl, uint8_t* dat
 void app_datapath_server_register_event_cb(app_datapath_event_cb callback);
 void app_datapath_server_register_le_rs_callback(app_datapath_server_role_switch_callback_t callback);
 void app_datapath_server_register_rx_done(app_datapath_server_data_received_callback_func_t callback);
+
+//add by lzw at 20250122 start 
+void app_datapath_server_register_tx_done(app_datapath_server_tx_done_t callback);
+void app_datapath_server_register_rx_done(app_datapath_server_data_received_callback_func_t callback);
+void app_datapath_server_register_disconnected_done(app_datapath_server_disconnected_done_t callback);
+void app_datapath_server_register_connected_done(app_datapath_server_connected_done_t callback);
+void app_datapath_server_register_mtu_exchanged_done(app_datapath_server_mtuexchanged_done_t callback);
+//add by lzw at 20250122 end
+
+
 #endif
 
 #ifdef TILE_DATAPATH

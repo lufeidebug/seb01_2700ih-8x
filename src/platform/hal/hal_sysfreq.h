@@ -65,7 +65,13 @@ enum HAL_SYSFREQ_USER_T {
     HAL_SYSFREQ_USER_APP_26,            // 38
     HAL_SYSFREQ_USER_APP_27,            // 39
     HAL_SYSFREQ_USER_APP_28,            // 40
-
+    HAL_SYSFREQ_USER_APP_29,            // 41
+    HAL_SYSFREQ_USER_APP_30,            // 42
+    HAL_SYSFREQ_USER_APP_31,            // 43
+    HAL_SYSFREQ_USER_APP_32,            // 44
+    HAL_SYSFREQ_USER_APP_33,            // 45
+    HAL_SYSFREQ_USER_APP_34,            // 46
+    HAL_SYSFREQ_USER_APP_35,            // 47
     HAL_SYSFREQ_USER_QTY
 };
 

@@ -11,9 +11,9 @@ extern "C" {
 
 #define __SNDP_COMM_TRACE_UART_TRACE__
 #if defined(__SNDP_COMM_TRACE_UART_TRACE__)
-#define COMM_UART_ENTER()            		TRACE(2, 		"[COMM_UART] %s, line=%d, enter", __func__, __LINE__)
-#define COMM_UART_TRACE(num, str, ...)	    TRACE(1 + num,	"[COMM_UART] %s, " str, __func__, ##__VA_ARGS__)
-#define COMM_UART_EXIT()            		TRACE(2,		"[COMM_UART] %s, line=%d, exit", __func__, __LINE__)
+#define COMM_UART_ENTER()            		SNDP_TRACE(2, 		"[COMM_UART] %s, line=%d, enter", __func__, __LINE__)
+#define COMM_UART_TRACE(num, str, ...)	    SNDP_TRACE(1 + num,	"[COMM_UART] %s, " str, __func__, ##__VA_ARGS__)
+#define COMM_UART_EXIT()            		SNDP_TRACE(2,		"[COMM_UART] %s, line=%d, exit", __func__, __LINE__)
 
 #else
 #define COMM_UART_ENTER()

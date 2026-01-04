@@ -637,7 +637,7 @@ void sndp_dev_charger_check_curr_status(void)
 {
 	SNDP_IF_TRACE_ENTER();
 	
-#if defined(__SNDP_CHARGER_PLUG_MGR__)   
+#if defined(__SNDP_CHARGER_MGR__)   
     sndp_hal_charger_check_curr_status();
 #endif 
 

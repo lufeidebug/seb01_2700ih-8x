@@ -11,9 +11,9 @@ extern "C" {
 
 #define __SNDP_COMM_POGOPIN_TRACE__
 #if defined(__SNDP_COMM_POGOPIN_TRACE__)
-#define SNDP_COMM_PGP_ENTER()            		TRACE(2,		"[SNDP_COMM_PGP] %s, line=%d, enter", __func__, __LINE__)
-#define SNDP_COMM_PGP_TRACE(num, str, ...)		TRACE(1 + num,	"[SNDP_COMM_PGP] %s, " str, __func__, ##__VA_ARGS__)
-#define SNDP_COMM_PGP_EXIT()            		TRACE(2,		"[SNDP_COMM_PGP] %s, line=%d, exit", __func__, __LINE__)
+#define SNDP_COMM_PGP_ENTER()            		SNDP_TRACE(2,		"[SNDP_COMM_PGP] %s, line=%d, enter", __func__, __LINE__)
+#define SNDP_COMM_PGP_TRACE(num, str, ...)		SNDP_TRACE(1 + num,	"[SNDP_COMM_PGP] %s, " str, __func__, ##__VA_ARGS__)
+#define SNDP_COMM_PGP_EXIT()            		SNDP_TRACE(2,		"[SNDP_COMM_PGP] %s, line=%d, exit", __func__, __LINE__)
 
 #else
 #define SNDP_COMM_PGP_ENTER() 

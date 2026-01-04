@@ -196,11 +196,11 @@ static uint32_t sndp_comm_cmd_recv_eb_query_pairing_status(sndp_comm_cmd_info_s 
 	data[data_len++] = err_code;
 	data[data_len++] = sndp_is_tws_link_connected() ? 0x01 : 0x00;
     if(sndp_is_tws_master_mode()) {
-	    data[data_len++] = sndp_is_mobile_connected() ? 0x01 : 0x00;
+	    data[data_len++] = sndp_is_master_mobile_link_connected() ? 0x01 : 0x00;
     } else if(sndp_is_tws_slave_mode()) {
 	    data[data_len++] = sndp_is_slave_ibrt_link_connected() ? 0x01 : 0x00;
     } else {
-        data[data_len++] = sndp_is_mobile_connected() ? 0x01 : 0x00;
+        data[data_len++] = sndp_is_master_mobile_link_connected() ? 0x01 : 0x00;
     }
 
 	cmd_info->data_len = data_len;
@@ -822,74 +822,6 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_speaker(sndp_comm_cmd
 	return 0;
 }
 
-static uint32_t sndp_comm_cmd_recv_pt_test_touch(sndp_comm_cmd_info_s *cmd_info)
-{
-    uint8_t err_code = SNDP_COMM_ERROR_NONE;
-    uint8_t rsp_data[32];
-    uint16_t rsp_data_len = 0;
-    
-    if(cmd_info->data_len > 0) {
-        dev_test_from = COMM_GET_FROM(cmd_info->fromto);
-        dev_test_path = cmd_info->path;
-    
-	    sndp_pt_touch_test(cmd_info->data, cmd_info->data_len, rsp_data, &rsp_data_len);
-        ASSERT(rsp_data_len <= sizeof(rsp_data), "%s, rsp_data_len(%d) > %d", 
-                __func__, rsp_data_len, sizeof(rsp_data));
-    } else {
-        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
-    }
-
-	cmd_info->data_len = 0;
-    cmd_info->data[cmd_info->data_len++] = err_code;
-    if(rsp_data_len > 0) {
-        memcpy(&cmd_info->data[cmd_info->data_len], rsp_data, rsp_data_len);
-        cmd_info->data_len += rsp_data_len;
-    }
-	sndp_comm_main_rsp_cmd(cmd_info);
-	return 0;
-}
-
-uint32_t sndp_comm_cmd_send_pt_test_touch(uint8_t *data, uint16_t data_len)
-{
-	sndp_comm_main_send_cmd_by_id(COMM_CMDID_PT_TEST_TOUCH_REPORT, 
-            sndp_comm_get_local_device(), 
-            dev_test_from, 
-            dev_test_path, 
-            data, 
-            data_len);
-
-	return 0;
-}
-
-static uint32_t sndp_comm_cmd_recv_pt_test_ir(sndp_comm_cmd_info_s *cmd_info)
-{
-    uint8_t err_code = SNDP_COMM_ERROR_NONE;
-    uint8_t rsp_data[32];
-    uint16_t rsp_data_len = 0;
-    
-    if(cmd_info->data_len > 0) {
-        dev_test_from = COMM_GET_FROM(cmd_info->fromto);
-        dev_test_path = cmd_info->path;
-
-        sndp_pt_ir_test(cmd_info->data, cmd_info->data_len, rsp_data, &rsp_data_len);
-        ASSERT(rsp_data_len <= sizeof(rsp_data), "%s, rsp_data_len(%d) > %d", 
-                __func__, rsp_data_len, sizeof(rsp_data));   
-        
-    } else {
-        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
-    }
-    
- 	cmd_info->data_len = 0;
-    cmd_info->data[cmd_info->data_len++] = err_code;
-    if(rsp_data_len > 0) {
-        memcpy(&cmd_info->data[cmd_info->data_len], rsp_data, rsp_data_len);
-        cmd_info->data_len += rsp_data_len;
-    }
-    
-	sndp_comm_main_rsp_cmd(cmd_info);
-	return 0;
-}
-
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_query_dev_status(sndp_comm_cmd_info_s *cmd_info)
 {
 
@@ -905,19 +837,6 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_query_dev_status(sndp_comm
 	cmd_info->data[cmd_info->data_len++] = sndp_dev_cover_get_status(false);
 	cmd_info->data[cmd_info->data_len++] = sndp_dev_wear_get_status(false);
 	sndp_comm_main_rsp_cmd(cmd_info);
-	return 0;
-}
-
-
-uint32_t sndp_comm_cmd_send_pt_test_ir(uint8_t *data, uint16_t data_len)
-{
-	sndp_comm_main_send_cmd_by_id(COMM_CMDID_PT_TEST_IR_REPORT, 
-            sndp_comm_get_local_device(), 
-            dev_test_from, 
-            dev_test_path, 
-            data, 
-            data_len);
-
 	return 0;
 }
 
@@ -1073,7 +992,7 @@ static uint32_t sndp_comm_cmd_recv_app_query_dev_status(sndp_comm_cmd_info_s *cm
     cmd_info->data[cmd_info->data_len] = 0;
     if(sndp_is_tws_link_connected())
         cmd_info->data[cmd_info->data_len] |= 0x01;  
-    if(sndp_is_mobile_link_connected())
+    if(sndp_is_master_mobile_link_connected())
         cmd_info->data[cmd_info->data_len] |= 0x10;  
     cmd_info->data_len++;
 
@@ -1146,8 +1065,6 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
 	{ COMM_CMDID_PT_WRITE_RF_FREQUENCY_OFFSET   , "PT_W_RF_FQ_OFF"          , sndp_comm_cmd_recv_pt_write_frequency_offset      },	
 	{ COMM_CMDID_PT_TEST_MIC                    , "PT_TEST_MIC"	            , sndp_comm_cmd_recv_pt_test_mic                    },
     { COMM_CMDID_PT_TEST_SPK                    , "PT_TEST_SPK"	            , sndp_comm_cmd_recv_pt_test_speaker                },
-	{ COMM_CMDID_PT_TEST_TOUCH                  , "PT_TEST_TOUCH"	        , sndp_comm_cmd_recv_pt_test_touch                  },
-    { COMM_CMDID_PT_TEST_IR                     , "PT_TEST_IR"	            , sndp_comm_cmd_recv_pt_test_ir                     },
 	{ COMM_CMDID_PT_QUERY_DEV_STATUS            , "PT_Q_DEV_STA"	        , sndp_comm_cmd_recv_pt_query_dev_status            },
 	{ COMM_CMDID_PT_READ_ANC_CALIB_STATUS       , "PT_R_ANC_CALIB_STA"      , sndp_comm_cmd_recv_pt_read_anc_calib_status       },
     { COMM_CMDID_PT_READ_ALGO_AUTH_RESULT       , "PT_R_ALGO_AUTH_RST"      , sndp_comm_cmd_recv_pt_read_algo_auth_result       },

@@ -22,7 +22,7 @@
 **************************************************************************************************/
 #define __SNDP_CHARGER_PLUG_PMU_TRACE__
 #ifdef __SNDP_CHARGER_PLUG_PMU_TRACE__
-#define CHARGER_PLUG_PMU_TRACE(num, str, ...)   TRACE(1 + num, "[CHG_PLUG_PMU] %s, " str, __func__, ##__VA_ARGS__)
+#define CHARGER_PLUG_PMU_TRACE(num, str, ...)   SNDP_TRACE(1 + num, "[CHG_PLUG_PMU] %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define CHARGER_PLUG_PMU_TRACE(num, str, ...)
 #endif

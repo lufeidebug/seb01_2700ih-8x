@@ -12,7 +12,7 @@
 #include "sndp_comm_ble.h"
 
 #ifndef CFG_APP_DATAPATH_SERVER
-#define CFG_APP_DATAPATH_SERVER
+//#define CFG_APP_DATAPATH_SERVER
 #endif
 #include "ble_datapath_server.h"
 
@@ -124,8 +124,9 @@ static void sndp_comm_ble_send_data_handle(void)
 
 	sndp_comm_ble_ctx.sending = true;
 	osTimerStart(ble_send_timeout_timer, 100);
+#ifdef CFG_APP_DATAPATH_SERVER   
 	app_datapath_server_send_data_via_notification(sndp_comm_ble_ctx.conidx, sndp_comm_ble_send_pop_buf, send_len);
-	
+#endif	
 }
 
 int32_t sndp_comm_ble_send_data(uint8_t *data, uint16_t data_len)
@@ -179,7 +180,9 @@ POSSIBLY_UNUSED static void sndp_comm_ble_connected_done(uint8_t conidx)
 	COMM_BLE_ENTER();
 	sndp_comm_ble_ctx.conn_status = SNDP_COMM_BLE_CONNECTED;
     sndp_comm_ble_ctx.conidx = conidx;
+#ifdef CFG_APP_DATAPATH_SERVER    
     app_datapath_server_register_tx_done(sndp_comm_ble_tx_done);
+#endif
 }
 
 POSSIBLY_UNUSED static void sndp_comm_ble_mtuexchanged_done(uint8_t conidx, uint16_t mtu)
@@ -215,12 +218,14 @@ int32_t sndp_comm_ble_init(void)
 	sndp_comm_ble_ctx.conn_status = SNDP_COMM_BLE_DISCONNECTED;
 	sndp_comm_ble_ctx.sending = false;
 	sndp_comm_ble_ctx.mtu = 20;
-
+    
+#ifdef CFG_APP_DATAPATH_SERVER
 	app_datapath_server_register_tx_done(sndp_comm_ble_tx_done);
 	app_datapath_server_register_rx_done(sndp_comm_ble_recv_data_callback);
 	app_datapath_server_register_disconnected_done(sndp_comm_ble_disconnected_done);
 	app_datapath_server_register_connected_done(sndp_comm_ble_connected_done);
 	app_datapath_server_register_mtu_exchanged_done(sndp_comm_ble_mtuexchanged_done);
+#endif
 
     sndp_comm_ble_ctx.inited = true;
     sndp_comm_ble_ctx.conidx = 0;

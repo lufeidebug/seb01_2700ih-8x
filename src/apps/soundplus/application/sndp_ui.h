@@ -64,6 +64,8 @@ void sndp_ui_volume_dec(uint8_t type, uint8_t level);
 
 void sndp_ui_anc_onoff(bool onoff);
 
+void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote);
+
 void sndp_ui_key_init(void);
 
 bool sndp_ui_is_prompt_playing(void);

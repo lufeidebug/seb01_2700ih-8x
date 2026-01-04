@@ -8,16 +8,15 @@
 #include "hal_sleep.h"
 #include "spp_service.h"
 #include "cqueue.h"
-#include "app_tws_ibrt_conn_api.h"
 #include "app_bt.h"
 #include "btapp.h"
-#include "app_tws_ibrt_conn.h"
-
+#include "bts_bt_conn.h"
+#include "earbud_ux_api.h"
+#include "bts_bt_if.h"
 
 #include "sndp_if_common.h"
 #include "sndp_comm_main.h"
 #include "sndp_comm_spp.h"
-#include "app_ibrt_middleware.h"
 
 
 
@@ -227,7 +226,7 @@ static void sndp_comm_spp_send_data_exec(void)
     sndp_comm_spp_send_queue_pop_data(comm_spp_send_buf, send_len);
     
     COMM_SPP_TRACE(1, "send_len:%d", send_len);
-    ret = bt_spp_write(comm_spp_ctx.pSppDevice->rfcomm_handle, comm_spp_send_buf, send_len);
+    ret = bta_spp_write(comm_spp_ctx.pSppDevice->rfcomm_handle, comm_spp_send_buf, send_len);
 
     if (BT_STS_SUCCESS != ret) {
         COMM_SPP_TRACE(0, "fail");
@@ -286,13 +285,13 @@ static int sndp_comm_spp_server_callback(const bt_bdaddr_t *remote, bt_spp_event
         for (uint8_t i = 0; i < BT_DEVICE_NUM; ++i){
             curr_device = app_bt_get_device(i);
             mobile_addr = &curr_device->remote;
-            p_mobile_info = (ibrt_mobile_info_t *)app_ibrt_conn_get_mobile_sm_by_addr(mobile_addr);
+            p_mobile_info = (ibrt_mobile_info_t *)bts_bt_sink_conn_get_mobile_info_ext();
 
             if ((NULL != p_mobile_info) && (p_mobile_info->mobile_mode == IBRT_SNIFF_MODE)) {
-                app_tws_ibrt_exit_sniff_with_mobile(mobile_addr);
+                app_ibrt_if_exit_sniff(mobile_addr->address);
                 break;
             }
-            app_ibrt_middleware_prevent_sniff_set((uint8_t*)mobile_addr, OTA_ONGOING);
+            app_ibrt_if_prevent_sniff_clear((uint8_t*)mobile_addr, OTA_ONGOING);
         }
 
         comm_spp_ctx.is_connected = true;
@@ -305,13 +304,13 @@ static int sndp_comm_spp_server_callback(const bt_bdaddr_t *remote, bt_spp_event
         for (uint8_t i = 0; i < BT_DEVICE_NUM; ++i) {
             curr_device = app_bt_get_device(i);
             mobile_addr = &curr_device->remote;
-            p_mobile_info = (ibrt_mobile_info_t *)app_ibrt_conn_get_mobile_sm_by_addr(mobile_addr);
+            p_mobile_info = (ibrt_mobile_info_t *)bts_bt_sink_conn_get_mobile_info_ext();
 
             if ((NULL != p_mobile_info) && (p_mobile_info->mobile_mode == IBRT_SNIFF_MODE)) {
-                app_tws_ibrt_exit_sniff_with_mobile(mobile_addr);
+                app_ibrt_if_exit_sniff(mobile_addr->address);
                 break;
             }
-            app_ibrt_middleware_prevent_sniff_clear((uint8_t*)mobile_addr, OTA_ONGOING);
+            app_ibrt_if_prevent_sniff_clear((uint8_t*)mobile_addr, OTA_ONGOING);
         }
 
         comm_spp_ctx.is_connected = false;
@@ -347,10 +346,10 @@ int32_t sndp_comm_spp_init(void)
     comm_spp_ctx.is_sending = false;
     comm_spp_ctx.is_sending = false;
     
-    bt_spp_create_port(COMM_SPP_RFCOMM_CHANNEL_NUM, sndp_comm_spp_sdp_attributes, ARRAY_SIZE(sndp_comm_spp_sdp_attributes));
-    bt_spp_set_callback(COMM_SPP_RFCOMM_CHANNEL_NUM, COMM_SPP_MAX_PACKET_SIZE*COMM_SPP_MAX_PACKET_NUM, sndp_comm_spp_server_callback, NULL);
-    bt_spp_listen(COMM_SPP_RFCOMM_CHANNEL_NUM, false, NULL);
-    comm_spp_ctx.pSppDevice = bt_spp_create_channel(BT_DEVICE_ID_1, COMM_SPP_RFCOMM_CHANNEL_NUM);
+    bta_spp_create_port(COMM_SPP_RFCOMM_CHANNEL_NUM, sndp_comm_spp_sdp_attributes, ARRAY_SIZE(sndp_comm_spp_sdp_attributes));
+    bta_spp_set_callback(COMM_SPP_RFCOMM_CHANNEL_NUM, COMM_SPP_MAX_PACKET_SIZE*COMM_SPP_MAX_PACKET_NUM, sndp_comm_spp_server_callback, NULL);
+    bt_adapter_spp_listen(COMM_SPP_RFCOMM_CHANNEL_NUM, false, NULL);
+    comm_spp_ctx.pSppDevice = bta_spp_create_channel(BT_DEVICE_ID_1, COMM_SPP_RFCOMM_CHANNEL_NUM);
     comm_spp_ctx.inited = true;
 	
 	COMM_SPP_TRACE(0, "done.");

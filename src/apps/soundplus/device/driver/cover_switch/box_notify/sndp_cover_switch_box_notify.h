@@ -11,7 +11,7 @@ extern "C" {
 
 #define __SNDP_CS_NOTIFY_TRACE__
 #ifdef __SNDP_CS_NOTIFY_TRACE__
-#define CS_NOTIFY_TRACE(num, str, ...)   TRACE(1 + num, "[CS_NOTIFY] %s, " str, __func__, ##__VA_ARGS__)
+#define CS_NOTIFY_TRACE(num, str, ...)   SNDP_TRACE(1 + num, "[CS_NOTIFY] %s, " str, __func__, ##__VA_ARGS__)
 #else
 #define CS_NOTIFY_TRACE(num, str, ...)
 #endif

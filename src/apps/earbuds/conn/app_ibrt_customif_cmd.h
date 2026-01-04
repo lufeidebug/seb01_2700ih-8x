@@ -55,6 +55,11 @@ typedef enum
     APP_TWS_CMD_SYNC_SOMETHING  = APP_IBRT_CMD_BASE | APP_IBRT_CUSTOM_CMD_PREFIX | 0x14,
 #endif
 #endif
+
+#if defined(__SNDP_COMM_MS__)
+    APP_TWS_CMD_SNDP_MS_SYNC    = APP_IBRT_CMD_BASE | APP_IBRT_CUSTOM_CMD_PREFIX | 0x15,
+#endif
+
 //-------------------------------------------------------------------------------------------------------
 
     //new customer cmd add here
