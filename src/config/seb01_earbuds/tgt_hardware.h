@@ -180,6 +180,34 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_detect_ntc_control_charge_ena
 #endif
 #endif //#ifdef BESUI_TWS_EN
 
+
+#if defined(__SNDP_PROJ__)
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_ear_side_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_ldo_1v8_enable_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_dummy_load_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_hall_int_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_vmic_enable_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_shipmode_cnt_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_enable_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_quick_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_status_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_i2c_scl_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_i2c_sda_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_pogopin_uart_tx_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_pogopin_uart_rx_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_pogopin_uart_mode_change_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_gsensor_int_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_gsensor_i2c_scl_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_gsensor_i2c_sda_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_gsensor_en_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_hrsensor_i2c_scl_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_hrsensor_i2c_sda_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_hrsensor_status_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_hrsensor_reset_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_hrsensor_en_pin_cfg;
+
+#endif
+
 #ifdef __cplusplus
 }
 #endif

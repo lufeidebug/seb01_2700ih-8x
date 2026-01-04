@@ -190,6 +190,125 @@ int tgt_hardware_setup(void)
         hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_battery_ext_charger_indicator_cfg.pin, HAL_GPIO_DIR_IN, 1);
     }
 #endif
+
+#if defined(__SNDP_PROJ__)
+    if (app_ear_side_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_ear_side_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_ear_side_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
+    }
+
+    if (app_ldo_1v8_enable_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_ldo_1v8_enable_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_ldo_1v8_enable_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_dummy_load_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_dummy_load_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_dummy_load_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_hall_int_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_hall_int_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_hall_int_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
+    }
+    
+    if (app_vmic_enable_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_vmic_enable_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_vmic_enable_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_shipmode_cnt_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_shipmode_cnt_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_shipmode_cnt_pin_cfg.pin, HAL_GPIO_DIR_OUT, 0);
+    }
+
+    if (app_charging_enable_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_charging_enable_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_charging_enable_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_charging_quick_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_charging_quick_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_charging_quick_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_charging_status_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_charging_status_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_charging_status_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
+    }
+
+    if (app_charging_i2c_scl_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_charging_i2c_scl_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_charging_i2c_scl_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_charging_i2c_sda_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_charging_i2c_sda_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_charging_i2c_sda_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_pogopin_uart_tx_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_pogopin_uart_tx_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_pogopin_uart_tx_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_pogopin_uart_rx_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_pogopin_uart_rx_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_pogopin_uart_rx_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_pogopin_uart_mode_change_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_pogopin_uart_mode_change_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_pogopin_uart_mode_change_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_gsensor_int_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_gsensor_int_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_gsensor_int_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
+    }
+
+    if (app_gsensor_i2c_scl_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_gsensor_i2c_scl_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_gsensor_i2c_scl_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
+    }
+
+    if (app_gsensor_i2c_sda_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_gsensor_i2c_sda_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_gsensor_i2c_sda_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
+    }
+
+    if (app_gsensor_en_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_gsensor_en_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_gsensor_en_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_hrsensor_i2c_scl_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_hrsensor_i2c_scl_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_hrsensor_i2c_scl_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_hrsensor_i2c_sda_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_hrsensor_i2c_sda_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_hrsensor_i2c_sda_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+    if (app_hrsensor_status_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_hrsensor_status_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_hrsensor_status_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
+    }
+
+    if (app_hrsensor_reset_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_hrsensor_reset_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_hrsensor_reset_pin_cfg.pin, HAL_GPIO_DIR_OUT, 0);
+    }
+
+    if (app_hrsensor_en_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_hrsensor_en_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_hrsensor_en_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
+    }
+
+#endif
+
     return 0;
 }
 
