@@ -190,6 +190,10 @@ void hal_fast_timer_wakeup();
 int osDelay(uint32_t ms);
 #endif
 
+#if defined(__SNDP_PROJ__)
+uint32_t hal_timer_get_passed_ticks(uint32_t curr_ticks, uint32_t prev_ticks);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

@@ -1230,4 +1230,14 @@ uint32_t hal_user_timer1_get_elapsed_time(void)
     return hal_timer_common_get_elapsed_time(2, 1);
 }
 
+#if defined(__SNDP_PROJ__)
+uint32_t hal_timer_get_passed_ticks(uint32_t curr_ticks, uint32_t prev_ticks)
+{
+    if(curr_ticks < prev_ticks)
+        return ((0xffffffff  - prev_ticks + 1) + curr_ticks);
+    else
+        return (curr_ticks - prev_ticks);
+}
+#endif
+
 #endif
