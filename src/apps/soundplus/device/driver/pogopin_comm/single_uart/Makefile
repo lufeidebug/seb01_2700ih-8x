@@ -8,7 +8,8 @@ obj-y := $(obj-y:.S=.o)
 ccflags-y := \
 	-Iapps/soundplus/interface \
 	-Iapps/soundplus/device/hal \
-	-Iapps/soundplus/device/driver/bus/hw_i2c
+	-Iapps/soundplus/device/driver/bus/hw_i2c \
+	-Iutils/cqueue
 	
 
 

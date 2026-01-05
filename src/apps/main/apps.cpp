@@ -162,7 +162,7 @@ extern void app_bis_selfscan_cmd_init(void);
 #endif
 
 #ifdef TILE_DATAPATH
-//#include "tile_target_ble.h"
+#include "tile_target_ble.h"
 #endif
 
 #if defined(IBRT)
@@ -369,6 +369,7 @@ extern "C" {
 #endif
 
 #if defined(__SNDP_PROJ__)
+#include "sndp_if_common.h"
 #include "sndp_if_data_access.h"
 #endif
 
@@ -2372,8 +2373,10 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #endif
 
 #if defined(__SNDP_PROJ__)
+    sndp_if_common_init();
     sndp_da_init();
 #endif
+
 #if defined(__SNDP_COMM_MGR__)
     sndp_comm_main_init(SNDP_COMM_INIT_ALL);
 #endif

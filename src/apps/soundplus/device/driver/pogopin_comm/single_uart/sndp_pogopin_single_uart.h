@@ -11,12 +11,7 @@ extern "C" {
 
 
 
-
-
-
-
-
-extern const sndp_hal_pogopin_comm_s sndp_hal_pogopin_comm_single_uart;
+extern const sndp_hal_pogopin_comm_s sndp_pogopin_comm_single_uart;
 
 #ifdef __cplusplus
 	}

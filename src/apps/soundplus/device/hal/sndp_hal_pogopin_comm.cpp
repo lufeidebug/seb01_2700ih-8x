@@ -33,7 +33,7 @@
 /**************************************************************************************************
 * Variable
 **************************************************************************************************/
-static sndp_hal_pogopin_comm_s *p_sndp_hal_pogopin_comm = NULL;
+static sndp_hal_pogopin_comm_s *p_pogopin_comm = NULL;
 
 
 /**************************************************************************************************
@@ -46,43 +46,36 @@ static sndp_hal_pogopin_comm_s *p_sndp_hal_pogopin_comm = NULL;
 uint32_t sndp_hal_pogopin_comm_init(void)
 {
 #if defined(__SNDP_POGOPIN_SINGLE_UART__)	
-	if((sndp_hal_pogopin_comm_single_uart.init != NULL) && (sndp_hal_pogopin_comm_single_uart.init() == SNDP_HAL_RET_OK)) {
-		p_sndp_hal_pogopin_comm = (sndp_hal_pogopin_comm_s *)&sndp_hal_pogopin_comm_single_uart;
+	if((sndp_pogopin_comm_single_uart.init != NULL) && (sndp_pogopin_comm_single_uart.init() == SNDP_HAL_RET_OK)) {
+		p_pogopin_comm = (sndp_hal_pogopin_comm_s *)&sndp_pogopin_comm_single_uart;
 		return SNDP_HAL_RET_OK;
 	}
 #endif
 
 #if defined(__SNDP_POGOPIN_DUAL_UART__)	
-	if((sndp_hal_pogopin_comm_dual_uart.init != NULL) && (sndp_hal_pogopin_comm_dual_uart.init() == SNDP_HAL_RET_OK)) {
-		p_sndp_hal_pogopin_comm = (sndp_hal_pogopin_comm_s *)&sndp_hal_pogopin_comm_dual_uart;
+	if((sndp_pogopin_comm_dual_uart.init != NULL) && (sndp_pogopin_comm_dual_uart.init() == SNDP_HAL_RET_OK)) {
+		p_pogopin_comm = (sndp_hal_pogopin_comm_s *)&sndp_pogopin_comm_dual_uart;
 		return SNDP_HAL_RET_OK;
 	}
 #endif
 
-#if defined(__SNDP_COMM_POGOPIN_PULSE__)	
-	if((sndp_hal_pogopin_comm_pulse.init != NULL) && (sndp_hal_pogopin_comm_pulse.init() == SNDP_HAL_RET_OK)) {
-		sndp_hal_pogopin_comm_pulse = (sndp_hal_pogopin_comm_s *)&sndp_hal_pogopin_comm_pulse;
-		return SNDP_HAL_RET_OK;
-	}
-#endif
-
-	p_sndp_hal_pogopin_comm = NULL;
+	p_pogopin_comm = NULL;
 	return SNDP_HAL_RET_FAIL;
 	
 }
 
 uint32_t sndp_hal_pogopin_comm_set_mode(sndp_hal_pogopin_mode_e mode)
 {
-	if((p_sndp_hal_pogopin_comm != NULL) && (p_sndp_hal_pogopin_comm->set_mode != NULL))
-		return p_sndp_hal_pogopin_comm->set_mode(mode);
+	if((p_pogopin_comm != NULL) && (p_pogopin_comm->set_mode != NULL))
+		return p_pogopin_comm->set_mode(mode);
 	
 	return SNDP_HAL_RET_FAIL;
 }
 
 uint32_t sndp_hal_pogopin_comm_get_curr_mode(sndp_hal_pogopin_mode_e *mode)
 {
-	if((p_sndp_hal_pogopin_comm != NULL) && (p_sndp_hal_pogopin_comm->get_curr_mode != NULL))
-		return p_sndp_hal_pogopin_comm->get_curr_mode(mode);
+	if((p_pogopin_comm != NULL) && (p_pogopin_comm->get_curr_mode != NULL))
+		return p_pogopin_comm->get_curr_mode(mode);
 	
 	return SNDP_HAL_RET_FAIL;
 
@@ -90,16 +83,16 @@ uint32_t sndp_hal_pogopin_comm_get_curr_mode(sndp_hal_pogopin_mode_e *mode)
 
 uint32_t sndp_hal_pogopin_comm_set_data_recv_callback(sndp_hal_pogopin_comm_data_recv_func callback)
 {
-	if((p_sndp_hal_pogopin_comm != NULL) && (p_sndp_hal_pogopin_comm->set_data_recv_callback != NULL))
-		return p_sndp_hal_pogopin_comm->set_data_recv_callback(callback);
+	if((p_pogopin_comm != NULL) && (p_pogopin_comm->set_data_recv_callback != NULL))
+		return p_pogopin_comm->set_data_recv_callback(callback);
 	
 	return SNDP_HAL_RET_FAIL;
 }
 
 uint32_t sndp_hal_pogopin_comm_send_data(uint8_t *data, uint32_t data_len)
 {
-	if((p_sndp_hal_pogopin_comm != NULL) && (p_sndp_hal_pogopin_comm->set_mode != NULL))
-		return p_sndp_hal_pogopin_comm->send_data(data, data_len);
+	if((p_pogopin_comm != NULL) && (p_pogopin_comm->set_mode != NULL))
+		return p_pogopin_comm->send_data(data, data_len);
 	
 	return SNDP_HAL_RET_FAIL;
 }
