@@ -43,7 +43,11 @@ endif
 
 obj-y += nv_section/
 
+ifeq ($(SNDP_PROJ),1)
+#obj-y += communication/
+else
 obj-y += communication/
+endif
 
 ifeq ($(RSA_SHA),1)
 obj-y +=../utils/sha256/
