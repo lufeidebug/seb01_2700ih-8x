@@ -822,9 +822,21 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_speaker(sndp_comm_cmd
 	return 0;
 }
 
+POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_gsensor(sndp_comm_cmd_info_s *cmd_info)
+{
+    
+	sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NOT_SUPPORT);
+	return 0;
+}
+
+POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_hrsensor(sndp_comm_cmd_info_s *cmd_info)
+{
+	sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NOT_SUPPORT);
+	return 0;
+}
+
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_query_dev_status(sndp_comm_cmd_info_s *cmd_info)
 {
-
 	/* RSP Data Setting */
 	/* bat voltage(2) + bat percentage(1) + charging status(1) + iobox(1) + cover status(1) + wear status(1) */
 	uint16_t voltage = sndp_dev_get_bat_voltage(false);
@@ -1065,6 +1077,8 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
 	{ COMM_CMDID_PT_WRITE_RF_FREQUENCY_OFFSET   , "PT_W_RF_FQ_OFF"          , sndp_comm_cmd_recv_pt_write_frequency_offset      },	
 	{ COMM_CMDID_PT_TEST_MIC                    , "PT_TEST_MIC"	            , sndp_comm_cmd_recv_pt_test_mic                    },
     { COMM_CMDID_PT_TEST_SPK                    , "PT_TEST_SPK"	            , sndp_comm_cmd_recv_pt_test_speaker                },
+    { COMM_CMDID_PT_TEST_GSENSOR                , "PT_TEST_GSENSOR"	        , sndp_comm_cmd_recv_pt_test_gsensor                     },
+    { COMM_CMDID_PT_TEST_HRSENSOR               , "PT_TEST_HRSENSOR"	    , sndp_comm_cmd_recv_pt_test_hrsensor                    },
 	{ COMM_CMDID_PT_QUERY_DEV_STATUS            , "PT_Q_DEV_STA"	        , sndp_comm_cmd_recv_pt_query_dev_status            },
 	{ COMM_CMDID_PT_READ_ANC_CALIB_STATUS       , "PT_R_ANC_CALIB_STA"      , sndp_comm_cmd_recv_pt_read_anc_calib_status       },
     { COMM_CMDID_PT_READ_ALGO_AUTH_RESULT       , "PT_R_ALGO_AUTH_RST"      , sndp_comm_cmd_recv_pt_read_algo_auth_result       },

@@ -137,13 +137,13 @@ typedef enum {
                                                             rsp: 1 bytes, error code(1). */
 	COMM_CMDID_PT_TEST_SPK                          = 0x55,	/* recv: 1 bytes. mic index(1)
                                                             rsp: 1 bytes, error code(1). */
-	COMM_CMDID_PT_TEST_TOUCH                        = 0x56,	/* recv: 0 bytes, opcode(1). 
+	COMM_CMDID_PT_TEST_GSENSOR                      = 0x56,	/* recv: 0 bytes, opcode(1). 
                                                             rsp: 2 + n bytes, error code(1) + opcode(1) + opdata(n). */
-    COMM_CMDID_PT_TEST_TOUCH_REPORT                 = 0x57,	/* recv: 0 bytes, opcode(1). 
+    COMM_CMDID_PT_TEST_GSENSOR_REPORT               = 0x57,	/* recv: 0 bytes, opcode(1). 
                                                             rsp: 2 + n bytes, error code(1) + opcode(1) + opdata(n). */
-    COMM_CMDID_PT_TEST_IR                           = 0x58,	/* recv: 0 bytes, opcode(1). 
+    COMM_CMDID_PT_TEST_HRSENSOR                     = 0x58,	/* recv: 0 bytes, opcode(1). 
                                                             rsp: 2 + n bytes, error code(1) + opcode(1) + opdata(n). */
-    COMM_CMDID_PT_TEST_IR_REPORT                    = 0x59,	/* recv: 0 bytes, opcode(1). 
+    COMM_CMDID_PT_TEST_HRSENSOR_REPORT              = 0x59,	/* recv: 0 bytes, opcode(1). 
                                                             rsp: 2 + n bytes, error code(1) + opcode(1) + opdata(n). */
     COMM_CMDID_PT_QUERY_DEV_STATUS                  = 0x5A,	/* recv: 1 bytes. mode(1)
                                                             rsp: 1 bytes, error code(1). */
