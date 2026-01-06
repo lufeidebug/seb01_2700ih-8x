@@ -451,7 +451,7 @@ void sndp_dev_cover_check_curr_status(void)
 {
 	SNDP_IF_TRACE_ENTER();
 	
-#if defined(__SNDP_COVER_SWITCH_MGR__)
+#if 0//defined(__SNDP_COVER_SWITCH_MGR__)
 	sndp_hal_cover_switch_check_curr_status();
 #else
     sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_OPENED);
@@ -897,13 +897,13 @@ void sndp_dev_bat_pwr_init(sndp_dev_bat_pwr_measure_cb callback)
 /************************************************** EarSide Info Start **************************************************/
 sndp_dev_earside_e sndp_dev_get_local_earside(void)
 {
-#if 0    
+#if 1    
 	static sndp_dev_earside_e earside = SNDP_DEV_EARSIDE_UNKNOWN;
 	uint8_t val;
 	
 	if(earside == SNDP_DEV_EARSIDE_UNKNOWN) {
 
-#if defined(__SNDP_DEV_EARSIDE_BY_BT_ADDR__)
+#if 1//defined(__SNDP_DEV_EARSIDE_BY_BT_ADDR__)
 		uint8_t mac_addr[6] = {0};
 		factory_section_original_btaddr_get(mac_addr);
 		SNDP_IF_TRACE(1, "mac_addr:");

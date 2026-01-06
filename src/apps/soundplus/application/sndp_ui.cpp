@@ -350,7 +350,7 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
         sndp_dev_wear_disable_detection();
         sndp_ui_pwron_pairing_type_set(0);
 
-        bta_tws_box_event_entry(BTA_TWS_OPEN);
+        bta_tws_box_event_entry(BTA_TWS_CLOSE);
         
     } else {
         sndp_dev_wear_enable_detection();
@@ -359,7 +359,7 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 #endif
 
         /* update the ibrt status machine */
-        bta_tws_box_event_entry(BTA_TWS_CLOSE);
+        bta_tws_box_event_entry(BTA_TWS_OPEN);
     }
     
     /* sync local cover status to peer */
