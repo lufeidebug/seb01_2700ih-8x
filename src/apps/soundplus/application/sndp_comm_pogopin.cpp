@@ -37,14 +37,14 @@
 
 static void sndp_comm_pogopin_data_recv(uint8_t *data, uint32_t data_len)
 {
-	SNDP_COMM_PGP_TRACE(1, "data_len=%d", data_len);
+	//SNDP_COMM_PGP_TRACE(1, "data_len=%d", data_len);
 
 	sndp_comm_main_recv_queue_push_data(SNDP_COMM_PATH_POGOPIN, data, data_len);
 }
 
 int32_t sndp_comm_pogopin_send_data(uint8_t *data, uint16_t data_len)
 {
-	SNDP_COMM_PGP_TRACE(1, "data_len=%d", data_len);
+	//SNDP_COMM_PGP_TRACE(1, "data_len=%d", data_len);
     sndp_hal_pogopin_comm_send_data(data, data_len);
     return 0;
 }

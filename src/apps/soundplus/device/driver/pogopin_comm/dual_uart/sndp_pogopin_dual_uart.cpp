@@ -23,7 +23,7 @@
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
-#define __SNDP_POGOPIN_UART_TRACE__
+//#define __SNDP_POGOPIN_UART_TRACE__
         
 #if defined(__SNDP_POGOPIN_UART_TRACE__)
 #define PGP_UART_LOG_TAG				    "[PGP_DUAL_UART]"

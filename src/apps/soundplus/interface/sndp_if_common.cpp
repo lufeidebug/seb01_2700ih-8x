@@ -256,7 +256,7 @@ void sndp_call_func_in_app_thread(uint32_t ptr, uint32_t param0, uint32_t param1
 {
 	APP_MESSAGE_BLOCK msg;
 
-	SNDP_IF_TRACE(1,"ptr:%08X", ptr);
+	//SNDP_IF_TRACE(1,"ptr:%08X", ptr);
 	if(!app_is_module_registered(APP_MODULE_SNDP_APP)) {
 		SNDP_IF_TRACE(0,"APP_MODUAL_SNDP_DEV is not registered");
 		return;
