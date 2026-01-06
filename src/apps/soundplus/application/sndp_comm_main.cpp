@@ -239,6 +239,7 @@ static int32_t sndp_comm_main_execute_cmd(sndp_comm_cmd_info_s *cmd)
 
     uint8_t from = COMM_GET_FROM(cmd->fromto);
     uint8_t to = COMM_GET_TO(cmd->fromto);
+    uint8_t path = cmd->path;
     
     if(from == to) {
         COMM_MIAN_TRACE(0, "from(%02X) == to(%02X), return", from, to);
@@ -251,9 +252,11 @@ static int32_t sndp_comm_main_execute_cmd(sndp_comm_cmd_info_s *cmd)
         }
 
         //转发
-        if((from == SNDP_COMM_DEVICE_BOX && to == SNDP_COMM_DEVICE_LEFT)
+        if((to == SNDP_COMM_DEVICE_RIGHT)
+            || (from == SNDP_COMM_DEVICE_BOX && to == SNDP_COMM_DEVICE_LEFT)
             || (from == SNDP_COMM_DEVICE_LEFT && to == SNDP_COMM_DEVICE_BOX)
-            || (to == SNDP_COMM_DEVICE_RIGHT)
+            || (path == SNDP_COMM_PATH_TRACE_UART)
+            || (path == SNDP_COMM_PATH_POGOPIN)
             ) {
             // do not forward
         } else {
@@ -272,9 +275,11 @@ static int32_t sndp_comm_main_execute_cmd(sndp_comm_cmd_info_s *cmd)
         }
 
         //转发
-        if((from == SNDP_COMM_DEVICE_BOX && to == SNDP_COMM_DEVICE_RIGHT)
+        if((to == SNDP_COMM_DEVICE_LEFT)
+            || (from == SNDP_COMM_DEVICE_BOX && to == SNDP_COMM_DEVICE_RIGHT)
             || (from == SNDP_COMM_DEVICE_RIGHT && to == SNDP_COMM_DEVICE_BOX)
-            || (to == SNDP_COMM_DEVICE_LEFT)
+            || (path == SNDP_COMM_PATH_TRACE_UART)
+            || (path == SNDP_COMM_PATH_POGOPIN)
             ) {
             // do not forward
         } else {
