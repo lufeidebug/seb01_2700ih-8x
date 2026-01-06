@@ -302,6 +302,7 @@ static void pgp_uart_irq_rx_handler(enum HAL_UART_ID_T id, union HAL_UART_IRQ_T 
 		PGP_UART_TRACE(1, "recv_data_len=%d", p_recv_item->len);
         
         pgp_uart_recv_queue_push_data(p_recv_item);
+        p_recv_item->len = 0;
 		if(!pgp_uart_ctx.rx_working){
 	  		sndp_call_func_in_dev_thread((uint32_t)pgp_uart_recv_data, 0, 0, 0);
 		}
