@@ -371,6 +371,7 @@ extern "C" {
 #if defined(__SNDP_PROJ__)
 #include "sndp_if_common.h"
 #include "sndp_if_data_access.h"
+#include "sndp_if_platform.h"
 #endif
 
 #if defined(__SNDP_UI__)
@@ -1851,7 +1852,11 @@ void app_ibrt_init(void)
         app_tws_ibrt_start(&config,true);
         app_ibrt_search_ui_init(false,BTA_TWS_OPEN);
 #else
+#if defined(__SNDP_PROJ__)
+        sndp_ibrt_nvrecord_config_load(&config);
+#else
         app_ibrt_ui_v2_test_config_load(&config);
+#endif
         app_tws_ibrt_start(&config,false);
 #endif
         hal_trace_global_tag_register(app_ibrt_middleware_fill_debug_info);
@@ -2881,6 +2886,13 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #ifdef BESUI_STEREO_EN
             pwron_case = APP_POWERON_CASE_NUM;
 #endif
+
+#if defined(__SNDP_UI__)
+            /* 
+             * The operation of BT is implemented by the 
+             * sndp_ui_bt_event_exec_after_power_on() function in the sndp_ui.cpp file.  
+            */
+#else
             switch (pwron_case) {
                 case APP_POWERON_CASE_CALIB:
                     break;
@@ -2975,6 +2987,8 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #endif
                     break;
             }
+#endif
+
             if (need_check_key)
             {
 #ifndef __POWERKEY_CTRL_ONOFF_ONLY__

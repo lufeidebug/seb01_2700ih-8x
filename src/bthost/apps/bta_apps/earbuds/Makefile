@@ -108,3 +108,7 @@ subdir-ccflags-y += \
     -Iservices/gfps/inc \
     -Ibthost/apps/bta_apps/deprecated/inc
 
+ifeq ($(SNDP_PROJ),1)
+subdir-ccflags-y += \
+	-Iapps/soundplus/interface
+endif

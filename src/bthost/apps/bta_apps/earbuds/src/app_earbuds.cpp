@@ -74,6 +74,10 @@
 #include "app_ble_mgr.h"
 #endif
 
+#if defined(__SNDP_PROJ__)
+#include "sndp_if_platform.h"
+#endif
+
 #define  IBRT_UI_CLOSE_BOX_EVENT_WAIT_RESPONSE_TIMEOUT              (600)//ms
 #define  IBRT_UI_MOBILE_RECONNECT_WAIT_READY_TIMEOUT                (1000)//ms
 #define  IBRT_UI_TWS_RECONNECT_WAIT_READY_TIMEOUT                   (1500)//ms
@@ -143,6 +147,9 @@ static void bt_link_state_changed_handler(const bt_bdaddr_t *addr, bta_tws_bt_li
 #ifdef GFPS_ENABLED
             gfps_link_disconnect_handler(SET_BT_ID(device_id), addr, reason);
 #endif
+#if defined(__SNDP_PROJ__)
+            sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_MOBILE_DISCONNECTED, reason);
+#endif
         break;
         case BTA_TWS_BT_CONNECTING_EVENT:
         break;
@@ -151,6 +158,9 @@ static void bt_link_state_changed_handler(const bt_bdaddr_t *addr, bta_tws_bt_li
         case BTA_TWS_BT_CONNECTING_FAILURE_EVENT:
         break;
         case BTA_TWS_BT_CONNECTED_EVENT:
+#if defined(__SNDP_PROJ__)
+        sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_MOBILE_CONNECTED, reason);
+#endif            
         break;
         case BTA_TWS_BT_ENCRYPTED_EVENT:
         {
@@ -172,8 +182,14 @@ static void bt_link_state_changed_handler(const bt_bdaddr_t *addr, bta_tws_bt_li
         break;
 
         case BTA_TWS_IBRT_DISCONNECTED_EVENT:
+#if defined(__SNDP_PROJ__)
+        sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_IBRT_DISCONNECTED, reason);
+#endif             
         break;
         case BTA_TWS_IBRT_CONNECTED_EVENT:
+#if defined(__SNDP_PROJ__)
+        sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_IBRT_CONNECTED, reason);
+#endif            
         break;
         case BTA_TWS_IBRT_ROLE_CHANGED_EVENT:
         break;
@@ -221,6 +237,10 @@ static void tws_link_state_changed_handler(bta_tws_sync_state_t state, uint8_t r
             a2dp_audio_stereo_set_mix(true);
 #endif
             bt_drv_reg_op_afh_assess_en(true);
+#if defined(__SNDP_PROJ__)
+            sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_TWS_DISCONNECTED, reason);
+#endif
+
         break;
         case BTA_TWS_SYNCING:
 #if defined(A2DP_AUDIO_STEREO_MIX_CTRL)
@@ -229,6 +249,9 @@ static void tws_link_state_changed_handler(bta_tws_sync_state_t state, uint8_t r
         break;
         case BTA_TWS_SYNCED:
             bt_drv_reg_op_afh_assess_en(bta_tws_get_ui_role() == BT_IBRT_MASTER);
+#if defined(__SNDP_PROJ__)
+            sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_TWS_CONNECTED, reason);
+#endif            
         break;
     }
 
@@ -294,8 +317,14 @@ static void a2dp_connection_state_changed_handler(const bt_bdaddr_t *addr, bt_a2
     {
         case BT_A2DP_CONN_STATE_DISCONNECTED:
             disconnect_channels_when_basic_profiles_disconncted(addr);
+#if defined(__SNDP_PROJ__)
+            sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_A2DP_DISCONNECTED, error_code);
+#endif           
         break;
         case BT_A2DP_CONN_STATE_CONNECTED:
+#if defined(__SNDP_PROJ__)
+            sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_A2DP_CONNECTED, error_code);
+#endif            
         break;
     }
 }
@@ -314,8 +343,14 @@ static void hfp_connection_state_changed_handler(const bt_bdaddr_t *addr, bt_hfp
     {
         case BT_HFP_CONN_STATE_DISCONNECTED:
             disconnect_channels_when_basic_profiles_disconncted(addr);
+#if defined(__SNDP_PROJ__)
+            sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_HFP_DISCONNECTED, error_code);
+#endif            
         break;
         case BT_HFP_CONN_STATE_CONNECTED:
+#if defined(__SNDP_PROJ__)
+            sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_HFP_CONNECTED, error_code);
+#endif            
         break;
     }
 }
@@ -744,7 +779,11 @@ bool app_bta_bootmode_handler(void)
     }
     else
     {
+#if defined(__SNDP_UI__)
+        return false;
+#else
         return true;
+#endif
     }
 }
 

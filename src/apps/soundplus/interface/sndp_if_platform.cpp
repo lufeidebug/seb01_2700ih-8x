@@ -224,7 +224,8 @@ void sndp_enter_freeman_pairing(void)
 	osDelay(100);
 	sndp_pmu_reboot(HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT);
 #else
-	app_ibrt_if_enter_freeman_pairing();
+    bta_tws_box_event_entry(BTA_TWS_OPEN);
+	bta_tws_enable_freeman_mode(true);
 #endif    
 
 }
@@ -274,16 +275,8 @@ void sndp_mobile_pairing_sccessful(void)
 void sndp_enter_mobile_pairing_after_tws_connected(void)
 {
     SNDP_IF_TRACE(0, "enter");
-
-#ifdef IBRT_SEARCH_UI			
-	app_ibrt_enter_limited_mode();
-	if(sndp_dev_is_left_earphone()) {
-		app_start_tws_serching_direactly();
-	}
-#else	
-    app_ibrt_if_init_open_box_state_for_evb();
-    app_ibrt_if_enter_pairing_after_tws_connected();
-#endif	
+    bta_tws_box_event_entry(BTA_TWS_OPEN);
+    bta_tws_enable_pairing_mode(true);
 
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_start_10_second_timer(APP_PAIR_TIMER_ID);   //5minute pairing
@@ -296,15 +289,8 @@ void sndp_enter_mobile_pairing_directly(void)
 {
     SNDP_IF_TRACE(0, "enter");
 
-#ifdef IBRT_SEARCH_UI			
-	app_ibrt_enter_limited_mode();
-	if(sndp_is_left_earphone()) {
-		app_start_tws_serching_direactly();
-	}
-#else	
     //app_ibrt_if_init_open_box_state_for_evb();
     //app_ibrt_if_set_access_mode(IBRT_BAM_GENERAL_ACCESSIBLE);
-#endif	
 
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_start_10_second_timer(APP_PAIR_TIMER_ID);   //5minute pairing
@@ -327,7 +313,7 @@ void sndp_tws_pairing_config(uint8_t *addr, uint8_t len)
     factory_section_original_btaddr_get(local_addr);
 	
     if(sndp_dev_is_right_earphone()) {
-		SNDP_IF_TRACE(0, "Right master");
+		SNDP_IF_TRACE(0, "Right slave");
 		
         ibrt_config.nv_role = IBRT_SLAVE;
 		ibrt_config.audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_LCHNL;
@@ -336,9 +322,9 @@ void sndp_tws_pairing_config(uint8_t *addr, uint8_t len)
         memcpy((void *)ibrt_config.peer_addr.address, local_addr, 6);
 
     } else {
-		SNDP_IF_TRACE(0, "Left slave");
+		SNDP_IF_TRACE(0, "Left master");
 		
-		ibrt_config.nv_role = IBRT_MASTER;
+		ibrt_config.nv_role = IBRT_MASTER;                         
 		ibrt_config.audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_RCHNL;
 		
         memcpy((void *)ibrt_config.local_addr.address, local_addr, 6);
