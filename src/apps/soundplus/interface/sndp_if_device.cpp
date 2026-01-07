@@ -104,7 +104,7 @@
 /**************************************************************************************************
 * Extern
 **************************************************************************************************/
-static void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status);
+
 
 
 /**************************************************************************************************
@@ -380,7 +380,6 @@ POSSIBLY_UNUSED static void sndp_dev_iobox_status_changed_handler(sndp_dev_iobox
 		if(sndp_dev_iobox_status_changed_cb_ptr) {
             sndp_call_func_in_app_thread((uint32_t)sndp_dev_iobox_status_changed_cb_ptr, status, 0, 0);
 		}
-
 	}
 }
 
@@ -450,22 +449,18 @@ void sndp_dev_cover_set_status(bool peer, sndp_dev_cover_status_e cover_status)
 void sndp_dev_cover_check_curr_status(void)
 {
 	SNDP_IF_TRACE_ENTER();
-	
-#if 0//defined(__SNDP_COVER_SWITCH_MGR__)
+ #if defined(__SNDP_COVER_SWITCH_MGR__)   
 	sndp_hal_cover_switch_check_curr_status();
-#else
-    sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_OPENED);
-#endif
-
+ #endif
 }
 
-static void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status)
+void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status)
 {
 	sndp_dev_cover_status_e curr_status;
 
 	curr_status = sndp_dev_cover_get_status(false);
 	
-	SNDP_IF_TRACE(1, "curr_status=%d, new_status=%d(0=close, 1:open)", curr_status, status);
+	SNDP_IF_TRACE(1, "curr=%d, new=%d", curr_status, status);
 
     
 	if(status != SNDP_DEV_COVER_UNKNOWN) {
@@ -495,7 +490,7 @@ static void sndp_dev_cover_status_changed(sndp_hal_cover_status_e status)
 	else
 		cover_status = SNDP_DEV_COVER_OPENED;
 	
-	SNDP_IF_TRACE(1, "status=%d, cover_status=%d(0=close, 1:open)", status, cover_status);
+	SNDP_IF_TRACE(1, "status=%d, cover_status=%d", status, cover_status);
 	sndp_dev_cover_status_changed_handler(cover_status);
 }
 #endif
@@ -505,7 +500,7 @@ void sndp_dev_cover_init(sndp_dev_cover_status_changed_cb callback)
 	SNDP_IF_TRACE_ENTER();	
     sndp_dev_cover_status_changed_cb_ptr = callback;
 
-    sndp_dev_cover_set_status(false, SNDP_DEV_COVER_UNKNOWN);
+    sndp_dev_cover_set_status(false, SNDP_DEV_COVER_OPENED);
     
 #if defined(__SNDP_COVER_SWITCH_MGR__)
 	sndp_hal_cover_switch_init();
@@ -748,6 +743,18 @@ void sndp_dev_charger_plug_status_changed(sndp_hal_charger_plug_status_e status)
 #if defined(__SNDP_CHARGER_MGR__)
         sndp_hal_charger_check_curr_status();
 #endif
+
+#if defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)
+        if(charger_plug == SNDP_DEV_CHARGER_PLUG_IN) {
+            sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_COLSED);
+        } else if(charger_plug == SNDP_DEV_CHARGER_PLUG_OUT) {
+            if(sndp_dev_iobox_is_in_box(false)) {
+                sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_OPENED);
+            } else {
+                sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_COLSED);
+            }
+        }
+#endif        
     }
 }
 #endif 

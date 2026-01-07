@@ -31,31 +31,38 @@
 **************************************************************************************************/
 static bool cs_box_notify_init = false;
 static sndp_hal_cs_status_changed_callback cs_box_notify_status_changed_cb_ptr = NULL;
-
+static sndp_hal_cover_status_e cs_cover_status = SNDP_HAL_COVER_OPENED;
 
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
 
-POSSIBLY_UNUSED static void sndp_box_notify_cs_status_changed(sndp_hal_cover_status_e *cover_status)
+static void sndp_box_notify_cs_status_report(void)
 {
 	if(cs_box_notify_status_changed_cb_ptr) {
 		sndp_call_func_in_app_thread((uint32_t)cs_box_notify_status_changed_cb_ptr, 
-					(uint32_t)cover_status, 0, 0);
+					(uint32_t)cs_cover_status, 0, 0);
 	}
+}
+
+void sndp_box_notify_cs_status_changed(sndp_hal_cover_status_e cover_status)
+{
+    cs_cover_status = cover_status;
+    sndp_box_notify_cs_status_report();
 }
 
 static int32_t sndp_box_notify_cs_init(void)
 {
 	if(cs_box_notify_init) {
-		CS_NOTIFY_TRACE(0, "already initialized");
+		CS_NOTIFY_TRACE(0, "inited");
 		return SNDP_HAL_RET_OK;
 	}
 		
-	//TODO:
+	cs_cover_status = SNDP_HAL_COVER_OPENED;
+	
 
 	cs_box_notify_init = true;
-	CS_NOTIFY_TRACE(0, "init done.");
+	CS_NOTIFY_TRACE(0, "done.");
 	return SNDP_HAL_RET_OK;
 }
 
@@ -67,12 +74,14 @@ static int32_t sndp_box_notify_cs_set_status_changed_callback(sndp_hal_cs_status
 
 static int32_t sndp_box_notify_cs_get_curr_status(sndp_hal_cover_status_e *status)
 {
-	return SNDP_HAL_RET_FAIL;
+    *status = cs_cover_status;
+	return SNDP_HAL_RET_OK ;
 }
 
 static int32_t sndp_box_notify_cs_check_curr_status(void)
 {
-	return SNDP_HAL_RET_FAIL;
+    sndp_box_notify_cs_status_report();
+	return SNDP_HAL_RET_OK;
 }
 
 const sndp_hal_cover_switch_s sndp_hal_cover_switch_box_notify = {

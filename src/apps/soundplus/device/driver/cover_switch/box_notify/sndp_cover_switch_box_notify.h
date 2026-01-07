@@ -17,6 +17,9 @@ extern "C" {
 #endif
 
 
+void sndp_box_notify_cs_status_changed(sndp_hal_cover_status_e cover_status);
+
+
 extern const sndp_hal_cover_switch_s sndp_hal_cover_switch_box_notify;
 
 #ifdef __cplusplus

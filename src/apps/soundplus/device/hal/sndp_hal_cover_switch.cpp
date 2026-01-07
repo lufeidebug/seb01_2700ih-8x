@@ -17,10 +17,6 @@
 #include "sndp_cover_switch_box_notify.h"
 #endif
 
-#if defined(__SNDP_COVER_SWITCH_INOUT_SIMULATE__)
-#include "sndp_cover_switch_inout_simulate.h"
-#endif
-
 
 
 /**************************************************************************************************
@@ -56,13 +52,6 @@ uint32_t sndp_hal_cover_switch_init(void)
 #if defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)	
 		if((sndp_hal_cover_switch_box_notify.init != NULL) && (sndp_hal_cover_switch_box_notify.init() == SNDP_HAL_RET_OK)) {
 			p_sndp_hal_cover_switch = (sndp_hal_cover_switch_s *)&sndp_hal_cover_switch_box_notify;
-			return SNDP_HAL_RET_OK;
-		}
-#endif
-
-#if defined(__SNDP_COVER_SWITCH_INOUT_SIMULATE__)	
-		if((sndp_hal_cover_switch_inout_simulate.init != NULL) && (sndp_hal_cover_switch_inout_simulate.init() == SNDP_HAL_RET_OK)) {
-			p_sndp_hal_cover_switch = (sndp_hal_cover_switch_s *)&sndp_hal_cover_switch_inout_simulate;
 			return SNDP_HAL_RET_OK;
 		}
 #endif

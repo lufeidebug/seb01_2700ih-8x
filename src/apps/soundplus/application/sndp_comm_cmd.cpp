@@ -36,6 +36,12 @@
 #include "sndp_product_test.h"
 #endif
 
+#if defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)
+#include "sndp_hal_cover_switch.h"
+#include "sndp_cover_switch_box_notify.h"
+#endif
+
+
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
@@ -291,7 +297,15 @@ static uint32_t sndp_comm_cmd_recv_eb_report_cover_status(sndp_comm_cmd_info_s *
 	if(cmd_info->data_len == 1) {
 		COMM_CMD_TRACE(1, "box cover=%d", cmd_info->data[0]);
 		//TODO:
-		
+ 
+#if defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)    
+        sndp_dev_cover_status_e cover_status;
+        if(cmd_info->data[0] == 0)
+            cover_status = SNDP_DEV_COVER_COLSED;
+        else
+            cover_status = SNDP_DEV_COVER_OPENED;  
+		sndp_call_func_in_app_thread((uint32_t)sndp_dev_cover_status_changed_handler, cover_status, 0, 0);
+#endif
 	} else {
 		err_code = SNDP_COMM_ERROR_INVALID_DATA_LEN;
 	}

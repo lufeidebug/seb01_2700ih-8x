@@ -123,4 +123,7 @@ ccflags-y += -Iapps/soundplus/algorithm/enc/m33_enc
 endif
 endif		
 
-	
+ifeq ($(SNDP_COVER_SWITCH_BOX_NOTIFY),1)
+ccflags-y += -Iapps/soundplus/device/hal \
+			-Iapps/soundplus/device/driver/cover_switch/box_notify
+endif	

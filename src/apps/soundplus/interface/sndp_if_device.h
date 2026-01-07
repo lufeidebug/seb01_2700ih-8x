@@ -218,6 +218,7 @@ bool sndp_dev_cover_is_closed(bool peer);
 sndp_dev_cover_status_e sndp_dev_cover_get_status(bool peer);
 void sndp_dev_cover_set_status(bool peer, sndp_dev_cover_status_e cover_status);
 void sndp_dev_cover_check_curr_status(void);
+void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status);
 void sndp_dev_cover_init(sndp_dev_cover_status_changed_cb callback);
 
 /************************************************** Cover Switch Info End **************************************************/

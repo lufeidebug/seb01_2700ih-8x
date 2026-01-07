@@ -154,8 +154,8 @@ endif
 ifeq ($(SNDP_COVER_SWITCH_MGR),1)
     KBUILD_CPPFLAGS += -D__SNDP_COVER_SWITCH_MGR__
 
-    export SNDP_COVER_SWITCH_HALL               := 1
-    export SNDP_COVER_SWITCH_BOX_NOTIFY         := 0
+    export SNDP_COVER_SWITCH_HALL               := 0
+    export SNDP_COVER_SWITCH_BOX_NOTIFY         := 1
 
     ifeq ($(SNDP_COVER_SWITCH_HALL),1)
         KBUILD_CPPFLAGS += -D__SNDP_COVER_SWITCH_HALL__
