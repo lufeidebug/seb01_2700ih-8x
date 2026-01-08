@@ -68,4 +68,6 @@ ifeq ($(SNDP_GESTURE_KEY),1)
 ccflags-y += -Iapps/soundplus/device/driver/key
 endif
 
-
+ifeq ($(SNDP_HRSENSOR_SSH401A),1)
+ccflags-y += -Iapps/soundplus/device/driver/hrsensor/ssh401a
+endif

@@ -62,6 +62,10 @@
 #include "sndp_hal_pogopin_comm.h"
 #endif    
 
+#if defined(__SNDP_HRSENSOR_MGR__)	
+#include "sndp_hal_hr.h"
+#endif    
+
 
 
 /**************************************************************************************************
@@ -118,6 +122,7 @@ static sndp_dev_iobox_status_changed_cb sndp_dev_iobox_status_changed_cb_ptr = N
 static sndp_dev_wear_status_changed_cb sndp_dev_wear_status_changed_cb_prt = NULL;
 static sndp_dev_gesture_event_cb sndp_dev_gesture_event_cb_ptr = NULL;
 static sndp_dev_charger_plug_cb sndp_dev_charger_plug_cb_ptr = NULL;
+static sndp_dev_hr_cb sndp_dev_hr_cb_ptr = NULL;
 
 static const char *sndp_dev_dev_model_name = "EAGLEPLUS\0";    //SNDP_BT_NAME;
 
@@ -1364,6 +1369,66 @@ bool sndp_dev_is_working_mode(sndp_dev_working_mode_e mode)
 /**************************************************  Working Mode End **************************************************/
 
 
+/************************************************** Working Mode Start **************************************************/
+void sndp_dev_hr_enter_standby_mode(void)
+{
+	SNDP_IF_TRACE_ENTER();
+	
+#if defined(__SNDP_HRSENSOR_MGR__)	
+	sndp_hal_hr_enter_standby_mode();
+#endif
+}
+
+void sndp_dev_hr_enter_detection_mode(void)
+{
+	SNDP_IF_TRACE_ENTER();
+	
+#if defined(__SNDP_HRSENSOR_MGR__)	
+	sndp_hal_hr_enter_detection_mode();
+#endif
+}
+
+void sndp_dev_hr_start_measure(void)
+{
+	SNDP_IF_TRACE_ENTER();
+	
+#if defined(__SNDP_HRSENSOR_MGR__)	
+	sndp_hal_hr_start_hr_measure();
+#endif
+}
+
+void sndp_dev_hr_stop_measure(void)
+{
+	SNDP_IF_TRACE_ENTER();
+	
+#if defined(__SNDP_HRSENSOR_MGR__)	
+	sndp_hal_hr_start_hr_measure();
+#endif
+}
+
+
+#if defined(__SNDP_HRSENSOR_MGR__)	
+void sndp_hr_measure_callback(uint8_t hr)
+{
+    if(sndp_dev_hr_cb_ptr) {
+        sndp_dev_hr_cb_ptr(hr);
+    }
+}
+#endif	
+
+
+void sndp_dev_hr_init(sndp_dev_hr_cb callback)
+{
+	SNDP_IF_TRACE_ENTER();
+    sndp_dev_hr_cb_ptr = callback;
+    
+#if defined(__SNDP_HRSENSOR_MGR__)	
+	sndp_hal_hr_init();
+	sndp_hal_hr_set_hr_measure_callback(sndp_hr_measure_callback);
+#endif	
+}
+
+/**************************************************  Working Mode End **************************************************/
 
 
 #endif	/* __SNDP_UI__ */

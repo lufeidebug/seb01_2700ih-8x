@@ -448,6 +448,10 @@ void __assert_func(const char *file, int line, const char *func, const char *exp
 int sndp_hal_trace_output(const unsigned char *buf, unsigned int buf_len);
 #endif
 
+#if defined(__SNDP_PROJ__)
+void sndp_trace_printf(const char *fmt, ...);
+#endif
+
 
 #ifdef __cplusplus
 }

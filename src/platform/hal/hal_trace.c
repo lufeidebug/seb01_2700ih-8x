@@ -1594,6 +1594,22 @@ int hal_trace_printf(uint32_t attr, const char *fmt, ...)
     return ret;
 }
 
+#if defined(__SNDP_PROJ__)
+void sndp_trace_printf(const char *fmt, ...)
+{
+#if defined(CP_IN_SAME_EE) && !defined(CP_TRACE_ENABLE)
+    if (get_cpu_id())
+        return 0;
+#endif
+
+    va_list ap;
+
+    va_start(ap, fmt);
+    hal_trace_printf_internal(0, fmt, ap);
+    va_end(ap);
+}
+#endif
+
 int hal_trace_dump(const char *fmt, unsigned int size,  unsigned int count, const void *buffer)
 {
 #if defined(CP_IN_SAME_EE) && !defined(CP_TRACE_ENABLE)

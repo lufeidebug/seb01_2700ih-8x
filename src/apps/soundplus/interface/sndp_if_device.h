@@ -181,6 +181,7 @@ typedef void (*sndp_dev_iobox_status_changed_cb)(sndp_dev_iobox_status_e inout_s
 typedef void (*sndp_dev_wear_status_changed_cb)(sndp_dev_wear_status_e wear_status);
 typedef void (*sndp_dev_gesture_event_cb)(sndp_dev_gesture_event_e gesture_event);
 typedef void (*sndp_dev_charger_plug_cb)(sndp_dev_charger_plug_e plug_status);
+typedef void (*sndp_dev_hr_cb)(uint8_t hr);
 
 
 /************************************************** Wear Info Start **************************************************/

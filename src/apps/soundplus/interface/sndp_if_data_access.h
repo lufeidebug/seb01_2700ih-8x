@@ -20,7 +20,9 @@ typedef enum {
 #if defined(__SNDP_ALG_MGR__)	
 	SNDP_DA_FIELD_ALG_DATA,
 #endif
-    
+#if defined(__SNDP_ALG_MGR__)	
+	SNDP_DA_FIELD_HR_DATA,
+#endif    
 } sndp_da_field_id_e;
 
 
