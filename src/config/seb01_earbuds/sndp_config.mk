@@ -194,7 +194,7 @@ endif
 ifeq ($(SNDP_GESTURE_MGR),1)
     KBUILD_CPPFLAGS += -D__SNDP_GESTURE_MGR__
     export SNDP_GESTURE_KEY                     := 0
-    export SNDP_GESTURE_GSENSOR                 := 0
+    export SNDP_GESTURE_GSENSOR                 := 1
 
     ifeq ($(SNDP_GESTURE_KEY),1)
         KBUILD_CPPFLAGS += -D__SNDP_GESTURE_KEY__
@@ -207,10 +207,10 @@ endif
 
 ifeq ($(SNDP_GSENSOR_SUPPORT),1)
     KBUILD_CPPFLAGS += -D__SNDP_GSENSOR_SUPPORT__
-    export SNDP_GSENSOR_XXXX                    := 0
+    export SNDP_GSENSOR_DA217E                  := 1
 
-    ifeq ($(SNDP_GSENSOR_XXXX),1)
-        KBUILD_CPPFLAGS += -D__SNDP_GSENSOR_XXXX__
+    ifeq ($(SNDP_GSENSOR_DA217E),1)
+        KBUILD_CPPFLAGS += -D__SNDP_GSENSOR_DA217E__
     endif
 endif
 

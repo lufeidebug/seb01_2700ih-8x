@@ -27,8 +27,8 @@
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
-#define SSH401A_INT_DEBOUNCE_REPEAT_MS            (20) //ms
-#define SSH401A_INT_DEBOUNCE_DELAY_MS             (100) //ms
+#define SSH401A_IRQ_DEBOUNCE_REPEAT_MS            (20) //ms
+#define SSH401A_IRQ_DEBOUNCE_DELAY_MS             (100) //ms
     
 #define SSH401A_I2C_TYPE                          (SNDP_I2C_GPIO)
 #define SSH401A_I2C_ID                            (HAL_I2C_ID_0)
@@ -42,7 +42,7 @@
 /**************************************************************************************************
 * Extern
 **************************************************************************************************/
-static void ssh401a_int_debounce_delay_handler(void const *param);
+static void ssh401a_irq_debounce_delay_handler(void const *param);
 
 
 /**************************************************************************************************
@@ -50,8 +50,8 @@ static void ssh401a_int_debounce_delay_handler(void const *param);
 **************************************************************************************************/
 static bool ssh401a_inited = false;
 
-osTimerDef(SSH401A_INT_DEBOUNCE_TIMER, ssh401a_int_debounce_delay_handler);
-static osTimerId ssh401a_int_debounce_timer = NULL;
+osTimerDef(SSH401A_IRQ_DEBOUNCE_TIMER, ssh401a_irq_debounce_delay_handler);
+static osTimerId ssh401a_irq_debounce_timer = NULL;
 
 
 static sndp_hal_hr_measure_callback  ssh401a_hr_measure_cb_ptr = NULL;
@@ -67,7 +67,7 @@ static const struct HAL_IOMUX_PIN_FUNCTION_MAP ssh401a_power_ctrl_pin_cfg = {
     HAL_IOMUX_PIN_NUM, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_PULLUP_ENABLE,
 };
 
-static const struct HAL_IOMUX_PIN_FUNCTION_MAP ssh401a_int_pin_cfg = {
+static const struct HAL_IOMUX_PIN_FUNCTION_MAP ssh401a_irq_pin_cfg = {
     HAL_IOMUX_PIN_NUM, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_NOPULL,
 };
 
@@ -183,15 +183,15 @@ static void ssh401a_deal_irq_data(void)
 {
 }
 
-static void ssh401a_int_debounce_delay_handler(void const *param)
+static void ssh401a_irq_debounce_delay_handler(void const *param)
 {
     ssh401a_deal_irq_data();
 }
 
-void ssh401a_int_debounce(void)
+void ssh401a_irq_debounce(void)
 {
-    osTimerStop(ssh401a_int_debounce_timer);
-    osTimerStart(ssh401a_int_debounce_timer, SSH401A_INT_DEBOUNCE_DELAY_MS);
+    osTimerStop(ssh401a_irq_debounce_timer);
+    osTimerStart(ssh401a_irq_debounce_timer, SSH401A_IRQ_DEBOUNCE_DELAY_MS);
 }
 
 static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
@@ -200,18 +200,23 @@ static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
     uint32_t curr_time = hal_sys_timer_get();
     uint32_t passed_ticks = hal_timer_get_passed_ticks(curr_time, last_time);
 
-    SSH401A_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), SSH401A_INT_DEBOUNCE_REPEAT_MS);
+    SSH401A_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), SSH401A_IRQ_DEBOUNCE_REPEAT_MS);
     
-    if(TICKS_TO_MS(passed_ticks) >= SSH401A_INT_DEBOUNCE_REPEAT_MS) {
+    if(TICKS_TO_MS(passed_ticks) >= SSH401A_IRQ_DEBOUNCE_REPEAT_MS) {
         last_time = hal_sys_timer_get();
-        sndp_call_func_in_app_thread((uint32_t)ssh401a_int_debounce, 0, 0, 0);
+        sndp_call_func_in_app_thread((uint32_t)ssh401a_irq_debounce, 0, 0, 0);
     }
 
 }
 
-static void ssh401a_int_init(void)
+static void ssh401a_irq_init(void)
 {
-    if(ssh401a_int_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
+    if (ssh401a_irq_debounce_timer == NULL) {
+        ssh401a_irq_debounce_timer = osTimerCreate(osTimer(SSH401A_IRQ_DEBOUNCE_TIMER), osTimerOnce, NULL);
+		ASSERT(ssh401a_irq_debounce_timer != NULL, "%s, %d", __func__, __LINE__);
+    }
+    
+    if(ssh401a_irq_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
         struct HAL_GPIO_IRQ_CFG_T gpiocfg;
         
         gpiocfg.irq_enable = true;
@@ -219,7 +224,7 @@ static void ssh401a_int_init(void)
         gpiocfg.irq_polarity = HAL_GPIO_IRQ_POLARITY_LOW_FALLING;
         gpiocfg.irq_handler = ssh401a_irq_handler;
         gpiocfg.irq_type = HAL_GPIO_IRQ_TYPE_EDGE_SENSITIVE;
-        hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)ssh401a_int_pin_cfg.pin, &gpiocfg);
+        hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)ssh401a_irq_pin_cfg.pin, &gpiocfg);
     }
 }
 
@@ -239,7 +244,7 @@ int32_t ssh401a_init(void)
         SSH401A_TRACE(0, "inited, rtn");
         return SNDP_HAL_RET_OK;
     }
-    
+
     ssh401a_heap_init();
     
     if(!ssh401a_i2c_init()) {
@@ -266,7 +271,7 @@ int32_t ssh401a_init(void)
         return SNDP_HAL_RET_FAIL;
     }
 
-    ssh401a_int_init();
+    ssh401a_irq_init();
 
     ssh401a_inited = true;
     SSH401A_TRACE(0, "done.");

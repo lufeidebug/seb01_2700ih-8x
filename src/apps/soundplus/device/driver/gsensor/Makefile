@@ -1,5 +1,5 @@
 obj-y :=
 
-ifeq ($(SNDP_GSENSOR_XXXX),1)
-obj-y += gsxxxx/
+ifeq ($(SNDP_GSENSOR_DA217E),1)
+obj-y += da217e/
 endif
