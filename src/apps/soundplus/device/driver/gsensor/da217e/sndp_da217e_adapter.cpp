@@ -173,7 +173,7 @@ static void da217e_irq_init(void)
         gpiocfg.irq_polarity = HAL_GPIO_IRQ_POLARITY_HIGH_RISING;
         gpiocfg.irq_handler = da217e_int1_irq_handler;
         gpiocfg.irq_type = HAL_GPIO_IRQ_TYPE_EDGE_SENSITIVE;
-        hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_gsensor_int_pin_cfg.pin, &gpiocfg);
+        hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_gsensor_int1_pin_cfg.pin, &gpiocfg);
     }
 
     if(app_gsensor_int2_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
