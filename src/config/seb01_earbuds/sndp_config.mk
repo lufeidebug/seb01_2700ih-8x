@@ -11,6 +11,8 @@ export SOFTWARE_VERSION ?= 0.0.0.0
 export TRACE_BAUD_RATE 							:= 1152000
 export IGNORE_POWER_ON_KEY_DURING_BOOT_UP		:= 1
 
+export I2C2_IOMUX_INDEX                         :=34
+export I2C3_IOMUX_INDEX                         :=36
 
 export FLASH_SIZE_4M		:= 0
 export FLASH_SIZE_8M		:= 1

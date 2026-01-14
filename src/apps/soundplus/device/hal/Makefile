@@ -71,3 +71,7 @@ endif
 ifeq ($(SNDP_HRSENSOR_SSH401A),1)
 ccflags-y += -Iapps/soundplus/device/driver/hrsensor/ssh401a
 endif
+
+ifeq ($(SNDP_GSENSOR_DA217E),1)
+ccflags-y += -Iapps/soundplus/device/driver/gsensor/da217e
+endif
