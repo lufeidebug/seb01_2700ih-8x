@@ -19,7 +19,7 @@
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
-#define SNDP_I2C_CNT 				(3)
+#define SNDP_I2C_CNT 				(4)
 
 /**************************************************************************************************
 * Prototype
@@ -42,6 +42,9 @@ osMutexDef(app_i2c_3_mutex);
 #endif
 #if (SNDP_I2C_CNT > 4)
 osMutexDef(app_i2c_4_mutex);
+#endif
+#if (SNDP_I2C_CNT > 5)
+osMutexDef(app_i2c_5_mutex);
 #endif
 
 
@@ -98,11 +101,16 @@ uint32_t sndp_i2c_open(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id)
             hal_iomux_set_i2c4();
         }
 #endif
+#if (SNDP_I2C_CNT > 5)	
+        else if (i2c_id == HAL_I2C_ID_5) {
+            hal_iomux_set_i2c5();
+        }
+#endif
 
         sndp_i2c_cfg[i2c_id].mode = HAL_I2C_API_MODE_SIMPLE;
         sndp_i2c_cfg[i2c_id].use_dma  = 0;
         sndp_i2c_cfg[i2c_id].use_sync = 1;
-        sndp_i2c_cfg[i2c_id].speed = 100000;
+        sndp_i2c_cfg[i2c_id].speed = 400000;
         sndp_i2c_cfg[i2c_id].as_master = 1;
 		hal_i2c_open(i2c_id, &sndp_i2c_cfg[i2c_id]);
 		
@@ -130,6 +138,11 @@ uint32_t sndp_i2c_open(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id)
             hal_iomux_set_i2c4();
         }
 #endif
+#if (SNDP_I2C_CNT > 5)	
+        else if (i2c_id == HAL_I2C_ID_5) {
+            hal_iomux_set_i2c5();
+        }
+#endif
 
         sndp_i2c_cfg[i2c_id].mode = HAL_I2C_API_MODE_TASK;
         sndp_i2c_cfg[i2c_id].use_dma  = 0;
@@ -140,29 +153,51 @@ uint32_t sndp_i2c_open(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id)
 
 	} else if(type == SNDP_I2C_GPIO){
 		if (i2c_id == HAL_I2C_ID_0) {
-	        sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P3_4;
-	        sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P3_5;
+#if (I2C0_IOMUX_INDEX == 4)
+            sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P0_4;
+	        sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P0_5;
+#else
+	        sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P0_0;
+	        sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P0_1;
+#endif            
 	    }
 #if (SNDP_I2C_CNT > 1)	
 		else if (i2c_id == HAL_I2C_ID_1) {
-	        sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P5_4;
-	        sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P5_5;
+	        sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P0_2;
+	        sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P0_3;
 	    }   
 #endif
 #if (SNDP_I2C_CNT > 2)	
 		else if (i2c_id == HAL_I2C_ID_2) {
-	        sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P3_6;
-	        sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P3_7;
+#if (I2C2_IOMUX_INDEX == 34)
+            sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P3_4;
+	        sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P3_5;
+#else
+            sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P0_4;
+	        sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P0_5;
+#endif            
+	        
 	    }
 #endif
 #if (SNDP_I2C_CNT > 3)	
         else if (i2c_id == HAL_I2C_ID_3) {
-            sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P9_0;
-            sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P9_1;
+#if (I2C3_IOMUX_INDEX == 36)
+        sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P3_6;
+        sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P3_7;
+#else
+        sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P0_6;
+        sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P0_7;
+#endif            
         }   
 #endif
 #if (SNDP_I2C_CNT > 4)	
         else if (i2c_id == HAL_I2C_ID_4) {
+            sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P1_0;
+            sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P1_1;
+        }
+#endif
+#if (SNDP_I2C_CNT > 5)	
+        else if (i2c_id == HAL_I2C_ID_5) {
             sndp_gpio_i2c_cfg[i2c_id].scl  = HAL_GPIO_PIN_P2_0;
             sndp_gpio_i2c_cfg[i2c_id].sda  = HAL_GPIO_PIN_P2_1;
         }
@@ -196,6 +231,11 @@ uint32_t sndp_i2c_open(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id)
 #if (SNDP_I2C_CNT > 4)
     if(app_i2c_mutex_id[4] == NULL) {
         app_i2c_mutex_id[4] = osMutexCreate((osMutex(app_i2c_4_mutex)));
+    }
+#endif
+#if (SNDP_I2C_CNT > 4)
+    if(app_i2c_mutex_id[5] == NULL) {
+        app_i2c_mutex_id[5] = osMutexCreate((osMutex(app_i2c_5_mutex)));
     }
 #endif
 
