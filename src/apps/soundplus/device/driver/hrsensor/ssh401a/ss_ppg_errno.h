@@ -1,6 +1,10 @@
 #ifndef SS_PPG_ERRNO_H_
 #define SS_PPG_ERRNO_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @file ss_ppg_errno.h
  * @brief This file defines the error codes returned by the SS_PPG API.
@@ -59,5 +63,9 @@
  * The chip ID read from the sensor does not match the chip ID defined in the SS_PPG API.
  */
 #define SS_ERROR_NOT_MATCH_ID        -(SS_ERROR_BASE + 6)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SS_PPG_ERRNO_H_ */

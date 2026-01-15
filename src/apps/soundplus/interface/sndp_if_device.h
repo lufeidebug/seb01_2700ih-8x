@@ -309,6 +309,9 @@ uint32_t sndp_dev_get_working_mode(void);
 bool sndp_dev_is_working_mode(sndp_dev_working_mode_e mode);
 /**************************************************  Working Mode End **************************************************/
 
+/************************************************** Heart rate Start **************************************************/
+void sndp_dev_hr_init(sndp_dev_hr_cb callback);
+/**************************************************  Heart rate Start **************************************************/
 
 #ifdef __cplusplus
 }

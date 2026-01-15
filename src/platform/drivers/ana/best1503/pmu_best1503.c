@@ -3666,6 +3666,10 @@ int BOOT_TEXT_FLASH_LOC pmu_open(void)
     pmu_vio_3v3(true);
 #endif
 
+#if defined(__SNDP_PROJ__)
+    pmu_vsensor_set(true, PMU_LDO_SENSOR_1_8V, PMU_LDO_SENSOR_1_8V);
+#endif
+
 #if defined(MCU_HIGH_PERFORMANCE_MODE)
 #error "Not support MCU_HIGH_PERFORMANCE_MODE!"
     pmu_high_performance_mode_enable(true);
@@ -5236,6 +5240,23 @@ void pmu_vio_3v3(bool en)
     }
     int_unlock(lock);
 }
+
+
+#if defined(__SNDP_PROJ__)
+void pmu_vsensor_set(bool en, unsigned short sleep_v, unsigned short normal_v)
+{
+    uint32_t lock;
+
+    lock = int_lock();
+    if (en) {
+        pmu_module_config(PMU_SENSOR, PMU_MANUAL_MODE, PMU_LDO_ON, PMU_LP_MODE_ON, PMU_DSLEEP_MODE_ON);
+        pmu_module_ramp_volt(PMU_SENSOR, sleep_v, normal_v);
+    } else {
+        pmu_module_config(PMU_SENSOR, PMU_MANUAL_MODE, PMU_LDO_OFF, PMU_LP_MODE_ON, PMU_DSLEEP_MODE_OFF);
+    }
+    int_unlock(lock);
+}
+#endif
 
 void pmu_sar_adc_vref_enable(void)
 {

@@ -28,10 +28,10 @@
 * Constant
 **************************************************************************************************/
 #define SSH401A_IRQ_DEBOUNCE_REPEAT_MS            (20) //ms
-#define SSH401A_IRQ_DEBOUNCE_DELAY_MS             (100) //ms
+#define SSH401A_IRQ_DEBOUNCE_DELAY_MS             (50) //ms
     
-#define SSH401A_I2C_TYPE                          (SNDP_I2C_GPIO)
-#define SSH401A_I2C_ID                            (HAL_I2C_ID_0)
+#define SSH401A_I2C_TYPE                          (SNDP_I2C_HW_TASK)
+#define SSH401A_I2C_ID                            (HAL_I2C_ID_3)
 
 
 /**************************************************************************************************
@@ -61,15 +61,6 @@ static sndp_hal_hr_calib_callback ssh401a_hr_calib_cb_ptr = NULL;
 
 static sndp_hal_wear_status_changed_callback ssh401a_wear_status_changed_cb_ptr = NULL;
 static sndp_hal_wear_status_e ssh401a_wear_status = SNDP_HAL_WEAR_OFF;
-
-
-static const struct HAL_IOMUX_PIN_FUNCTION_MAP ssh401a_power_ctrl_pin_cfg = {
-    HAL_IOMUX_PIN_NUM, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_PULLUP_ENABLE,
-};
-
-static const struct HAL_IOMUX_PIN_FUNCTION_MAP ssh401a_irq_pin_cfg = {
-    HAL_IOMUX_PIN_NUM, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_NOPULL,
-};
 
 
 static multi_heap_handle_t ssh401a_heap;
@@ -167,6 +158,8 @@ static void * ssh401a_heap_memset(void *ptr, int value, size_t num)
 
 void ssh401a_callback_proximity_interrupt(unsigned char is_wearing)
 {
+    SSH401A_TRACE(1, "is_wearing=%d", is_wearing);
+    
     ssh401a_wear_status = is_wearing ? SNDP_HAL_WEAR_ON : SNDP_HAL_WEAR_OFF;
     if(ssh401a_wear_status_changed_cb_ptr) {
         ssh401a_wear_status_changed_cb_ptr(ssh401a_wear_status);
@@ -181,17 +174,20 @@ static void ssh401a_callback_ppg_data(SS_PPG* ppg_data)
 
 static void ssh401a_deal_irq_data(void)
 {
+    
 }
 
-static void ssh401a_irq_debounce_delay_handler(void const *param)
+POSSIBLY_UNUSED static void ssh401a_irq_debounce_delay_handler(void const *param)
 {
     ssh401a_deal_irq_data();
 }
 
 void ssh401a_irq_debounce(void)
 {
-    osTimerStop(ssh401a_irq_debounce_timer);
-    osTimerStart(ssh401a_irq_debounce_timer, SSH401A_IRQ_DEBOUNCE_DELAY_MS);
+    SSH401A_TRACE(1, "...");
+    //osTimerStop(ssh401a_irq_debounce_timer);
+    //osTimerStart(ssh401a_irq_debounce_timer, SSH401A_IRQ_DEBOUNCE_DELAY_MS);
+    ss_ppg_interrupt_handler();
 }
 
 static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
@@ -216,7 +212,7 @@ static void ssh401a_irq_init(void)
 		ASSERT(ssh401a_irq_debounce_timer != NULL, "%s, %d", __func__, __LINE__);
     }
     
-    if(ssh401a_irq_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
+    if(app_hrsensor_status_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
         struct HAL_GPIO_IRQ_CFG_T gpiocfg;
         
         gpiocfg.irq_enable = true;
@@ -224,15 +220,15 @@ static void ssh401a_irq_init(void)
         gpiocfg.irq_polarity = HAL_GPIO_IRQ_POLARITY_LOW_FALLING;
         gpiocfg.irq_handler = ssh401a_irq_handler;
         gpiocfg.irq_type = HAL_GPIO_IRQ_TYPE_EDGE_SENSITIVE;
-        hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)ssh401a_irq_pin_cfg.pin, &gpiocfg);
+        hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_hrsensor_status_pin_cfg.pin, &gpiocfg);
     }
 }
 
 static void ssh401a_power_switch(uint8_t onoff)
 {
-    if(ssh401a_power_ctrl_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
-        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&ssh401a_power_ctrl_pin_cfg, 1);
-        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)ssh401a_power_ctrl_pin_cfg.pin, HAL_GPIO_DIR_OUT, onoff);
+    if(app_hrsensor_en_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_hrsensor_en_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_hrsensor_en_pin_cfg.pin, HAL_GPIO_DIR_OUT, onoff);
     }
 }
 

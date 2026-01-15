@@ -5,6 +5,10 @@
 #ifndef SS_PPG_H_
 #define SS_PPG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ss_ppg_register.h"
 #include "ss_ppg_enum.h"
 
@@ -508,5 +512,9 @@ SS_PPG* ss_ppg_mem_fifo_data_pop(void);
  * @see ss_ppg_fifo_parse()
  */
 int ss_ppg_mem_get_fifo_data_count(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SS_PPG_H_ */

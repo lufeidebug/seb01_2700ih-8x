@@ -5,6 +5,11 @@
 #ifndef SS_PPG_EXAMPLE_H_
 #define SS_PPG_EXAMPLE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /**
  * @brief Enum defining the operation modes for the example code.
  * @see ss_ppg_example_main()
@@ -56,4 +61,7 @@ int ss_ppg_example_main(ExampleMode exam_mode);
  */
 int ss_ppg_example_use_proximity(void);
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* SS_PPG_EXAMPLE_H_ */

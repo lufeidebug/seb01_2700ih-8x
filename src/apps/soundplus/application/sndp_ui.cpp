@@ -445,6 +445,13 @@ static void sndp_ui_gesture_event_generated(sndp_dev_gesture_event_e gesture_eve
     }
 }
 
+
+
+static void sndp_ui_hr_event_callback(uint8_t hr)
+{
+    SPUI_TRACE(0, "hr=%d", hr);
+}
+
 //---------------------------------------- charger_plug ctrl --------------------------------------------
 void sndp_ui_charger_plug_status_changed(sndp_dev_charger_plug_e plug_status)
 {
@@ -926,6 +933,7 @@ static void sndp_ui_init_dev(void)
     sndp_dev_iobox_init(sndp_ui_iobox_status_changed);
     sndp_dev_wear_init(sndp_ui_wear_status_changed);
     sndp_dev_gesture_init(sndp_ui_gesture_event_generated);
+    sndp_dev_hr_init(sndp_ui_hr_event_callback);
     sndp_set_bt_conn_status_changed_callback(sndp_ui_bt_conn_status_changed);
     	
 }

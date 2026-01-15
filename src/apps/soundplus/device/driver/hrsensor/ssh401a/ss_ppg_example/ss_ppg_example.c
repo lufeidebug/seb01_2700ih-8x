@@ -21,6 +21,12 @@ extern unsigned char is_ppg_interrupt;
 
 int ss_ppg_example_main(ExampleMode exam_mode)
 {
+    if(ss_ppg_verify() != SS_SUCCESS) 
+    {
+        os_api_print_log("chip id not match.");
+        return SS_ERROR_BASE;
+    }
+    
     if (ss_ppg_init(SENSOR_SSH401, SPS_25, 32) != SS_SUCCESS)
     {
         os_api_print_log("ss_ppg_init failed");
@@ -45,10 +51,11 @@ int ss_ppg_example_main(ExampleMode exam_mode)
     /*
     The measured PPG data is callback as a function pointer of the 'callback_ppg_data' member of the SS_OS_API structure.
     */
-    
+
+#if 0    
     for(;;)
     {
-#if 0
+
         int data_count = ss_ppg_mem_get_fifo_data_count();
         if (data_count > 0)
         {
@@ -79,9 +86,11 @@ int ss_ppg_example_main(ExampleMode exam_mode)
             os_api_print_log("prox %d\n", prox);
             */
         }
-#endif
+
     }
-    
+#endif
+
+  
     return SS_SUCCESS;
 }
 

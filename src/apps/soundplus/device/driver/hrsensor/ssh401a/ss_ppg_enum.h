@@ -5,6 +5,10 @@
 #ifndef SS_PPG_ENUM_H_
 #define SS_PPG_ENUM_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Enum used to select the target sensor.
  *
@@ -156,6 +160,10 @@ typedef enum {
     RANGE_56_7mA = 3, /**< 56.7 mA */
     RANGE_70_0mA = 4, /**< 70.0 mA */
 } LEDCurrentRange;
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* SS_PPG_ENUM_H_ */

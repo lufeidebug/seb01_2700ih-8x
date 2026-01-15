@@ -204,6 +204,11 @@ void pmu_ldo_vsensor_off_pull_down(void);
 
 void pmu_ldo_vsensor_on_lp_dr(bool dr_lp);
 
+#if defined(__SNDP_PROJ__)
+void pmu_vsensor_set(bool en, unsigned short sleep_v, unsigned short normal_v);
+#endif
+
+
 #ifdef __cplusplus
 }
 #endif

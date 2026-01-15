@@ -1,6 +1,10 @@
 #ifndef SS_PPG_REGISTER_H_
 #define SS_PPG_REGISTER_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @file ss_ppg_register.h
  * @brief This file defines the register addresses of the PPG sensor.
@@ -357,5 +361,9 @@
 #define REG_H_TIA_GAIN          0x86
 #define REG_H_INT_GAIN          0x87
 /** @endcond */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SS_PPG_REGISTER_H_ */

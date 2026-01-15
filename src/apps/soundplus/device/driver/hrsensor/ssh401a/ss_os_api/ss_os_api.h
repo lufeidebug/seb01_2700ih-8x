@@ -5,6 +5,11 @@
 #ifndef SS_OS_API_H_
 #define SS_OS_API_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include "ss_ppg.h"
 
 /** @cond INTERNAL */
@@ -149,5 +154,9 @@ void os_api_callback_proximity(unsigned char is_wearing);
  * @see SS_PPG
  */
 void os_api_callback_ppg_data(SS_PPG* ppg_data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SS_OS_API_ */
