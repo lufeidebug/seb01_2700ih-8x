@@ -2,7 +2,7 @@
 #define __SNDP_HAL_HR_H__
 
 
-#if defined(__SNDP_HRSENSOR_MGR__)
+#if defined(__SNDP_HEART_RATE_MGR__)
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,6 +97,6 @@ int32_t sndp_hal_hr_exec_self_calib(void);
 }
 #endif
 
-#endif /* __SNDP_HRSENSOR_MGR__ */
+#endif /* __SNDP_HEART_RATE_MGR__ */
 
 #endif /* __SNDP_HAL_HR_H__ */

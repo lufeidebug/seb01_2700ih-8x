@@ -36,6 +36,6 @@ ifeq ($(SNDP_COMM_POGOPIN),1)
 obj-y += pogopin_comm/
 endif
 
-ifeq ($(SNDP_HRSENSOR_MGR),1)
+ifeq ($(SNDP_HRSENSOR_SUPPORT),1)
 obj-y += hrsensor/
 endif

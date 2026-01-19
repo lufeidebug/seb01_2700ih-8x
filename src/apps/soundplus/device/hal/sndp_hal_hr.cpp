@@ -1,4 +1,4 @@
-#if defined(__SNDP_HRSENSOR_MGR__)
+#if defined(__SNDP_HEART_RATE_MGR__)
 #include "stdio.h"
 #include "string.h"
 #include "cmsis_os.h"
@@ -121,5 +121,5 @@ int32_t sndp_hal_hr_exec_self_calib(void)
 }
 
 
-#endif	/* __SNDP_HRSENSOR_MGR__ */
+#endif	/* __SNDP_HEART_RATE_MGR__ */
 

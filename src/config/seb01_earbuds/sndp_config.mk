@@ -79,7 +79,7 @@ export SNDP_TEST_FREEMAN_PAIRING                := 0
 export SNDP_TEST_RF_DUT                         := 0
 export CRASH_REBOOT                             := 0
 export SNDP_BLE_MODIFY                          := 0
-export SNDP_HRSENSOR_MGR                        := 1
+export SNDP_HEART_RATE_MGR                      := 1
 
 
 ifeq ($(SNDP_UI),1)
@@ -189,7 +189,7 @@ ifeq ($(SNDP_WEAR_DETECT_MGR),1)
     export SNDP_WEAR_DETECT_HRSENSOR            := 1
 
     ifeq ($(SNDP_WEAR_DETECT_HRSENSOR),1)
-        export SNDP_HRSENSOR_MGR                := 1
+        export SNDP_HRSENSOR_SUPPORT                := 1
     endif
 endif
 
@@ -370,8 +370,16 @@ ifeq ($(SNDP_BLE_MODIFY),1)
     KBUILD_CPPFLAGS += -D__SNDP_BLE_MODIFY__
 endif
 
-ifeq ($(SNDP_HRSENSOR_MGR),1)
-    KBUILD_CPPFLAGS += -D__SNDP_HRSENSOR_MGR__
+
+ifeq ($(SNDP_HEART_RATE_MGR),1)
+    KBUILD_CPPFLAGS += -D__SNDP_HEART_RATE_MGR__
+    
+    export SNDP_HRSENSOR_SUPPORT                := 1
+
+endif
+
+ifeq ($(SNDP_HRSENSOR_SUPPORT),1)
+    KBUILD_CPPFLAGS += -D__SNDP_HRSENSOR_SUPPORT__
     
     export SNDP_HRSENSOR_SSH401A                := 1
 
