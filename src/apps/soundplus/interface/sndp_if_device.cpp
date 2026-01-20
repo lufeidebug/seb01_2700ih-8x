@@ -908,14 +908,13 @@ void sndp_dev_bat_pwr_init(sndp_dev_bat_pwr_measure_cb callback)
 
 /************************************************** EarSide Info Start **************************************************/
 sndp_dev_earside_e sndp_dev_get_local_earside(void)
-{
-#if 1    
+{ 
 	static sndp_dev_earside_e earside = SNDP_DEV_EARSIDE_UNKNOWN;
 	uint8_t val;
 	
 	if(earside == SNDP_DEV_EARSIDE_UNKNOWN) {
 
-#if 1//defined(__SNDP_DEV_EARSIDE_BY_BT_ADDR__)
+#if defined(__SNDP_DEV_EARSIDE_BY_BT_ADDR__)
 		uint8_t mac_addr[6] = {0};
 		factory_section_original_btaddr_get(mac_addr);
 		SNDP_IF_TRACE(1, "mac_addr:");
@@ -927,26 +926,22 @@ sndp_dev_earside_e sndp_dev_get_local_earside(void)
 			val = 0;
 
 #else
-        struct HAL_IOMUX_PIN_FUNCTION_MAP earside_pin_cfg;
-
-        memcpy(&earside_pin_cfg, &app_ear_side_pin_cfg, sizeof(struct HAL_IOMUX_PIN_FUNCTION_MAP));
-
-        if (earside_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
-            hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&earside_pin_cfg, 1);
-            hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)earside_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
-        }
         
-        if(app_ear_side_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
-		    val = hal_gpio_pin_get_val((enum HAL_GPIO_PIN_T)app_ear_side_pin_cfg.pin);
-        } else {
-            val = 0;
-        }
+        if (app_ear_side_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+            hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_ear_side_pin_cfg, 1);
+            hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_ear_side_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
 
-        // 原理图配置：右耳悬空，左耳拉低。读取电平后配置为拉低可以省电。
-        if (earside_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+            val = hal_gpio_pin_get_val((enum HAL_GPIO_PIN_T)app_ear_side_pin_cfg.pin);
+
+            // 原理图配置：右耳悬空，左耳拉低。读取电平后配置为拉低可以省电。
+            struct HAL_IOMUX_PIN_FUNCTION_MAP earside_pin_cfg;
+            memcpy(&earside_pin_cfg, &app_ear_side_pin_cfg, sizeof(struct HAL_IOMUX_PIN_FUNCTION_MAP));
             earside_pin_cfg.pull_sel = HAL_IOMUX_PIN_PULLDOWN_ENABLE;
             hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&earside_pin_cfg, 1);
             hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)earside_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
+            
+        } else {
+            val = 0;
         }
 #endif
 
@@ -958,9 +953,6 @@ sndp_dev_earside_e sndp_dev_get_local_earside(void)
 	}
 	
 	return earside;
-#else
-    return SNDP_DEV_EARSIDE_UNKNOWN;
-#endif
 }
 
 sndp_dev_earside_e sndp_dev_get_earside(bool peer)
