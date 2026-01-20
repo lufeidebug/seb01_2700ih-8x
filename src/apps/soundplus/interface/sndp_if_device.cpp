@@ -1388,34 +1388,6 @@ void sndp_dev_hr_enter_detection_mode(void)
 #endif
 }
 
-void sndp_dev_hr_start_measure(void)
-{
-	SNDP_IF_TRACE_ENTER();
-	
-#if defined(__SNDP_HEART_RATE_MGR__)	
-	sndp_hal_hr_start_hr_measure();
-#endif
-}
-
-void sndp_dev_hr_stop_measure(void)
-{
-	SNDP_IF_TRACE_ENTER();
-	
-#if defined(__SNDP_HEART_RATE_MGR__)	
-	sndp_hal_hr_start_hr_measure();
-#endif
-}
-
-
-#if defined(__SNDP_HEART_RATE_MGR__)	
-void sndp_hr_measure_callback(uint8_t hr)
-{
-    if(sndp_dev_hr_cb_ptr) {
-        sndp_dev_hr_cb_ptr(hr);
-    }
-}
-#endif	
-
 
 void sndp_dev_hr_init(sndp_dev_hr_cb callback)
 {
@@ -1424,7 +1396,6 @@ void sndp_dev_hr_init(sndp_dev_hr_cb callback)
     
 #if defined(__SNDP_HEART_RATE_MGR__)	
 	sndp_hal_hr_init();
-	sndp_hal_hr_set_hr_measure_callback(sndp_hr_measure_callback);
 #endif	
 }
 

@@ -9,10 +9,6 @@
 #include "sndp_hal_common.h"
 #include "sndp_hal_hr.h"
 
-#if defined(__SNDP_HRSENSOR_SSH401A__)
-#include "sndp_ssh401a_adapter.h"
-#endif
-
 
 /**************************************************************************************************
 * Constant
@@ -23,6 +19,13 @@
 * Prototype
 **************************************************************************************************/
 
+
+/**************************************************************************************************
+* Extern
+**************************************************************************************************/
+#if defined(__SNDP_HRSENSOR_SSH401A__)
+extern "C" const sndp_hal_hr_s sndp_hr_ssh401a;
+#endif
 
 
 /**************************************************************************************************
@@ -64,38 +67,24 @@ int32_t sndp_hal_hr_enter_detection_mode(void)
 	return SNDP_HAL_RET_FAIL;
 }
 
-int32_t sndp_hal_hr_set_hr_measure_callback(sndp_hal_hr_measure_callback callback)
+int32_t sndp_hal_hr_set_reading_ppg_callback(sndp_hal_hr_read_ppg_callback callback)
 {
-	if((p_hal_hr != NULL) && (p_hal_hr->set_hr_measure_callback != NULL))
-		return p_hal_hr->set_hr_measure_callback(callback);
+	if((p_hal_hr != NULL) && (p_hal_hr->set_reading_ppg_callback != NULL))
+		return p_hal_hr->set_reading_ppg_callback(callback);
 	return SNDP_HAL_RET_FAIL;
 }
 
-int32_t sndp_hal_hr_start_hr_measure(void)
+int32_t sndp_hal_hr_start_reading_ppg(void)
 {
-	if((p_hal_hr != NULL) && (p_hal_hr->start_hr_measure != NULL))
-		return p_hal_hr->start_hr_measure();
+	if((p_hal_hr != NULL) && (p_hal_hr->start_reading_ppg != NULL))
+		return p_hal_hr->start_reading_ppg();
 	return SNDP_HAL_RET_FAIL;
 }
 
-int32_t sndp_hal_hr_stop_hr_measure(void)
+int32_t sndp_hal_hr_stop_reading_ppg(void)
 {
-	if((p_hal_hr != NULL) && (p_hal_hr->stop_hr_measure != NULL))
-		return p_hal_hr->stop_hr_measure();
-	return SNDP_HAL_RET_FAIL;
-}
-
-int32_t sndp_hal_hr_set_read_raw_data_callback(sndp_hal_hr_read_raw_data_callback callback)
-{
-	if((p_hal_hr != NULL) && (p_hal_hr->set_read_raw_data_callback != NULL))
-		return p_hal_hr->set_read_raw_data_callback(callback);
-	return SNDP_HAL_RET_FAIL;
-}
-
-int32_t sndp_hal_hr_read_raw_data(void)
-{
-	if((p_hal_hr != NULL) && (p_hal_hr->read_raw_data != NULL))
-		return p_hal_hr->read_raw_data();
+	if((p_hal_hr != NULL) && (p_hal_hr->stop_reading_ppg != NULL))
+		return p_hal_hr->stop_reading_ppg();
 	return SNDP_HAL_RET_FAIL;
 }
 

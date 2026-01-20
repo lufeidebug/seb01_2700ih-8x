@@ -13,10 +13,12 @@
 
 #include "sndp_if_common.h"
 #include "sndp_hal_common.h"
-#include "sndp_hal_hr.h"
-#include "sndp_hal_wear_detect.h"
 #include "sndp_ssh401a_adapter.h"
 #include "sndp_i2c.h"
+#include "sndp_hal_hr.h"
+#if defined(__SNDP_WEAR_DETECT_MGR__)
+#include "sndp_hal_wear_detect.h"
+#endif
 
 #include "ss_os_api.h"
 #include "ss_ppg.h"
@@ -53,18 +55,17 @@ static bool ssh401a_inited = false;
 osTimerDef(SSH401A_IRQ_DEBOUNCE_TIMER, ssh401a_irq_debounce_delay_handler);
 static osTimerId ssh401a_irq_debounce_timer = NULL;
 
-
-static sndp_hal_hr_measure_callback  ssh401a_hr_measure_cb_ptr = NULL;
-static sndp_hal_hr_read_raw_data_callback ssh401a_hr_read_raw_data_cb_ptr = NULL;
+static sndp_hal_hr_read_ppg_callback ssh401a_hr_read_ppg_cb_ptr = NULL;
 static sndp_hal_hr_calib_callback ssh401a_hr_calib_cb_ptr = NULL;
 
-
+#if defined(__SNDP_WEAR_DETECT_MGR__)
 static sndp_hal_wear_status_changed_callback ssh401a_wear_status_changed_cb_ptr = NULL;
 static sndp_hal_wear_status_e ssh401a_wear_status = SNDP_HAL_WEAR_OFF;
+#endif
 
 
 static multi_heap_handle_t ssh401a_heap;
-static uint8_t ssh401a_heap_buf[1024*10];
+static uint8_t ssh401a_heap_buf[1024];
 
 static SS_OS_API ssh401a_os_api_config;
 
@@ -159,16 +160,21 @@ static void * ssh401a_heap_memset(void *ptr, int value, size_t num)
 void ssh401a_callback_proximity_interrupt(unsigned char is_wearing)
 {
     SSH401A_TRACE(1, "is_wearing=%d", is_wearing);
-    
+#if defined(__SNDP_WEAR_DETECT_MGR__)   
     ssh401a_wear_status = is_wearing ? SNDP_HAL_WEAR_ON : SNDP_HAL_WEAR_OFF;
     if(ssh401a_wear_status_changed_cb_ptr) {
         ssh401a_wear_status_changed_cb_ptr(ssh401a_wear_status);
     }
+#endif
 }
 
 static void ssh401a_callback_ppg_data(SS_PPG* ppg_data)
 {
-
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
+    if(ssh401a_hr_read_ppg_cb_ptr) {
+        ssh401a_hr_read_ppg_cb_ptr((int32_t *)ppg_data, 3);
+    }
+#endif
 }
 
 
@@ -277,21 +283,24 @@ int32_t ssh401a_init(void)
 
 int32_t ssh401a_enter_standby_mode(void)
 {
+    ssh401a_power_switch(0);
     return SNDP_HAL_RET_FAIL;
 }
 
 int32_t ssh401a_enter_detection_mode(void)
 {
+    ssh401a_inited = false;
+    ssh401a_init();
     return SNDP_HAL_RET_FAIL;
 }
 
-int32_t ssh401a_set_hr_measure_callback(sndp_hal_hr_measure_callback callback)
+int32_t ssh401a_set_reading_ppg_callback(sndp_hal_hr_read_ppg_callback callback)
 {
-    ssh401a_hr_measure_cb_ptr = callback;
+    ssh401a_hr_read_ppg_cb_ptr = callback;
     return SNDP_HAL_RET_OK;
 }
 
-int32_t ssh401a_start_hr_measure(void)
+int32_t ssh401a_start_reading_ppg(void)
 {
     if (ss_ppg_start_measurement() != SS_SUCCESS) {
         SSH401A_TRACE(0, "start_measurement failed");
@@ -300,24 +309,13 @@ int32_t ssh401a_start_hr_measure(void)
     return SNDP_HAL_RET_OK;
 }
 
-int32_t ssh401a_stop_hr_measure(void)
+int32_t ssh401a_stop_reading_ppg(void)
 {
     if (ss_ppg_stop_measurement() != SS_SUCCESS) {
         SSH401A_TRACE(0, "stop_measurement failed");
         return SNDP_HAL_RET_FAIL;
     }
     return SNDP_HAL_RET_OK;
-}
-
-int32_t ssh401a_set_read_raw_data_callback(sndp_hal_hr_read_raw_data_callback callback)
-{
-    ssh401a_hr_read_raw_data_cb_ptr = callback;
-    return SNDP_HAL_RET_OK;
-}
-
-int32_t ssh401a_read_raw_data(void)
-{
-    return SNDP_HAL_RET_FAIL;
 }
 
 int32_t ssh401a_set_calib_callback(sndp_hal_hr_calib_callback callback)
@@ -336,16 +334,13 @@ int32_t ssh401a_exec_self_calib(void)
     return SNDP_HAL_RET_FAIL;
 }
 
-
-const sndp_hal_hr_s sndp_hr_ssh401a = {
+extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .init                           = ssh401a_init,
     .enter_standby_mode             = ssh401a_enter_standby_mode,
     .enter_detection_mode           = ssh401a_enter_detection_mode,
-    .set_hr_measure_callback        = ssh401a_set_hr_measure_callback,
-    .start_hr_measure               = ssh401a_start_hr_measure,
-    .stop_hr_measure                = ssh401a_stop_hr_measure,
-    .set_read_raw_data_callback     = ssh401a_set_read_raw_data_callback,
-    .read_raw_data                  = ssh401a_read_raw_data,
+    .set_reading_ppg_callback       = ssh401a_set_reading_ppg_callback,
+    .start_reading_ppg              = ssh401a_start_reading_ppg,
+    .stop_reading_ppg               = ssh401a_stop_reading_ppg,
     .set_calib_callback             = ssh401a_set_calib_callback,
     .exec_calib                     = ssh401a_exec_calib,
     .exec_self_calib                = ssh401a_exec_self_calib,
@@ -353,6 +348,7 @@ const sndp_hal_hr_s sndp_hr_ssh401a = {
 };
 
 
+#if defined(__SNDP_WEAR_DETECT_MGR__)
 static int32_t ssh401a_set_wear_status_changed_callback(sndp_hal_wear_status_changed_callback callback)
 {
     ssh401a_wear_status_changed_cb_ptr = callback;
@@ -372,14 +368,25 @@ static int32_t ssh401a_check_curr_status()
     return SNDP_HAL_RET_FAIL;
 }
 
-const sndp_hal_wear_detection_s sndp_wear_detection_ssh401a = {
-    .init                   = ssh401a_init,
-    .set_wear_status_changed_callback = ssh401a_set_wear_status_changed_callback,
-    .get_curr_status        = ssh401a_get_curr_status,
-    .check_curr_status      = ssh401a_check_curr_status,
-    .enter_standby_mode     = ssh401a_enter_standby_mode,
-    .enter_detection_mode   = ssh401a_enter_detection_mode,
+static int32_t ssh401a_wear_enter_standby_mode(void)
+{
+    return SNDP_HAL_RET_FAIL;
+}
+
+static int32_t ssh401a_wear_enter_detection_mode(void)
+{
+    return SNDP_HAL_RET_FAIL;
+}
+
+extern "C" const sndp_hal_wear_detection_s sndp_wear_detection_ssh401a = {
+    .init                               = ssh401a_init,
+    .set_wear_status_changed_callback   = ssh401a_set_wear_status_changed_callback,
+    .get_curr_status                    = ssh401a_get_curr_status,
+    .check_curr_status                  = ssh401a_check_curr_status,
+    .enter_standby_mode                 = ssh401a_wear_enter_standby_mode,
+    .enter_detection_mode               = ssh401a_wear_enter_detection_mode,
 };
+#endif
 
 #endif	//__SNDP_GSENSOR_XXXX__
 

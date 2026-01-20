@@ -17,7 +17,6 @@ extern "C" {
 #endif
 
 
-extern const sndp_hal_hr_s sndp_hr_ssh401a;
 
 
 #ifdef __cplusplus
