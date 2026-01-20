@@ -12,10 +12,15 @@
 
 #include "sndp_if_common.h"
 #include "sndp_hal_common.h"
-#include "sndp_hal_gesture.h"
 #include "sndp_da217e_adapter.h"
 #include "sndp_da217e_drv.h"
 #include "sndp_i2c.h"
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+#include "sndp_hal_acc.h"
+#endif
+#if defined(__SNDP_GESTURE_MGR__)
+#include "sndp_hal_gesture.h"
+#endif
 
 
 /**************************************************************************************************
@@ -43,8 +48,12 @@
 * Variable
 **************************************************************************************************/
 static bool da217e_inited = false;
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+static sndp_hal_acc_read_raw_data_callback  da217e_acc_read_raw_data_cb_ptr = NULL;
+#endif
+#if defined(__SNDP_GESTURE_MGR__)
 static sndp_hal_gesture_event_callback  da217e_gesture_event_cb_ptr = NULL;
-
+#endif
 
 /**************************************************************************************************
 * Function
@@ -113,13 +122,26 @@ void da217e_delay_ms(unsigned int ms)
 static void da217e_tap_event(uint8_t tap_cnt)
 {
     DA217E_TRACE(1, "tap_cnt=%d", tap_cnt);
-    
+#if defined(__SNDP_GESTURE_MGR__)    
     if(da217e_gesture_event_cb_ptr) {
         if(tap_cnt <= 3) {
             da217e_gesture_event_cb_ptr((sndp_hal_gesture_event_e)(SNDP_HAL_GESTURE_EVENT_1_CLICK + tap_cnt - 1));
         }
     }
+#endif    
 }
+
+static void da217e_read_fifo_cb(da217e_drv_acc_data_s *data, uint16_t cnt)
+{
+    DA217E_TRACE(1, "cnt=%d", cnt);
+
+#if defined(__SNDP_GSENSOR_SUPPORT__)    
+    if(da217e_acc_read_raw_data_cb_ptr) {
+        da217e_acc_read_raw_data_cb_ptr((sndp_hal_acc_data_s *)data, cnt);
+    }
+#endif    
+}
+
 
 static void da217e_deal_int1_data(void)
 {
@@ -144,7 +166,6 @@ static void da217e_int1_irq_handler(enum HAL_GPIO_PIN_T pin)
         last_time = hal_sys_timer_get();
         sndp_call_func_in_app_thread((uint32_t)da217e_deal_int1_data, 0, 0, 0);
     }
-
 }
 
 static void da217e_int2_irq_handler(enum HAL_GPIO_PIN_T pin)
@@ -159,9 +180,7 @@ static void da217e_int2_irq_handler(enum HAL_GPIO_PIN_T pin)
         last_time = hal_sys_timer_get();
         sndp_call_func_in_app_thread((uint32_t)da217e_deal_int2_data, 0, 0, 0);
     }
-
 }
-
 
 static void da217e_irq_init(void)
 {
@@ -203,7 +222,8 @@ int32_t da217e_init(void)
     drv_if.i2c_read = da217e_i2c_read;
     drv_if.delay_ms = da217e_delay_ms;
     drv_if.tap_event_cb = da217e_tap_event;
-    
+    drv_if.read_fifo_cb = da217e_read_fifo_cb;
+        
     if(da217e_drv_init(&drv_if)) {
         DA217E_TRACE(0, "fail.");
         return SNDP_HAL_RET_FAIL;
@@ -233,11 +253,32 @@ int32_t da217e_enter_detection_mode(void)
 }
 
 
-int32_t da217e_set_calibration_send_data_func(sndp_hal_gesture_calibration_send_data_func func)
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+int32_t da217e_set_reading_raw_data_callback(sndp_hal_acc_read_raw_data_callback callback)
+{
+    da217e_acc_read_raw_data_cb_ptr = callback;
+    return SNDP_HAL_RET_OK;
+}
+
+int32_t da217e_start_reading_raw_data(void)
+{
+    DA217E_TRACE(0, "...");
+
+    da217e_open_fifo_watermark_int(25);
+    return SNDP_HAL_RET_OK;
+}
+
+int32_t da217e_stop_reading_raw_data(void)
+{
+    DA217E_TRACE(0, "...");
+    da217e_close_fifo_int();
+    return SNDP_HAL_RET_OK;
+}
+
+int32_t da217e_set_calibration_rsp_func(sndp_hal_acc_calibration_rsp_func func)
 {
     return SNDP_HAL_RET_FAIL;
 }
-
 
 int32_t da217e_recv_calibration_data(uint8_t *data, uint16_t data_len)
 {
@@ -248,6 +289,21 @@ int32_t da217e_exec_calibration_self_calib(void)
 {
     return SNDP_HAL_RET_FAIL;
 }
+
+extern "C" const sndp_hal_acc_s sndp_acc_da217e = {
+    .init                           = da217e_init,
+    .enter_standby_mode             = da217e_enter_standby_mode,
+    .enter_detection_mode           = da217e_enter_detection_mode,
+    .set_reading_raw_data_callback     = da217e_set_reading_raw_data_callback,
+    .start_reading_raw_data            = da217e_start_reading_raw_data,
+    .stop_reading_raw_data             = da217e_stop_reading_raw_data,
+    .set_calibration_rsp_func       = da217e_set_calibration_rsp_func,
+    .recv_calibration_data          = da217e_recv_calibration_data,
+    .exec_calibration_self_calib    = da217e_exec_calibration_self_calib,
+};
+
+#endif
+
 
 #if defined(__SNDP_GESTURE_MGR__)
 int32_t da217e_set_event_callback(sndp_hal_gesture_event_callback callback)

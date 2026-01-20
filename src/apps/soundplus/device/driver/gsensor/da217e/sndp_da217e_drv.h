@@ -7,6 +7,12 @@
 extern "C" {
 #endif
 
+typedef struct {
+    int16_t ax;
+    int16_t ay;
+    int16_t az;
+} da217e_drv_acc_data_s;
+
 
 typedef struct {
 
@@ -17,16 +23,11 @@ typedef struct {
     void (* delay_ms)(uint32_t ms);
 
     void (* tap_event_cb)(uint8_t tap_cnt);
+
+    void (* read_fifo_cb)(da217e_drv_acc_data_s *data, uint16_t cnt);
     
 
 } da217e_drv_if_s;
-
-
-typedef struct {
-    int16_t ax;
-    int16_t ay;
-    int16_t az;
-} da217e_drv_acc_data_s;
 
 
 int32_t da217e_set_enable(uint8_t enable);
@@ -37,15 +38,19 @@ int32_t da217e_open_single_tap_interrupt(uint8_t th);
 int32_t da217e_close_single_tap_interrupt(void);
 
 int32_t da217e_open_fifo(void);
-int32_t da217e_read_fifo(int16_t *x, int16_t *y, int16_t *z);
+int32_t da217e_read_fifo(da217e_drv_acc_data_s *data);
+
 int32_t da217e_open_full_fifo_int(void);
+int32_t da217e_read_full_int_fifo(da217e_drv_acc_data_s *data);
+
 int32_t da217e_open_fifo_watermark_int(uint8_t num);
+int32_t da217e_read_water_int_fifo(da217e_drv_acc_data_s *data);
+
 int32_t da217e_close_fifo_int(void);
-int32_t da217e_read_full_int_fifo(short *x, short *y, short *z);
-int32_t da217e_read_water_int_fifo(short *x, short *y, short *z);
 
 void da217e_drv_deal_tap_interruption(void);
 void da217e_drv_deal_fifo_interruption(void);
+
 int32_t da217e_drv_init(da217e_drv_if_s * drv_if);
 
 
