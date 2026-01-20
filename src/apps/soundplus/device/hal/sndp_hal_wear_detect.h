@@ -53,27 +53,6 @@ typedef struct {
      */
     int32_t (* enter_detection_mode)(void);
 
-	/** 
-     * return: 0 no error.
-     */
-    int32_t (* set_calibration_send_data_func)(sndp_hal_wear_calibration_send_data_func func);
-
-
-	/** 
-     * return: 0 no error.
-     */
-    int32_t (* recv_calibration_data)(uint8_t *data, uint16_t data_len);
-
-	/** 
-     * return: 0 no error.
-     */
-    int32_t (* exec_calibration_self_calib)(void);
-
-    /** 
-     * return: 0 no error.
-     */
-    int32_t (* read_chip_id)(uint16_t *chip_id);
-
 } sndp_hal_wear_detection_s;
 
 int32_t sndp_hal_wear_detection_init(void);
@@ -82,10 +61,6 @@ int32_t sndp_hal_wear_detection_get_curr_status(sndp_hal_wear_status_e *status);
 int32_t sndp_hal_wear_detection_check_curr_status(void);
 int32_t sndp_hal_wear_detection_enter_standby_mode(void);
 int32_t sndp_hal_wear_detection_enter_detection_mode(void);
-int32_t sndp_hal_wear_detection_set_calibration_send_data_func(sndp_hal_wear_calibration_send_data_func func);
-int32_t sndp_hal_wear_detection_recv_calibration_data(uint8_t *data, uint16_t data_len);
-int32_t sndp_hal_wear_detection_exec_calibration_self_calib(void);
-int32_t sndp_hal_wear_detection_read_chip_id(uint16_t *chip_id);
 
 #ifdef __cplusplus
 }

@@ -116,33 +116,5 @@ int32_t sndp_hal_wear_detection_enter_detection_mode(void)
 	return SNDP_HAL_RET_FAIL;
 }
 
-int32_t sndp_hal_wear_detection_set_calibration_send_data_func(sndp_hal_wear_calibration_send_data_func func)
-{
-	if((p_sndp_hal_wear_detection != NULL) && (p_sndp_hal_wear_detection->set_calibration_send_data_func != NULL))
-		return p_sndp_hal_wear_detection->set_calibration_send_data_func(func);
-	return SNDP_HAL_RET_FAIL;
-}
-
-int32_t sndp_hal_wear_detection_recv_calibration_data(uint8_t *data, uint16_t data_len)
-{
-	if((p_sndp_hal_wear_detection != NULL) && (p_sndp_hal_wear_detection->recv_calibration_data != NULL))
-		return p_sndp_hal_wear_detection->recv_calibration_data(data, data_len);
-	return SNDP_HAL_RET_FAIL;
-}
-
-int32_t sndp_hal_wear_detection_exec_calibration_self_calib(void)
-{
-	if((p_sndp_hal_wear_detection != NULL) && (p_sndp_hal_wear_detection->exec_calibration_self_calib != NULL))
-		return p_sndp_hal_wear_detection->exec_calibration_self_calib();
-	return SNDP_HAL_RET_FAIL;
-}
-
-int32_t sndp_hal_wear_detection_read_chip_id(uint16_t *chip_id)
-{
-	if((p_sndp_hal_wear_detection != NULL) && (p_sndp_hal_wear_detection->read_chip_id != NULL))
-		return p_sndp_hal_wear_detection->read_chip_id(chip_id);
-	return SNDP_HAL_RET_FAIL;
-}
-
 #endif	/* __SNDP_WEAR_DETECT_MGR__ */
 

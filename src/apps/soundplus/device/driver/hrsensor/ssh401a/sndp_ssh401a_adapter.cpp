@@ -379,10 +379,6 @@ const sndp_hal_wear_detection_s sndp_wear_detection_ssh401a = {
     .check_curr_status      = ssh401a_check_curr_status,
     .enter_standby_mode     = ssh401a_enter_standby_mode,
     .enter_detection_mode   = ssh401a_enter_detection_mode,
-    .set_calibration_send_data_func = NULL,
-    .recv_calibration_data  = NULL,
-    .exec_calibration_self_calib    = NULL,
-    .read_chip_id           = NULL,
 };
 
 #endif	//__SNDP_GSENSOR_XXXX__
