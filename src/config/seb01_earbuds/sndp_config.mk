@@ -79,7 +79,7 @@ export SNDP_TEST_FREEMAN_PAIRING                := 0
 export SNDP_TEST_RF_DUT                         := 0
 export CRASH_REBOOT                             := 0
 export SNDP_BLE_MODIFY                          := 0
-export SNDP_HEART_RATE_MGR                      := 1
+export SNDP_HEART_RATE_MGR                      := 0
 
 
 ifeq ($(SNDP_UI),1)
