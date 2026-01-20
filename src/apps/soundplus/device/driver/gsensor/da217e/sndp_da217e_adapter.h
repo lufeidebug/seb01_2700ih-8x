@@ -17,8 +17,6 @@ extern "C" {
 #endif
 
 
-extern const sndp_hal_gesture_s sndp_gesture_da217e;
-
 
 #ifdef __cplusplus
 }

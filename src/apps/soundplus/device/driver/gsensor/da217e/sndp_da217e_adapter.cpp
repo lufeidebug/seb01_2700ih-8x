@@ -217,14 +217,6 @@ int32_t da217e_init(void)
     return SNDP_HAL_RET_OK;
 }
 
-
-int32_t da217e_set_event_callback(sndp_hal_gesture_event_callback callback)
-{
-    da217e_gesture_event_cb_ptr = callback;
-    return SNDP_HAL_RET_OK;
-}
-
-
 int32_t da217e_enter_standby_mode(void)
 {
     DA217E_TRACE(0, "...");
@@ -257,14 +249,20 @@ int32_t da217e_exec_calibration_self_calib(void)
     return SNDP_HAL_RET_FAIL;
 }
 
-const sndp_hal_gesture_s sndp_gesture_da217e = {
+#if defined(__SNDP_GESTURE_MGR__)
+int32_t da217e_set_event_callback(sndp_hal_gesture_event_callback callback)
+{
+    da217e_gesture_event_cb_ptr = callback;
+    return SNDP_HAL_RET_OK;
+}
+
+extern "C" const sndp_hal_gesture_s sndp_gesture_da217e = {
     .init                           = da217e_init,
     .set_event_callback             = da217e_set_event_callback,
     .enter_standby_mode             = da217e_enter_standby_mode,
     .enter_detection_mode           = da217e_enter_detection_mode,
-    .set_calibration_send_data_func = da217e_set_calibration_send_data_func,
-    .recv_calibration_data          = da217e_recv_calibration_data,
-    .exec_calibration_self_calib    = da217e_exec_calibration_self_calib,
 };
+#endif
+
 
 #endif	//__SNDP_GSENSOR_DA217E__

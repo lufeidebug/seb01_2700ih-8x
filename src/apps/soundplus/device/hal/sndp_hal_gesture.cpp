@@ -9,9 +9,7 @@
 #include "sndp_hal_common.h"
 #include "sndp_hal_gesture.h"
 
-#if defined(__SNDP_GSENSOR_DA217E__)	
-#include "sndp_da217e_adapter.h"
-#endif
+
 
 
 /**************************************************************************************************
@@ -29,6 +27,10 @@
 * Variable
 **************************************************************************************************/
 static sndp_hal_gesture_s *p_sndp_hal_gesture = NULL;
+
+#if defined(__SNDP_GSENSOR_DA217E__)	
+extern "C" const sndp_hal_gesture_s sndp_gesture_da217e;
+#endif
 
 
 /**************************************************************************************************
@@ -67,28 +69,6 @@ int32_t sndp_hal_gesture_enter_detection_mode(void)
 {
 	if((p_sndp_hal_gesture != NULL) && (p_sndp_hal_gesture->enter_detection_mode != NULL))
 		return p_sndp_hal_gesture->enter_detection_mode();
-	return SNDP_HAL_RET_FAIL;
-}
-
-int32_t sndp_hal_gesture_set_calibration_send_data_func(sndp_hal_gesture_calibration_send_data_func func)
-{
-	if((p_sndp_hal_gesture != NULL) && (p_sndp_hal_gesture->set_calibration_send_data_func != NULL))
-		return p_sndp_hal_gesture->set_calibration_send_data_func(func);
-	return SNDP_HAL_RET_FAIL;
-}
-
-int32_t sndp_hal_gesture_recv_calibration_data(uint8_t *data, uint16_t data_len)
-{
-	if((p_sndp_hal_gesture != NULL) && (p_sndp_hal_gesture->recv_calibration_data != NULL))
-		return p_sndp_hal_gesture->recv_calibration_data(data, data_len);
-	return SNDP_HAL_RET_FAIL;
-}
-
-
-int32_t sndp_hal_gesture_exec_calibration_self_calib(void)
-{
-	if((p_sndp_hal_gesture != NULL) && (p_sndp_hal_gesture->exec_calibration_self_calib != NULL))
-		return p_sndp_hal_gesture->exec_calibration_self_calib();
 	return SNDP_HAL_RET_FAIL;
 }
 

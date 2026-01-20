@@ -42,7 +42,6 @@ typedef struct {
 
 
 	/** 
-     * callback: This pointer will be called when the lid switch stutas changes.
      * return: 0 no error.
      */
     int32_t (* enter_standby_mode)(void);
@@ -53,22 +52,6 @@ typedef struct {
      */
     int32_t (* enter_detection_mode)(void);
 
-	/** 
-     * return: 0 no error.
-     */
-    int32_t (* set_calibration_send_data_func)(sndp_hal_gesture_calibration_send_data_func func);
-
-
-	/** 
-     * return: 0 no error.
-     */
-    int32_t (* recv_calibration_data)(uint8_t *data, uint16_t data_len);
-
-	/** 
-     * return: 0 no error.
-     */
-    int32_t (* exec_calibration_self_calib)(void);
-
 
 } sndp_hal_gesture_s;
 
@@ -76,12 +59,6 @@ int32_t sndp_hal_gesture_init(void);
 int32_t sndp_hal_gesture_set_event_callback(sndp_hal_gesture_event_callback callback);
 int32_t sndp_hal_gesture_enter_standby_mode(void);
 int32_t sndp_hal_gesture_enter_detection_mode(void);
-int32_t sndp_hal_gesture_set_event_callback(sndp_hal_gesture_event_callback callback);
-int32_t sndp_hal_gesture_enter_standby_mode(void);
-int32_t sndp_hal_gesture_set_calibration_send_data_func(sndp_hal_gesture_calibration_send_data_func func);
-int32_t sndp_hal_gesture_recv_calibration_data(uint8_t *data, uint16_t data_len);
-int32_t sndp_hal_gesture_exec_calibration_self_calib(void);
-
 
 
 #ifdef __cplusplus
