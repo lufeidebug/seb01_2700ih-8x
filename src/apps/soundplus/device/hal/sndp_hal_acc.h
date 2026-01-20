@@ -1,0 +1,90 @@
+#ifndef __SNDP_HAL_ACC_H__
+#define __SNDP_HAL_ACC_H__
+
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+typedef struct {
+    int16_t x;
+    int16_t y;
+    int16_t z;
+} sndp_hal_acc_data_s;
+
+typedef void (*sndp_hal_acc_read_raw_data_callback)(sndp_hal_acc_data_s *data, uint16_t cnt);
+typedef void (*sndp_hal_acc_calibration_rsp_func)(uint8_t *data, uint16_t data_len);
+
+typedef struct {
+    /**
+     * return: 0 initialization successed 
+     */
+    int32_t (* init)(void);
+
+    /** 
+     * return: 0 no error.
+     */
+    int32_t (* enter_standby_mode)(void);
+
+	/** 
+     * return: 0 no error.
+     */
+    int32_t (* enter_detection_mode)(void);
+
+    /** 
+     * return: 0 no error.
+     */
+    int32_t (* set_reading_raw_data_callback)(sndp_hal_acc_read_raw_data_callback callback);
+
+
+	/** 
+     * callback: This pointer will be called when the lid switch stutas changes.
+     * return: 0 no error.
+     */
+    int32_t (* start_reading_raw_data)(void);
+
+
+	/** 
+     * return: 0 no error.
+     */
+    int32_t (* stop_reading_raw_data)(void);
+
+	/** 
+     * return: 0 no error.
+     */
+    int32_t (* set_calibration_rsp_func)(sndp_hal_acc_calibration_rsp_func rsp_func);
+
+
+	/** 
+     * return: 0 no error.
+     */
+    int32_t (* recv_calibration_data)(uint8_t *data, uint16_t data_len);
+
+	/** 
+     * return: 0 no error.
+     */
+    int32_t (* exec_calibration_self_calib)(void);
+
+
+} sndp_hal_acc_s;
+
+int32_t sndp_hal_acc_init(void);
+int32_t sndp_hal_acc_enter_standby_mode(void);
+int32_t sndp_hal_acc_enter_detection_mode(void);
+int32_t sndp_hal_acc_set_reading_raw_data_callback(sndp_hal_acc_read_raw_data_callback callback);
+int32_t sndp_hal_acc_start_reading_raw_data(void);
+int32_t sndp_hal_acc_stop_reading_raw_data(void);
+int32_t sndp_hal_acc_set_calibration_rsp_func(sndp_hal_acc_calibration_rsp_func rsp_func);
+int32_t sndp_hal_acc_recv_calibration_data(uint8_t *data, uint16_t data_len);
+int32_t sndp_hal_acc_exec_calibration_self_calib(void);
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __SNDP_GSENSOR_SUPPORT__ */
+
+#endif /* __SNDP_HAL_ACC_H__ */
