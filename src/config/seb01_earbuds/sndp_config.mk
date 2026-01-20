@@ -376,6 +376,17 @@ ifeq ($(SNDP_HEART_RATE_MGR),1)
     
     export SNDP_HRSENSOR_SUPPORT                := 1
 
+    export SNDP_HR_ALGO                         := 1
+    ifeq ($(SNDP_HR_ALGO),1)
+        KBUILD_CPPFLAGS += -D__SNDP_HR_ALGO__
+
+        export SNDP_HR_ALGO_SLEEPSENSE_V2_0_0       := 1
+        
+        ifeq ($(SNDP_HR_ALGO_SLEEPSENSE_V2_0_0),1)
+            KBUILD_CPPFLAGS += -D__SNDP_HR_ALGO_SLEEPSENSE_V2_0_0__
+        endif
+        
+    endif
 endif
 
 ifeq ($(SNDP_HRSENSOR_SUPPORT),1)

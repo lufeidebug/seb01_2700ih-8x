@@ -81,7 +81,8 @@ ccflags-y +=  \
 	-Ibthost/porting \
     -Iapps/soundplus/algorithm/hearaid_dsp \
     -Iapps/psap_sw \
-	-Iutils/hsm
+	-Iutils/hsm \
+	-Iutils/cqueue
 
 
 
@@ -126,4 +127,8 @@ endif
 ifeq ($(SNDP_COVER_SWITCH_BOX_NOTIFY),1)
 ccflags-y += -Iapps/soundplus/device/hal \
 			-Iapps/soundplus/device/driver/cover_switch/box_notify
+endif	
+
+ifeq ($(SNDP_HR_ALGO_SLEEPSENSE_V2_0_0),1)
+ccflags-y += -Iapps/soundplus/algorithm/hr/SleepSense_V2_0_0
 endif	
