@@ -181,7 +181,6 @@ typedef void (*sndp_dev_iobox_status_changed_cb)(sndp_dev_iobox_status_e inout_s
 typedef void (*sndp_dev_wear_status_changed_cb)(sndp_dev_wear_status_e wear_status);
 typedef void (*sndp_dev_gesture_event_cb)(sndp_dev_gesture_event_e gesture_event);
 typedef void (*sndp_dev_charger_plug_cb)(sndp_dev_charger_plug_e plug_status);
-typedef void (*sndp_dev_hr_cb)(uint8_t hr);
 
 
 /************************************************** Wear Info Start **************************************************/
@@ -192,11 +191,13 @@ void sndp_dev_wear_check_curr_status(void);
 void sndp_dev_wear_enable_detection(void);
 void sndp_dev_wear_disable_detection(void);
 void sndp_dev_wear_status_changed_handler(sndp_dev_wear_status_e status);
+void sndp_dev_wear_set_status_changed_callback(sndp_dev_wear_status_changed_cb callback);
 void sndp_dev_wear_init(sndp_dev_wear_status_changed_cb callback);
 /************************************************** Wear Info End **************************************************/
 
 
 /************************************************** Gesture Info Start **************************************************/
+void sndp_dev_gesture_set_event_callback(sndp_dev_gesture_event_cb callback);
 void sndp_dev_gesture_init(sndp_dev_gesture_event_cb callback);
 
 /************************************************** Gesture Info End **************************************************/
@@ -208,6 +209,7 @@ bool sndp_dev_iobox_is_out_box(bool peer);
 sndp_dev_iobox_status_e sndp_dev_iobox_get_status(bool peer);
 void sndp_dev_iobox_set_status(bool peer, sndp_dev_iobox_status_e inout_status);
 void sndp_dev_iobox_check_curr_status(void);
+void sndp_dev_iobox_set_status_changed_callback(sndp_dev_iobox_status_changed_cb callback);
 void sndp_dev_iobox_init(sndp_dev_iobox_status_changed_cb callback);
 
 /************************************************** InOut Box Info End **************************************************/
@@ -220,6 +222,7 @@ sndp_dev_cover_status_e sndp_dev_cover_get_status(bool peer);
 void sndp_dev_cover_set_status(bool peer, sndp_dev_cover_status_e cover_status);
 void sndp_dev_cover_check_curr_status(void);
 void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status);
+void sndp_dev_cover_set_status_changed_callback(sndp_dev_cover_status_changed_cb callback);
 void sndp_dev_cover_init(sndp_dev_cover_status_changed_cb callback);
 
 /************************************************** Cover Switch Info End **************************************************/
@@ -229,6 +232,7 @@ void sndp_dev_cover_init(sndp_dev_cover_status_changed_cb callback);
 int16_t sndp_dev_temperature_get_value(bool peer);
 void sndp_dev_temperature_set_value(bool peer, int16_t temperature);
 void sndp_dev_temperature_measure(void);
+void sndp_dev_temperature_set_measure_callback(sndp_dev_temperature_measure_cb callback);
 void sndp_dev_temperature_init(sndp_dev_temperature_measure_cb callback);
 
 /************************************************** Temperature Info End **************************************************/
@@ -249,6 +253,7 @@ void sndp_dev_charger_init(void);
 bool sndp_dev_charger_is_plugin(bool peer);
 void sndp_dev_charger_plug_set_status(bool peer, sndp_dev_charger_plug_e inout);
 void sndp_dev_charger_plug_check_curr_status(void);
+void sndp_dev_charger_plug_set_status_changed_callback(sndp_dev_charger_plug_cb callback);
 void sndp_dev_charger_plug_init(sndp_dev_charger_plug_cb callback);
 
 /************************************************** PMU Info End **************************************************/
@@ -266,6 +271,7 @@ bool sndp_dev_set_box_bat_info(sndp_dev_bat_info_s bat_info);
 sndp_dev_charging_status_e sndp_dev_get_box_charging_sta(void);
 bool sndp_dev_set_box_charging_sta(sndp_dev_charging_status_e sta);
 void sndp_dev_bat_pwr_measure(void);
+void sndp_dev_bat_pwr_set_measure_callback(sndp_dev_bat_pwr_measure_cb callback);
 void sndp_dev_bat_pwr_init(sndp_dev_bat_pwr_measure_cb callback);
 
 /************************************************** Battery Info End **************************************************/
@@ -310,8 +316,20 @@ bool sndp_dev_is_working_mode(sndp_dev_working_mode_e mode);
 /**************************************************  Working Mode End **************************************************/
 
 /************************************************** Heart rate Start **************************************************/
-void sndp_dev_hr_init(sndp_dev_hr_cb callback);
+void sndp_dev_hr_enter_standby_mode(void);
+void sndp_dev_hr_enter_detection_mode(void);
+void sndp_dev_hr_init(void);
 /**************************************************  Heart rate Start **************************************************/
+
+
+/************************************************** acc Start **************************************************/
+void sndp_dev_acc_enter_standby_mode(void);
+void sndp_dev_acc_enter_detection_mode(void);
+void sndp_dev_acc_init(void);
+/**************************************************  acc End **************************************************/
+
+void sndp_dev_init(void);
+
 
 #ifdef __cplusplus
 }

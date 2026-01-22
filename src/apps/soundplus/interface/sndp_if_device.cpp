@@ -65,6 +65,9 @@
 #if defined(__SNDP_HEART_RATE_MGR__)	
 #include "sndp_hal_hr.h"
 #endif    
+#if defined(__SNDP_GSENSOR_SUPPORT__)	
+#include "sndp_hal_acc.h"
+#endif
 
 
 
@@ -122,7 +125,6 @@ static sndp_dev_iobox_status_changed_cb sndp_dev_iobox_status_changed_cb_ptr = N
 static sndp_dev_wear_status_changed_cb sndp_dev_wear_status_changed_cb_prt = NULL;
 static sndp_dev_gesture_event_cb sndp_dev_gesture_event_cb_ptr = NULL;
 static sndp_dev_charger_plug_cb sndp_dev_charger_plug_cb_ptr = NULL;
-static sndp_dev_hr_cb sndp_dev_hr_cb_ptr = NULL;
 
 static const char *sndp_dev_dev_model_name = "EAGLEPLUS\0";    //SNDP_BT_NAME;
 
@@ -234,10 +236,15 @@ static void sndp_dev_wear_status_changed(sndp_hal_wear_status_e status)
 }
 #endif
 
-void sndp_dev_wear_init(sndp_dev_wear_status_changed_cb callback)
+void sndp_dev_wear_set_status_changed_callback(sndp_dev_wear_status_changed_cb callback)
+{
+    sndp_dev_wear_status_changed_cb_prt = callback;	
+}
+
+void sndp_dev_wear_init(void)
 {
 	SNDP_IF_TRACE_ENTER();
-    sndp_dev_wear_status_changed_cb_prt = callback;	
+
 	sndp_dev_wear_set_status(false, SNDP_DEV_WEAR_UNKNOWN);
 #if defined(__SNDP_WEAR_DETECT_MGR__)
 	sndp_hal_wear_detection_init();
@@ -311,10 +318,15 @@ void sndp_dev_gesture_event_callback(sndp_hal_gesture_event_e event)
 }
 #endif
 
-void sndp_dev_gesture_init(sndp_dev_gesture_event_cb callback)
+void sndp_dev_gesture_set_event_callback(sndp_dev_gesture_event_cb callback)
+{
+    sndp_dev_gesture_event_cb_ptr = callback;
+}
+
+void sndp_dev_gesture_init(void)
 {
 	SNDP_IF_TRACE_ENTER();
-    sndp_dev_gesture_event_cb_ptr = callback;
+
 #if defined(__SNDP_GESTURE_MGR__)
 	sndp_hal_gesture_init();
 	sndp_hal_gesture_set_event_callback(sndp_dev_gesture_event_callback);
@@ -349,7 +361,7 @@ sndp_dev_iobox_status_e sndp_dev_iobox_get_status(bool peer)
 
 void sndp_dev_iobox_set_status(bool peer, sndp_dev_iobox_status_e inout_status)
 {
-	SNDP_IF_TRACE(2, "peer=%d, inout_status=%d", peer, inout_status);
+	//SNDP_IF_TRACE(2, "peer=%d, inout_status=%d", peer, inout_status);
 	
 	if(peer) 
 		sndp_dev_ctx.peer.inout_status = inout_status;
@@ -403,11 +415,16 @@ static void sndp_dev_iobox_status_changed(sndp_hal_iobox_status_e status)
 }
 #endif
 
-void sndp_dev_iobox_init(sndp_dev_iobox_status_changed_cb callback)
+void sndp_dev_iobox_set_status_changed_callback(sndp_dev_iobox_status_changed_cb callback)
+{
+    sndp_dev_iobox_status_changed_cb_ptr = callback;
+}
+
+void sndp_dev_iobox_init(void)
 {
 	SNDP_IF_TRACE_ENTER();
-    sndp_dev_iobox_status_changed_cb_ptr = callback;
-	sndp_dev_iobox_set_status(false, SNDP_DEV_IOBOX_UNKNOWN);
+    
+	sndp_dev_iobox_set_status(false, SNDP_DEV_IOBOX_OUT);
 
 #if defined(__SNDP_IOBOX_MGR__)
 	sndp_hal_iobox_init();
@@ -444,7 +461,7 @@ sndp_dev_cover_status_e sndp_dev_cover_get_status(bool peer)
 
 void sndp_dev_cover_set_status(bool peer, sndp_dev_cover_status_e cover_status)
 {
-	SNDP_IF_TRACE(2, "peer=%d, cover_status=%d", peer, cover_status);
+	//SNDP_IF_TRACE(2, "peer=%d, cover_status=%d", peer, cover_status);
 	if(peer) 
 		sndp_dev_ctx.peer.cover_status = cover_status;
 	else
@@ -495,15 +512,19 @@ static void sndp_dev_cover_status_changed(sndp_hal_cover_status_e status)
 	else
 		cover_status = SNDP_DEV_COVER_OPENED;
 	
-	SNDP_IF_TRACE(1, "status=%d, cover_status=%d", status, cover_status);
+	//SNDP_IF_TRACE(1, "status=%d, cover_status=%d", status, cover_status);
 	sndp_dev_cover_status_changed_handler(cover_status);
 }
 #endif
 
-void sndp_dev_cover_init(sndp_dev_cover_status_changed_cb callback)
+void sndp_dev_cover_set_status_changed_callback(sndp_dev_cover_status_changed_cb callback)
+{
+    sndp_dev_cover_status_changed_cb_ptr = callback;
+}
+
+void sndp_dev_cover_init(void)
 {
 	SNDP_IF_TRACE_ENTER();	
-    sndp_dev_cover_status_changed_cb_ptr = callback;
 
     sndp_dev_cover_set_status(false, SNDP_DEV_COVER_OPENED);
     
@@ -552,10 +573,15 @@ static void sndp_dev_temperature_measure_callback(int16_t temperature)
 }
 #endif
 
-void sndp_dev_temperature_init(sndp_dev_temperature_measure_cb callback)
+void sndp_dev_temperature_set_measure_callback(sndp_dev_temperature_measure_cb callback)
+{
+    sndp_dev_temperature_measure_cb_ptr = callback;
+}
+
+void sndp_dev_temperature_init(void)
 {
 	SNDP_IF_TRACE_ENTER();
-    sndp_dev_temperature_measure_cb_ptr = callback;
+
 	sndp_dev_temperature_set_value(false, 25);
 #if defined(__SNDP_TEMPERATURE_MGR__)
 	sndp_hal_temperature_init();
@@ -749,7 +775,7 @@ void sndp_dev_charger_plug_status_changed(sndp_hal_charger_plug_status_e status)
         sndp_hal_charger_check_curr_status();
 #endif
 
-#if defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)
+#if 0//defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)
         if(charger_plug == SNDP_DEV_CHARGER_PLUG_IN) {
             sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_COLSED);
         } else if(charger_plug == SNDP_DEV_CHARGER_PLUG_OUT) {
@@ -764,11 +790,16 @@ void sndp_dev_charger_plug_status_changed(sndp_hal_charger_plug_status_e status)
 }
 #endif 
 
-void sndp_dev_charger_plug_init(sndp_dev_charger_plug_cb callback)
+
+void sndp_dev_charger_plug_set_status_changed_callback(sndp_dev_charger_plug_cb callback)
+{
+    sndp_dev_charger_plug_cb_ptr = callback;
+}
+
+void sndp_dev_charger_plug_init(void)
 {
 	SNDP_IF_TRACE_ENTER();
-    sndp_dev_charger_plug_cb_ptr = callback;
-    
+
 #if defined(__SNDP_CHARGER_PLUG_MGR__)   
     sndp_hal_charger_plug_init();
 	sndp_hal_charger_plug_set_status_changed_callback(sndp_dev_charger_plug_status_changed);
@@ -893,10 +924,15 @@ void sndp_dev_bat_pwr_measure(void)
 #endif
 }
 
-void sndp_dev_bat_pwr_init(sndp_dev_bat_pwr_measure_cb callback)
+void sndp_dev_bat_pwr_set_measure_callback(sndp_dev_bat_pwr_measure_cb callback)
+{
+    sndp_dev_bat_pwr_measure_cb_ptr = callback;
+}
+
+void sndp_dev_bat_pwr_init(void)
 {
 	SNDP_IF_TRACE_ENTER();
-    sndp_dev_bat_pwr_measure_cb_ptr = callback;
+
 #if defined(__SNDP_BATTERY_MGR__)	
 	sndp_hal_battery_init((sndp_hal_bat_charging_status_e)sndp_dev_charger_is_charging(false), sndp_dev_get_bat_percentage(false));
 	sndp_hal_battery_set_measure_callback(sndp_dev_bat_pwr_measure_callback);
@@ -1295,16 +1331,16 @@ void sndp_dev_init_device_info(void)
 	sndp_dev_set_bat_info(false, bat_info);
     
 
-	SNDP_IF_TRACE(3, "fw_ver=%d.%d.%d.%d", fw_ver[0], fw_ver[1], fw_ver[2], fw_ver[3]);
-	SNDP_IF_TRACE(3, "hw_ver=%d.%d", hw_ver[0], hw_ver[1]);
-	SNDP_IF_TRACE(6, "bt_addr=%02x,%02x,%02x,%02x,%02x,%02x",
+	SNDP_IF_TRACE(0, "fw_ver=%d.%d.%d.%d", fw_ver[0], fw_ver[1], fw_ver[2], fw_ver[3]);
+	SNDP_IF_TRACE(0, "hw_ver=%d.%d", hw_ver[0], hw_ver[1]);
+	SNDP_IF_TRACE(0, "bt_addr=%02x,%02x,%02x,%02x,%02x,%02x",
 			local_bt_addr[0], local_bt_addr[1], local_bt_addr[2],
 			local_bt_addr[3], local_bt_addr[4], local_bt_addr[5]);
-	SNDP_IF_TRACE(6, "ble_addr=%02x,%02x,%02x,%02x,%02x,%02x", 
+	SNDP_IF_TRACE(0, "ble_addr=%02x,%02x,%02x,%02x,%02x,%02x", 
 			local_ble_addr[0], local_ble_addr[1], local_ble_addr[2],
 			local_ble_addr[3], local_ble_addr[4], local_ble_addr[5]);
 
-    SNDP_IF_TRACE(6, "bat_info, %d, %d, %d", 
+    SNDP_IF_TRACE(0, "bat_info, %d, %d, %d", 
 			bat_info.bat_volt, bat_info.bat_per, bat_info.bat_level);
 }
 
@@ -1361,7 +1397,7 @@ bool sndp_dev_is_working_mode(sndp_dev_working_mode_e mode)
 /**************************************************  Working Mode End **************************************************/
 
 
-/************************************************** Working Mode Start **************************************************/
+/************************************************** hr Start **************************************************/
 void sndp_dev_hr_enter_standby_mode(void)
 {
 	SNDP_IF_TRACE_ENTER();
@@ -1381,18 +1417,67 @@ void sndp_dev_hr_enter_detection_mode(void)
 }
 
 
-void sndp_dev_hr_init(sndp_dev_hr_cb callback)
+void sndp_dev_hr_init(void)
 {
 	SNDP_IF_TRACE_ENTER();
-    sndp_dev_hr_cb_ptr = callback;
-    
-#if defined(__SNDP_HEART_RATE_MGR__)	
+
+#if defined(__SNDP_HRSENSOR_SUPPORT__)	
 	sndp_hal_hr_init();
+#endif
+}
+
+/**************************************************  hr End **************************************************/
+
+
+/************************************************** acc Start **************************************************/
+void sndp_dev_acc_enter_standby_mode(void)
+{
+	SNDP_IF_TRACE_ENTER();
+	
+#if defined(__SNDP_GSENSOR_SUPPORT__)	
+	sndp_hal_acc_enter_standby_mode();
+#endif
+}
+
+void sndp_dev_acc_enter_detection_mode(void)
+{
+	SNDP_IF_TRACE_ENTER();
+	
+#if defined(__SNDP_GSENSOR_SUPPORT__)	
+	sndp_hal_acc_enter_detection_mode();
+#endif
+}
+
+
+void sndp_dev_acc_init(void)
+{
+	SNDP_IF_TRACE_ENTER();
+    
+#if defined(__SNDP_GSENSOR_SUPPORT__)	
+	sndp_hal_acc_init();
 #endif	
 }
 
-/**************************************************  Working Mode End **************************************************/
+/**************************************************  acc End **************************************************/
 
+
+void sndp_dev_init(void)
+{
+	//SPUI_TRACE_ENTER();
+    
+	sndp_dev_init_device_info();
+    
+	sndp_dev_charger_plug_init();
+    sndp_dev_charger_init();
+    sndp_dev_bat_pwr_init();
+    sndp_dev_temperature_init();
+    sndp_dev_cover_init();
+    sndp_dev_iobox_init();
+    sndp_dev_wear_init();
+    sndp_dev_gesture_init();
+    sndp_dev_hr_init();
+    sndp_dev_acc_init();	
+}
 
 #endif	/* __SNDP_UI__ */
 

@@ -2385,6 +2385,11 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #if defined(__SNDP_COMM_MGR__)
     sndp_comm_main_init(SNDP_COMM_INIT_ALL);
 #endif
+
+#if defined(__SNDP_PROJ__)
+    sndp_dev_init();
+#endif
+
 #if defined(__SNDP_UI__)
     sndp_ui_init_pre();
 #endif

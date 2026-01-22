@@ -446,12 +446,6 @@ static void sndp_ui_gesture_event_generated(sndp_dev_gesture_event_e gesture_eve
 }
 
 
-
-static void sndp_ui_hr_event_callback(uint8_t hr)
-{
-    SPUI_TRACE(0, "hr=%d", hr);
-}
-
 //---------------------------------------- charger_plug ctrl --------------------------------------------
 void sndp_ui_charger_plug_status_changed(sndp_dev_charger_plug_e plug_status)
 {
@@ -919,29 +913,20 @@ void sndp_ui_timing_to_do(void)
 	//sndp_connect_status_print(); //for test
 }
 
-static void sndp_ui_init_dev(void)
-{
-	//SPUI_TRACE_ENTER();
-    
-	sndp_dev_init_device_info();
-    
-	sndp_dev_charger_plug_init(sndp_ui_charger_plug_status_changed);
-    sndp_dev_charger_init();
-    sndp_dev_bat_pwr_init(sndp_ui_bat_pwr_measure_callback);
-    sndp_dev_temperature_init(sndp_ui_temperature_measure_callback);
-    sndp_dev_cover_init(sndp_ui_cover_status_changed);
-    sndp_dev_iobox_init(sndp_ui_iobox_status_changed);
-    sndp_dev_wear_init(sndp_ui_wear_status_changed);
-    sndp_dev_gesture_init(sndp_ui_gesture_event_generated);
-    sndp_dev_hr_init(sndp_ui_hr_event_callback);
-    sndp_set_bt_conn_status_changed_callback(sndp_ui_bt_conn_status_changed);
-    	
-}
-
 static void sndp_ui_check_dev_initial_status(void)
 {
 	//SPUI_TRACE_ENTER();
-	
+
+	sndp_dev_charger_plug_set_status_changed_callback(sndp_ui_charger_plug_status_changed);
+    sndp_dev_bat_pwr_set_measure_callback(sndp_ui_bat_pwr_measure_callback);
+    sndp_dev_temperature_set_measure_callback(sndp_ui_temperature_measure_callback);
+    sndp_dev_cover_set_status_changed_callback(sndp_ui_cover_status_changed);
+    sndp_dev_iobox_set_status_changed_callback(sndp_ui_iobox_status_changed);
+    sndp_dev_wear_set_status_changed_callback(sndp_ui_wear_status_changed);
+    sndp_dev_gesture_set_event_callback(sndp_ui_gesture_event_generated);
+    sndp_dev_hr_init();
+    sndp_dev_acc_init();	
+
 	sndp_call_func_in_dev_thread((uint32_t)sndp_dev_charger_plug_check_curr_status, 0, 0, 0);
     sndp_call_func_in_dev_thread((uint32_t)sndp_dev_charger_check_curr_status, 0, 0, 0);
 	sndp_call_func_in_dev_thread((uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
@@ -954,9 +939,9 @@ static void sndp_ui_check_dev_initial_status(void)
 void sndp_ui_init_pre(void)
 {
 	SPUI_TRACE_ENTER();
+    
 	memset(&sndp_ui_ctx, 0, sizeof(sndp_ui_ctx));
-
-    sndp_ui_init_dev();
+    sndp_set_bt_conn_status_changed_callback(sndp_ui_bt_conn_status_changed);
 	app_prompt_start_callback_register(sndp_ui_prompt_start_cb);
 	app_prompt_finish_callback_register(sndp_ui_prompt_finish_cb);
 }
