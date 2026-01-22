@@ -18,20 +18,8 @@
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
-#if defined(__SNDP_PSENSOR_STK_W2101__)
-extern const sndp_hal_wear_detection_s sndp_hal_wear_detection_w2101;
-#endif
-
-#if defined(__SNDP_TOUCH_GH6210__)	
-extern const sndp_hal_wear_detection_s sndp_hal_wear_detection_gh621x;
-#endif
-
-#if defined(__SNDP_TOUCH_HX9031AS__)	
-extern const sndp_hal_wear_detection_s sndp_hal_wear_detection_hx9031as;
-#endif
-
-#if defined(__SNDP_PSENSOR_JSA1227__)	
-extern const sndp_hal_wear_detection_s sndp_hal_wear_detection_jsa1227;
+#if defined(__SNDP_HRSENSOR_SSH401A__)
+extern "C" const sndp_hal_wear_detection_s sndp_wear_detection_ssh401a;
 #endif
 
 
@@ -48,30 +36,9 @@ static sndp_hal_wear_detection_s *p_sndp_hal_wear_detection = NULL;
 
 int32_t sndp_hal_wear_detection_init(void)
 {
-#if defined(__SNDP_PSENSOR_STK_W2101__)	
-	if((sndp_hal_wear_detection_w2101.init != NULL) && (sndp_hal_wear_detection_w2101.init() == SNDP_HAL_RET_OK)) {
-		p_sndp_hal_wear_detection = (sndp_hal_wear_detection_s *)&sndp_hal_wear_detection_w2101;
-		return SNDP_HAL_RET_OK;
-	}
-#endif
-
-#if defined(__SNDP_TOUCH_GH6210__)	
-	if((sndp_hal_wear_detection_gh621x.init != NULL) && (sndp_hal_wear_detection_gh621x.init() == SNDP_HAL_RET_OK)) {
-		p_sndp_hal_wear_detection = (sndp_hal_wear_detection_s *)&sndp_hal_wear_detection_gh621x;
-		return SNDP_HAL_RET_OK;
-	}
-#endif
-
-#if defined(__SNDP_TOUCH_HX9031AS__)	
-	if((sndp_hal_wear_detection_hx9031as.init != NULL) && (sndp_hal_wear_detection_hx9031as.init() == SNDP_HAL_RET_OK)) {
-		p_sndp_hal_wear_detection = (sndp_hal_wear_detection_s *)&sndp_hal_wear_detection_hx9031as;
-		return SNDP_HAL_RET_OK;
-	}
-#endif
-
-#if defined(__SNDP_PSENSOR_JSA1227__)	
-    if((sndp_hal_wear_detection_jsa1227.init != NULL) && (sndp_hal_wear_detection_jsa1227.init() == SNDP_HAL_RET_OK)) {
-		p_sndp_hal_wear_detection = (sndp_hal_wear_detection_s *)&sndp_hal_wear_detection_jsa1227;
+#if defined(__SNDP_HRSENSOR_SSH401A__)	
+	if((sndp_wear_detection_ssh401a.init != NULL) && (sndp_wear_detection_ssh401a.init() == SNDP_HAL_RET_OK)) {
+		p_sndp_hal_wear_detection = (sndp_hal_wear_detection_s *)&sndp_wear_detection_ssh401a;
 		return SNDP_HAL_RET_OK;
 	}
 #endif
