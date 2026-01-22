@@ -18,13 +18,16 @@
 #include "sndp_if_platform.h"
 
 #include "sndp_heart_rate.h"
+
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
 #include "sleepsense.h"
+#endif
 
 #if defined(__SNDP_GSENSOR_SUPPORT__)
 #include "sndp_hal_acc.h"
 #endif
 
-#if defined(__SNDP_HEART_RATE_MGR__)
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
 #include "sndp_hal_hr.h"
 #endif
 
@@ -44,22 +47,21 @@
 * Constant
 **************************************************************************************************/
 
-#define HR_PPG_CHNNEL_NUM           (3)
-#define HR_PPG_SECOND_SAMPLES       (64)
-#define HR_PPG_SECOND_SIZE          (HR_PPG_SECOND_SAMPLES * HR_PPG_CHNNEL_NUM)
+#define HR_PPG_CHNNEL_NUM                   (1)
+#define HR_PPG_SECOND_1CH_SAMPLES           (64)
+#define HR_PPG_SECOND_ALLCH_SAMPLES         (HR_PPG_SECOND_1CH_SAMPLES * HR_PPG_CHNNEL_NUM)
 
-#define HR_ACC_CHNNEL_NUM           (3)
-#define HR_ACC_SECOND_SAMPLES       (125)
-#define HR_ACC_SECOND_SIZE          (HR_ACC_SECOND_SAMPLES * HR_ACC_CHNNEL_NUM)
+#define HR_ACC_CHNNEL_NUM                   (3)
+#define HR_ACC_SECOND_1CH_SAMPLES           (125)
+#define HR_ACC_SECOND_ALLCH_SAMPLES         (HR_ACC_SECOND_1CH_SAMPLES * HR_ACC_CHNNEL_NUM)
 
+#define HR_DEV_CHNNEL_NUM                   (1)
+#define HR_DEV_SECOND_1CH_SAMPLES           (5)
+#define HR_DEV_SECOND_ALLCH_SAMPLES         (HR_DEV_SECOND_1CH_SAMPLES * HR_ACC_CHNNEL_NUM)
 
-#define HR_DEV_CHNNEL_NUM           (1)
-#define HR_DEV_SECOND_SAMPLES       (5)
-#define HR_DEV_SECOND_SIZE          (HR_DEV_SECOND_SAMPLES * HR_ACC_CHNNEL_NUM)
-
-#define SLEEP_CALC_SECONDS          (30)
-#define SLEEP_ACC_DATA_SIZE         (HR_ACC_SECOND_SIZE * SLEEP_CALC_SECONDS)
-#define SLEEP_DEV_DATA_SIZE         (HR_DEV_SECOND_SIZE * SLEEP_CALC_SECONDS)
+#define SLEEP_CALC_SECONDS                  (30)
+#define SLEEP_ACC_DATA_SAMPLES              (HR_ACC_SECOND_ALLCH_SAMPLES * SLEEP_CALC_SECONDS)
+#define SLEEP_DEV_DATA_SAMPLES              (HR_DEV_SECOND_ALLCH_SAMPLES * SLEEP_CALC_SECONDS)
 
 
 /**************************************************************************************************
@@ -84,13 +86,13 @@ typedef struct {
 static sndp_hr_ctx_s hr_ctx;
 
 static CQueue ppg_raw_data_queue;
-static int32_t ppg_raw_data_queue_buf[HR_PPG_SECOND_SIZE*2];
+static int32_t ppg_raw_data_queue_buf[HR_PPG_SECOND_ALLCH_SAMPLES*2];
 
 static osMutexId ppg_raw_data_queue_mutex_id = NULL;
 osMutexDef(ppg_raw_data_queue_mutex);
 
 static CQueue acc_raw_data_queue;
-static int16_t acc_raw_data_queue_buf[HR_ACC_SECOND_SIZE*2];
+static int16_t acc_raw_data_queue_buf[HR_ACC_SECOND_ALLCH_SAMPLES*2];
 
 static osMutexId acc_raw_data_queue_mutex_id = NULL;
 osMutexDef(acc_raw_data_queue_mutex);
@@ -99,25 +101,31 @@ osMutexDef(acc_raw_data_queue_mutex);
 #define HR_PROCESS_THREAD_STACK_SIZE 				(1024*2)
 static void sndp_hr_process_thread(void const *argument);
 osThreadDef(sndp_hr_process_thread, osPriorityNormal, 1, HR_PROCESS_THREAD_STACK_SIZE, "hr_process_thread");
-osThreadId hr_process_thread_tid;
+osThreadId hr_process_thread_tid = NULL;
 
 osSemaphoreId hr_process_wait_semaphore_id = NULL;
 osSemaphoreDef(hr_process_wait_semaphore);
 
-static struct Dump debug_dump;
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+POSSIBLY_UNUSED static struct Dump debug_dump;
+#endif
 
-static int32_t hr_ppg_raw_data[HR_PPG_SECOND_SIZE];
-static int16_t hr_acc_raw_data[HR_ACC_SECOND_SIZE];
-static int8_t hr_dev_state[HR_DEV_SECOND_SIZE];
+POSSIBLY_UNUSED static int32_t hr_ppg_raw_data[HR_PPG_SECOND_ALLCH_SAMPLES];
+POSSIBLY_UNUSED static int16_t hr_acc_raw_data[HR_ACC_SECOND_ALLCH_SAMPLES];
+POSSIBLY_UNUSED static int8_t hr_dev_state[HR_DEV_SECOND_ALLCH_SAMPLES];
 
-static int16_t sleep_acc_raw_data[SLEEP_ACC_DATA_SIZE]; //11250 = 125*3*30(s)
-static uint32_t sleep_acc_raw_data_len = 0;
-static struct SleepHrvIndices sleep_hrv_data;
-static int8_t sleep_dev_state[SLEEP_DEV_DATA_SIZE]; //150 = 5 * 30(s)
-static uint8_t sleep_is_contact[SLEEP_CALC_SECONDS];
+POSSIBLY_UNUSED static int16_t sleep_acc_raw_data[SLEEP_ACC_DATA_SAMPLES]; //11250 = 125*3*30(s)
+POSSIBLY_UNUSED static uint32_t sleep_acc_raw_data_len = 0;
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+POSSIBLY_UNUSED static struct SleepHrvIndices sleep_hrv_data;
+#endif
+POSSIBLY_UNUSED static uint16_t sleep_hrv_data_len = 0;
 
-static int16_t sleep_app_accel[90];
-static uint8_t sleep_screen_status[30];
+POSSIBLY_UNUSED static int8_t sleep_dev_state[SLEEP_DEV_DATA_SAMPLES]; //150 = 5 * 30(s)
+POSSIBLY_UNUSED static uint8_t sleep_is_contact[SLEEP_CALC_SECONDS];
+
+POSSIBLY_UNUSED static int16_t sleep_app_accel[90];
+POSSIBLY_UNUSED static uint8_t sleep_screen_status[30];
 
 
 /**************************************************************************************************
@@ -197,98 +205,179 @@ static int acc_raw_data_queue_get_len(void)
 }
 
 
-
 static void sndp_hr_process_thread(void const *argument)
 {
     // Return results
-    struct HrvIndices hrv;
-    int16_t result_code;
-    int8_t count;
-    int8_t led;
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)    
+    POSSIBLY_UNUSED struct HrvIndices hrv;
+#endif
+    POSSIBLY_UNUSED int16_t result_code;
+    POSSIBLY_UNUSED int8_t count;
+    POSSIBLY_UNUSED int8_t led;
+    POSSIBLY_UNUSED int acc_queue_len;
+    POSSIBLY_UNUSED int acc_data_len;
     
 
     HR_TRACE(0, "running...");
 
     while(1) {
-
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
         osSemaphoreWait(hr_process_wait_semaphore_id, osWaitForever);
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
+        //HR_TRACE(0, "wakeup");
 
-        // Check whether the PPG data is enough.
-        if(ppg_raw_data_queue_get_len() < HR_PPG_SECOND_SIZE) {
+        if(!hr_ctx.hr_running && !hr_ctx.sleep_running) {
+            HR_TRACE(0, "app not running, ret");
             continue;
         }
 
+        // hr_setp_4: Check whether the PPG data is enough.
+        // sleep_step_4: Check whether the PPG data is enough.
+        if(ppg_raw_data_queue_get_len() < HR_PPG_SECOND_ALLCH_SAMPLES) {
+            HR_TRACE(0, "ppg is not enough, ret");
+            continue;
+        }
+
+
+#if 0
         // Check whether the acc data is enough.
-        if(acc_raw_data_queue_get_len() < HR_ACC_SECOND_SIZE) {
+        if(acc_raw_data_queue_get_len() < HR_ACC_SECOND_ALLCH_SAMPLES) {
             continue;
         }
+#endif
+        // hr_setp_5: Read ppg data
+        // sleep_step_5: Read ppg data
+        memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
+        ppg_raw_data_queue_pop_data(hr_ppg_raw_data, HR_PPG_SECOND_ALLCH_SAMPLES);
 
-        // Read ppg data
-        ppg_raw_data_queue_pop_data(hr_ppg_raw_data, HR_PPG_SECOND_SIZE);
+        // hr_setp_6: Read acc data
+        // sleep_step_6: Read acc data
+        acc_queue_len = acc_raw_data_queue_get_len();
+        if(acc_queue_len >= HR_ACC_SECOND_ALLCH_SAMPLES) {
+            acc_data_len = HR_ACC_SECOND_ALLCH_SAMPLES;
+        } else {
+            acc_data_len = acc_queue_len;
+        }
+        memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
+        acc_raw_data_queue_pop_data(hr_acc_raw_data, acc_data_len);
 
-        // Read acc data
-        acc_raw_data_queue_pop_data(hr_acc_raw_data, HR_ACC_SECOND_SIZE);
+        
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
 
-        // Input data
+        // hr_setp_7: Input data
+        // sleep_step_7: Input data
         dbbeats_put_heartrate_data(
                 hr_acc_raw_data, 
                 hr_ppg_raw_data, 
                 hr_dev_state, 
                 1, 50, 
-                HR_ACC_SECOND_SIZE, 
-                HR_PPG_SECOND_SIZE, 
-                HR_DEV_SECOND_SIZE, 
+                HR_ACC_SECOND_ALLCH_SAMPLES, 
+                HR_PPG_SECOND_ALLCH_SAMPLES, 
+                HR_DEV_SECOND_ALLCH_SAMPLES, 
                 1000);
 
-        // Return results
+        // hr_setp_8: Return results
+        // sleep_step_8: Return results
         dbbeats_get_heartrate_data(&hrv, &result_code, &count, &led, &debug_dump);
 
+        // hr_setp_9: Display hr results
+        // sleep_step_9: Display hr results
         if(result_code == 1 && hrv.HR > 1) {
             HR_TRACE(0, "HR: %d BPM, SDNN: %d ms", hrv.HR, hrv.SDNN);
         } else if (result_code == 101) {
             HR_TRACE(0, "Sensor detached");
         }
+
+
+        // hr_setp_10: Report results
+        if(hr_ctx.hr_running) {
+
+        }
         
+        
+        if(hr_ctx.sleep_running) {
+            HR_TRACE(0, "sleep analyse...");
+            
+            // sleep_step_10: 把每秒的加速度传感器数据填充到缓存中。
+            for(int32_t i = 0; i < HR_ACC_SECOND_ALLCH_SAMPLES && sleep_acc_raw_data_len < SLEEP_ACC_DATA_SAMPLES; i++) {
+                sleep_acc_raw_data[sleep_acc_raw_data_len++] = hr_acc_raw_data[i];
+            }
+
+            // sleep_step_11: 把每秒经过心率算法计算后的hrv数据保存到 sleep_hrv_data中。
+            if(sleep_hrv_data_len < SLEEP_CALC_SECONDS) {
+                sleep_hrv_data.HR[sleep_hrv_data_len] = hrv.HR;
+                sleep_hrv_data.SDNN[sleep_hrv_data_len] = hrv.SDNN;
+                sleep_hrv_data_len++;
+            }
+
+            //缓存满30秒数据，处理睡眠数据。
+            if(sleep_hrv_data_len >= SLEEP_CALC_SECONDS) {
+                
+                // sleep_step_13: Input sensor data
+                dbbeats_put_sleep_sensor_data(
+                        sleep_acc_raw_data, 
+                        sleep_hrv_data, 
+                        sleep_dev_state, 
+                        sleep_is_contact, 
+                        11250, 30, 150, 30);
+                
+                sleep_acc_raw_data_len = 0;
+
+                // sleep_step_14: input app data
+                dbbeats_put_sleep_app_data(
+                    sleep_app_accel, 
+                    sleep_screen_status, 
+                    0);
+                
+            }
+        }
+#else
+        HR_TRACE(0, "hr is processing ...");
+#endif
+
     }
 
 }
 
-
-
 void sndp_hr_mearsuring_start(void)
 {
-    // 1. 算法初始化
-    dbbeats_initialize_heartrate_data(1, 0);
+    app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     
-    //打开读取心率IC数据
-#if defined(__SNDP_HEART_RATE_MGR__)
-    sndp_hal_hr_start_reading_ppg();
-#endif 
+    // hr_setp_1: 算法初始化
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)    
+    dbbeats_initialize_heartrate_data(1, 0);
+#endif
 
-    //打开读取加速度IC数据
-#if defined(__SNDP_HEART_RATE_MGR__)
+    // hr_setp_2: 打开读取加速度数据
+#if defined(__SNDP_GSENSOR_SUPPORT__)
     sndp_hal_acc_start_reading_raw_data();
 #endif
+
+    // hr_setp_3: 打开读取PPG数据
+#if 0//defined(__SNDP_HRSENSOR_SUPPORT__)
+    sndp_hal_hr_start_reading_ppg();
+#endif 
 
     hr_ctx.hr_running = true;
 }
 
 void sndp_hr_mearsuring_stop(void)
 {
+    // hr_setp_10: 停止处理
     hr_ctx.hr_running = false;
     
-    //打开读取心率IC数据
-    //打开读取加速度IC数据
-#if defined(__SNDP_HEART_RATE_MGR__)
+    // hr_setp_11: 停止读取ppg数据
+#if 0//defined(__SNDP_HRSENSOR_SUPPORT__)
     sndp_hal_hr_stop_reading_ppg();
 #endif
 
-#if defined(__SNDP_HEART_RATE_MGR__)
+    // hr_setp_12: 停止读取加速度数据
+#if defined(__SNDP_GSENSOR_SUPPORT__)
     sndp_hal_acc_stop_reading_raw_data();
 #endif
-    
+
+    app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
+
 }
 
 
@@ -298,12 +387,12 @@ void sndp_sleep_analysis_callback(int8_t *sleep_stage,
                    int8_t sound_control,
                    int16_t result_code) 
 {
-                   
+    // sleep_step_14: analysis result
     if (result_code == 1) {
         HR_TRACE(0, "Sleep position: %d\n", sleep_position);
-        // Use sleep_stage[0~39]
+        // sleep_step_15: Use sleep_stage[0~39]
 
-        // report data to app via ble.
+        // sleep_step_16: report data to app via ble.
         
     } else {
         HR_TRACE(0, "Error: %d\n", result_code);
@@ -318,32 +407,28 @@ void sndp_sleep_analysis_callback(int8_t *sleep_stage,
  */
 void sndp_sleep_analysis_process(void)
 {
-    // Input sensor data
-    dbbeats_put_sleep_sensor_data(
-            sleep_acc_raw_data, 
-            sleep_hrv_data, 
-            sleep_dev_state, 
-            sleep_is_contact, 
-            11250, 30, 150, 30);
-
-    // input app data
-    dbbeats_put_sleep_app_data(
-        sleep_app_accel, 
-        sleep_screen_status, 
-        0);
+    
     
 }
 
 void sndp_sleep_analysis_start(void)
 {
     sleep_acc_raw_data_len = 0;
+    sleep_hrv_data_len = 0;
 
-    // sleep_1. 算法初始化
+    // sleep_step_1:算法初始化
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
     dbbeats_initialize_sleep_data(0, sndp_sleep_analysis_callback);
+#endif
 
-    // sleep_2. 打开读取加速度传感器数据。
-#if defined(__SNDP_HEART_RATE_MGR__)
-    sndp_hal_acc_start_reading_raw_data();
+    // sleep_step_2:打开读取加速度数据。
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+    sndp_hal_acc_stop_reading_raw_data();
+#endif    
+
+    // sleep_step_3:打开读取PPG数据。
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
+    sndp_hal_hr_start_reading_ppg();
 #endif
 
     hr_ctx.sleep_running = true;
@@ -352,18 +437,31 @@ void sndp_sleep_analysis_start(void)
 
 void sndp_sleep_analysis_stop(void)
 {
+    // hr_setp_17: 停止处理
     hr_ctx.sleep_running = false;
     
-#if defined(__SNDP_HEART_RATE_MGR__)
+    // hr_setp_18: 停止读取ppg数据
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
+    sndp_hal_hr_stop_reading_ppg();
+#endif
+
+    // hr_setp_19: 停止读取加速度数据
+#if defined(__SNDP_GSENSOR_SUPPORT__)
     sndp_hal_acc_stop_reading_raw_data();
-#endif    
+#endif
+
 }
 
 #if defined(__SNDP_HEART_RATE_MGR__)
 static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 {
-    if(hr_ctx.hr_running) {
+    //HR_TRACE(0, "cnt=%d", cnt);
+    if(hr_ctx.hr_running || hr_ctx.sleep_running) {
         ppg_raw_data_queue_push_data(data, cnt);
+        if(ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES) {
+            //HR_TRACE(0, "wakeup thread");
+            osSemaphoreRelease(hr_process_wait_semaphore_id);
+        }
     }
 }
 #endif 
@@ -372,29 +470,15 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 #if defined(__SNDP_GSENSOR_SUPPORT__)
 static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16_t cnt)
 {
-    if(hr_ctx.hr_running) {
+    //HR_TRACE(0, "cnt=%d", cnt);
+    if(hr_ctx.hr_running || hr_ctx.sleep_running) {
         acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
-    }
-    
-    // sleep_3. 把读到的加速度传感器数据填充到缓存中。
-    if(hr_ctx.sleep_running) {
-        for(uint16_t i = 0; i < cnt && sleep_acc_raw_data_len < SLEEP_ACC_DATA_SIZE - 3; i++) {
-            sleep_acc_raw_data[sleep_acc_raw_data_len++] = data[i].x;
-            sleep_acc_raw_data[sleep_acc_raw_data_len++] = data[i].y;
-            sleep_acc_raw_data[sleep_acc_raw_data_len++] = data[i].z;
-        }
-
-        // sleep_4. 缓存满30秒数据，处理睡眠数据。
-        if(sleep_acc_raw_data_len >= SLEEP_ACC_DATA_SIZE) {
-            sndp_sleep_analysis_process();
-            sleep_acc_raw_data_len = 0;
-        }
     }
 }
 #endif 
 
 
-void sndp_hr_init(void)
+void sndp_hr_app_init(void)
 {
     // 1. 创建队列并初始化。
     if(ppg_raw_data_queue_mutex_id == NULL) {

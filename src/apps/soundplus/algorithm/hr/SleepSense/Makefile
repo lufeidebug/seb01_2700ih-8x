@@ -6,8 +6,10 @@ obj-y := $(obj-y:.S=.o)
 obj-y := $(obj-y:.cpp=.o)
 
 
-hr_algo_lib := libSleepSense.a
-obj-y += $(hr_algo_lib)
+HR_ALGO_LIB_NAME := libSleepSense.a
+#LIB_BIN_DIR := $(cur_dir)lib
+LIB_BIN_DIR := lib/thirdparty/heartrate
+obj-y += $(HR_ALGO_LIB_NAME)
 
 ccflags-y := \
     -Iplatform/cmsis/inc  \

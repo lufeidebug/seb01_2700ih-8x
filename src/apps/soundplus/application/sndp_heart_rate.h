@@ -25,8 +25,12 @@ extern "C" {
 
 
 
+void sndp_hr_mearsuring_start(void);
+void sndp_hr_mearsuring_stop(void);
+void sndp_sleep_analysis_start(void);
+void sndp_sleep_analysis_stop(void);
 
-void sndp_hr_init(void);
+void sndp_hr_app_init(void);
 
 
 

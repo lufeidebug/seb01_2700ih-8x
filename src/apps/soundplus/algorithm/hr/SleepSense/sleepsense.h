@@ -1,7 +1,14 @@
 #ifndef __SLEEPSENSE_H__
 #define __SLEEPSENSE_H__
 
+
+
 #include <stdint.h>
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define DBBEATS_ACC_SAMPLINGRATE  125
 #define DBBEATS_PPG_SAMPLINGRATE  64
@@ -73,5 +80,10 @@ void dbbeats_get_sleep_data(int8_t *sleep_stage,
                             int16_t *result_code);
 
 const char* lib_engine_version(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif // __SLEEPSENSE_H__

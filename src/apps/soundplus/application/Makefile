@@ -129,6 +129,6 @@ ccflags-y += -Iapps/soundplus/device/hal \
 			-Iapps/soundplus/device/driver/cover_switch/box_notify
 endif	
 
-ifeq ($(SNDP_HR_ALGO_SLEEPSENSE_V2_0_0),1)
-ccflags-y += -Iapps/soundplus/algorithm/hr/SleepSense_V2_0_0
+ifeq ($(SNDP_HR_ALGO_SLEEPSENSE),1)
+ccflags-y += -Iapps/soundplus/algorithm/hr/SleepSense
 endif	
