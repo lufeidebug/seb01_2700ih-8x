@@ -462,6 +462,7 @@ void sndp_ui_bat_pwr_measure_callback(sndp_dev_bat_info_s old_bat_info, sndp_dev
 }
 
 //---------------------------------------- key ctrl --------------------------------------------
+#if defined(__SNDP_KEY_TEST__)
 static void sndp_ui_pwr_key_hdlr(APP_KEY_STATUS *status, void *param)
 {
     SPUI_TRACE(0, "event=%d", status->event);
@@ -477,9 +478,92 @@ static void sndp_ui_pwr_key_hdlr(APP_KEY_STATUS *status, void *param)
             break;
         case APP_KEY_EVENT_LONGLONGPRESS:
             break;
-        
+        default:
+            break;
     }
 
+}
+
+static void sndp_ui_fn1_key_hdlr(APP_KEY_STATUS *status, void *param)
+{
+    SPUI_TRACE(0, "event=%d", status->event);
+    
+    switch(status->event) {
+        case APP_KEY_EVENT_CLICK:
+            break;
+        case APP_KEY_EVENT_DOUBLECLICK:
+            break;
+        case APP_KEY_EVENT_TRIPLECLICK:
+            break;
+        case APP_KEY_EVENT_LONGPRESS:
+            break;
+        case APP_KEY_EVENT_LONGLONGPRESS:
+            break;
+        default:
+            break;
+    }
+
+}
+
+static void sndp_ui_fn2_key_hdlr(APP_KEY_STATUS *status, void *param)
+{
+    SPUI_TRACE(0, "event=%d", status->event);
+    
+    switch(status->event) {
+        case APP_KEY_EVENT_CLICK:
+            break;
+        case APP_KEY_EVENT_DOUBLECLICK:
+            break;
+        case APP_KEY_EVENT_TRIPLECLICK:
+            break;
+        case APP_KEY_EVENT_LONGPRESS:
+            break;
+        case APP_KEY_EVENT_LONGLONGPRESS:
+            break;
+        default:
+            break;
+    }
+
+}
+
+static void sndp_ui_fn3_key_hdlr(APP_KEY_STATUS *status, void *param)
+{
+    SPUI_TRACE(0, "event=%d", status->event);
+    
+    switch(status->event) {
+        case APP_KEY_EVENT_CLICK:
+            break;
+        case APP_KEY_EVENT_DOUBLECLICK:
+            break;
+        case APP_KEY_EVENT_TRIPLECLICK:
+            break;
+        case APP_KEY_EVENT_LONGPRESS:
+            break;
+        case APP_KEY_EVENT_LONGLONGPRESS:
+            break;
+        default:
+            break;
+    }
+}
+
+static void sndp_ui_fn4_key_hdlr(APP_KEY_STATUS *status, void *param)
+{
+    SPUI_TRACE(0, "event=%d", status->event);
+    
+    switch(status->event) {
+        case APP_KEY_EVENT_CLICK:
+            break;
+        case APP_KEY_EVENT_DOUBLECLICK:
+            break;
+        case APP_KEY_EVENT_TRIPLECLICK:
+            break;
+        case APP_KEY_EVENT_LONGPRESS:
+            break;
+        case APP_KEY_EVENT_LONGLONGPRESS:
+            break;
+        default:
+            break;
+    }
 }
 
 static const APP_KEY_HANDLE  sndp_key_handle_cfg[] = {
@@ -488,6 +572,18 @@ static const APP_KEY_HANDLE  sndp_key_handle_cfg[] = {
     {{APP_KEY_CODE_PWR, APP_KEY_EVENT_TRIPLECLICK   },  "sndp key",  sndp_ui_pwr_key_hdlr, NULL},
     {{APP_KEY_CODE_PWR, APP_KEY_EVENT_LONGPRESS     },  "sndp key",  sndp_ui_pwr_key_hdlr, NULL},    
     {{APP_KEY_CODE_PWR, APP_KEY_EVENT_LONGLONGPRESS },  "sndp key",  sndp_ui_pwr_key_hdlr, NULL}, 
+
+    {{APP_KEY_CODE_FN1, APP_KEY_EVENT_CLICK         },  "sndp key",  sndp_ui_fn1_key_hdlr, NULL},
+    {{APP_KEY_CODE_FN1, APP_KEY_EVENT_DOUBLECLICK   },  "sndp key",  sndp_ui_fn1_key_hdlr, NULL},
+
+    {{APP_KEY_CODE_FN2, APP_KEY_EVENT_CLICK         },  "sndp key",  sndp_ui_fn2_key_hdlr, NULL},
+    {{APP_KEY_CODE_FN2, APP_KEY_EVENT_DOUBLECLICK   },  "sndp key",  sndp_ui_fn2_key_hdlr, NULL},
+
+    {{APP_KEY_CODE_FN3, APP_KEY_EVENT_CLICK         },  "sndp key",  sndp_ui_fn3_key_hdlr, NULL},
+    {{APP_KEY_CODE_FN3, APP_KEY_EVENT_DOUBLECLICK   },  "sndp key",  sndp_ui_fn3_key_hdlr, NULL},
+
+    {{APP_KEY_CODE_FN4, APP_KEY_EVENT_CLICK         },  "sndp key",  sndp_ui_fn4_key_hdlr, NULL},
+    {{APP_KEY_CODE_FN4, APP_KEY_EVENT_DOUBLECLICK   },  "sndp key",  sndp_ui_fn4_key_hdlr, NULL},
 };
 
 void sndp_ui_key_init(void)
@@ -500,7 +596,7 @@ void sndp_ui_key_init(void)
         app_key_handle_registration(&sndp_key_handle_cfg[i]);
     }
 }
-
+#endif
 
 //---------------------------------------- prompt ctrl --------------------------------------------
 static bool sndp_ui_prompt_sta = false;

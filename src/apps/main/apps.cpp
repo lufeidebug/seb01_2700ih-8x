@@ -1391,6 +1391,11 @@ void stereo_poweron_pairing_timer_on(void)
 
 void app_key_init(void)
 {
+#if defined(__SNDP_KEY_TEST__)
+    sndp_ui_key_init();
+    return;
+#endif
+
 #ifdef BESUI_TWS_EN
     return;
 #endif

@@ -69,6 +69,8 @@ extern const uint16_t cfg_hw_adckey_vol_table[CFG_HW_ADCKEY_NUMBER];
 #define CFG_HW_GPIOKEY_NUM (3)
 #elif BES_AUDIO_DEV_Main_Board_9v0
 #define CFG_HW_GPIOKEY_NUM (6)
+#elif defined(__SNDP_KEY_TEST__)
+#define CFG_HW_GPIOKEY_NUM (4)
 #else
 #define CFG_HW_GPIOKEY_NUM (0)
 #endif
