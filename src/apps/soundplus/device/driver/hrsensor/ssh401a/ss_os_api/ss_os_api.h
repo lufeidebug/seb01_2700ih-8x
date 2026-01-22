@@ -69,7 +69,7 @@ typedef struct
     * @see ss_ppg_proximity_threshold()
     */
 
-    void (*callback_ppg_data)(SS_PPG* ppg_data);
+    void (*callback_ppg_data)(SS_PPG* ppg_data, int cnt);
     /**< Specifies the pointer to which the PPG data read from the sensor's FIFO will be delivered on the Host MCU side.
     */
 } SS_OS_API;
@@ -153,7 +153,7 @@ void os_api_callback_proximity(unsigned char is_wearing);
  * @see ss_os_api_config()
  * @see SS_PPG
  */
-void os_api_callback_ppg_data(SS_PPG* ppg_data);
+void os_api_callback_ppg_data(SS_PPG* ppg_data, int cnt);
 
 #ifdef __cplusplus
 }

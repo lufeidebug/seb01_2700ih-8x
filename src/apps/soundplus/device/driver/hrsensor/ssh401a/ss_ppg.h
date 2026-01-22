@@ -513,6 +513,11 @@ SS_PPG* ss_ppg_mem_fifo_data_pop(void);
  */
 int ss_ppg_mem_get_fifo_data_count(void);
 
+
+int ss_ppg_open_fifo(void);
+
+int ss_ppg_close_fifo(void);
+
 #ifdef __cplusplus
 }
 #endif

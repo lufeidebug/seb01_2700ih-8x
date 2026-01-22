@@ -29,6 +29,10 @@ static int clear_fifo(void);
 static unsigned int g_pre_adc_data[4] = {0,0,0,0};
 static unsigned short g_selected_sps = 32;
 static Sensor g_target_sensor;
+static unsigned char g_fifo_onoff = 0;
+static unsigned char g_proximity_sta = 0;
+static SS_PPG ppg_buf[32];
+
 
 static const float g_led_range_list[] = {
     CURRENT_RANGE_16_7,
@@ -504,22 +508,26 @@ void ss_ppg_interrupt_handler(void)
     unsigned char read_len = 0;
     unsigned char* fifo_data = (void*)0;
     unsigned char int_status = 0;
-    POSSIBLY_UNUSED SS_PPG* ppg_buf;
+    //POSSIBLY_UNUSED SS_PPG* ppg_buf;
     
     ss_ppg_read_interrupt_status(&int_status);
    
     if ((int_status & INT_STAT_PROX_HIGH) == INT_STAT_PROX_HIGH)
     {
         //Wearing Earbuds
+        g_proximity_sta = 1;
         os_api_callback_proximity(1);
-        
-        ss_ppg_clear_fifo();
-        ss_ppg_led_config(SEQ1, LED_GREEN);
-        ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 1);
+
+        if(g_fifo_onoff) {
+            ss_ppg_clear_fifo();
+            ss_ppg_led_config(SEQ1, LED_GREEN);
+            ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 1);
+        }
     }
     else if ((int_status & INT_STAT_PROX_LOW) == INT_STAT_PROX_LOW)
     {
         //Removing Earbuds
+        g_proximity_sta = 0;
         os_api_callback_proximity(0);
         
         ss_ppg_led_config(SEQ1, LED_OFF);
@@ -555,11 +563,17 @@ void ss_ppg_interrupt_handler(void)
     {
         ss_ppg_interrupt_clear();
 
+        if(data_count > 32) {
+            data_count = 32;
+        }
+
         for (int idx=0; idx < data_count; idx++)
         {
             SS_PPG* ppg_data = ss_ppg_mem_fifo_data_pop();
-            os_api_callback_ppg_data(ppg_data);
+            memcpy(&ppg_buf[idx], ppg_data, sizeof(SS_PPG));
         }
+
+        os_api_callback_ppg_data(ppg_buf, data_count);
     }
     //
 }
@@ -696,6 +710,28 @@ static int stop_measurement(void)
     read_val &= ~0x08; //REG_MEASUREMENT[3] MEAS_ON bit set 0
 
     return os_api_i2c_write_byte(REG_MEASUREMENT, read_val);
+}
+
+int ss_ppg_open_fifo(void)
+{
+    g_fifo_onoff = 1;
+
+    if(g_proximity_sta) {
+        ss_ppg_clear_fifo();
+        ss_ppg_led_config(SEQ1, LED_GREEN);
+        ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 1);
+    }
+    return SS_SUCCESS;
+}
+
+int ss_ppg_close_fifo(void)
+{
+    g_fifo_onoff = 0;
+    
+    ss_ppg_led_config(SEQ1, LED_OFF);
+    ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 0);
+
+    return SS_SUCCESS;
 }
 
 static int fifo_init(void)

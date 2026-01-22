@@ -203,7 +203,7 @@ void os_api_callback_proximity(unsigned char is_wearing)
     }
 }
 
-void os_api_callback_ppg_data(SS_PPG* ppg_data)
+void os_api_callback_ppg_data(SS_PPG* ppg_data, int cnt)
 {
     if (g_func_config == (void*)0)
     {
@@ -215,7 +215,7 @@ void os_api_callback_ppg_data(SS_PPG* ppg_data)
     }
     else
     {
-        g_func_config->callback_ppg_data(ppg_data);
+        g_func_config->callback_ppg_data(ppg_data, cnt);
     }
 }
 

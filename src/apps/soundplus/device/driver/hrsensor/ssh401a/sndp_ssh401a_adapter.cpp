@@ -36,6 +36,9 @@
 #define SSH401A_I2C_ID                            (HAL_I2C_ID_3)
 
 
+//#define __SSH401A_READ_RAW_DATA_MODIS__
+
+
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -68,6 +71,11 @@ static multi_heap_handle_t ssh401a_heap;
 static uint8_t ssh401a_heap_buf[1024];
 
 static SS_OS_API ssh401a_os_api_config;
+
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
+static int32_t ssh401a_ppg_data[64];
+#endif
+
 
 /**************************************************************************************************
 * Function
@@ -168,11 +176,24 @@ void ssh401a_callback_proximity_interrupt(unsigned char is_wearing)
 #endif
 }
 
-static void ssh401a_callback_ppg_data(SS_PPG* ppg_data)
+
+static void ssh401a_callback_ppg_data(SS_PPG* ppg_data, int cnt)
 {
+    //SSH401A_TRACE(1, "cnt=%d", cnt);
+
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
+    if(cnt > 64) {
+        cnt = 64;
+    }
+
+    for(int i = 0; i < cnt; i++) {
+        ssh401a_ppg_data[i] = ppg_data[i].seq1;
+    }
+    
     if(ssh401a_hr_read_ppg_cb_ptr) {
-        ssh401a_hr_read_ppg_cb_ptr((int32_t *)ppg_data, 3);
+        ssh401a_hr_read_ppg_cb_ptr(ssh401a_ppg_data, cnt);
+    } else {
+        SSH401A_TRACE(1, "NULL");
     }
 #endif
 }
@@ -296,25 +317,66 @@ int32_t ssh401a_enter_detection_mode(void)
 
 int32_t ssh401a_set_reading_ppg_callback(sndp_hal_hr_read_ppg_callback callback)
 {
+    SSH401A_TRACE(0, "%d", (uint32_t)callback);
     ssh401a_hr_read_ppg_cb_ptr = callback;
     return SNDP_HAL_RET_OK;
 }
 
+
+#if defined(__SSH401A_READ_RAW_DATA_MODIS__)
+void ssh401a_read_ppg_test(void) 
+{
+    int32_t ppg[64];
+
+    if(ssh401a_hr_read_ppg_cb_ptr) {
+        SSH401A_TRACE(0, "call");
+        ssh401a_hr_read_ppg_cb_ptr(ppg, 64);
+    } else {
+        SSH401A_TRACE(0, "null");
+    }
+
+    sndp_delay_exec_start(1000, (uint32_t)ssh401a_read_ppg_test, 0, 0, 0);
+}
+#endif
+
+
 int32_t ssh401a_start_reading_ppg(void)
 {
+    SSH401A_TRACE(0, "...");
+    
+#if defined(__SSH401A_READ_RAW_DATA_MODIS__)
+    sndp_delay_exec_start(1000, (uint32_t)ssh401a_read_ppg_test, 0, 0, 0);
+#else
+#if 0
     if (ss_ppg_start_measurement() != SS_SUCCESS) {
         SSH401A_TRACE(0, "start_measurement failed");
         return SNDP_HAL_RET_FAIL;
     }
+#else
+    ss_ppg_open_fifo();
+#endif
+#endif
+
     return SNDP_HAL_RET_OK;
 }
 
 int32_t ssh401a_stop_reading_ppg(void)
 {
+    SSH401A_TRACE(0, "...");
+    
+#if defined(__SSH401A_READ_RAW_DATA_MODIS__)
+    sndp_delay_exec_stop((uint32_t)ssh401a_read_ppg_test);
+#else
+#if 0
     if (ss_ppg_stop_measurement() != SS_SUCCESS) {
         SSH401A_TRACE(0, "stop_measurement failed");
         return SNDP_HAL_RET_FAIL;
     }
+#else
+    ss_ppg_close_fifo();
+#endif    
+#endif
+
     return SNDP_HAL_RET_OK;
 }
 
@@ -388,5 +450,5 @@ extern "C" const sndp_hal_wear_detection_s sndp_wear_detection_ssh401a = {
 };
 #endif
 
-#endif	//__SNDP_GSENSOR_XXXX__
+#endif	//__SNDP_HRSENSOR_SSH401A__
 

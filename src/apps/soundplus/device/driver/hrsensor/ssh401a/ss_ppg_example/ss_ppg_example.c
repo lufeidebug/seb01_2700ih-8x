@@ -27,7 +27,7 @@ int ss_ppg_example_main(ExampleMode exam_mode)
         return SS_ERROR_BASE;
     }
     
-    if (ss_ppg_init(SENSOR_SSH401, SPS_25, 32) != SS_SUCCESS)
+    if (ss_ppg_init(SENSOR_SSH401, SPS_64, 32) != SS_SUCCESS)
     {
         os_api_print_log("ss_ppg_init failed");
         return SS_ERROR_BASE;
