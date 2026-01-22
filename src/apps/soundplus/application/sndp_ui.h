@@ -66,7 +66,9 @@ void sndp_ui_anc_onoff(bool onoff);
 
 void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote);
 
+#if defined(__SNDP_KEY_TEST__)
 void sndp_ui_key_init(void);
+#endif
 
 bool sndp_ui_is_prompt_playing(void);
 int sndp_ui_prompt_finish_cb(int aud_id);
