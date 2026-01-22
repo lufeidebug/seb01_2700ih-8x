@@ -292,9 +292,9 @@ int32_t da217e_open_fifo_watermark_int(uint8_t num)
 {
 	int32_t ret = 0;
 	
-	ret = da217e_reg_write(DA217E_REG_FIFO_CTRL, 0x80|num);
-	ret = da217e_reg_write(DA217E_REG_INT_SET0, 0x08);
-	ret = da217e_reg_write(DA217E_REG_INT_MAP2, 0x02);
+	ret |= da217e_reg_write(DA217E_REG_FIFO_CTRL, 0x80|num); //bit[7:6]=fifo_mode=10=stream mode
+	ret |= da217e_reg_write(DA217E_REG_INT_SET0, 0x08); //bit[3]=wartermark_int_en=1
+	ret |= da217e_reg_write(DA217E_REG_INT_MAP2, 0x40); //bit[6]=Int2_watermark=1
 
 	return ret;
 }

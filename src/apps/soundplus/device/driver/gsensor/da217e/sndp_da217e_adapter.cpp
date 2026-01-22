@@ -33,6 +33,9 @@
 #define DA217E_I2C_ID                            (HAL_I2C_ID_2)
 
 
+//#define __DA217E_READ_RAW_DATA_MODIS__
+
+
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -135,6 +138,8 @@ static void da217e_read_fifo_cb(da217e_drv_acc_data_s *data, uint16_t cnt)
 {
     DA217E_TRACE(1, "cnt=%d", cnt);
 
+    //DUMP16("%6d ", (int16_t *)data, cnt > 4 ? 4*3 : cnt *3);
+
 #if defined(__SNDP_GSENSOR_SUPPORT__)    
     if(da217e_acc_read_raw_data_cb_ptr) {
         da217e_acc_read_raw_data_cb_ptr((sndp_hal_acc_data_s *)data, cnt);
@@ -212,7 +217,7 @@ int32_t da217e_init(void)
 {
     if(da217e_inited) {
         DA217E_TRACE(0, "inited, rtn");
-        return SNDP_HAL_RET_FAIL;
+        return SNDP_HAL_RET_OK;
     }
 
     da217e_i2c_init();
@@ -256,22 +261,50 @@ int32_t da217e_enter_detection_mode(void)
 #if defined(__SNDP_GSENSOR_SUPPORT__)
 int32_t da217e_set_reading_raw_data_callback(sndp_hal_acc_read_raw_data_callback callback)
 {
+    DA217E_TRACE(0, "%d", (uint32_t)callback);
     da217e_acc_read_raw_data_cb_ptr = callback;
     return SNDP_HAL_RET_OK;
 }
 
+#if defined(__DA217E_READ_RAW_DATA_MODIS__)
+void da217e_read_raw_data_test(void) 
+{
+    sndp_hal_acc_data_s acc_data[125] = {0};
+
+    if(da217e_acc_read_raw_data_cb_ptr) {
+        DA217E_TRACE(0, "callback");
+        da217e_acc_read_raw_data_cb_ptr(acc_data, 125);
+    } else {
+        DA217E_TRACE(0, "null");
+    }
+
+    sndp_delay_exec_start(1000, (uint32_t)da217e_read_raw_data_test, 0, 0, 0);
+}
+#endif
+
 int32_t da217e_start_reading_raw_data(void)
 {
     DA217E_TRACE(0, "...");
-
+    
+#if defined(__DA217E_READ_RAW_DATA_MODIS__)
+    sndp_delay_exec_start(1000, (uint32_t)da217e_read_raw_data_test, 0, 0, 0);
+#else
     da217e_open_fifo_watermark_int(25);
+#endif
+
     return SNDP_HAL_RET_OK;
 }
 
 int32_t da217e_stop_reading_raw_data(void)
 {
     DA217E_TRACE(0, "...");
+    
+#if defined(__DA217E_READ_RAW_DATA_MODIS__)
+    sndp_delay_exec_stop((uint32_t)da217e_read_raw_data_test);
+#else
     da217e_close_fifo_int();
+#endif
+
     return SNDP_HAL_RET_OK;
 }
 
