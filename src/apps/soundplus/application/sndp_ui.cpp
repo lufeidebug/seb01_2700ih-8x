@@ -30,6 +30,10 @@
 #include "sndp_comm_cmd.h"
 #endif
 
+#if defined(__SNDP_HEART_RATE_MGR__)
+#include "sndp_heart_rate.h"
+#endif
+
 
 /**************************************************************************************************
 * Constant
@@ -490,8 +494,14 @@ static void sndp_ui_fn1_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
+#if defined(__SNDP_HEART_RATE_MGR__)            
+            sndp_hr_mearsuring_start();
+#endif
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
+#if defined(__SNDP_HEART_RATE_MGR__)            
+            sndp_hr_mearsuring_stop();
+#endif
             break;
         case APP_KEY_EVENT_TRIPLECLICK:
             break;
@@ -502,7 +512,6 @@ static void sndp_ui_fn1_key_hdlr(APP_KEY_STATUS *status, void *param)
         default:
             break;
     }
-
 }
 
 static void sndp_ui_fn2_key_hdlr(APP_KEY_STATUS *status, void *param)
@@ -511,8 +520,14 @@ static void sndp_ui_fn2_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
+#if defined(__SNDP_HEART_RATE_MGR__)            
+            sndp_sleep_analysis_start();
+#endif
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
+#if defined(__SNDP_HEART_RATE_MGR__)            
+            sndp_sleep_analysis_stop();
+#endif
             break;
         case APP_KEY_EVENT_TRIPLECLICK:
             break;
@@ -1045,7 +1060,11 @@ void sndp_ui_init_pre(void)
 void sndp_ui_init(void)
 {
 	SPUI_TRACE_ENTER();
-	
+    
+#if defined(__SNDP_HEART_RATE_MGR__)
+    sndp_hr_app_init();
+#endif
+
 	sndp_ui_check_dev_initial_status();
     sndp_delay_exec_start(300, (uint32_t)sndp_ui_bt_event_exec_after_power_on, 0, 0, 0);
 }
