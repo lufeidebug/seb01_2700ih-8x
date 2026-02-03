@@ -136,7 +136,7 @@ static void da217e_tap_event(uint8_t tap_cnt)
 
 static void da217e_read_fifo_cb(da217e_drv_acc_data_s *data, uint16_t cnt)
 {
-    DA217E_TRACE(1, "cnt=%d", cnt);
+    //DA217E_TRACE(1, "cnt=%d", cnt);
 
     //DUMP16("%6d ", (int16_t *)data, cnt > 4 ? 4*3 : cnt *3);
 
@@ -165,7 +165,7 @@ static void da217e_int1_irq_handler(enum HAL_GPIO_PIN_T pin)
     uint32_t curr_time = hal_sys_timer_get();
     uint32_t passed_ticks = hal_timer_get_passed_ticks(curr_time, last_time);
 
-    DA217E_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), DA217E_IRQ_DEBOUNCE_REPEAT_MS);
+    //DA217E_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), DA217E_IRQ_DEBOUNCE_REPEAT_MS);
     
     if(TICKS_TO_MS(passed_ticks) >= DA217E_IRQ_DEBOUNCE_REPEAT_MS) {
         last_time = hal_sys_timer_get();
@@ -179,7 +179,7 @@ static void da217e_int2_irq_handler(enum HAL_GPIO_PIN_T pin)
     uint32_t curr_time = hal_sys_timer_get();
     uint32_t passed_ticks = hal_timer_get_passed_ticks(curr_time, last_time);
 
-    DA217E_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), DA217E_IRQ_DEBOUNCE_REPEAT_MS);
+    //DA217E_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), DA217E_IRQ_DEBOUNCE_REPEAT_MS);
     
     if(TICKS_TO_MS(passed_ticks) >= DA217E_IRQ_DEBOUNCE_REPEAT_MS) {
         last_time = hal_sys_timer_get();

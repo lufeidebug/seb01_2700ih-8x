@@ -189,6 +189,8 @@ static void ssh401a_callback_ppg_data(SS_PPG* ppg_data, int cnt)
     for(int i = 0; i < cnt; i++) {
         ssh401a_ppg_data[i] = ppg_data[i].seq1;
     }
+
+    //SNDP_DUMP32("%04X ", ssh401a_ppg_data, cnt > 16 ? 16: cnt);
     
     if(ssh401a_hr_read_ppg_cb_ptr) {
         ssh401a_hr_read_ppg_cb_ptr(ssh401a_ppg_data, cnt);
@@ -211,7 +213,7 @@ POSSIBLY_UNUSED static void ssh401a_irq_debounce_delay_handler(void const *param
 
 void ssh401a_irq_debounce(void)
 {
-    SSH401A_TRACE(1, "...");
+    //SSH401A_TRACE(1, "...");
     //osTimerStop(ssh401a_irq_debounce_timer);
     //osTimerStart(ssh401a_irq_debounce_timer, SSH401A_IRQ_DEBOUNCE_DELAY_MS);
     ss_ppg_interrupt_handler();
@@ -223,7 +225,7 @@ static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
     uint32_t curr_time = hal_sys_timer_get();
     uint32_t passed_ticks = hal_timer_get_passed_ticks(curr_time, last_time);
 
-    SSH401A_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), SSH401A_IRQ_DEBOUNCE_REPEAT_MS);
+    //SSH401A_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), SSH401A_IRQ_DEBOUNCE_REPEAT_MS);
     
     if(TICKS_TO_MS(passed_ticks) >= SSH401A_IRQ_DEBOUNCE_REPEAT_MS) {
         last_time = hal_sys_timer_get();
