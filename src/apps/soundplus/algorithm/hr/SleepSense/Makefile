@@ -8,7 +8,7 @@ obj-y := $(obj-y:.cpp=.o)
 
 HR_ALGO_LIB_NAME := libSleepSense.a
 #LIB_BIN_DIR := $(cur_dir)lib
-LIB_BIN_DIR := lib/thirdparty/heartrate
+LIB_BIN_DIR := lib/thirdparty/SleepSense
 obj-y += $(HR_ALGO_LIB_NAME)
 
 ccflags-y := \

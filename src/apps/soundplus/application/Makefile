@@ -82,7 +82,8 @@ ccflags-y +=  \
     -Iapps/soundplus/algorithm/hearaid_dsp \
     -Iapps/psap_sw \
 	-Iutils/hsm \
-	-Iutils/cqueue
+	-Iutils/cqueue \
+	-Iservices/audio_dump/include
 
 
 

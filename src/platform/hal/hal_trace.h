@@ -27,7 +27,7 @@ extern "C" {
 #include "plat_types.h"
 #include "hal_trace_mod.h"
 
-#if defined(USER_SPEECH_DUMP_EN) || defined(USER_ANC_DUMP_EN)
+#if defined(USER_SPEECH_DUMP_EN) || defined(USER_ANC_DUMP_EN) || defined(__SNDP_HEART_RATE_DUMP__)
 #define AUDIO_DEBUG
 #endif
 // #define INTERSYS_RAW_DATA_ONLY

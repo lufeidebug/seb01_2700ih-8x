@@ -12,6 +12,7 @@
 #include "app_audio.h"
 #include "cqueue.h"
 #include "app_utils.h"
+#include "audio_dump.h"
 
 #include "sndp_if_common.h"
 #include "sndp_if_device.h"
@@ -64,6 +65,8 @@
 #define SLEEP_DEV_DATA_SAMPLES              (HR_DEV_SECOND_ALLCH_SAMPLES * SLEEP_CALC_SECONDS)
 
 
+//#define __SNDP_HR_PRINT_ALGO_EXEC_TIME__
+
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -98,7 +101,7 @@ static osMutexId acc_raw_data_queue_mutex_id = NULL;
 osMutexDef(acc_raw_data_queue_mutex);
 
 
-#define HR_PROCESS_THREAD_STACK_SIZE 				(1024*2)
+#define HR_PROCESS_THREAD_STACK_SIZE 				(1024*10)
 static void sndp_hr_process_thread(void const *argument);
 osThreadDef(sndp_hr_process_thread, osPriorityNormal, 1, HR_PROCESS_THREAD_STACK_SIZE, "hr_process_thread");
 osThreadId hr_process_thread_tid = NULL;
@@ -114,18 +117,10 @@ POSSIBLY_UNUSED static int32_t hr_ppg_raw_data[HR_PPG_SECOND_ALLCH_SAMPLES];
 POSSIBLY_UNUSED static int16_t hr_acc_raw_data[HR_ACC_SECOND_ALLCH_SAMPLES];
 POSSIBLY_UNUSED static int8_t hr_dev_state[HR_DEV_SECOND_ALLCH_SAMPLES];
 
-POSSIBLY_UNUSED static int16_t sleep_acc_raw_data[SLEEP_ACC_DATA_SAMPLES]; //11250 = 125*3*30(s)
-POSSIBLY_UNUSED static uint32_t sleep_acc_raw_data_len = 0;
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
-POSSIBLY_UNUSED static struct SleepHrvIndices sleep_hrv_data;
-#endif
-POSSIBLY_UNUSED static uint16_t sleep_hrv_data_len = 0;
-
-POSSIBLY_UNUSED static int8_t sleep_dev_state[SLEEP_DEV_DATA_SAMPLES]; //150 = 5 * 30(s)
-POSSIBLY_UNUSED static uint8_t sleep_is_contact[SLEEP_CALC_SECONDS];
-
 POSSIBLY_UNUSED static int16_t sleep_app_accel[90];
 POSSIBLY_UNUSED static uint8_t sleep_screen_status[30];
+POSSIBLY_UNUSED static uint16_t sleep_analysis_time = 0;
+
 
 
 /**************************************************************************************************
@@ -164,6 +159,14 @@ static int ppg_raw_data_queue_get_len(void)
     queue_len = queue_len / sizeof(int32_t);
     return queue_len;
 }
+
+static void ppg_raw_data_queue_reset(void)
+{
+    osMutexWait(ppg_raw_data_queue_mutex_id, osWaitForever);
+    ResetCQueue(&ppg_raw_data_queue);
+    osMutexRelease(ppg_raw_data_queue_mutex_id);
+}
+
 
 static int acc_raw_data_queue_push_data(int16_t *item, int cnt)
 {
@@ -214,9 +217,12 @@ static void sndp_hr_process_thread(void const *argument)
     POSSIBLY_UNUSED int16_t result_code;
     POSSIBLY_UNUSED int8_t count;
     POSSIBLY_UNUSED int8_t led;
-    POSSIBLY_UNUSED int acc_queue_len;
-    POSSIBLY_UNUSED int acc_data_len;
-    
+    POSSIBLY_UNUSED int32_t acc_queue_len;
+    POSSIBLY_UNUSED int32_t acc_data_len;
+#if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)    
+    uint32_t start_time;
+    uint32_t end_time;
+#endif    
 
     HR_TRACE(0, "running...");
 
@@ -250,6 +256,13 @@ static void sndp_hr_process_thread(void const *argument)
         memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
         ppg_raw_data_queue_pop_data(hr_ppg_raw_data, HR_PPG_SECOND_ALLCH_SAMPLES);
 
+#if defined(__SNDP_HEART_RATE_DUMP__)
+        audio_dump_clear_up();
+        audio_dump_add_channel_data(0, hr_ppg_raw_data, HR_PPG_SECOND_ALLCH_SAMPLES);  
+        audio_dump_run();
+#endif    
+
+
         // hr_setp_6: Read acc data
         // sleep_step_6: Read acc data
         acc_queue_len = acc_raw_data_queue_get_len();
@@ -260,9 +273,26 @@ static void sndp_hr_process_thread(void const *argument)
         }
         memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
         acc_raw_data_queue_pop_data(hr_acc_raw_data, acc_data_len);
+#if defined(__SNDP_HR_AAC_DUMP__)
+        audio_dump_clear_up();
+        audio_dump_add_channel_data(0, hr_acc_raw_data, HR_ACC_SECOND_ALLCH_SAMPLES);  
+        audio_dump_run();  
+#endif
 
         
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+
+#if 1
+        SNDP_TRACE(0, "engine_ver: %s", lib_engine_version());
+        SNDP_TRACE(0, "put_heartrate_data ...");
+
+        SNDP_TRACE(0, "ppg data:");
+        SNDP_DUMP32("%6d ", hr_ppg_raw_data,  16);
+#endif        
+
+#if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)    
+        start_time = hal_sys_timer_get();
+#endif         
 
         // hr_setp_7: Input data
         // sleep_step_7: Input data
@@ -278,63 +308,45 @@ static void sndp_hr_process_thread(void const *argument)
 
         // hr_setp_8: Return results
         // sleep_step_8: Return results
+		 memset(&hrv, 0, sizeof(struct HrvIndices));
         dbbeats_get_heartrate_data(&hrv, &result_code, &count, &led, &debug_dump);
+
+#if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)    
+        end_time = hal_sys_timer_get();
+        SNDP_TRACE(0, "HR algo cost: %d us", TICKS_TO_US(end_time - start_time));
+#endif
 
         // hr_setp_9: Display hr results
         // sleep_step_9: Display hr results
         if(result_code == 1 && hrv.HR > 1) {
-            HR_TRACE(0, "HR: %d BPM, SDNN: %d ms", hrv.HR, hrv.SDNN);
+            SNDP_TRACE(0, "HR: %d BPM, SDNN: %d ms", hrv.HR, hrv.SDNN);
         } else if (result_code == 101) {
-            HR_TRACE(0, "Sensor detached");
+            SNDP_TRACE(0, "HR: Sensor detached");
         }
-
 
         // hr_setp_10: Report results
         if(hr_ctx.hr_running) {
 
         }
         
-        
         if(hr_ctx.sleep_running) {
             HR_TRACE(0, "sleep analyse...");
-            
-            // sleep_step_10: 把每秒的加速度传感器数据填充到缓存中。
-            for(int32_t i = 0; i < HR_ACC_SECOND_ALLCH_SAMPLES && sleep_acc_raw_data_len < SLEEP_ACC_DATA_SAMPLES; i++) {
-                sleep_acc_raw_data[sleep_acc_raw_data_len++] = hr_acc_raw_data[i];
-            }
+            sleep_analysis_time++;
 
-            // sleep_step_11: 把每秒经过心率算法计算后的hrv数据保存到 sleep_hrv_data中。
-            if(sleep_hrv_data_len < SLEEP_CALC_SECONDS) {
-                sleep_hrv_data.HR[sleep_hrv_data_len] = hrv.HR;
-                sleep_hrv_data.SDNN[sleep_hrv_data_len] = hrv.SDNN;
-                sleep_hrv_data_len++;
-            }
-
-            //缓存满30秒数据，处理睡眠数据。
-            if(sleep_hrv_data_len >= SLEEP_CALC_SECONDS) {
+            if(sleep_analysis_time >= 30) {
+                sleep_analysis_time = 0;
                 
                 // sleep_step_13: Input sensor data
-                dbbeats_put_sleep_sensor_data(
-                        sleep_acc_raw_data, 
-                        sleep_hrv_data, 
-                        sleep_dev_state, 
-                        sleep_is_contact, 
-                        11250, 30, 150, 30);
-                
-                sleep_acc_raw_data_len = 0;
+                dbbeats_put_sleep_sensor_data();
 
-                // sleep_step_14: input app data
                 dbbeats_put_sleep_app_data(
                     sleep_app_accel, 
                     sleep_screen_status, 
                     0);
-                
+
             }
         }
-#else
-        HR_TRACE(0, "hr is processing ...");
 #endif
-
     }
 
 }
@@ -342,7 +354,17 @@ static void sndp_hr_process_thread(void const *argument)
 void sndp_hr_mearsuring_start(void)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
-    
+
+#if defined(__SNDP_HR_PPG_DUMP__)
+    audio_dump_init(64, 4, 1);    
+#endif
+
+#if defined(__SNDP_HR_AAC_DUMP__)
+    audio_dump_init(125*3, 2, 1);    
+#endif
+
+    ppg_raw_data_queue_reset();
+
     // hr_setp_1: 算法初始化
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)    
     dbbeats_initialize_heartrate_data(1, 0);
@@ -354,10 +376,11 @@ void sndp_hr_mearsuring_start(void)
 #endif
 
     // hr_setp_3: 打开读取PPG数据
-#if 0//defined(__SNDP_HRSENSOR_SUPPORT__)
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
     sndp_hal_hr_start_reading_ppg();
 #endif 
 
+    hr_ctx.sleep_running = false;
     hr_ctx.hr_running = true;
 }
 
@@ -365,9 +388,10 @@ void sndp_hr_mearsuring_stop(void)
 {
     // hr_setp_10: 停止处理
     hr_ctx.hr_running = false;
-    
+    hr_ctx.sleep_running = false;
+
     // hr_setp_11: 停止读取ppg数据
-#if 0//defined(__SNDP_HRSENSOR_SUPPORT__)
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
     sndp_hal_hr_stop_reading_ppg();
 #endif
 
@@ -399,23 +423,10 @@ void sndp_sleep_analysis_callback(int8_t *sleep_stage,
     }
 }
 
-/*
- * 睡眠分析处理函数。
- * sensor data: 从加速度传感器IC获取。
- * app data: app通过ble没30秒发送1次。
- * 处理后会调用 sndp_sleep_analysis_callback 函数。
- */
-void sndp_sleep_analysis_process(void)
-{
-    
-    
-}
-
 void sndp_sleep_analysis_start(void)
 {
-    sleep_acc_raw_data_len = 0;
-    sleep_hrv_data_len = 0;
-
+    ppg_raw_data_queue_reset();
+    
     // sleep_step_1:算法初始化
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
     dbbeats_initialize_sleep_data(0, sndp_sleep_analysis_callback);
@@ -431,6 +442,8 @@ void sndp_sleep_analysis_start(void)
     sndp_hal_hr_start_reading_ppg();
 #endif
 
+    sleep_analysis_time = 0;
+    hr_ctx.hr_running = true;
     hr_ctx.sleep_running = true;
     
 }
@@ -438,6 +451,7 @@ void sndp_sleep_analysis_start(void)
 void sndp_sleep_analysis_stop(void)
 {
     // hr_setp_17: 停止处理
+    hr_ctx.hr_running = false;
     hr_ctx.sleep_running = false;
     
     // hr_setp_18: 停止读取ppg数据
@@ -457,7 +471,10 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 {
     //HR_TRACE(0, "cnt=%d", cnt);
     if(hr_ctx.hr_running || hr_ctx.sleep_running) {
+        //SNDP_DUMP32("%08X ", data,  cnt > 16?16:cnt);
         ppg_raw_data_queue_push_data(data, cnt);
+
+        //HR_TRACE(0, "queue_len=%d, %d", ppg_raw_data_queue_get_len(), HR_PPG_SECOND_ALLCH_SAMPLES);
         if(ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES) {
             //HR_TRACE(0, "wakeup thread");
             osSemaphoreRelease(hr_process_wait_semaphore_id);
@@ -471,12 +488,23 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16_t cnt)
 {
     //HR_TRACE(0, "cnt=%d", cnt);
+    //SNDP_DUMP32("%04X ", data,  cnt > 16?16:cnt);
+    
     if(hr_ctx.hr_running || hr_ctx.sleep_running) {
         acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
     }
 }
 #endif 
 
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+void sndp_hr_print_log(const char *msg)
+{
+    if(msg != NULL) {
+        SNDP_TRACE(0, "%s", msg);
+    }
+}
+
+#endif
 
 void sndp_hr_app_init(void)
 {
@@ -503,6 +531,12 @@ void sndp_hr_app_init(void)
         hr_process_thread_tid = osThreadCreate(osThread(sndp_hr_process_thread), NULL);
         ASSERT(hr_process_thread_tid != NULL, "%s, line=%d", __func__, __LINE__);
     }
+
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+    HR_TRACE(0, "%s", lib_engine_version());
+    //dbbeats_print_log_cfg(sndp_hr_print_log);
+#endif
+    
 
     // 4. 设置读取心率IC数据回调。
 #if defined(__SNDP_HEART_RATE_MGR__)

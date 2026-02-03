@@ -1,8 +1,6 @@
 #ifndef __SLEEPSENSE_H__
 #define __SLEEPSENSE_H__
 
-
-
 #include <stdint.h>
 
 
@@ -12,7 +10,7 @@ extern "C" {
 
 #define DBBEATS_ACC_SAMPLINGRATE  125
 #define DBBEATS_PPG_SAMPLINGRATE  64
-#define DBBEATS_DEV_SAMPLINGRATE  5
+#define DBBEATS_DEV_SAMPLINGRATE  1
 #define COMBINE_TIMEOUT_MS   3000   // put_sensor_data & put_app_data max diff ms
 
 struct HrvIndices {
@@ -34,6 +32,9 @@ struct Dump {
     int8_t led_state;
     int32_t pkt_interval;
 };
+
+typedef void (*dbbeats_print_log_ptr)(const char *msg) ;
+void dbbeats_print_log_cfg(dbbeats_print_log_ptr ptr);
 
 void dbbeats_initialize_heartrate_data(int8_t ppg_sampling_rate,
                                        uint8_t dump_state);
@@ -61,14 +62,7 @@ typedef void (*SLEEP_CALLBACK)(int8_t *sleep_stage,
 
 void dbbeats_initialize_sleep_data(int32_t sleep_control, SLEEP_CALLBACK callback);
 
-void dbbeats_put_sleep_sensor_data(int16_t in_accel_data[],
-                                   struct SleepHrvIndices hrv_indices_s,
-                                   int8_t dev_source[],
-                                   uint8_t is_contact[],
-                                   int32_t cnt_accel_s,
-                                   int32_t cnt_hrv_s,
-                                   int32_t cnt_dev_s,
-                                   int32_t cnt_lead_s);
+void dbbeats_put_sleep_sensor_data(void);
 
 void dbbeats_put_sleep_app_data(int16_t accel_data_m[],
                                 uint8_t screen_status[],
