@@ -171,6 +171,16 @@ void app_a2dp_stream_detect_time_init(uint8_t dev_id);
 void app_a2dp_stream_set_detect_time(uint8_t dev_id, codec_type_t codec, time_flag_t time_type, uint16_t time);
 #endif // A2DP_STREAM_DETECT_NO_DECODE
 
+
+#if !defined(A2DP_LDAC_ON)
+
+const unsigned char a2dp_codec_ldac_elements[1] =
+{
+    0x0
+};
+#endif /* A2DP_LDAC_ON */
+
+
 #ifdef __cplusplus
 }
 #endif
