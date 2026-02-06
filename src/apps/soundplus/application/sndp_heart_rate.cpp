@@ -67,6 +67,12 @@
 
 //#define __SNDP_HR_PRINT_ALGO_EXEC_TIME__
 
+#if defined(__SNDP_HEART_RATE_DUMP__)
+#define __SNDP_HR_PPG_DUMP__
+//#define __SNDP_HR_AAC_DUMP__
+
+#endif
+
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -116,6 +122,7 @@ POSSIBLY_UNUSED static struct Dump debug_dump;
 POSSIBLY_UNUSED static int32_t hr_ppg_raw_data[HR_PPG_SECOND_ALLCH_SAMPLES];
 POSSIBLY_UNUSED static int16_t hr_acc_raw_data[HR_ACC_SECOND_ALLCH_SAMPLES];
 POSSIBLY_UNUSED static int8_t hr_dev_state[HR_DEV_SECOND_ALLCH_SAMPLES];
+POSSIBLY_UNUSED static uint16_t hr_measure_time = 0;
 
 POSSIBLY_UNUSED static int16_t sleep_app_accel[90];
 POSSIBLY_UNUSED static uint8_t sleep_screen_status[30];
@@ -256,7 +263,7 @@ static void sndp_hr_process_thread(void const *argument)
         memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
         ppg_raw_data_queue_pop_data(hr_ppg_raw_data, HR_PPG_SECOND_ALLCH_SAMPLES);
 
-#if defined(__SNDP_HEART_RATE_DUMP__)
+#if defined(__SNDP_HR_PPG_DUMP__)
         audio_dump_clear_up();
         audio_dump_add_channel_data(0, hr_ppg_raw_data, HR_PPG_SECOND_ALLCH_SAMPLES);  
         audio_dump_run();
@@ -282,12 +289,13 @@ static void sndp_hr_process_thread(void const *argument)
         
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
 
-#if 1
+#if 0
         SNDP_TRACE(0, "engine_ver: %s", lib_engine_version());
-        SNDP_TRACE(0, "put_heartrate_data ...");
-
-        SNDP_TRACE(0, "ppg data:");
-        SNDP_DUMP32("%6d ", hr_ppg_raw_data,  16);
+        SNDP_TRACE(0, "ppg data, idx:(%d):", hr_measure_time);
+        SNDP_DUMP32("%6d, ", &hr_ppg_raw_data[0],  16);
+        SNDP_DUMP32("%6d, ", &hr_ppg_raw_data[16],  16);
+        SNDP_DUMP32("%6d, ", &hr_ppg_raw_data[32],  16);
+        SNDP_DUMP32("%6d, ", &hr_ppg_raw_data[48],  16);
 #endif        
 
 #if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)    
@@ -347,6 +355,8 @@ static void sndp_hr_process_thread(void const *argument)
             }
         }
 #endif
+
+        hr_measure_time++;
     }
 
 }
@@ -380,6 +390,7 @@ void sndp_hr_mearsuring_start(void)
     sndp_hal_hr_start_reading_ppg();
 #endif 
 
+    hr_measure_time = 0;
     hr_ctx.sleep_running = false;
     hr_ctx.hr_running = true;
 }
@@ -534,7 +545,7 @@ void sndp_hr_app_init(void)
 
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
     HR_TRACE(0, "%s", lib_engine_version());
-    //dbbeats_print_log_cfg(sndp_hr_print_log);
+    dbbeats_print_log_cfg(sndp_hr_print_log);
 #endif
     
 
@@ -548,7 +559,7 @@ void sndp_hr_app_init(void)
     sndp_hal_acc_set_reading_raw_data_callback(sndp_hr_acc_read_raw_data_callback);
 #endif 
 
-	HR_TRACE(0, ".");
+	HR_TRACE(0, "done");
 
 }
 
