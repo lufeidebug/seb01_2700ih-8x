@@ -433,11 +433,14 @@ export OTA_SEC_BOOT_INFO_OFFSET ?= 0x18000
 KBUILD_CPPFLAGS += -DOTA_SEC_BOOT_INFO_OFFSET=$(OTA_SEC_BOOT_INFO_OFFSET)
 endif
 
-include $(srctree)/config/$(CHIP)/speech_config.mk
+#include $(srctree)/config/$(CHIP)/speech_config.mk
+include $(srctree)/config/$(T)/speech_config.mk
 
-include $(srctree)/config/$(CHIP)/mem_config.mk
+#include $(srctree)/config/$(CHIP)/mem_config.mk
+include $(srctree)/config/$(T)/mem_config.mk
 
-include $(srctree)/config/$(CHIP)/bt_config.mk
+#include $(srctree)/config/$(CHIP)/bt_config.mk
+include $(srctree)/config/$(T)/bt_config.mk
 
 ifeq ($(DOLBY_AUDIO_ENABLE),1)
 include $(srctree)/config/$(CHIP)/dolby_config.mk
