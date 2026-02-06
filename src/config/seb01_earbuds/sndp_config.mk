@@ -81,6 +81,7 @@ export CRASH_REBOOT                             := 0
 export SNDP_BLE_MODIFY                          := 0
 export SNDP_HEART_RATE_MGR                      := 1
 export SNDP_KEY_TEST                            := 1
+export SNDP_APP_WHITE_NOISE                     := 1
 
 
 ifeq ($(SNDP_UI),1)
@@ -404,6 +405,10 @@ endif
 
 ifeq ($(SNDP_KEY_TEST),1)
     KBUILD_CPPFLAGS += -D__SNDP_KEY_TEST__
+endif
+
+ifeq ($(SNDP_APP_WHITE_NOISE),1)
+    KBUILD_CPPFLAGS += -D__SNDP_APP_WHITE_NOISE__
 endif
 
 

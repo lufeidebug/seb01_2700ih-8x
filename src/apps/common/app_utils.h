@@ -62,6 +62,10 @@ extern "C" {
 #define APP_SYSFREQ_USER_SNDP_HR_PROCESS    APP_SYSFREQ_USER_APP_31
 #endif
 
+#if defined(__SNDP_APP_WHITE_NOISE__)
+#define APP_SYSFREQ_USER_SNDP_WHITE_NOISE   APP_SYSFREQ_USER_APP_32
+#endif
+
 #endif
 
 /*
