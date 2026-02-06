@@ -85,6 +85,37 @@ static uint8_t pwron_pairing_type = 0;  //0:none, 1:tws pairing, 2:freeman pairi
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
+
+void sndp_ui_working_mode_switch(void)
+{
+    if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
+        //Close sleep analysis, save data.
+
+        //Set the working mode to BT mode.
+        sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_BT);
+
+        //Play prompt sound.
+
+        //Open BT.
+        
+        
+    } else {
+        //Close BT.
+
+        //set the working mode to Sleep mode.
+        sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_BT);
+
+        //Play prompt sound.
+
+        //Open ANC.
+
+        //Open sleep analysis.
+
+        
+    }
+}
+
+
 void sndp_ui_pwron_pairing_type_set(uint8_t type)
 {
      pwron_pairing_type = type;
@@ -385,6 +416,69 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
     }
 }
 
+void sndp_ui_gesture_1click_hdlr(bool remote)
+{
+    SPUI_TRACE(0, "remote=%d", remote);
+    
+    
+}
+
+void sndp_ui_gesture_2click_hdlr(bool remote)
+{
+    SPUI_TRACE(0, "remote=%d", remote);
+    
+    if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
+
+    } else if(sndp_call_is_active()) {
+        if(sndp_call_is_threeway_incoming()) {
+            sndp_call_ctrl(SNDP_CALL_CTRL_THREEWAY_HOLD_ANSWER);
+        } else if(sndp_call_is_threeway_calling()) {
+            sndp_call_ctrl(SNDP_CALL_CTRL_HANGUP);
+        } else if(sndp_call_is_incoming()) {
+            sndp_call_ctrl(SNDP_CALL_CTRL_ANSWER);
+        } else {
+            sndp_call_ctrl(SNDP_CALL_CTRL_HANGUP);
+        }
+        
+    } else {
+        if(sndp_music_is_playing()) {
+            sndp_music_ctrl(SNDP_MUSIC_CTRL_PAUSE);
+        } else {
+            sndp_music_ctrl(SNDP_MUSIC_CTRL_PLAY);
+        }
+    }
+    
+}
+
+void sndp_ui_gesture_3click_hdlr(bool remote)
+{
+    SPUI_TRACE(0, "remote=%d", remote);
+    
+    if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
+        if(sndp_dev_is_left_earphone()) {
+            sndp_ui_anc_switch();
+        } else {
+            sndp_ui_working_mode_switch();
+        }
+        
+    } else if(sndp_call_is_active()) {
+        if(sndp_call_is_threeway_incoming()) {
+            sndp_call_ctrl(SNDP_CALL_CTRL_THREEWAY_REJECT);
+        } else if(sndp_call_is_incoming()) {
+            sndp_call_ctrl(SNDP_CALL_CTRL_REJECT);
+        } 
+        
+    } else {
+        if(sndp_dev_is_left_earphone()) {
+            sndp_ui_anc_switch();
+        } else {
+            sndp_ui_working_mode_switch();
+        }
+    }
+    
+}
+
+
 /**
 * 本地处理手势事件
 */
@@ -394,10 +488,13 @@ void sndp_ui_gesture_event_local_hdlr(sndp_dev_gesture_event_e gesture_event)
     
     switch(gesture_event) {
         case SNDP_DEV_GESTURE_EVENT_1_CLICK:
+            sndp_ui_gesture_1click_hdlr(false);
             break;
         case SNDP_DEV_GESTURE_EVENT_2_CLICK:
+            sndp_ui_gesture_1click_hdlr(false);
             break;
         case SNDP_DEV_GESTURE_EVENT_3_CLICK:
+            sndp_ui_gesture_1click_hdlr(false);
             break;
         default:
             break;
@@ -414,10 +511,13 @@ void sndp_ui_gesture_event_peer_hdlr(sndp_dev_gesture_event_e gesture_event)
     
     switch(gesture_event) {
         case SNDP_DEV_GESTURE_EVENT_1_CLICK:
+            sndp_ui_gesture_1click_hdlr(true);
             break;
         case SNDP_DEV_GESTURE_EVENT_2_CLICK:
+            sndp_ui_gesture_1click_hdlr(true);
             break;
         case SNDP_DEV_GESTURE_EVENT_3_CLICK:
+            sndp_ui_gesture_1click_hdlr(true);
             break;
         default:
             break;
