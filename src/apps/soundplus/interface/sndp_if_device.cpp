@@ -62,7 +62,7 @@
 #include "sndp_hal_pogopin_comm.h"
 #endif    
 
-#if defined(__SNDP_HEART_RATE_MGR__)	
+#if defined(__SNDP_HRSENSOR_SUPPORT__)	
 #include "sndp_hal_hr.h"
 #endif    
 #if defined(__SNDP_GSENSOR_SUPPORT__)	
