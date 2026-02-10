@@ -19,75 +19,75 @@
 #ifdef MEDIA_PLAYER_SUPPORT
 
 const uint8_t EN_POWER_ON [] = {
-#include "res/en/SOUND_POWER_ON.txt"
+0//#include "res/en/SOUND_POWER_ON.txt"
 };
 
 const uint8_t EN_POWER_OFF [] = {
-#include "res/en/SOUND_POWER_OFF.txt"
+#include "res/en/SOUND_POWER_OFF_16k.txt"
 };
 
 const uint8_t EN_SOUND_ZERO[] = {
-#include "res/en/SOUND_ZERO.txt"
+0//#include "res/en/SOUND_ZERO.txt"
 };
 
 const uint8_t EN_SOUND_ONE[] = {
-#include "res/en/SOUND_ONE.txt"
+0//#include "res/en/SOUND_ONE.txt"
 };
 
 const uint8_t EN_SOUND_TWO[] = {
-#include "res/en/SOUND_TWO.txt"
+0//#include "res/en/SOUND_TWO.txt"
 };
 
 const uint8_t EN_SOUND_THREE[] = {
-#include "res/en/SOUND_THREE.txt"
+0//#include "res/en/SOUND_THREE.txt"
 };
 
 const uint8_t EN_SOUND_FOUR[] = {
-#include "res/en/SOUND_FOUR.txt"
+0//#include "res/en/SOUND_FOUR.txt"
 };
 
 const uint8_t EN_SOUND_FIVE[] = {
-#include "res/en/SOUND_FIVE.txt"
+0//#include "res/en/SOUND_FIVE.txt"
 };
 
 const uint8_t EN_SOUND_SIX[] = {
-#include "res/en/SOUND_SIX.txt"
+0//#include "res/en/SOUND_SIX.txt"
 };
 
 const uint8_t EN_SOUND_SEVEN [] = {
-#include "res/en/SOUND_SEVEN.txt"
+0//#include "res/en/SOUND_SEVEN.txt"
 };
 
 const uint8_t EN_SOUND_EIGHT [] = {
-#include "res/en/SOUND_EIGHT.txt"
+0//#include "res/en/SOUND_EIGHT.txt"
 };
 
 const uint8_t EN_SOUND_PROMPT_ADAPTIVE_ANC [] = {
-#include "res/adapt_anc/SOUND_PROMPT_ADAPTIVE_ANC.txt"
+0//#include "res/adapt_anc/SOUND_PROMPT_ADAPTIVE_ANC.txt"
 };
 
 const uint8_t EN_SOUND_CUSTOM_LEAK_DETECT [] = {
-#include "res/ld/SOUND_PROMPT_CUSTOM_LEAK.txt"
+0//#include "res/ld/SOUND_PROMPT_CUSTOM_LEAK.txt"
 };
 
 const uint8_t EN_SOUND_NINE [] = {
-#include "res/en/SOUND_NINE.txt"
+0//#include "res/en/SOUND_NINE.txt"
 };
 
 const uint8_t EN_BT_PAIR_ENABLE[] = {
-#include "res/en/SOUND_PAIR_ENABLE.txt"
+0//#include "res/en/SOUND_PAIR_ENABLE.txt"
 };
 
 const uint8_t EN_BT_PAIRING[] = {
-#include "res/en/SOUND_PAIRING.txt"
+0//#include "res/en/SOUND_PAIRING.txt"
 };
 
 const uint8_t EN_BT_PAIRING_FAIL[] = {
-#include "res/en/SOUND_PAIRING_FAIL.txt"
+0//#include "res/en/SOUND_PAIRING_FAIL.txt"
 };
 
 const uint8_t EN_BT_PAIRING_SUCCESS[] = {
-#include "res/en/SOUND_PAIRING_SUCCESS.txt"
+0//#include "res/en/SOUND_PAIRING_SUCCESS.txt"
 };
 
 const uint8_t EN_BT_REFUSE[] = {
@@ -107,27 +107,27 @@ const uint8_t EN_BT_HUNG_UP[] = {
 };
 
 const uint8_t EN_BT_CONNECTED [] = {
-#include "res/en/SOUND_CONNECTED.txt"
+#include "res/en/SOUND_CONNECTED_16k.txt"
 };
 
 const uint8_t EN_BT_DIS_CONNECT [] = {
-#include "res/en/SOUND_DIS_CONNECT.txt"
+#include "res/en/SOUND_DIS_CONNECT_16k.txt"
 };
 
 const uint8_t EN_BT_INCOMING_CALL [] = {
-#include "res/en/SOUND_INCOMING_CALL.txt"
+#include "res/en/SOUND_INCOMING_CALL_16k.txt"
 };
 
 const uint8_t EN_CHARGE_PLEASE[] = {
-#include "res/en/SOUND_CHARGE_PLEASE.txt"
+#include "res/en/SOUND_CHARGE_PLEASE_16k.txt"
 };
 
 const uint8_t EN_CHARGE_FINISH[] = {
-#include "res/en/SOUND_CHARGE_FINISH.txt"
+0//#include "res/en/SOUND_CHARGE_FINISH.txt"
 };
 
 const uint8_t EN_LANGUAGE_SWITCH[] = {
-#include "res/en/SOUND_LANGUAGE_SWITCH.txt"
+0//#include "res/en/SOUND_LANGUAGE_SWITCH.txt"
 };
 
 const uint8_t EN_BT_WARNING[] = {
@@ -135,38 +135,52 @@ const uint8_t EN_BT_WARNING[] = {
 };
 
 const uint8_t EN_BT_ALEXA_START[] = {
-#include "res/en/SOUND_ALEXA_START.txt"
+0//#include "res/en/SOUND_ALEXA_START.txt"
 };
 
 const uint8_t EN_BT_ALEXA_STOP[] = {
-#include "res/en/SOUND_ALEXA_STOP.txt"
+0//#include "res/en/SOUND_ALEXA_STOP.txt"
 };
 
 const uint8_t EN_BT_GSOUND_MIC_OPEN[] = {
-#include "res/en/SOUND_GSOUND_MIC_OPEN.txt"
+0//#include "res/en/SOUND_GSOUND_MIC_OPEN.txt"
 };
 
 const uint8_t EN_BT_GSOUND_MIC_CLOSE[] = {
-#include "res/en/SOUND_GSOUND_MIC_CLOSE.txt"
+0//#include "res/en/SOUND_GSOUND_MIC_CLOSE.txt"
 };
 
 const uint8_t EN_BT_GSOUND_NC[] = {
-#include "res/en/SOUND_GSOUND_NC.txt"
+0//#include "res/en/SOUND_GSOUND_NC.txt"
 };
 
 #ifdef __INTERACTION__
 const uint8_t EN_BT_FINDME[] = {
-#include "res/en/SOUND_FINDME.txt"
+0//#include "res/en/SOUND_FINDME.txt"
 };
 #endif
 
 const uint8_t EN_BT_MUTE[] = {
-#include "res/SOUND_MUTE.txt"
+0//#include "res/SOUND_MUTE.txt"
 };
 
 #ifdef MEDIA_STEREO_ENABLE
 const uint8_t EN_STEREO_TEST [] = {
-#include "res/en/SOUND_STEREO_TEST.txt"
+0//#include "res/en/SOUND_STEREO_TEST.txt"
+};
+#endif
+
+#if defined(__SNDP_UI__)
+const uint8_t EN_SOUND_ANC_ON[] = {
+0//#include "res/en/SOUND_ANC_ON_16K.txt"
+};
+
+const uint8_t EN_SOUND_ANC_OFF[] = {
+0//#include "res/en/SOUND_ANC_OFF_16K.txt"
+};
+
+const uint8_t EN_SOUND_TRANSPARENT[] = {
+0//#include "res/en/SOUND_TRANSPARENT_16k.txt"
 };
 #endif
 

@@ -369,6 +369,13 @@ enum sound_id {
 #ifdef MEDIA_STEREO_ENABLE
     STEREO_TEST,
 #endif
+
+#if defined(__SNDP_UI__)
+    SOUND_ANC_ON,
+    SOUND_ANC_OFF,
+    SOUND_TRANSPARENT,
+#endif
+
     MAX_SOUND_ID
 };
 
@@ -429,6 +436,11 @@ static const media_sound_map_t media_sound_map_cn[] =
 
 #ifdef __INTERACTION__
     SOUND_ITEM_DEF(CN_, BT_FINDME),
+#endif
+#if defined(__SNDP_UI__)
+    SOUND_ITEM_DEF(CN_, SOUND_ANC_ON),
+    SOUND_ITEM_DEF(CN_, SOUND_ANC_OFF),
+    SOUND_ITEM_DEF(CN_, SOUND_TRANSPARENT),
 #endif
 
 };
@@ -514,6 +526,12 @@ static const media_sound_map_t media_sound_map_en[] =
 #ifdef MEDIA_STEREO_ENABLE
     SOUND_ITEM_DEF(EN_, STEREO_TEST),
 #endif
+#if defined(__SNDP_UI__)
+    SOUND_ITEM_DEF(EN_, SOUND_ANC_ON),
+    SOUND_ITEM_DEF(EN_, SOUND_ANC_OFF),
+    SOUND_ITEM_DEF(EN_, SOUND_TRANSPARENT),
+#endif
+
 };
 
 #endif
@@ -1901,6 +1919,19 @@ void media_runtime_audio_prompt_update(uint16_t id, uint8_t** ptr, uint32_t* len
         get_sound_id_info(STEREO_TEST, &sound_data, &length);
         break;
 #endif
+    
+#if defined(__SNDP_UI__)
+    case AUD_ID_ANC_ON:
+        get_sound_id_info(SOUND_ANC_ON, &sound_data, &length);
+        break;
+    case AUD_ID_ANC_OFF:
+        get_sound_id_info(SOUND_ANC_OFF, &sound_data, &length);
+        break;
+    case AUD_ID_TRANSPARENT:
+        get_sound_id_info(SOUND_TRANSPARENT, &sound_data, &length);
+        break;
+#endif
+
 //----------------------------------------------------------------------------------------
 
 
