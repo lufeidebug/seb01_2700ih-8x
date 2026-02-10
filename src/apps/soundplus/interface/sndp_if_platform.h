@@ -123,7 +123,7 @@ void sndp_save_data_before_shutdown(void);
 void sndp_pmu_reboot(uint32_t boot_mode);
 void sndp_app_reboot(uint32_t boot_mode);
 void sndp_pmu_shutdown(void);
-void sndp_app_shutdown(int32_t reason);
+void sndp_app_shutdown(SNDP_shutdown_reason_e reason);
 void sndp_enter_dut_mode(void);
 void sndp_enter_single_dld_mode(void);
 void sndp_enter_shipmode(void);

@@ -157,7 +157,7 @@ void sndp_pmu_shutdown(void)
     pmu_shutdown();
 }
 
-void sndp_app_shutdown(int32_t reason)
+void sndp_app_shutdown(SNDP_shutdown_reason_e reason)
 {
     SNDP_TRACE_IMM(1, "%s, %d", __func__, reason);
     
