@@ -12,7 +12,7 @@
 #include "audio_dump.h"
 #include "cqueue.h"
 
-#include "sndp_audio_test.h"
+#include "sndp_app_white_noise.h"
 
 /**************************************************************************************************
 * Constant
