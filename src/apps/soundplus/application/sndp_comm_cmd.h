@@ -3,7 +3,7 @@
 
 #if defined(__SNDP_COMM_MGR__)
 #include "sndp_comm_protocol.h"
-
+#include "sleepwave_app_protocol.h"
 
 
 #ifdef __cplusplus
@@ -197,6 +197,66 @@ uint32_t sndp_comm_cmd_send_pt_report_wear_status(uint8_t status);
 
 int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd);
 
+
+
+typedef enum {
+    SLEEP_APP_CMDID_SET_EQ_MODE = 0x01, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_GET_EQ_MODE = 0x02, /* recv: 0 bytes. 
+                                                    rsp: 2 bytes, error code(1) + dev status(1). */
+    SLEEP_APP_CMDID_SET_EQ_PARAM = 0x03, /* recv: 1 bytes, ctrl cmd(1). 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_GET_EQ_PARAM = 0x04, /* recv: 1 bytes, ctrl cmd(1). 
+                                                    rsp: 2 bytes, error code(1) + param value(1). */ 
+    SLEEP_APP_CMDID_FIND_MY_EARPHONE = 0x05, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */   
+    SLEEP_APP_CMDID_SET_ANC_MODE = 0x06, /* recv: 1 bytes, anc mode(1). 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_GET_ANC_MODE = 0x07, /* recv: 0 bytes. 
+                                                    rsp: 2 bytes, error code(1) + anc mode(1). */
+    SLEEP_APP_CMDID_PPG_SETING = 0x08, /* recv: 1 bytes, ppg setting(1). 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION = 0x09, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_GET_BATTERY_STATUS = 0x0A, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_GET_DEVICE_INFO = 0x0B, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_SET_TOUCH_ENABLE = 0x0C, /* recv: 1 bytes, touch enable(1). 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_SET_VOICE_PROMPT_ENABLE = 0x0D, /* recv: 1 bytes, voice prompt enable(1). 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_SET_TOUCH_KEY_MAPPING = 0x0E, /* recv: 1 bytes, touch key mapping(1). 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_GET_TOUCH_KEY_MAPPING = 0x0F, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_SET_SMART_PLAY_PAUSE = 0x10, /* recv: 1 bytes, smart play/pause(1). 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_SET_SETTINGS = 0x11, /* recv: 1 bytes, settings(1). 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_GET_SETTINGS = 0x12, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_SENSOR_CONTROL = 0x13, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_EARBUDS_STATUS_LED = 0x14, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_PPG_AUTO_LED_ENABLE_DISABLE = 0x15, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_START_HEARTRATE = 0x16, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_HEARTRATE_MEASURING = 0x17, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_HEARTRATE_MEASURING_WITH_DUMP = 0x18, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_STOP_HEARTRATE = 0x19, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_START_SLEEP = 0x1A, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_SLEEP_TRACKING = 0x1B, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_STOP_SLEEP = 0x1C, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+} sleep_app_cmd_id_e;
 
 
 #ifdef __cplusplus

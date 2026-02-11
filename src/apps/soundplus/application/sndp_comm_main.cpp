@@ -39,9 +39,12 @@
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
-
-
-
+inline void SleepAppFlagGet(uint32_t *flagaddr, uint8_t *dataaddr)
+{
+    ((uint8_t*)flagaddr)[0] = dataaddr[0];
+    ((uint8_t*)flagaddr)[1] = dataaddr[1];
+    ((uint8_t*)flagaddr)[2] = dataaddr[2];
+}
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -298,6 +301,12 @@ static int32_t sndp_comm_main_execute_cmd(sndp_comm_cmd_info_s *cmd)
 	return 0;
 }
 
+static int32_t sleep_app_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
+{
+    
+    // sleep_app_comm_main_send_cmd(cmd);
+    return 0;
+}
 
 static void sndp_comm_recv_thread(void const *argument)
 {
@@ -396,11 +405,37 @@ static void sndp_comm_recv_thread(void const *argument)
                     }
                 }
             } else {
+                uint32_t appflag = 0;
+                uint16_t app_pop_len = 0;
+                uint32_t sleep_app_error_code;
+                sleep_app_comm_cmd_info_s app_recv_cmd;
+                SleepAppFlagGet(&appflag, deal_buf);
+                if(appflag == AppFlag) {
+                    COMM_MIAN_TRACE(0, "recv SleepApp data, appflag=0x%08X", appflag);
+                    sleep_app_error_code = sleep_protocol_parse_recv_data(deal_buf, peek_len, &app_recv_cmd);
+
+                    if(sleep_app_error_code == SLEEP_APP_ERROR_NONE) {
+                        app_pop_len = SLEEP_APP_COMM_HEAD_LEN + app_recv_cmd.data_len; //SLEEP_APP_COMM_HEAD_LEN + data_len
+                        COMM_MIAN_TRACE(0, "recv SleepApp cmd(%02X), data_len=%d", app_recv_cmd.cmd, app_recv_cmd.data_len);
+                        sndp_comm_queue_pop_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, app_pop_len);
+                        sndp_comm_queue_set_change_status(path_hdlr, true);
+                        sleep_app_execute_cmd_hdlr(&app_recv_cmd);
+                    } else {
+                        COMM_MIAN_TRACE(0, "recv invalid SleepApp data, error_code=%d", sleep_app_error_code);
+                        pop_len = sndp_comm_protocol_find_next_frame_idx(deal_buf, peek_len);
+                        //COMM_MIAN_TRACE(0, "111 pop_len=%02x", pop_len);
+                        sndp_comm_queue_pop_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, pop_len);
+                        sndp_comm_queue_set_change_status(path_hdlr, true);
+                    }
+                } else {
+                    COMM_MIAN_TRACE(0, "recv unknown data, appflag=0x%08X", appflag);
                 path_hdlr->recv_wait_more_cnt = 0;
                 pop_len = sndp_comm_protocol_find_next_frame_idx(deal_buf, peek_len);
                 //COMM_MIAN_TRACE(0, "111 pop_len=%02x", pop_len);
                 sndp_comm_queue_pop_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, pop_len);
                 sndp_comm_queue_set_change_status(path_hdlr, true);
+                }
+
             }
             
         }
@@ -559,6 +594,34 @@ int32_t sndp_comm_main_send_cmd(sndp_comm_cmd_info_s *cmd)
     }
 
     sndp_comm_main_send_data(send_path, sndp_comm_send_frame, send_frame_len);
+    return 0;
+}
+
+int32_t sleep_app_comm_main_send_cmd(sleep_app_comm_cmd_info_s *cmd)
+{
+    if(cmd == NULL) {
+        return -1;
+    }
+    sndp_comm_path_id_e send_path = SNDP_COMM_PATH_NONE;
+    uint32_t send_frame_len =sleep_protocol_pack_send_data(cmd, sndp_comm_send_frame, sizeof(sndp_comm_send_frame));
+    if(send_frame_len == 0) {
+        return -2;
+    }
+
+    DUMP8("%02X ", sndp_comm_send_frame, (send_frame_len > 32) ? (32) : (send_frame_len));
+    SNDP_TRACE(0, "\n");
+
+#if defined(__SNDP_COMM_BLE__)                
+        if(sndp_comm_ble_is_connected()) {
+                send_path = SNDP_COMM_PATH_BLE;
+        }
+#endif
+#if defined(__SNDP_COMM_SPP__)                
+        if(sndp_comm_spp_is_connected()) {
+                send_path = SNDP_COMM_PATH_SPP;
+        }
+#endif    
+    sndp_comm_main_send_data(send_path, sndp_comm_send_frame, SLEEP_APP_COMM_HEAD_LEN + cmd->data_len);
     return 0;
 }
 
