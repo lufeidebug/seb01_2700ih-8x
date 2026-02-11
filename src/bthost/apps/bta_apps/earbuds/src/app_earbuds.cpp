@@ -756,6 +756,10 @@ void app_bta_init(void)
 
 bool app_bta_bootmode_handler(void)
 {
+#if defined(__SNDP_UI__)
+    return false;
+#endif
+
     uint32_t boot_mode = hal_sw_bootmode_get();
     if (boot_mode & HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT)
     {
@@ -779,11 +783,7 @@ bool app_bta_bootmode_handler(void)
     }
     else
     {
-#if defined(__SNDP_UI__)
-        return false;
-#else
         return true;
-#endif
     }
 }
 

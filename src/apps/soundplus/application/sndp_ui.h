@@ -30,7 +30,12 @@ extern "C" {
 #endif
 
 
-
+typedef enum {
+    SNDP_PAIRING_NONE,
+    SNDP_PAIRING_TWS,
+    SNDP_PAIRING_FREEMAN,
+    
+} sndp_pairing_type_e;
 
 typedef struct {
 	uint32_t charging_time;
@@ -51,10 +56,8 @@ typedef struct {
 
 
 
-void sndp_ui_pwron_pairing_type_set(uint8_t type);
-uint8_t sndp_ui_pwron_pairing_type_get(void);
-bool sndp_ui_pwron_pairing_type_is_tws(void);
-bool sndp_ui_pwron_pairing_type_is_freeman(void);
+void sndp_ui_pairing_type_set(sndp_pairing_type_e type);
+bool sndp_ui_pairing_type_is(sndp_pairing_type_e type);
 
 
 void sndp_ui_volume_set(uint8_t type, uint8_t level);

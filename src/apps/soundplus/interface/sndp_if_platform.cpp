@@ -69,7 +69,6 @@
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
-static void sndp_ibrt_reconfig_update(ibrt_config_t *config);
 static void sndp_ibrt_reconfig_save_to_nvrecord(ibrt_config_t *config);
 extern "C" uint8_t is_a2dp_mode(void);
 extern "C" uint8_t is_sco_mode(void);
@@ -241,7 +240,7 @@ void sndp_enter_tws_pairing(void)
 	sndp_pmu_reboot(HAL_SW_BOOTMODE_CUSTOM_OP2_AFTER_REBOOT);
 #else
 	sndp_enter_mobile_pairing_after_tws_connected();
-#endif    
+#endif
 
 }
 
@@ -260,15 +259,19 @@ void sndp_enter_mobile_reconnect(void)
 
 void sndp_mobile_pairing_timeout(void)
 {
-    SNDP_IF_TRACE(0, "enter");
-    //app_ibrt_if_set_access_mode(IBRT_BAM_CONNECTABLE_ONLY);
+    SNDP_IF_TRACE(0, ".");
+    app_stop_10_second_timer(APP_PAIR_TIMER_ID);
+    app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+    
+    sndp_app_shutdown(SNDP_SHUTDOWN_REASON_PAIR_TIMEOUT);
 }
 
 void sndp_mobile_pairing_sccessful(void)
 {
-    SNDP_IF_TRACE(0, "enter");
+    SNDP_IF_TRACE(0, ".");
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_PAIR_TIMER_ID);
+    app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
 #endif
 }
 
@@ -279,23 +282,10 @@ void sndp_enter_mobile_pairing_after_tws_connected(void)
     bta_tws_enable_pairing_mode(true);
 
 #if defined(__BTIF_AUTOPOWEROFF__)
+    app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
     app_start_10_second_timer(APP_PAIR_TIMER_ID);   //5minute pairing
-    app_start_10_second_timer(APP_POWEROFF_TIMER_ID);  //15minute reconnect restart
 #endif
 
-}
-
-void sndp_enter_mobile_pairing_directly(void)
-{
-    SNDP_IF_TRACE(0, "enter");
-
-    //app_ibrt_if_init_open_box_state_for_evb();
-    //app_ibrt_if_set_access_mode(IBRT_BAM_GENERAL_ACCESSIBLE);
-
-#if defined(__BTIF_AUTOPOWEROFF__)
-    app_start_10_second_timer(APP_PAIR_TIMER_ID);   //5minute pairing
-    app_start_10_second_timer(APP_POWEROFF_TIMER_ID);  //15minute reconnect restart
-#endif
 }
 
 void sndp_tws_pairing_config(uint8_t *addr, uint8_t len)
@@ -316,7 +306,7 @@ void sndp_tws_pairing_config(uint8_t *addr, uint8_t len)
 		SNDP_IF_TRACE(0, "Right slave");
 		
         ibrt_config.nv_role = IBRT_SLAVE;
-		ibrt_config.audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_LCHNL;
+		ibrt_config.audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_RCHNL;
 		
         memcpy((void *)ibrt_config.local_addr.address, local_addr, 6);
         memcpy((void *)ibrt_config.peer_addr.address, local_addr, 6);
@@ -325,7 +315,7 @@ void sndp_tws_pairing_config(uint8_t *addr, uint8_t len)
 		SNDP_IF_TRACE(0, "Left master");
 		
 		ibrt_config.nv_role = IBRT_MASTER;                         
-		ibrt_config.audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_RCHNL;
+		ibrt_config.audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_LCHNL;
 		
         memcpy((void *)ibrt_config.local_addr.address, local_addr, 6);
         memcpy((void *)ibrt_config.peer_addr.address, addr, 6);
@@ -336,19 +326,9 @@ void sndp_tws_pairing_config(uint8_t *addr, uint8_t len)
 	
     SNDP_IF_TRACE(0, "peer_addr");
     DUMP8("%02x ", ibrt_config.peer_addr.address, 6);
-	
-    sndp_ibrt_reconfig_update(&ibrt_config);
+
 	sndp_ibrt_reconfig_save_to_nvrecord(&ibrt_config);
 	osDelay(20);
-	
-	{ 
-	    struct nvrecord_env_t *nvrecord_env;
-
-	    nv_record_env_get(&nvrecord_env);
-	    SNDP_IF_TRACE(1, "nvrecord_env mode = %d", nvrecord_env->ibrt_mode.mode);
-	    SNDP_IF_TRACE(0, "Pair MAC:");
-	    DUMP8("%02x ", nvrecord_env->ibrt_mode.record.bdAddr.address, 6);
-	}
 
 }
 
@@ -393,28 +373,15 @@ void sndp_tws_pairing_same_addr_config(void)
 
 #endif
 
-
-static void sndp_ibrt_reconfig_update(ibrt_config_t *config)
-{
-#if 0    
-    ibrt_ctrl_t *p_ibrt_ctrl = app_tws_ibrt_get_bt_ctrl_ctx();
-
-    p_ibrt_ctrl->nv_role = config->nv_role;
-    p_ibrt_ctrl->audio_chnl_sel = config->audio_chnl_sel;
-    memcpy(p_ibrt_ctrl->peer_addr.address, config->peer_addr.address, 6);
-    memcpy(p_ibrt_ctrl->local_addr.address, config->local_addr.address, 6);
-#endif    
-}
-
 static void sndp_ibrt_reconfig_save_to_nvrecord(ibrt_config_t *config)
 { 
-    struct nvrecord_env_t *nvrecord_env;
-
+    struct nvrecord_env_t *nvrecord_env = NULL;
     nv_record_env_get(&nvrecord_env);
-    nvrecord_env->ibrt_mode.mode = config->nv_role;
-    nvrecord_env->ibrt_mode.record.bdAddr = config->peer_addr;
+    memset((uint8_t *)&(nvrecord_env->ibrt_mode), 0xff, sizeof(nvrecord_env->ibrt_mode));
     nv_record_env_set(nvrecord_env);
-    nv_record_flash_flush(); 
+
+    bta_tws_reconfig_nv_role(config->nv_role, (bt_bdaddr_t *)&config->peer_addr);
+    nv_record_flash_flush();
 }
 
 void sndp_ibrt_nvrecord_config_load(void *config)

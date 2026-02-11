@@ -494,6 +494,9 @@ APP_10_SECOND_TIMER_STRUCT app_10_second_array[] =
 #ifdef BT_BUILD_WITH_CUSTOMER_HOST
     INIT_APP_TIMER(APP_PAIR_TIMER_ID, 0, 0, 6, NULL),
     INIT_APP_TIMER(APP_POWEROFF_TIMER_ID, 0, 0, 90, NULL),
+#elif defined(__SNDP_UI__)
+    INIT_APP_TIMER(APP_PAIR_TIMER_ID, 0, 0, 30, sndp_mobile_pairing_timeout),
+    INIT_APP_TIMER(APP_POWEROFF_TIMER_ID, 0, 0, 90, CloseEarphone),
 #else
 #ifdef BESUI_TWS_EN
     INIT_APP_TIMER(APP_PAIR_TIMER_ID, 0, 0, 32, PairingTransferToConnectable),
@@ -557,6 +560,10 @@ void app_10_second_timer_check(void)
 #if defined(BESUI_TWS_EN) || defined(BESUI_STEREO_EN)
             BESUI_TRACE(2,"[UITIMER]%s id %d count %d", __func__, i, timer->timer_count);
 #endif
+#if defined(__SNDP_UI__)
+            MAIN_TRACE(2, "%s, id=%d, %d, %d", __func__, i, timer->timer_count, timer->timer_period);
+#endif
+
             if (timer->timer_count >= timer->timer_period) {
                 timer->timer_en = 0;
                 if (timer->cb)
@@ -2379,6 +2386,14 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
         hal_sw_bootmode_clear(HAL_SW_BOOTMODE_TOTA_REBOOT);
         set_in_tota_mode(true);
         MAIN_TRACE(0,"To enter TOTA mode!!!");
+    }
+#endif
+
+#if defined(__SNDP_REBOOT_FORCE_PAIRING__)
+    if (hal_sw_bootmode_get() & HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT){
+        sndp_ui_pairing_type_set(SNDP_PAIRING_FREEMAN);
+    } else if (hal_sw_bootmode_get() & HAL_SW_BOOTMODE_CUSTOM_OP2_AFTER_REBOOT){
+        sndp_ui_pairing_type_set(SNDP_PAIRING_TWS);
     }
 #endif
 

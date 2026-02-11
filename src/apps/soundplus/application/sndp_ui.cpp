@@ -81,7 +81,9 @@ static void sndp_ui_all_status_sync_send(void);
 **************************************************************************************************/
 static sndp_ui_ctx_s sndp_ui_ctx;
 
-static uint8_t pwron_pairing_type = 0;  //0:none, 1:tws pairing, 2:freeman pairing
+static sndp_pairing_type_e sndp_pairing_type = SNDP_PAIRING_NONE;  //0:none, 1:tws pairing, 2:freeman pairing
+
+
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
@@ -134,31 +136,16 @@ void sndp_ui_working_mode_switch(void)
 }
 
 
-void sndp_ui_pwron_pairing_type_set(uint8_t type)
+void sndp_ui_pairing_type_set(sndp_pairing_type_e type)
 {
-     pwron_pairing_type = type;
+     sndp_pairing_type = type;
 }
 
-uint8_t sndp_ui_pwron_pairing_type_get(void)
+bool sndp_ui_pairing_type_is(sndp_pairing_type_e type)
 {
-    return pwron_pairing_type;
+    return (sndp_pairing_type == type);
 }
 
-bool sndp_ui_pwron_pairing_type_is_tws(void)
-{
-    if(pwron_pairing_type == 1)
-        return true;
-    else
-        return false;
-}
-
-bool sndp_ui_pwron_pairing_type_is_freeman(void)
-{
-    if(pwron_pairing_type == 2)
-        return true;
-    else
-        return false;
-}
 
 //---------------------------------------- volume ctrl --------------------------------------------
 
@@ -375,13 +362,13 @@ static void sndp_ui_wear_status_sync(void)
 /* Local deal wear status is changed */
 static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 {
-	SPUI_TRACE(1, "%s", (SNDP_DEV_WEAR_ON == wear_status) ? "WEAR_ON" : "WEAR_OFF");
+	SPUI_TRACE(1, "WEAR_%s", (SNDP_DEV_WEAR_ON == wear_status) ? "ON" : "OFF");
 
 	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_tone);
 	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_play_music);
 	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_stop_music);
 
-    if(sndp_ui_pwron_pairing_type_is_freeman()) {
+    if(sndp_ui_pairing_type_is(SNDP_PAIRING_FREEMAN)) {
         SPUI_TRACE(0, "freeman pairing return.");
         return;
     } 
@@ -410,12 +397,10 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
     struct nvrecord_env_t *nvrecord_env;
     nv_record_env_get(&nvrecord_env);   
 
-    SPUI_TRACE(1, "%s", (SNDP_DEV_COVER_COLSED == cover_status) ? "BOX_CLOSED" : "BOX_OPENED");
+    SPUI_TRACE(1, "BOX_%s", (SNDP_DEV_COVER_COLSED == cover_status) ? "CLOSED" : "OPENED");
     
     if(SNDP_DEV_COVER_COLSED == cover_status) {
         sndp_dev_wear_disable_detection();
-        sndp_ui_pwron_pairing_type_set(0);
-
         bta_tws_box_event_entry(BTA_TWS_CLOSE);
         
     } else {
@@ -908,70 +893,57 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
     
 	switch(conn_status) {
 		case SNDP_BT_CONN_STATUS_MOBILE_DISCONNECTED:
-			//SPUI_TRACE(0, "MOBILE_DISCONNECTED, %d", app_ibrt_if_get_connected_mobile_count());
 			
 #ifdef MEDIA_PLAYER_SUPPORT            
             media_PlayAudio(AUD_ID_BT_DIS_CONNECT, 0);
 #endif
 
             if(app_ibrt_if_get_connected_mobile_count() == 0) { 
-
-
-#if defined(__BTIF_EARPHONE__)
-    			if(reason == 0x08) {
-    				//connect timeout, shutdown time is set to 10 minutes
-                    app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
-    			} else if(reason == 0x13) { 
-#if 1                
-    				//REMOTE_USER_TERMINATED, shutdown time is set to 5 minutes
-    				app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
-#else                
-    				sndp_call_func_in_app_thread((uint32_t)sndp_ui_bt_enter_mobile_pairing, true, 0, 0);
-#endif				
+    			if(reason == 0x13) { 
+    			    //REMOTE_USER_TERMINATED         
+    				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+			
     			} else { 
-    				//other reason, shutdown time is set to 5 minutes
+    				//other reason, shutdown time is set to 15 minutes
+#if defined(__BTIF_EARPHONE__)
                     app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
-    			}			
 #endif
+    			}			
+
             }
 			break;
             
 		case SNDP_BT_CONN_STATUS_MOBILE_CONNECTED:
-			//SPUI_TRACE(0, "MOBILE_CONNECTED");
+			
 #ifdef MEDIA_PLAYER_SUPPORT            
-             media_PlayAudio(AUD_ID_BT_CONNECTED, 0);
+            media_PlayAudio(AUD_ID_BT_CONNECTED, 0);
 #endif			
-#if defined(__BTIF_EARPHONE__)
-			app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
-#endif
-#if defined(__WHETHER_REBOOT_AND_PAIRING__)
-
-#else
-			sndp_delay_exec_start(5000, (uint32_t)sndp_mobile_pairing_sccessful, 0, 0, 0);
-#endif
-            sndp_ui_pwron_pairing_type_set(0);
+			sndp_mobile_pairing_sccessful();
 			break;
 	
 		case SNDP_BT_CONN_STATUS_IBRT_DISCONNECTED:
-			//SPUI_TRACE(0, "IBRT_DISCONNECTED");
+            if(reason == 0x13) { 
+			    //REMOTE_USER_TERMINATED         
+				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+		
+			} else { 
+				//other reason, shutdown time is set to 15 minutes
+#if defined(__BTIF_EARPHONE__)
+                app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
+#endif
+			}	
 			break;
         
 		case SNDP_BT_CONN_STATUS_IBRT_CONNECTED:
-			//SPUI_TRACE(0, "IBRT_CONNECTED");
-#if defined(__BTIF_EARPHONE__)
-			app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
-#endif			
-            sndp_ui_pwron_pairing_type_set(0);
+            sndp_mobile_pairing_sccessful();	
 			break;
 
 		case SNDP_BT_CONN_STATUS_TWS_DISCONNECTED:
-			//SPUI_TRACE(0, "TWS_DISCONNECTED");
 			sndp_update_audio_channel(false);
 			sndp_dev_clear_device_info(true);
 			break;
             
 		case SNDP_BT_CONN_STATUS_TWS_CONNECTED:
-			//SPUI_TRACE(0, "TWS_CONNECTED");
 			sndp_update_audio_channel(true);
 			break;
 
@@ -988,7 +960,6 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			break;
             
 		case SNDP_BT_CONN_AVRCP_PLAYBACK_STATUS_CHANGED:
-            //SPUI_TRACE(0, "HFP_DISCONNECTED");
             if(reason == 1) {
                 sndp_ui_ctx.wear_play_music_allowed = true;
             } else if(reason == 2) {
@@ -996,11 +967,9 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
             }         
 			break;
 		case SNDP_BT_CONN_STATUS_HFP_DISCONNECTED:
-			//SPUI_TRACE(0, "HFP_DISCONNECTED");
 			break;
             
 		case SNDP_BT_CONN_STATUS_HFP_CONNECTED:
-			//SPUI_TRACE(0, "HFP_CONNECTED");
 			break;
 
 		case SNDP_BT_CONN_STATUS_BLE_DISCONNECTED:
@@ -1016,10 +985,9 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			break;
 
 		case SNDP_BT_CONN_STATUS_BES_AUD_DISCONNECTED:
-            //SPUI_TRACE(0, "BES_AUD_DISCONNECTED");
 			break;
+            
 		case SNDP_BT_CONN_STATUS_BES_AUD_CONNECTED:
-            //SPUI_TRACE(0, "BES_AUD_CONNECTED");
             sndp_ui_all_status_sync_send();
             if(sndp_dev_is_right_earphone() && sndp_is_tws_master_mode()) {
                 sndp_ibrt_tws_switch();
@@ -1027,40 +995,18 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			break;
 
     case SNDP_BT_CONN_STATUS_HFP_CALLSETUP_IND:
-            //SPUI_TRACE(0, "HFP_CALLSETUP_IND");
 			break;
             
 		case SNDP_BT_CONN_STATUS_HFP_RING_IND:
-            //SPUI_TRACE(0, "HFP_RING_IND");
 			break;
 
 		case SNDP_BT_CONN_STATUS_HFP_CALL_IND:
-            //SPUI_TRACE(0, "HFP_CALL_IND");
 			break;
             
 		default:
 			break;
 
 	}
-}
-
-
-void sndp_ui_bt_enter_mobile_pairing(bool play_tone)
-{
-    sndp_delay_exec_stop((uint32_t)sndp_enter_mobile_pairing_directly);
-    
-    if(play_tone) {
-        media_PlayAudio(AUD_ID_BT_PAIRING, 0);
-    }
-
-    if(sndp_dev_is_left_earphone()) {
-        sndp_disconnect_all_mobile_link();
-        sndp_clear_mobile_pairing_list();
-        sndp_delay_exec_start(2000, (uint32_t)sndp_enter_mobile_pairing_directly, 0, 0, 0);
-    } else {
-        sndp_disconnect_all_mobile_link();
-        sndp_clear_mobile_pairing_list();
-    }
 }
 
 static void sndp_ui_bt_event_exec_after_power_on(void)
@@ -1070,16 +1016,17 @@ static void sndp_ui_bt_event_exec_after_power_on(void)
         return;
     }
     
-    if(sndp_ui_pwron_pairing_type_is_freeman()) {
+    if(sndp_ui_pairing_type_is(SNDP_PAIRING_FREEMAN)) {
         SPUI_TRACE(0, "force freeman pairing");
-        
+
+        sndp_ui_pairing_type_set(SNDP_PAIRING_NONE);
         app_ibrt_if_enter_freeman_pairing();
         sndp_delay_exec_start(100, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
-        sndp_delay_exec_start(6000, (uint32_t)sndp_ui_pwron_pairing_type_set, 0, 0, 0);
        
-    } else if (sndp_ui_pwron_pairing_type_is_tws()) {
+    } else if (sndp_ui_pairing_type_is(SNDP_PAIRING_TWS)) {
         SPUI_TRACE(0, "force tws pairing");
         
+        sndp_ui_pairing_type_set(SNDP_PAIRING_NONE);
         sndp_enter_mobile_pairing_after_tws_connected();
         sndp_delay_exec_start(300, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
         
