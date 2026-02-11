@@ -310,7 +310,6 @@ char *sndp_dev_get_dev_model_name(void);
 
 /************************************************** Working Mode Start **************************************************/
 void sndp_dev_set_working_mode(sndp_dev_working_mode_e mode);
-void sndp_dev_clear_working_mode(sndp_dev_working_mode_e mode);
 uint32_t sndp_dev_get_working_mode(void);
 bool sndp_dev_is_working_mode(sndp_dev_working_mode_e mode);
 /**************************************************  Working Mode End **************************************************/

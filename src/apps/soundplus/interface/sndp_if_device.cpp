@@ -1375,13 +1375,7 @@ char *sndp_dev_get_dev_model_name(void)
 
 void sndp_dev_set_working_mode(sndp_dev_working_mode_e mode)
 {
-    sndp_dev_ctx.working_mode |= mode;
-    SNDP_IF_TRACE(0, "mode=%d, working_mode=%d", mode, sndp_dev_ctx.working_mode);
-}
-
-void sndp_dev_clear_working_mode(sndp_dev_working_mode_e mode)
-{
-    sndp_dev_ctx.working_mode &= ~mode;
+    sndp_dev_ctx.working_mode = mode;
     SNDP_IF_TRACE(0, "mode=%d, working_mode=%d", mode, sndp_dev_ctx.working_mode);
 }
 
