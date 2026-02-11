@@ -89,29 +89,47 @@ static uint8_t pwron_pairing_type = 0;  //0:none, 1:tws pairing, 2:freeman pairi
 void sndp_ui_working_mode_switch(void)
 {
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
+        SPUI_TRACE(0, "BT_MODE");
+        //Close ANC
+        sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+
         //Close sleep analysis, save data.
+#if defined(__SNDP_HEART_RATE_MGR__)        
+        sndp_sleep_analysis_stop();
+#endif
 
         //Set the working mode to BT mode.
         sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_BT);
 
         //Play prompt sound.
+#ifdef MEDIA_PLAYER_SUPPORT            
+        media_PlayAudio(AUD_ID_WORKING_MODE_BT, 0);
+#endif
 
         //Open BT.
         
         
     } else {
+        SPUI_TRACE(0, "SLEEP_MODE");
+        
         //Close BT.
 
         //set the working mode to Sleep mode.
-        sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_BT);
+        sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_SLEEP);
 
         //Play prompt sound.
+#ifdef MEDIA_PLAYER_SUPPORT            
+        media_PlayAudio(AUD_ID_WORKING_MODE_SLEEP, 0);
+#endif
 
         //Open ANC.
+        sndp_anc_mode_set(SNDP_ANC_MODE1);
 
         //Open sleep analysis.
+#if defined(__SNDP_HEART_RATE_MGR__)        
+        sndp_sleep_analysis_start();
+#endif
 
-        
     }
 }
 
@@ -242,11 +260,18 @@ static POSSIBLY_UNUSED void sndp_ui_wear_tone_switch_to_earbuds(void)
 //---------------------------------------- anc ctrl --------------------------------------------
 void sndp_ui_anc_onoff(bool onoff) 
 {
-  SPUI_TRACE(1, "onoff=%d", onoff);
+    SPUI_TRACE(1, "onoff=%d", onoff);
+    
 	if(onoff) {
+#ifdef MEDIA_PLAYER_SUPPORT
+        media_PlayAudio(AUD_ID_ANC_ON, 0);
+#endif
         sndp_anc_mode_set(SNDP_ANC_MODE1);
 	} else {        
         sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+#ifdef MEDIA_PLAYER_SUPPORT
+        media_PlayAudio(AUD_ID_ANC_OFF, 0);
+#endif
 	}
 }
 
@@ -258,11 +283,17 @@ static POSSIBLY_UNUSED void sndp_ui_anc_switch(void)
 	SPUI_TRACE(1, "curr_mode=%d", curr_mode);
 	
 	if(curr_mode == SNDP_ANC_MODE_OFF) {
-		//media_PlayAudio(AUD_ID_ANC_ON, 0);
+#ifdef MEDIA_PLAYER_SUPPORT        
+		media_PlayAudio(AUD_ID_ANC_ON, 0);
+#endif
+
 		sndp_delay_exec_start(2000, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE1, 0, 0);
 	} else {
 		sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
-		//sndp_delay_exec_start(100, (uint32_t)media_PlayAudio, (uint32_t)AUD_ID_ANC_ON, 0, 0);
+#ifdef MEDIA_PLAYER_SUPPORT        
+		sndp_delay_exec_start(100, (uint32_t)media_PlayAudio, (uint32_t)AUD_ID_ANC_OFF, 0, 0);
+#endif
+
 	}
 }
 
@@ -491,10 +522,10 @@ void sndp_ui_gesture_event_local_hdlr(sndp_dev_gesture_event_e gesture_event)
             sndp_ui_gesture_1click_hdlr(false);
             break;
         case SNDP_DEV_GESTURE_EVENT_2_CLICK:
-            sndp_ui_gesture_1click_hdlr(false);
+            sndp_ui_gesture_2click_hdlr(false);
             break;
         case SNDP_DEV_GESTURE_EVENT_3_CLICK:
-            sndp_ui_gesture_1click_hdlr(false);
+            sndp_ui_gesture_3click_hdlr(false);
             break;
         default:
             break;
@@ -573,12 +604,15 @@ static void sndp_ui_pwr_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
+            sndp_ui_anc_switch();
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
+            sndp_ui_working_mode_switch();
             break;
         case APP_KEY_EVENT_TRIPLECLICK:
             break;
         case APP_KEY_EVENT_LONGPRESS:
+            sndp_app_shutdown(SNDP_SHUTDOWN_REASON_LONGPRESS);
             break;
         case APP_KEY_EVENT_LONGLONGPRESS:
             break;
