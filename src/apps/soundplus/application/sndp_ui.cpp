@@ -909,8 +909,14 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 	switch(conn_status) {
 		case SNDP_BT_CONN_STATUS_MOBILE_DISCONNECTED:
 			//SPUI_TRACE(0, "MOBILE_DISCONNECTED, %d", app_ibrt_if_get_connected_mobile_count());
+			
+#ifdef MEDIA_PLAYER_SUPPORT            
+            media_PlayAudio(AUD_ID_BT_DIS_CONNECT, 0);
+#endif
 
             if(app_ibrt_if_get_connected_mobile_count() == 0) { 
+
+
 #if defined(__BTIF_EARPHONE__)
     			if(reason == 0x08) {
     				//connect timeout, shutdown time is set to 10 minutes
@@ -932,6 +938,9 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
             
 		case SNDP_BT_CONN_STATUS_MOBILE_CONNECTED:
 			//SPUI_TRACE(0, "MOBILE_CONNECTED");
+#ifdef MEDIA_PLAYER_SUPPORT            
+             media_PlayAudio(AUD_ID_BT_CONNECTED, 0);
+#endif			
 #if defined(__BTIF_EARPHONE__)
 			app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
 #endif
