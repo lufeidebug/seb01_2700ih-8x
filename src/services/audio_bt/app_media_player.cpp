@@ -374,6 +374,8 @@ enum sound_id {
     SOUND_ANC_ON,
     SOUND_ANC_OFF,
     SOUND_TRANSPARENT,
+    SOUND_WORKING_MODE_SLEEP,
+    SOUND_WORKING_MODE_BT,
 #endif
 
     MAX_SOUND_ID
@@ -441,6 +443,8 @@ static const media_sound_map_t media_sound_map_cn[] =
     SOUND_ITEM_DEF(CN_, SOUND_ANC_ON),
     SOUND_ITEM_DEF(CN_, SOUND_ANC_OFF),
     SOUND_ITEM_DEF(CN_, SOUND_TRANSPARENT),
+    SOUND_ITEM_DEF(CN_, SOUND_WORKING_MODE_SLEEP),
+    SOUND_ITEM_DEF(CN_, SOUND_WORKING_MODE_BT),
 #endif
 
 };
@@ -530,6 +534,8 @@ static const media_sound_map_t media_sound_map_en[] =
     SOUND_ITEM_DEF(EN_, SOUND_ANC_ON),
     SOUND_ITEM_DEF(EN_, SOUND_ANC_OFF),
     SOUND_ITEM_DEF(EN_, SOUND_TRANSPARENT),
+    SOUND_ITEM_DEF(EN_, SOUND_WORKING_MODE_SLEEP),
+    SOUND_ITEM_DEF(EN_, SOUND_WORKING_MODE_BT),
 #endif
 
 };
@@ -1929,6 +1935,12 @@ void media_runtime_audio_prompt_update(uint16_t id, uint8_t** ptr, uint32_t* len
         break;
     case AUD_ID_TRANSPARENT:
         get_sound_id_info(SOUND_TRANSPARENT, &sound_data, &length);
+        break;
+    case AUD_ID_WORKING_MODE_SLEEP:
+        get_sound_id_info(SOUND_WORKING_MODE_SLEEP, &sound_data, &length);
+        break;
+    case AUD_ID_WORKING_MODE_BT:
+        get_sound_id_info(SOUND_WORKING_MODE_BT, &sound_data, &length);
         break;
 #endif
 

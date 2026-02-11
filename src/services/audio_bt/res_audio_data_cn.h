@@ -172,6 +172,15 @@ const uint8_t CN_SOUND_ANC_OFF[] = {
 const uint8_t CN_SOUND_TRANSPARENT[] = {
 0//#include "res/cn/SOUND_TRANSPARENT_16k.txt"
 };
+
+const uint8_t CN_SOUND_WORKING_MODE_SLEEP[] = {
+0//#include "res/cn/SOUND_WORKING_MODE_SLEEP_16k.txt"
+};
+
+const uint8_t CN_SOUND_WORKING_MODE_BT[] = {
+0//#include "res/cn/SOUND_WORKING_MODE_BT_16k.txt"
+};
+
 #endif
 
 #endif
