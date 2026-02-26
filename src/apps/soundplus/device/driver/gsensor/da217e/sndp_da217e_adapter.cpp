@@ -26,8 +26,8 @@
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
-#define DA217E_IRQ_DEBOUNCE_REPEAT_MS            (20) //ms
-#define DA217E_IRQ_DEBOUNCE_DELAY_MS             (100) //ms
+#define DA217E_IRQ_DEBOUNCE_REPEAT_MS            (10) //ms
+#define DA217E_IRQ_DEBOUNCE_DELAY_MS             (20) //ms
         
 #define DA217E_I2C_TYPE                          (SNDP_I2C_HW_TASK)
 #define DA217E_I2C_ID                            (HAL_I2C_ID_2)
