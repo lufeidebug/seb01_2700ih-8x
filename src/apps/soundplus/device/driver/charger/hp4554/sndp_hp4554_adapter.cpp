@@ -188,6 +188,10 @@ int32_t sndp_hp4554_check_curr_status(void)
 	return 0;
 }
 
+int32_t sndp_hp4554_get_charging_status(sndp_hal_charger_mode_e *mode)
+{
+	return 0;
+}
 
 bool sndp_hp4554_is_charging_enabled(void)
 {
@@ -197,11 +201,12 @@ bool sndp_hp4554_is_charging_enabled(void)
 	return false;
 }
 
-const sndp_hal_charger_s sndp_hal_charger_hp4554 = {
+extern "C" const sndp_hal_charger_s sndp_hal_charger_hp4554 = {
 	.init									= sndp_hp4554_init,
 	.set_charging_current					= sndp_hp4554_set_charging_current,
 	.set_charging_mode_changed_callback     = sndp_hp4554_set_charging_mode_changed_callback,
 	.check_curr_status                      = sndp_hp4554_check_curr_status,
+	.get_charging_status                    = sndp_hp4554_get_charging_status,
 	.is_charging_enabled					= sndp_hp4554_is_charging_enabled,
 };
 

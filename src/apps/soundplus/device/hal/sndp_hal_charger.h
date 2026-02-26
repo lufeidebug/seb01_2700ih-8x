@@ -57,6 +57,12 @@ typedef struct {
      */
     int32_t (* check_curr_status)(void);
 
+    
+    /** 
+     * return: 0 no error.
+     */
+    int32_t (* get_charging_status)(sndp_hal_charger_mode_e *mode);
+
 	/**
      * charging_current: sndp_hal_charging_current_e
      * return: 0 no error. 
@@ -69,6 +75,7 @@ int32_t sndp_hal_charger_init(void);
 int32_t sndp_hal_charger_set_charging_current(sndp_hal_charging_current_e charging_current);
 int32_t sndp_hal_charger_set_charging_mode_changed_callback(sndp_hal_charging_mode_changed_callback callback);
 int32_t sndp_hal_charger_check_curr_status(void);
+int32_t sndp_hal_charger_get_charging_status(sndp_hal_charger_mode_e *mode);
 bool sndp_hal_charger_is_charging_enabled(void);
 
 #ifdef __cplusplus

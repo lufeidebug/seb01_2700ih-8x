@@ -17,10 +17,6 @@ extern "C" {
 #endif
 
 
-
-
-extern const sndp_hal_charger_s sndp_hal_charger_hp4554;
-
 #ifdef __cplusplus
 }
 #endif

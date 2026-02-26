@@ -11,7 +11,7 @@
 #include "sndp_hal_charger.h"
 
 #if defined(__SNDP_CHARGER_HP4554__)
-#include "sndp_hp4554_adapter.h"
+extern "C" const sndp_hal_charger_s sndp_hal_charger_hp4554;
 #endif
 
 
@@ -75,6 +75,16 @@ int32_t sndp_hal_charger_check_curr_status(void)
 {
 	if((p_sndp_hal_charger != NULL) && (p_sndp_hal_charger->check_curr_status != NULL)) {
         if(p_sndp_hal_charger->check_curr_status() == SNDP_HAL_RET_OK)
+			return SNDP_HAL_RET_OK;
+    }
+
+	return SNDP_HAL_RET_FAIL;
+}
+
+int32_t sndp_hal_charger_get_charging_status(sndp_hal_charger_mode_e *mode)
+{
+    if((p_sndp_hal_charger != NULL) && (p_sndp_hal_charger->get_charging_status != NULL)) {
+        if(p_sndp_hal_charger->get_charging_status(mode) == SNDP_HAL_RET_OK)
 			return SNDP_HAL_RET_OK;
     }
 
