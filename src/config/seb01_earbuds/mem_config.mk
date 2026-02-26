@@ -8,7 +8,7 @@ export USE_OVERLAY_TXT_GAP ?= 0
 ########## RAM OPTIMIZE END ##########
 
 ifeq ($(A2DP_CP_ACCEL),1)
-export RAMCP_SIZE := 0x40000
+export RAMCP_SIZE := 0x20000
 export RAMCPX_SIZE := 0x20000
 else
 export RAMCP_SIZE := 0
@@ -39,7 +39,7 @@ endif
 ifeq ($(A2DP_LHDC_ON),1)
 export OS_DYNAMIC_MEM_SIZE ?= 0x12000
 else
-export OS_DYNAMIC_MEM_SIZE ?= 0x7000
+export OS_DYNAMIC_MEM_SIZE ?= 0x12000
 endif
 export CP_IN_CACHE_SIZE := 1024*3
 

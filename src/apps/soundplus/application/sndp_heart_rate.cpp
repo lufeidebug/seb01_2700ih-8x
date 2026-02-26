@@ -338,11 +338,11 @@ static void sndp_hr_process_thread(void const *argument)
         }
         
         if(hr_ctx.sleep_running) {
-            HR_TRACE(0, "sleep analyse...");
             sleep_analysis_time++;
 
             if(sleep_analysis_time >= 30) {
                 sleep_analysis_time = 0;
+                SNDP_TRACE(0, "sleep analyse...");
                 
                 // sleep_step_13: Input sensor data
                 dbbeats_put_sleep_sensor_data();
@@ -424,13 +424,13 @@ void sndp_sleep_analysis_callback(int8_t *sleep_stage,
 {
     // sleep_step_14: analysis result
     if (result_code == 1) {
-        HR_TRACE(0, "Sleep position: %d\n", sleep_position);
+        SNDP_TRACE(0, "Sleep position: %d\n", sleep_position);
         // sleep_step_15: Use sleep_stage[0~39]
 
         // sleep_step_16: report data to app via ble.
         
     } else {
-        HR_TRACE(0, "Error: %d\n", result_code);
+        SNDP_TRACE(0, "Error: %d\n", result_code);
     }
 }
 
@@ -544,7 +544,7 @@ void sndp_hr_app_init(void)
     }
 
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
-    HR_TRACE(0, "%s", lib_engine_version());
+    SNDP_TRACE(0, "lib_ver:%s", lib_engine_version());
     dbbeats_print_log_cfg(sndp_hr_print_log);
 #endif
     

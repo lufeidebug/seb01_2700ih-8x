@@ -614,12 +614,14 @@ static void sndp_ui_fn1_key_hdlr(APP_KEY_STATUS *status, void *param)
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
 #if defined(__SNDP_HEART_RATE_MGR__)            
-            sndp_hr_mearsuring_start();
+            //sndp_hr_mearsuring_start();
+            sndp_sleep_analysis_start();
 #endif
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
 #if defined(__SNDP_HEART_RATE_MGR__)            
-            sndp_hr_mearsuring_stop();
+            //sndp_hr_mearsuring_stop();
+            sndp_sleep_analysis_stop();
 #endif
             break;
         case APP_KEY_EVENT_TRIPLECLICK:
