@@ -31,6 +31,10 @@
 #include "patch.h"
 #include "tgt_hardware.h"
 
+#if defined(__SNDP_CHARGER_BES__)
+#define ARM_CMNS
+#endif
+
 #define CHG_IRQ_MODULE_ENABLE                               true
 #define CHG_IRQ_MODULE_DISABLE                              false
 
@@ -654,6 +658,20 @@ void charger_charge_open(void)
 #endif
 
 #ifdef ARM_CMNS
+#if defined(__SNDP_CHARGER_BES__)
+    charger_charge_irq_module_cfg(CHG_TRIPRE_TIMEOUT, CHG_IRQ_MODULE_ENABLE);
+    charger_charge_irq_module_cfg(CHG_FAST_TIMEOUT,   CHG_IRQ_MODULE_ENABLE);
+    charger_charge_irq_module_cfg(CHG_ACIN_OV,        CHG_IRQ_MODULE_ENABLE);
+    charger_charge_irq_module_cfg(CHG_OTP,            CHG_IRQ_MODULE_ENABLE);
+    charger_charge_irq_module_cfg(CHG_CHRG_DONE,      CHG_IRQ_MODULE_ENABLE);
+
+    charger_charge_irq_module_cfg(CHG_AC_ON_DET_IN,   CHG_IRQ_MODULE_ENABLE);
+    charger_charge_irq_module_cfg(CHG_AC_ON_DET_OUT,  CHG_IRQ_MODULE_ENABLE);
+    charger_charge_irq_module_cfg(CHG_CHRG_TRICKLE,   CHG_IRQ_MODULE_ENABLE);
+    charger_charge_irq_module_cfg(CHG_CHRG_PRE,       CHG_IRQ_MODULE_ENABLE);
+    charger_charge_irq_module_cfg(CHG_CHRG_FAST,      CHG_IRQ_MODULE_ENABLE);
+    charger_charge_irq_module_cfg(CHG_CHRG_OFF,       CHG_IRQ_MODULE_ENABLE);
+#else
     charger_charge_irq_module_cfg(CHG_TRIPRE_TIMEOUT, CHG_IRQ_MODULE_ENABLE);
     charger_charge_irq_module_cfg(CHG_FAST_TIMEOUT,   CHG_IRQ_MODULE_ENABLE);
     charger_charge_irq_module_cfg(CHG_ACIN_OV,        CHG_IRQ_MODULE_ENABLE);
@@ -666,7 +684,7 @@ void charger_charge_open(void)
     charger_charge_irq_module_cfg(CHG_CHRG_PRE,       CHG_IRQ_MODULE_DISABLE);
     charger_charge_irq_module_cfg(CHG_CHRG_FAST,      CHG_IRQ_MODULE_DISABLE);
     charger_charge_irq_module_cfg(CHG_CHRG_OFF,       CHG_IRQ_MODULE_DISABLE);
-
+#endif
     NVIC_SetVector(CHARGER_IRQn, (uint32_t)charger_charge_irq_handler);
     NVIC_SetPriority(CHARGER_IRQn, IRQ_PRIORITY_NORMAL);
     NVIC_ClearPendingIRQ(CHARGER_IRQn);

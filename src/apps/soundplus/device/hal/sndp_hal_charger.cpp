@@ -14,6 +14,9 @@
 extern "C" const sndp_hal_charger_s sndp_hal_charger_hp4554;
 #endif
 
+#if defined(__SNDP_CHARGER_BES__)
+extern "C" const sndp_hal_charger_s sndp_hal_charger_bes;
+#endif
 
 
 
@@ -46,6 +49,12 @@ int32_t sndp_hal_charger_init(void)
 	}
 #endif
 
+#if defined(__SNDP_CHARGER_BES__)
+    if((sndp_hal_charger_bes.init != NULL) && (sndp_hal_charger_bes.init() == SNDP_HAL_RET_OK)){
+		p_sndp_hal_charger = (sndp_hal_charger_s *)&sndp_hal_charger_bes;
+		return SNDP_HAL_RET_OK;
+	}
+#endif
 
 	p_sndp_hal_charger = NULL;
     return SNDP_HAL_RET_FAIL;

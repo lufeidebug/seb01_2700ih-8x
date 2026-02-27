@@ -138,10 +138,15 @@ endif
 
 ifeq ($(SNDP_CHARGER_MGR),1)
     KBUILD_CPPFLAGS += -D__SNDP_CHARGER_MGR__
-    export SNDP_CHARGER_HP4554                  := 1
+    export SNDP_CHARGER_HP4554                  := 0
+    export SNDP_CHARGER_BES                     := 1
 
     ifeq ($(SNDP_CHARGER_HP4554),1)
         KBUILD_CPPFLAGS += -D__SNDP_CHARGER_HP4554__
+    endif
+
+    ifeq ($(SNDP_CHARGER_BES),1)
+        KBUILD_CPPFLAGS += -D__SNDP_CHARGER_BES__
     endif
 
 endif
