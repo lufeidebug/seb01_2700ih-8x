@@ -656,6 +656,10 @@ uint8_t sndp_get_mobile_pairing_count(void)
 }
 
 
+uint8_t sndp_get_connected_mobile_count(void)
+{
+    return app_ibrt_if_get_connected_mobile_count();
+}
 
 bool sndp_is_a2dp_mode(void)
 {

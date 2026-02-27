@@ -10,8 +10,8 @@
 #include "nvrecord_env.h"
 #include "app_media_player.h"
 #include "app_audio.h"
-#include "earbud_ux_api.h"
-
+#include "app_key.h"
+#include "bta_tws_ux_api.h"
 
 #include "sndp_ui.h"
 #include "sndp_if_common.h"
@@ -88,6 +88,19 @@ static sndp_pairing_type_e sndp_pairing_type = SNDP_PAIRING_NONE;  //0:none, 1:t
 * Function
 **************************************************************************************************/
 
+void sndp_ui_bt_switch(bool onoff)
+{
+    if(onoff) {
+        SPUI_TRACE(0, "on..");
+        bta_tws_enable_access_mode(true);
+        bta_tws_connect_all_bt_devices();
+    } else {
+        SPUI_TRACE(0, "off..");
+        bta_tws_remove_all_bt_devices();
+        bta_tws_enable_access_mode(false);
+    }
+}
+
 void sndp_ui_working_mode_switch(void)
 {
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
@@ -109,12 +122,13 @@ void sndp_ui_working_mode_switch(void)
 #endif
 
         //Open BT.
-        
+        sndp_ui_bt_switch(true);
         
     } else {
         SPUI_TRACE(0, "SLEEP_MODE");
         
         //Close BT.
+        sndp_ui_bt_switch(false );
 
         //set the working mode to Sleep mode.
         sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_SLEEP);
@@ -668,6 +682,7 @@ static void sndp_ui_fn3_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
+            sndp_ui_bt_switch(true);
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
             break;
@@ -688,6 +703,7 @@ static void sndp_ui_fn4_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
+            sndp_ui_bt_switch(false);
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
             break;
@@ -900,7 +916,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
             media_PlayAudio(AUD_ID_BT_DIS_CONNECT, 0);
 #endif
 
-            if(app_ibrt_if_get_connected_mobile_count() == 0) { 
+            if(sndp_get_connected_mobile_count() == 0) { 
     			if(reason == 0x13) { 
     			    //REMOTE_USER_TERMINATED         
     				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
@@ -1022,7 +1038,7 @@ static void sndp_ui_bt_event_exec_after_power_on(void)
         SPUI_TRACE(0, "force freeman pairing");
 
         sndp_ui_pairing_type_set(SNDP_PAIRING_NONE);
-        app_ibrt_if_enter_freeman_pairing();
+        sndp_enter_freeman_pairing();
         sndp_delay_exec_start(100, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
        
     } else if (sndp_ui_pairing_type_is(SNDP_PAIRING_TWS)) {
@@ -1061,9 +1077,9 @@ static void sndp_ui_dev_status_print(void)
 	const uint8_t *str_iobox_out    = (const uint8_t *)" out";
     uint8_t *role;
 
-    if(TWS_UI_MASTER == sndp_is_tws_master_mode())
+    if(sndp_is_tws_master_mode())
         role = (uint8_t *)"M";
-    else if(TWS_UI_SLAVE == sndp_is_tws_slave_mode())
+    else if(sndp_is_tws_slave_mode())
         role = (uint8_t *)"S";
     else
         role = (uint8_t *)"U";

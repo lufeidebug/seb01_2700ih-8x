@@ -160,6 +160,7 @@ void sndp_disconnect_mobile_link(uint8_t *mobile_addr);
 void sndp_disconnect_all_mobile_link(void);
 void sndp_clear_mobile_pairing_list(void);
 uint8_t sndp_get_mobile_pairing_count(void);
+uint8_t sndp_get_connected_mobile_count(void);
 
 bool sndp_is_a2dp_mode(void);
 bool sndp_is_sco_mode(void);
