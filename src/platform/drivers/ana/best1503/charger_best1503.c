@@ -667,9 +667,9 @@ void charger_charge_open(void)
 
     charger_charge_irq_module_cfg(CHG_AC_ON_DET_IN,   CHG_IRQ_MODULE_ENABLE);
     charger_charge_irq_module_cfg(CHG_AC_ON_DET_OUT,  CHG_IRQ_MODULE_ENABLE);
-    charger_charge_irq_module_cfg(CHG_CHRG_TRICKLE,   CHG_IRQ_MODULE_ENABLE);
-    charger_charge_irq_module_cfg(CHG_CHRG_PRE,       CHG_IRQ_MODULE_ENABLE);
-    charger_charge_irq_module_cfg(CHG_CHRG_FAST,      CHG_IRQ_MODULE_ENABLE);
+    charger_charge_irq_module_cfg(CHG_CHRG_TRICKLE,   CHG_IRQ_MODULE_DISABLE);
+    charger_charge_irq_module_cfg(CHG_CHRG_PRE,       CHG_IRQ_MODULE_DISABLE);
+    charger_charge_irq_module_cfg(CHG_CHRG_FAST,      CHG_IRQ_MODULE_DISABLE);
     charger_charge_irq_module_cfg(CHG_CHRG_OFF,       CHG_IRQ_MODULE_ENABLE);
 #else
     charger_charge_irq_module_cfg(CHG_TRIPRE_TIMEOUT, CHG_IRQ_MODULE_ENABLE);
