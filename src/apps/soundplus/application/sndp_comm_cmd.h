@@ -172,7 +172,7 @@ typedef enum {
 
 
 typedef uint32_t (*sndp_comm_cmd_exec_func)(sndp_comm_cmd_info_s *cmd_info);
-
+typedef uint32_t (*sleep_app_comm_cmd_exec_func)(sleep_app_comm_cmd_info_s *cmd_info);
 
 typedef struct {
 	uint8_t cmd_id;
@@ -180,6 +180,11 @@ typedef struct {
 	sndp_comm_cmd_exec_func cmd_exec_hdlr;
 } sndp_comm_cmd_handle_s;
 
+typedef struct {
+	uint8_t cmd_id;
+	const char *name;
+	sleep_app_comm_cmd_exec_func cmd_exec_hdlr;
+} sndp_sleep_comm_cmd_handle_s;
 
 uint32_t sndp_comm_cmd_send_lr_sync_dev_info(void);
 uint32_t sndp_comm_cmd_send_lr_sync_bat_info(void);
@@ -196,7 +201,7 @@ uint32_t sndp_comm_cmd_send_pt_test_ir(uint8_t *data, uint16_t data_len);
 uint32_t sndp_comm_cmd_send_pt_report_wear_status(uint8_t status);
 
 int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd);
-
+int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd);
 
 
 typedef enum {

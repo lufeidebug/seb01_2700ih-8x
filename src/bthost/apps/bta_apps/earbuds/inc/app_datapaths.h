@@ -128,7 +128,10 @@ void app_datapath_server_register_event_cb(app_datapath_event_cb callback);
 void app_datapath_server_register_le_rs_callback(app_datapath_server_role_switch_callback_t callback);
 
 void app_datapath_server_register_rx_done(app_datapath_server_data_received_callback_func_t callback);
-
+void app_datapath_server_register_tx_done(app_datapath_server_tx_done_t callback);
+void app_datapath_server_register_disconnected_done(app_datapath_server_disconnected_done_t callback);
+void app_datapath_server_register_connected_done(app_datapath_server_connected_done_t callback);
+void app_datapath_server_register_mtu_exchanged_done(app_datapath_server_mtuexchanged_done_t callback);
 #endif /* CFG_APP_DATAPATH_SERVER */
 
 #ifdef __cplusplus

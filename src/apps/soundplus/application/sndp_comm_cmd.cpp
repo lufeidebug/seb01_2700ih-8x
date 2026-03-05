@@ -1136,136 +1136,137 @@ int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd)
     return ret;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_mode(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_mode(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_param(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_param(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_param(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_param(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_find_my_earphone(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_find_my_earphone(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_anc_mode(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_anc_mode(sleep_app_comm_cmd_info_s *cmd_info)
+{
+    // sndp_anc_mode_set();
+    return 0;
+}
+
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notification(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notification(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_battery_status(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_battery_status(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_enable(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_enable(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_voice_prompt_enable(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_voice_prompt_enable(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_key_mapping(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_key_mapping(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_touch_key_mapping(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_touch_key_mapping(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_smart_play_pause(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_smart_play_pause(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_settings(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_settings(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_earbuds_status_led_control(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_earbuds_status_led_control(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_ppg_auto_led_enable_disable(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_ppg_auto_led_enable_disable(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_heartrate_measuring(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_heartrate_measuring(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sndp_comm_cmd_info_s *cmd_info)
-{
-    return 0;
-}
-
-static const sndp_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
+static const sndp_sleep_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
     { SLEEP_APP_CMDID_SET_EQ_MODE             , "APP_SET_EQ_MODE"      , sleep_comm_cmd_recv_app_set_eq_mode               },
     { SLEEP_APP_CMDID_GET_EQ_MODE             , "APP_GET_EQ_MODE"       , sleep_comm_cmd_recv_app_get_eq_mode               },
     { SLEEP_APP_CMDID_SET_EQ_PARAM         , "APP_SET_EQ_PARAM"  , sleep_comm_cmd_recv_app_set_eq_param           },
@@ -1295,9 +1296,9 @@ static const sndp_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
 };
 static const int32_t sndp_sleep_app_comm_cmd_hdlr_cnt = sizeof(sleep_app_comm_cmd_hdlr_list) / sizeof(sleep_app_comm_cmd_hdlr_list[0]);
 static sleep_app_comm_cmd_info_s sndp_sleep_app_comm_exec_cmd;
-int32_t sleep_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd)
+int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
 {
-    sndp_comm_cmd_handle_s *cmd_hdlr = NULL;
+    sndp_sleep_comm_cmd_handle_s *cmd_hdlr = NULL;
     uint32_t ret = 0;
 
     if(cmd == NULL) {
@@ -1306,11 +1307,11 @@ int32_t sleep_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd)
 
     memcpy(&sndp_sleep_app_comm_exec_cmd, cmd, sizeof(sleep_app_comm_cmd_info_s));
     for(uint32_t i = 0; i < sndp_sleep_app_comm_cmd_hdlr_cnt; i++) {
-        cmd_hdlr = (sndp_comm_cmd_handle_s *)&sleep_app_comm_cmd_hdlr_list[i];
+        cmd_hdlr = (sndp_sleep_comm_cmd_handle_s *)&sleep_app_comm_cmd_hdlr_list[i];
         if(sndp_sleep_app_comm_exec_cmd.cmd == cmd_hdlr->cmd_id) {
             if(cmd_hdlr->cmd_exec_hdlr) {
                 COMM_CMD_TRACE(1, "cmd name = %s", cmd_hdlr->name ? cmd_hdlr->name : "null");
-                ret = cmd_hdlr->cmd_exec_hdlr((sndp_comm_cmd_info_s *)&sndp_sleep_app_comm_exec_cmd);
+                ret = cmd_hdlr->cmd_exec_hdlr(&sndp_sleep_app_comm_exec_cmd);
             }
             break;
         }

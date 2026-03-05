@@ -238,7 +238,7 @@ ifeq ($(SNDP_COMMUNICATION_MGR),1)
 
     export SNDP_COMM_TRACE_UART                 := 0
     export SNDP_COMM_POGOPIN                    := 1
-    export SNDP_COMM_BLE                        := 0
+    export SNDP_COMM_BLE                        := 1
     export SNDP_COMM_SPP                        := 0
     export SNDP_COMM_MS                         := 0
 endif

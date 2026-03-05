@@ -36,12 +36,12 @@ uint32_t sleep_protocol_parse_recv_data(uint8_t *recv_data, uint16_t recv_len, s
         return SLEEP_APP_ERROR_INVALID_DATA_LEN;
     }
 
-    if(recv_len < SLEEP_APP_COMM_HEAD_LEN + data_len) {
-        SLEEP_PROTOCOL_TRACE(2, "recv_len(%d) < SLEEP_APP_COMM_HEAD_LEN(%d) + data_len(%d), return", recv_len, SLEEP_APP_COMM_HEAD_LEN, data_len);
+    if(recv_len > SLEEP_APP_COMM_HEAD_LEN + data_len) {
+        SLEEP_PROTOCOL_TRACE(2, "recv_len(%d) > HEAD_LEN(%d) + data_len(%d), return", recv_len, SLEEP_APP_COMM_HEAD_LEN, data_len);
         return SLEEP_APP_ERROR_INVALID_DATA_LEN;
     }
 
-    if(flag != AppFlag) {
+    if(flag != (int)AppFlag) {
         SLEEP_PROTOCOL_TRACE(2, "Invalid flag(0x%06X), return", flag);
         return SLEEP_APP_ERROR_INVALID_HEAD_FLAG;
     }
