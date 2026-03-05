@@ -679,6 +679,7 @@ static int32_t pgp_uart_set_mode(sndp_hal_pogopin_mode_e mode)
 	
         case SNDP_HAL_POGOPIN_MODE_COMM_RX:
             PGP_UART_TRACE(0, "COMM_RX");
+            app_sysfreq_req(APP_SYSFREQ_USER_SNDP_POGOPIN_COMM, APP_SYSFREQ_52M); 
             pgp_uart_ctx.tx_working = false;
             pgp_uart_pin_config(mode);
             pgp_uart_open();           
