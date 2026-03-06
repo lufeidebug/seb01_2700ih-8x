@@ -85,6 +85,7 @@ static uint8_t sndp_comm_recv_deal_buf[512];
 
 static sndp_comm_cmd_info_s sndp_comm_recv_cmd;
 static sndp_comm_cmd_info_s sndp_comm_send_cmd;
+static sleep_app_comm_cmd_info_s sndp_sleep_comm_recv_cmd;
 static uint8_t sndp_comm_send_frame[SNDP_COMM_FRAME_LEN_MAX];
 
 
@@ -303,7 +304,6 @@ static int32_t sndp_comm_main_execute_cmd(sndp_comm_cmd_info_s *cmd)
 
 static int32_t sleep_app_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
 {
-    // sleep_app_comm_main_send_cmd(cmd);
     sleep_comm_execute_cmd_hdlr(cmd);
     return 0;
 }
@@ -670,6 +670,23 @@ int32_t sndp_comm_main_rsp_cmd(sndp_comm_cmd_info_s *rsp_cmd)
     return 0;
 }
 
+int32_t sndp_sleep_comm_main_rsp_cmd(sleep_app_comm_cmd_info_s *rsp_cmd)
+{
+    sleep_app_comm_cmd_info_s *cmd = &sndp_sleep_comm_recv_cmd;
+    if(rsp_cmd == NULL) {
+        return -1;
+    }
+    cmd->flag = AppFlag;
+    cmd->cmd = rsp_cmd->cmd;
+    cmd->data_len = rsp_cmd->data_len;
+    if(cmd->data_len > 0 && cmd->data_len < SLEEP_APP_COMM_DATA_LEN_MAX)
+        memcpy(cmd->value, rsp_cmd->value, cmd->data_len);
+
+    COMM_MIAN_TRACE(0, "Sleep cmd(%02X), data_len=%d", cmd->cmd, cmd->data_len);
+
+    sleep_app_comm_main_send_cmd(cmd);
+    return 0;
+}
 
 #if defined(__SNDP_COMM_TRACE_UART__)
 static void sndp_comm_main_trace_uart_init(void)

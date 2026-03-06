@@ -317,7 +317,7 @@ void sndp_dev_gesture_event_callback(sndp_hal_gesture_event_e event)
 	}
 }
 #endif
-
+function_callback_t sndp_dev_gesture_func_table[SNDP_FUNC_MAX] = {0};
 void sndp_dev_gesture_set_event_callback(sndp_dev_gesture_event_cb callback)
 {
     sndp_dev_gesture_event_cb_ptr = callback;
@@ -331,6 +331,90 @@ void sndp_dev_gesture_init(void)
 	sndp_hal_gesture_init();
 	sndp_hal_gesture_set_event_callback(sndp_dev_gesture_event_callback);
 #endif
+}
+
+void sndp_dev_gesture_mapper_set_default(sndp_dev_gesture_mapper_t* mapper) {
+    if (!mapper) return;
+  
+    sndp_dev_ctx.local.gesture_mapper.ear_mapping_table.func_table[SNDP_DEV_GESTURE_CLICK] = sndp_dev_gesture_func_table[SNDP_FUNC_A];
+    sndp_dev_ctx.local.gesture_mapper.ear_mapping_table.func_table[SNDP_DEV_GESTURE_DOUBLE_CLICK] = sndp_dev_gesture_func_table[SNDP_FUNC_E];
+    sndp_dev_ctx.local.gesture_mapper.ear_mapping_table.func_table[SNDP_DEV_GESTURE_TRIPLE_CLICK] = sndp_dev_gesture_func_table[SNDP_FUNC_C];
+    sndp_dev_ctx.local.gesture_mapper.ear_mapping_table.func_table[SNDP_DEV_GESTURE_LONG_PRESS] = sndp_dev_gesture_func_table[SNDP_FUNC_D];
+}
+
+void sndp_dev_gesture_mapper_handle_gesture(sndp_dev_gesture_type_t gesture) {
+    if (gesture >= SNDP_DEV_GESTURE_MAX) {
+        return;
+    }
+    
+    function_callback_t func = NULL;
+    
+    func = sndp_dev_ctx.local.gesture_mapper.ear_mapping_table.func_table[gesture];
+    
+    if (func) {
+        func();  // 执行对应的功能函数
+    }
+}
+
+bool sndp_dev_gesture_mapper_update_mapping(bool peer, sndp_dev_gesture_type_t gesture, sndp_dev_function_type_t func_type) {
+    if (gesture >= SNDP_DEV_GESTURE_MAX || func_type >= SNDP_FUNC_MAX) {
+        return false;
+    }
+    
+    function_callback_t new_func = NULL;
+    
+    // 根据功能类型选择对应的函数
+    switch (func_type) {
+        case SNDP_FUNC_A: new_func = sndp_dev_gesture_func_table[SNDP_FUNC_A]; break;
+        case SNDP_FUNC_B: new_func = sndp_dev_gesture_func_table[SNDP_FUNC_B]; break;
+        case SNDP_FUNC_C: new_func = sndp_dev_gesture_func_table[SNDP_FUNC_C]; break;
+        case SNDP_FUNC_D: new_func = sndp_dev_gesture_func_table[SNDP_FUNC_D]; break;
+				case SNDP_FUNC_E: new_func = sndp_dev_gesture_func_table[SNDP_FUNC_E]; break;
+        default: return false;
+    }
+    
+		if(peer) {
+				sndp_dev_ctx.peer.gesture_mapper.ear_mapping_table.func_table[gesture] = new_func;
+		} else {
+				sndp_dev_ctx.local.gesture_mapper.ear_mapping_table.func_table[gesture] = new_func;
+		}
+    
+    return true;
+}
+
+void sndp_dev_gesture_mapper_init(void) {
+
+    memset(&sndp_dev_ctx.local.gesture_mapper, 0, sizeof(sndp_dev_gesture_mapper_t));
+    sndp_dev_gesture_mapper_set_default(&sndp_dev_ctx.local.gesture_mapper);
+    sndp_dev_ctx.local.gesture_mapper.initialized = true;
+
+}
+
+void sndp_dev_register_gesture_funcs(function_callback_t *funcs){
+		if(funcs) {
+				for(int i = 0; i < SNDP_FUNC_MAX; i++) {
+						sndp_dev_gesture_func_table[i] = funcs[i];
+				}
+		}
+}
+
+void sndp_dev_gesture_onoff(bool peer, bool onoff)
+{
+	SNDP_IF_TRACE(0, "enter");
+	if(peer) {
+		sndp_dev_ctx.peer.gesture_onoff = onoff;
+	} else {
+		sndp_dev_ctx.local.gesture_onoff = onoff;
+	}
+}
+
+bool sndp_dev_get_gesture_onoff(bool peer)
+{
+	if(peer) {
+		return sndp_dev_ctx.peer.gesture_onoff;
+	} else {
+		return sndp_dev_ctx.local.gesture_onoff;
+	}
 }
 
 /************************************************** Gesture Info End **************************************************/
@@ -1221,6 +1305,16 @@ bool sndp_dev_modify_bt_name(uint8_t *name , uint16_t len)
 
     return false;
 }
+#else
+char *sndp_dev_get_bt_name(void)
+{
+		char *bt_name;
+
+		bt_name = (char *)factory_section_get_bt_name();
+
+		SNDP_IF_TRACE(1, "bt_name=%s", bt_name);
+		return bt_name;
+}
 #endif
 
 static uint8_t sndp_dev_dev_sn[SNDP_DEV_DEV_SN_LEN + 1];
@@ -1454,6 +1548,28 @@ void sndp_dev_acc_init(void)
 
 /**************************************************  acc End **************************************************/
 
+/************************************************** prompt start **************************************************/
+void sndp_dev_set_prompt_onoff(bool peer, bool onoff)
+{
+	if(peer)
+		sndp_dev_ctx.peer.prompt_onoff = onoff;
+	else
+		sndp_dev_ctx.local.prompt_onoff = onoff;
+
+		SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.prompt_onoff, sndp_dev_ctx.peer.prompt_onoff);
+}
+
+bool sndp_dev_get_prompt_onoff(bool peer)
+{
+	if(peer)
+		return sndp_dev_ctx.peer.prompt_onoff;
+	else
+		return sndp_dev_ctx.local.prompt_onoff;
+	
+		SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.prompt_onoff, sndp_dev_ctx.peer.prompt_onoff);
+}
+
+/************************************************** prompt end **************************************************/
 
 void sndp_dev_init(void)
 {

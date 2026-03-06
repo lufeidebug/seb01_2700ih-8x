@@ -508,6 +508,51 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_call_ctrl(sndp_comm_cmd_info_s *cmd_i
 	return 0;
 }
 
+uint32_t sndp_comm_cmd_send_lr_sync_gesture_onoff(bool onoff)
+{
+    uint8_t data = onoff ? 0x01 : 0x00;
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_GESTURE_ONOFF, &data, 1);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_gesture_onoff(sndp_comm_cmd_info_s *cmd_info)
+{
+    if(cmd_info->data_len == 1) {
+        sndp_dev_gesture_onoff(false, cmd_info->data[0] ? true : false);
+    }
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_lr_sync_prompt_onoff(uint8_t *onoff)
+{
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_PROMPT_ONOFF, onoff, 1);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_prompt_onoff(sndp_comm_cmd_info_s *cmd_info)
+{
+    if(cmd_info->data_len == 1) {
+        sndp_dev_set_prompt_onoff(false, (cmd_info->data[0] == 0x01) ? true : false);
+    }
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_lr_sync_update_mapping(uint8_t key_behavior,uint8_t key_function)
+{
+    uint8_t data[] = {key_behavior, key_function};
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_UPDATE_MAPPING, data, sizeof(data));
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_update_mapping(sndp_comm_cmd_info_s *cmd_info)
+{
+    uint8_t key_behavior = cmd_info->data[0];
+    uint8_t key_function = cmd_info->data[1];
+    if(cmd_info->data_len == 2) {
+        sndp_dev_gesture_mapper_update_mapping(false, (sndp_dev_gesture_type_t)key_behavior, (sndp_dev_function_type_t)key_function);
+    }
+    return 0;
+}
 
 #if defined(__SNDP_PRODUCT_TEST__)
 static uint32_t sndp_comm_cmd_recv_pt_switch_test_mode(sndp_comm_cmd_info_s *cmd_info)
@@ -1065,8 +1110,9 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_LR_SYNC_BOTH_SHUTDOWN          , "LR_SYNC_BOTH_SHUTDOWN"   , sndp_comm_cmd_recv_lr_sync_both_shutdown          },
     { COMM_CMDID_LR_SYNC_MUSIC_CTRL             , "LR_SYNC_MUSIC_CTRL"      , sndp_comm_cmd_recv_lr_sync_music_ctrl             },
     { COMM_CMDID_LR_SYNC_CALL_CTRL              , "LR_SYNC_CALL_CTRL"       , sndp_comm_cmd_recv_lr_sync_call_ctrl              },
-        
-
+    { COMM_CMDID_LR_SYNC_PROMPT_ONOFF           , "LR_SYNC_PROMPT_ONOFF"    , sndp_comm_cmd_recv_lr_sync_prompt_onoff          },
+    { COMM_CMDID_LR_SYNC_UPDATE_MAPPING         , "LR_SYNC_UPDATE_MAPPING"  , sndp_comm_cmd_recv_lr_sync_update_mapping        },
+    { COMM_CMDID_LR_SYNC_GESTURE_ONOFF          , "LR_SYNC_GESTURE_ONOFF"   , sndp_comm_cmd_recv_lr_sync_gesture_onoff         },
 #if defined(__SNDP_PRODUCT_TEST__)
     /****** 生产测试指令. ******/
 	{ COMM_CMDID_PT_SWITCH_TEST_MODE            , "PT_S_TEST_MODE"          , sndp_comm_cmd_recv_pt_switch_test_mode            },
@@ -1160,14 +1206,30 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_find_my_earphone(sleep_a
 {
     return 0;
 }
+
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_comm_cmd_info_s *cmd_info)
+{
+    sndp_anc_mode_set((sndp_anc_mode_e)cmd_info->value[0]);
+
+    cmd_info->value[0] = 0; // success
+
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
+    return 0;
+}
+
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_anc_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    // sndp_anc_mode_set();
+    cmd_info->data_len = 0x02;
+    cmd_info->value[0] = sndp_anc_get_curr_mode();
+    COMM_CMD_TRACE(1, "anc mode=%d", cmd_info->value[0]);
+
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sleep_app_comm_cmd_info_s *cmd_info)
 {
+
     return 0;
 }
 
@@ -1178,26 +1240,96 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notificati
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_battery_status(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    uint8_t left_bat_per = sndp_dev_get_bat_percentage(false)&0x7f;
+    uint8_t right_bat_per = sndp_dev_get_bat_percentage(true)&0x7f;
+    sndp_dev_bat_info_s chargbox = {0};
+
+    sndp_dev_get_box_bat_info(&chargbox);
+
+    cmd_info->data_len = 4;
+    cmd_info->value[0] = left_bat_per;
+    cmd_info->value[1] = right_bat_per;
+    cmd_info->value[2] = chargbox.bat_per;
+
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    uint8_t value_len = 0;
+    char *bt_name = (char *)sndp_dev_get_bt_name();
+    char *sn = (char *)sndp_dev_get_dev_sn();
+    char *hw_ver = (char *)sndp_dev_get_hw_ver(false);
+    char *fw_ver = (char *)sndp_dev_get_fw_ver(false);
+    
+    memset(cmd_info->value, 0, sizeof(cmd_info->value));
+    memcpy(&cmd_info->value[0], bt_name, strlen(bt_name));
+    value_len += strlen(bt_name);
+    memcpy(&cmd_info->value[value_len], sn, strlen(sn));
+    value_len += strlen(sn);
+    memcpy(&cmd_info->value[value_len], hw_ver, strlen(hw_ver));
+    value_len += strlen(hw_ver);
+    memcpy(&cmd_info->value[value_len], fw_ver, strlen(fw_ver));
+    value_len += strlen(fw_ver);
+    cmd_info->data_len = value_len;
+
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_enable(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    if(cmd_info->value[0]) {
+        COMM_CMD_TRACE(0, "enable touch");
+        sndp_dev_gesture_onoff(false, true);
+    } else {
+        COMM_CMD_TRACE(0, "disable touch");
+        sndp_dev_gesture_onoff(false, false);
+    }
+    sndp_comm_cmd_send_lr_sync_gesture_onoff(cmd_info->value[0]);
+    cmd_info->value[0] = 0; // success
+
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_voice_prompt_enable(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    uint8_t prompt_onoff = cmd_info->value[0];
+    sndp_dev_set_prompt_onoff(false, (cmd_info->value[0] == 0x01) ? true : false);
+    sndp_comm_cmd_send_lr_sync_prompt_onoff(&prompt_onoff);
+    cmd_info->value[0] = 0; // success
+
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_key_mapping(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    uint8_t lrflag = cmd_info->value[0];
+    uint8_t key_behavior = cmd_info->value[1];
+    uint8_t key_function = cmd_info->value[2];
+
+    if(lrflag > 2 || key_behavior > 2) {
+        cmd_info->value[0] = 0x01; // fail
+    } else {
+        cmd_info->value[0] = 0x00; // success
+    }
+
+    if(lrflag == 0 && sndp_dev_is_left_earphone()){
+        sndp_dev_gesture_mapper_update_mapping(false, (sndp_dev_gesture_type_t)key_behavior, (sndp_dev_function_type_t)key_function);
+    }else{
+        sndp_comm_cmd_send_lr_sync_update_mapping(key_behavior, key_function);
+    }
+
+    if(lrflag == 1 && sndp_dev_is_right_earphone()){
+        sndp_dev_gesture_mapper_update_mapping(false, (sndp_dev_gesture_type_t)key_behavior, (sndp_dev_function_type_t)key_function);
+    }else{
+        sndp_comm_cmd_send_lr_sync_update_mapping(key_behavior, key_function);
+    }
+
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
@@ -1272,6 +1404,7 @@ static const sndp_sleep_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
     { SLEEP_APP_CMDID_SET_EQ_PARAM         , "APP_SET_EQ_PARAM"  , sleep_comm_cmd_recv_app_set_eq_param           },
     { SLEEP_APP_CMDID_GET_EQ_PARAM         , "APP_GET_EQ_PARAM"  , sleep_comm_cmd_recv_app_get_eq_param           },
     { SLEEP_APP_CMDID_FIND_MY_EARPHONE         , "APP_FIND_MY_EARPHONE"  , sleep_comm_cmd_recv_app_find_my_earphone           },
+    { SLEEP_APP_CMDID_SET_ANC_MODE         , "APP_SET_ANC_MODE"  , sleep_comm_cmd_recv_app_set_anc_mode           },
     { SLEEP_APP_CMDID_GET_ANC_MODE         , "APP_GET_ANC_MODE"  , sleep_comm_cmd_recv_app_get_anc_mode           },
     { SLEEP_APP_CMDID_PPG_SETING         , "APP_SET_PPG_SETTING"  , sleep_comm_cmd_recv_app_set_ppg_setting           },
     { SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION         , "APP_GET_PROXIMITY_NOTIFICATION"  , sleep_comm_cmd_recv_app_get_proximity_notification           },

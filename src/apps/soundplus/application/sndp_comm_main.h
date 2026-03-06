@@ -34,7 +34,7 @@ int32_t sndp_comm_main_send_cmd(sndp_comm_cmd_info_s *cmd);
 int32_t sndp_comm_main_send_cmd_by_id(sndp_comm_cmd_id_e cmd_id, uint8_t from, uint8_t to, uint8_t path, uint8_t *cmd_data, uint16_t cmd_data_len);
 int32_t sndp_comm_main_rsp_cmd(sndp_comm_cmd_info_s *rsp_cmd);
 int32_t sndp_comm_main_init(sndp_comm_init_mode_e mode);
-
+int32_t sndp_sleep_comm_main_rsp_cmd(sleep_app_comm_cmd_info_s *rsp_cmd);
 
 #ifdef __cplusplus
 }

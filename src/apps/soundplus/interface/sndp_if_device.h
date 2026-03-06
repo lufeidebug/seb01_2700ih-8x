@@ -120,7 +120,32 @@ typedef struct {
 #endif	
 } sndp_dev_all_status_s;
 
+typedef void (*function_callback_t)(void);
 
+typedef enum {
+    SNDP_FUNC_A = 0,  // 例如：播放/暂停
+    SNDP_FUNC_B = 1,  // 例如：下一曲
+    SNDP_FUNC_C = 2,  // 例如：上一曲
+    SNDP_FUNC_D = 3,  // 例如：唤醒语音助手
+		SNDP_FUNC_E = 4,  // 例如：ANC模式切换
+    SNDP_FUNC_MAX
+} sndp_dev_function_type_t;
+typedef enum {
+    SNDP_DEV_GESTURE_CLICK = 0,
+    SNDP_DEV_GESTURE_DOUBLE_CLICK = 1,
+    SNDP_DEV_GESTURE_TRIPLE_CLICK = 2,
+    SNDP_DEV_GESTURE_LONG_PRESS = 3,
+    SNDP_DEV_GESTURE_MAX
+} sndp_dev_gesture_type_t;
+
+typedef struct {
+    function_callback_t func_table[SNDP_DEV_GESTURE_MAX];
+} ear_mapping_t;
+
+typedef struct {
+    ear_mapping_t ear_mapping_table;
+    bool initialized;
+} sndp_dev_gesture_mapper_t;
 
 typedef struct {
 	uint8_t fw_ver[4];
@@ -134,6 +159,10 @@ typedef struct {
 
 	int16_t temperature;
 
+	bool prompt_onoff; //true: on, false: off
+
+	bool gesture_onoff; //true: on, false: off
+
     sndp_dev_charger_plug_e charger_status;
         
 	sndp_dev_charging_status_e charging_status;
@@ -143,6 +172,8 @@ typedef struct {
 	sndp_dev_wear_status_e wear_status;
 
 	sndp_dev_iobox_status_e inout_status;
+
+	sndp_dev_gesture_mapper_t gesture_mapper;
 
 } sndp_dev_earbuds_param_s;
 
@@ -199,7 +230,13 @@ void sndp_dev_wear_init(sndp_dev_wear_status_changed_cb callback);
 /************************************************** Gesture Info Start **************************************************/
 void sndp_dev_gesture_set_event_callback(sndp_dev_gesture_event_cb callback);
 void sndp_dev_gesture_init(sndp_dev_gesture_event_cb callback);
-
+void sndp_dev_gesture_onoff(bool peer, bool onoff);
+bool sndp_dev_get_gesture_onoff(bool peer);
+void sndp_dev_gesture_mapper_init(void);
+bool sndp_dev_gesture_mapper_update_mapping(bool peer, sndp_dev_gesture_type_t gesture, sndp_dev_function_type_t func_type);
+void sndp_dev_gesture_mapper_handle_gesture(sndp_dev_gesture_type_t gesture);
+void sndp_dev_register_gesture_funcs(function_callback_t *func_table);
+void sndp_dev_gesture_mapper_set_default(sndp_dev_gesture_mapper_t* mapper);
 /************************************************** Gesture Info End **************************************************/
 
 
@@ -326,6 +363,11 @@ void sndp_dev_acc_enter_standby_mode(void);
 void sndp_dev_acc_enter_detection_mode(void);
 void sndp_dev_acc_init(void);
 /**************************************************  acc End **************************************************/
+
+/************************************************** prompt start **************************************************/
+void sndp_dev_set_prompt_onoff(bool peer, bool onoff);
+bool sndp_dev_get_prompt_onoff(bool peer);
+/************************************************** prompt end **************************************************/
 
 void sndp_dev_init(void);
 

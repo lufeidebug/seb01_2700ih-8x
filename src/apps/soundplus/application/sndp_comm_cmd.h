@@ -90,8 +90,15 @@ typedef enum {
     COMM_CMDID_LR_SYNC_CALL_CTRL                    = 0x29, /* desc: 左右耳同步通话控制指令。
                                                              * recv: 1 bytes, event(1)
                                                              * rsp : 0 bytes */
-
-                                                      
+    COMM_CMDID_LR_SYNC_PROMPT_ONOFF                   = 0x2A, /* desc: 左右耳同步提示音开关指令。
+                                                             * recv: 1 bytes, onoff(1)
+                                                             * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x2B, /* desc: 左右耳同步更新按键映射指令。
+                                                             * recv: 2 bytes, key behavior(1) + key function(1)
+                                                             * rsp : 0 bytes */       
+    COMM_CMDID_LR_SYNC_GESTURE_ONOFF              = 0x2C, /* desc: 左右耳同步手势使能开关指令。
+                                                             * recv: 1 bytes, onoff(1)
+                                                             * rsp : 0 bytes */                                           
     /****** 生产测试指令. ******/
     COMM_CMDID_PT_SWITCH_TEST_MODE                  = 0x40, /* recv: 1 bytes, mode(1).
                                                             rsp: 1 bytes, error code(1). */

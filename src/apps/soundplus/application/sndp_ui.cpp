@@ -508,7 +508,75 @@ void sndp_ui_gesture_3click_hdlr(bool remote)
     
 }
 
+void sndp_function_play_pause(void) {
+    // 实现播放/暂停功能
+    if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
 
+    } else if(sndp_call_is_active()) {
+        if(sndp_call_is_threeway_incoming()) {
+            sndp_call_ctrl(SNDP_CALL_CTRL_THREEWAY_HOLD_ANSWER);
+        } else if(sndp_call_is_threeway_calling()) {
+            sndp_call_ctrl(SNDP_CALL_CTRL_HANGUP);
+        } else if(sndp_call_is_incoming()) {
+            sndp_call_ctrl(SNDP_CALL_CTRL_ANSWER);
+        } else {
+            sndp_call_ctrl(SNDP_CALL_CTRL_HANGUP);
+        }
+        
+    } else {
+        if(sndp_music_is_playing()) {
+            sndp_music_ctrl(SNDP_MUSIC_CTRL_PAUSE);
+        } else {
+            sndp_music_ctrl(SNDP_MUSIC_CTRL_PLAY);
+        }
+    }
+}
+
+void sndp_function_next_track(void) {
+    // 下一曲功能
+}
+
+void sndp_function_prev_track(void) {
+    // 上一曲功能
+}
+
+void sndp_function_voice_assistant(void) {
+    // 唤醒语音助手
+
+}
+ 
+void sndp_function_anc_mode_switch(void) {
+		// ANC模式切换
+		if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
+        if(sndp_dev_is_left_earphone()) {
+            sndp_ui_anc_switch();
+        } else {
+            sndp_ui_working_mode_switch();
+        }
+        
+    } else if(sndp_call_is_active()) {
+        if(sndp_call_is_threeway_incoming()) {
+            sndp_call_ctrl(SNDP_CALL_CTRL_THREEWAY_REJECT);
+        } else if(sndp_call_is_incoming()) {
+            sndp_call_ctrl(SNDP_CALL_CTRL_REJECT);
+        } 
+        
+    } else {
+        if(sndp_dev_is_left_earphone()) {
+            sndp_ui_anc_switch();
+        } else {
+            sndp_ui_working_mode_switch();
+        }
+    }
+}
+
+static function_callback_t sndp_ui_gesture_func_table[SNDP_FUNC_MAX] = {
+    sndp_function_play_pause,        
+    sndp_function_next_track,       
+    sndp_function_prev_track,       
+    sndp_function_voice_assistant,
+    sndp_function_anc_mode_switch,  
+};
 /**
 * 本地处理手势事件
 */
@@ -516,6 +584,13 @@ void sndp_ui_gesture_event_local_hdlr(sndp_dev_gesture_event_e gesture_event)
 {
     SPUI_TRACE(0, "event=%d", gesture_event);
     
+    if(!sndp_dev_get_gesture_onoff(false)){
+        SPUI_TRACE(0, "gesture detection is off, rtn");
+        return;
+    }
+    
+#if 0
+    //user gesture mapper, cancel this switch!!!!!!!
     switch(gesture_event) {
         case SNDP_DEV_GESTURE_EVENT_1_CLICK:
             sndp_ui_gesture_1click_hdlr(false);
@@ -528,8 +603,28 @@ void sndp_ui_gesture_event_local_hdlr(sndp_dev_gesture_event_e gesture_event)
             break;
         default:
             break;
-        
     }
+#else
+    sndp_dev_gesture_type_t dev_gesture = SNDP_DEV_GESTURE_MAX;
+    switch (gesture_event)
+    {
+    case SNDP_DEV_GESTURE_EVENT_1_CLICK:
+        dev_gesture = SNDP_DEV_GESTURE_CLICK;
+        break;
+    case SNDP_DEV_GESTURE_EVENT_2_CLICK:
+        dev_gesture = SNDP_DEV_GESTURE_DOUBLE_CLICK;
+        break;
+    case SNDP_DEV_GESTURE_EVENT_3_CLICK:
+        dev_gesture = SNDP_DEV_GESTURE_TRIPLE_CLICK;
+        break;
+    case SNDP_DEV_GESTURE_EVENT_LONG_PRESS:
+        dev_gesture = SNDP_DEV_GESTURE_LONG_PRESS;
+        break;
+    default:
+        break;
+    }
+    sndp_dev_gesture_mapper_handle_gesture(dev_gesture);
+#endif
 }
 
 /**
@@ -1142,6 +1237,8 @@ static void sndp_ui_check_dev_initial_status(void)
     sndp_dev_cover_set_status_changed_callback(sndp_ui_cover_status_changed);
     sndp_dev_iobox_set_status_changed_callback(sndp_ui_iobox_status_changed);
     sndp_dev_wear_set_status_changed_callback(sndp_ui_wear_status_changed);
+    sndp_dev_register_gesture_funcs(sndp_ui_gesture_func_table);
+    sndp_dev_gesture_mapper_init();
     sndp_dev_gesture_set_event_callback(sndp_ui_gesture_event_generated);
     sndp_dev_hr_init();
     sndp_dev_acc_init();	

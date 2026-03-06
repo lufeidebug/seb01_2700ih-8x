@@ -111,6 +111,10 @@
 #include "iir_process.h"
 #endif
 
+#if defined(__SNDP_UI__)
+#include "sndp_if_device.h"
+#endif
+
 #if defined(AUDIO_PROMPT_USE_DAC2_ENABLED)
 #define MEDIA_PLAYER_USE_CODEC2
 #endif
@@ -1184,6 +1188,14 @@ void media_PlayAudio_single_play(AUD_ID_ENUM id,uint8_t device_id)
 
 void media_PlayAudio(AUD_ID_ENUM id,uint8_t device_id)
 {
+#if defined(__SNDP_UI__)
+    if(!sndp_dev_get_prompt_onoff(false))
+    {
+        AUDIO_BT_TRACE(1,"[UIAPP]%s, prompt is off",__func__);
+        return;
+    }
+#endif
+
 #ifdef BESUI_COMM_EN
     if(uictl.poweroff_start_flag)
     {

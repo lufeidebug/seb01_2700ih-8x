@@ -105,6 +105,11 @@ ccflags-y += \
     -Iservices/ai_voice/protocol/gva/gsound_target_api_read_only
 endif
 
+ifeq ($(SNDP_UI),1)
+ccflags-y += \
+		-Iapps/soundplus/interface
+endif
+
 ifeq ($(ANC_NOISE_TRACKER),1)
 ccflags-y += \
 	-Ithirdparty/noise_tracker_lib \
