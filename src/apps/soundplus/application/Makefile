@@ -83,7 +83,8 @@ ccflags-y +=  \
     -Iapps/psap_sw \
 	-Iutils/hsm \
 	-Iutils/cqueue \
-	-Iservices/audio_dump/include
+	-Iservices/audio_dump/include \
+	-Ibthost/apps/bta_apps/earbuds/inc
 
 
 

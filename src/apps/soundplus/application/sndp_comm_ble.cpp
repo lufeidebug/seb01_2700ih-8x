@@ -6,15 +6,16 @@
 #include "hal_trace.h"
 #include "hal_sleep.h"
 #include "cqueue.h"
+#include "bta_ble_api.h"
 
 #include "sndp_if_common.h"
 #include "sndp_comm_main.h"
 #include "sndp_comm_ble.h"
 
 #ifndef CFG_APP_DATAPATH_SERVER
-//#define CFG_APP_DATAPATH_SERVER
+#define CFG_APP_DATAPATH_SERVER
 #endif
-#include "ble_datapath_server.h"
+#include "app_datapaths.h"
 
 
 /**************************************************************************************************
