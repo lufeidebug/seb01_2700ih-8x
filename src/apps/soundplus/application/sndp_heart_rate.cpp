@@ -445,7 +445,7 @@ void sndp_sleep_analysis_start(void)
 
     // sleep_step_2:打开读取加速度数据。
 #if defined(__SNDP_GSENSOR_SUPPORT__)
-    sndp_hal_acc_stop_reading_raw_data();
+    sndp_hal_acc_start_reading_raw_data();
 #endif    
 
     // sleep_step_3:打开读取PPG数据。
