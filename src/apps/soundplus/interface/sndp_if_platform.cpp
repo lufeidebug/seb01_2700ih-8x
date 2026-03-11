@@ -239,9 +239,23 @@ void sndp_enter_tws_pairing(void)
 	osDelay(100);
 	sndp_pmu_reboot(HAL_SW_BOOTMODE_CUSTOM_OP2_AFTER_REBOOT);
 #else
-	sndp_enter_mobile_pairing_after_tws_connected();
+    bta_tws_box_event_entry(BTA_TWS_CLOSE);
+    sndp_delay_exec_start(1000, (uint32_t) sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
 #endif
 
+}
+
+bool sndp_is_left_right_bound(void)
+{
+    struct nvrecord_env_t *nvrecord_env;
+    nv_record_env_get(&nvrecord_env);
+
+    SNDP_IF_TRACE(1, "nvrecord_env mode=%d", nvrecord_env->ibrt_mode.mode);
+    if(nvrecord_env->ibrt_mode.mode != IBRT_UNKNOW) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void sndp_mobile_reconnect_timeout(void)
@@ -303,30 +317,39 @@ void sndp_tws_pairing_config(uint8_t *addr, uint8_t len)
     factory_section_original_btaddr_get(local_addr);
 	
     if(sndp_dev_is_right_earphone()) {
-		SNDP_IF_TRACE(0, "Right slave");
+		SNDP_IF_TRACE(0, "Right master");
 		
-        ibrt_config.nv_role = IBRT_SLAVE;
+        ibrt_config.nv_role = IBRT_MASTER;
 		ibrt_config.audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_RCHNL;
 		
         memcpy((void *)ibrt_config.local_addr.address, local_addr, 6);
         memcpy((void *)ibrt_config.peer_addr.address, local_addr, 6);
 
     } else {
-		SNDP_IF_TRACE(0, "Left master");
+		SNDP_IF_TRACE(0, "Left slave");
 		
-		ibrt_config.nv_role = IBRT_MASTER;                         
+		ibrt_config.nv_role = IBRT_SLAVE;                         
 		ibrt_config.audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_LCHNL;
 		
         memcpy((void *)ibrt_config.local_addr.address, local_addr, 6);
         memcpy((void *)ibrt_config.peer_addr.address, addr, 6);
     }
 
-	SNDP_IF_TRACE(0, "local_addr");
-    DUMP8("%02x ", ibrt_config.local_addr.address, 6);
+	SNDP_IF_TRACE(0, "local_addr: %02X %02X %02X %02X %02X %02X", 
+	        ibrt_config.local_addr.address[0],
+	        ibrt_config.local_addr.address[1],
+	        ibrt_config.local_addr.address[2],
+	        ibrt_config.local_addr.address[3],
+	        ibrt_config.local_addr.address[4],
+	        ibrt_config.local_addr.address[5]);
+    SNDP_IF_TRACE(0, "peer_addr: %02X %02X %02X %02X %02X %02X", 
+	        ibrt_config.peer_addr.address[0],
+	        ibrt_config.peer_addr.address[1],
+	        ibrt_config.peer_addr.address[2],
+	        ibrt_config.peer_addr.address[3],
+	        ibrt_config.peer_addr.address[4],
+	        ibrt_config.peer_addr.address[5]);
 	
-    SNDP_IF_TRACE(0, "peer_addr");
-    DUMP8("%02x ", ibrt_config.peer_addr.address, 6);
-
 	sndp_ibrt_reconfig_save_to_nvrecord(&ibrt_config);
 	osDelay(20);
 
@@ -339,39 +362,6 @@ uint8_t *sndp_get_nvrecord_bt_peer_address(void)
     nv_record_env_get(&nvrecord_env);
     return nvrecord_env->ibrt_mode.record.bdAddr.address;
 }
-
-#if defined(__SNDP_TEST_TWS_PAIRING_SAME_ADDR__)
-void sndp_tws_pairing_same_addr_config(void)
-{
-    ibrt_config_t ibrt_config;
-	uint8_t mac_addr[6] = {0};
-
-    factory_section_original_btaddr_get(mac_addr);
-    memcpy((void *)ibrt_config.local_addr.address, mac_addr, 6);
-    memcpy((void *)ibrt_config.peer_addr.address, mac_addr, 6);
-    
-    if(sndp_dev_is_right_earphone()) {
-        ibrt_config.nv_role = IBRT_SLAVE;
-		ibrt_config.audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_RCHNL;
-
-    } else {
-		ibrt_config.nv_role = IBRT_MASTER;
-		ibrt_config.audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_LCHNL;
-    }
-
-	SNDP_IF_TRACE(0, "local_addr");
-    DUMP8("%02x ", ibrt_config.local_addr.address, 6);
-	
-    SNDP_IF_TRACE(0, "peer_addr");
-    DUMP8("%02x ", ibrt_config.peer_addr.address, 6);
-	
-    sndp_ibrt_reconfig_update(&ibrt_config);
-	sndp_ibrt_reconfig_save_to_nvrecord(&ibrt_config);
-	osDelay(20);
-
-}
-
-#endif
 
 static void sndp_ibrt_reconfig_save_to_nvrecord(ibrt_config_t *config)
 { 
@@ -388,34 +378,37 @@ void sndp_ibrt_nvrecord_config_load(void *config)
 {
     struct nvrecord_env_t *nvrecord_env;
     ibrt_config_t *ibrt_config = (ibrt_config_t *)config;
-	
+    uint8_t local_addr[6] = {0};
+    
 	if(sndp_dev_is_right_earphone()) {
         bts_tws_if_set_local_side(BT_LOCATION_RIGHT);
     } else {
         bts_tws_if_set_local_side(BT_LOCATION_LEFT);
     }
-	
+
+    factory_section_original_btaddr_get(local_addr);
+    
     nv_record_env_get(&nvrecord_env);
     SNDP_IF_TRACE(1, "nvrecord_env mode=%d", nvrecord_env->ibrt_mode.mode);
-    SNDP_IF_TRACE(0, "Pair MAC:");
-    DUMP8("%02x ", nvrecord_env->ibrt_mode.record.bdAddr.address, 6);
-
+    SNDP_IF_TRACE(0, "pair_addr: %02X %02X %02X %02X %02X %02X", 
+	        nvrecord_env->ibrt_mode.record.bdAddr.address[0],
+	        nvrecord_env->ibrt_mode.record.bdAddr.address[1],
+	        nvrecord_env->ibrt_mode.record.bdAddr.address[2],
+	        nvrecord_env->ibrt_mode.record.bdAddr.address[3],
+	        nvrecord_env->ibrt_mode.record.bdAddr.address[4],
+	        nvrecord_env->ibrt_mode.record.bdAddr.address[5]);
+    
     if(nvrecord_env->ibrt_mode.mode != IBRT_UNKNOW) {
         ibrt_config->nv_role = nvrecord_env->ibrt_mode.mode;
-        ibrt_config->peer_addr = nvrecord_env->ibrt_mode.record.bdAddr;
-        ibrt_config->local_addr = nvrecord_env->ibrt_mode.record.bdAddr;
+        memcpy((void *)ibrt_config->local_addr.address, local_addr, 6);
+        memcpy((void *)ibrt_config->peer_addr.address, nvrecord_env->ibrt_mode.record.bdAddr.address, 6);
         ibrt_config->audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_STEREO; //等左右耳连上后再设置左右通道。
     } else {
         ibrt_config->nv_role = IBRT_UNKNOW;
         ibrt_config->audio_chnl_sel = A2DP_AUDIO_CHANNEL_SELECT_STEREO;
-        
-#if defined(__SNDP_TEST_TWS_PAIRING_SAME_ADDR__)
-        sndp_tws_pairing_same_addr_config();
-        sndp_delay_exec_start(300, (uint32_t)sndp_pmu_reboot, HAL_SW_BOOTMODE_CUSTOM_OP2_AFTER_REBOOT, 0, 0);        
-#endif
     }
 
-    bts_core_set_ui_role(nvrecord_env->ibrt_mode.mode);
+    bts_core_set_ui_role(ibrt_config->nv_role);
 }
 
 int32_t sndp_ibrt_get_tws_pair_addr(uint8_t *addr)
@@ -996,7 +989,6 @@ bool sndp_call_is_outgoing(void)
 
 	return false;
 }
-
 
 
 bool sndp_call_is_calling(void)
