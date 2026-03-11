@@ -98,6 +98,7 @@ static osMutexId trace_uart_recv_queue_mutex_id = NULL;
 osMutexDef(trace_uart_recv_queue_mutex);
 static uint8_t trace_uart_recv_queue_buf[TRACE_UART_RECV_QUEUE_BUF_SIZE];
 
+static bool trace_uart_inited = false;
 #endif
 
 #if defined(__SNDP_COMM_POGOPIN__)
@@ -108,6 +109,8 @@ static CQueue pogopin_recv_queue;
 static osMutexId pogopin_recv_queue_mutex_id = NULL;
 osMutexDef(pogopin_recv_queue_mutex);
 static uint8_t pogopin_recv_queue_buf[POGOPIN_RECV_QUEUE_BUF_SIZE];
+
+static bool pogopin_inited = false;
 
 #endif
 
@@ -120,6 +123,8 @@ static osMutexId ble_recv_queue_mutex_id = NULL;
 osMutexDef(ble_recv_queue_mutex);
 static uint8_t ble_recv_queue_buf[BLE_RECV_QUEUE_BUF_SIZE];
 
+static bool ble_inited = false;
+
 #endif
 
 #if defined(__SNDP_COMM_SPP__)
@@ -130,6 +135,8 @@ static osMutexId spp_recv_queue_mutex_id = NULL;
 osMutexDef(spp_recv_queue_mutex);
 static uint8_t spp_recv_queue_buf[SPP_RECV_QUEUE_BUF_SIZE];
 
+static bool spp_inited = false;
+
 #endif
 
 #if defined(__SNDP_COMM_MS__)
@@ -139,6 +146,8 @@ static CQueue ms_recv_queue;
 static osMutexId ms_recv_queue_mutex_id = NULL;
 osMutexDef(ms_recv_queue_mutex);
 static uint8_t ms_recv_queue_buf[MS_RECV_QUEUE_BUF_SIZE];
+
+static bool ms_inited = false;
 
 #endif
 
@@ -689,118 +698,144 @@ int32_t sndp_sleep_comm_main_rsp_cmd(sleep_app_comm_cmd_info_s *rsp_cmd)
 }
 
 #if defined(__SNDP_COMM_TRACE_UART__)
-static void sndp_comm_main_trace_uart_init(void)
+void sndp_comm_main_trace_uart_init(void)
 {
-    trace_uart_recv_queue_mutex_id = osMutexCreate(osMutex(trace_uart_recv_queue_mutex));
-    ASSERT(trace_uart_recv_queue_mutex_id != NULL, "%s, trace_uart_recv_queue_mutex_id == NULL", __func__);
+    if(!trace_uart_inited) {
+        if(trace_uart_recv_queue_mutex_id == NULL) {
+            trace_uart_recv_queue_mutex_id = osMutexCreate(osMutex(trace_uart_recv_queue_mutex));
+            ASSERT(trace_uart_recv_queue_mutex_id != NULL, "%s, trace_uart_recv_queue_mutex_id == NULL", __func__);
+        }
+        osMutexWait(trace_uart_recv_queue_mutex_id, osWaitForever);
+        InitCQueue(&trace_uart_recv_queue, sizeof(trace_uart_recv_queue_buf), trace_uart_recv_queue_buf);
+        osMutexRelease(trace_uart_recv_queue_mutex_id);
 
-    osMutexWait(trace_uart_recv_queue_mutex_id, osWaitForever);
-    InitCQueue(&trace_uart_recv_queue, sizeof(trace_uart_recv_queue_buf), trace_uart_recv_queue_buf);
-    osMutexRelease(trace_uart_recv_queue_mutex_id);
+        sndp_comm_path_hdlr_s path_hdlr;
+    	path_hdlr.path_id = SNDP_COMM_PATH_TRACE_UART;
+        path_hdlr.recv_queue = &trace_uart_recv_queue;
+        path_hdlr.recv_mutex_id = trace_uart_recv_queue_mutex_id;
+        path_hdlr.recv_wait_more_cnt = 0;
+        path_hdlr.send_data = sndp_comm_trace_uart_send_data;
+        sndp_comm_main_add_path_hdlr(&path_hdlr);
 
-    sndp_comm_path_hdlr_s path_hdlr;
-	path_hdlr.path_id = SNDP_COMM_PATH_TRACE_UART;
-    path_hdlr.recv_queue = &trace_uart_recv_queue;
-    path_hdlr.recv_mutex_id = trace_uart_recv_queue_mutex_id;
-    path_hdlr.recv_wait_more_cnt = 0;
-    path_hdlr.send_data = sndp_comm_trace_uart_send_data;
-    sndp_comm_main_add_path_hdlr(&path_hdlr);
+    	sndp_comm_trace_uart_init();
 
-	sndp_comm_trace_uart_init();
+        trace_uart_inited = true;
+    }
 }
 
 #endif
 
 
 #if defined(__SNDP_COMM_POGOPIN__)
-static void sndp_comm_main_pogopin_init(void)
+void sndp_comm_main_pogopin_init(void)
 {
-	pogopin_recv_queue_mutex_id = osMutexCreate(osMutex(pogopin_recv_queue_mutex));
-    ASSERT(pogopin_recv_queue_mutex_id != NULL, "%s, pogopin_recv_queue_mutex_id == NULL", __func__);
+    if(!pogopin_inited) {
+        if(pogopin_recv_queue_mutex_id == NULL) {
+        	pogopin_recv_queue_mutex_id = osMutexCreate(osMutex(pogopin_recv_queue_mutex));
+            ASSERT(pogopin_recv_queue_mutex_id != NULL, "%s, pogopin_recv_queue_mutex_id == NULL", __func__);
+        }
+        osMutexWait(pogopin_recv_queue_mutex_id, osWaitForever);
+        InitCQueue(&pogopin_recv_queue, sizeof(pogopin_recv_queue_buf), pogopin_recv_queue_buf);
+        osMutexRelease(pogopin_recv_queue_mutex_id);
 
-    osMutexWait(pogopin_recv_queue_mutex_id, osWaitForever);
-    InitCQueue(&pogopin_recv_queue, sizeof(pogopin_recv_queue_buf), pogopin_recv_queue_buf);
-    osMutexRelease(pogopin_recv_queue_mutex_id);
-
-    sndp_comm_path_hdlr_s path_hdlr;
-	path_hdlr.path_id = SNDP_COMM_PATH_POGOPIN;
-    path_hdlr.recv_queue = &pogopin_recv_queue;
-    path_hdlr.recv_mutex_id = pogopin_recv_queue_mutex_id;
-    path_hdlr.recv_wait_more_cnt = 0;
-    path_hdlr.send_data = sndp_comm_pogopin_send_data;
-    sndp_comm_main_add_path_hdlr(&path_hdlr);
-	
-	sndp_comm_pogopin_init();
+        sndp_comm_path_hdlr_s path_hdlr;
+    	path_hdlr.path_id = SNDP_COMM_PATH_POGOPIN;
+        path_hdlr.recv_queue = &pogopin_recv_queue;
+        path_hdlr.recv_mutex_id = pogopin_recv_queue_mutex_id;
+        path_hdlr.recv_wait_more_cnt = 0;
+        path_hdlr.send_data = sndp_comm_pogopin_send_data;
+        sndp_comm_main_add_path_hdlr(&path_hdlr);
+    	
+    	sndp_comm_pogopin_init();
+        
+        pogopin_inited = true;
+    }
 }
 #endif
 
 
 #if defined(__SNDP_COMM_BLE__)
-static void sndp_comm_main_ble_init(void)
+void sndp_comm_main_ble_init(void)
 {
-	ble_recv_queue_mutex_id = osMutexCreate(osMutex(ble_recv_queue_mutex));
-    ASSERT(ble_recv_queue_mutex_id != NULL, "%s, ble_recv_queue_mutex_id == NULL", __func__);
+    if(!ble_inited) {
+        if(ble_recv_queue_mutex_id == NULL) {
+        	ble_recv_queue_mutex_id = osMutexCreate(osMutex(ble_recv_queue_mutex));
+            ASSERT(ble_recv_queue_mutex_id != NULL, "%s, ble_recv_queue_mutex_id == NULL", __func__);
+        }
+        osMutexWait(ble_recv_queue_mutex_id, osWaitForever);
+        InitCQueue(&ble_recv_queue, sizeof(ble_recv_queue_buf), ble_recv_queue_buf);
+        osMutexRelease(ble_recv_queue_mutex_id);
 
-    osMutexWait(ble_recv_queue_mutex_id, osWaitForever);
-    InitCQueue(&ble_recv_queue, sizeof(ble_recv_queue_buf), ble_recv_queue_buf);
-    osMutexRelease(ble_recv_queue_mutex_id);
+        sndp_comm_path_hdlr_s path_hdlr;
+    	path_hdlr.path_id = SNDP_COMM_PATH_BLE;
+        path_hdlr.recv_queue = &ble_recv_queue;
+        path_hdlr.recv_mutex_id = ble_recv_queue_mutex_id;
+        path_hdlr.recv_wait_more_cnt = 0;
+        path_hdlr.send_data = sndp_comm_ble_send_data;
+        sndp_comm_main_add_path_hdlr(&path_hdlr);
 
-    sndp_comm_path_hdlr_s path_hdlr;
-	path_hdlr.path_id = SNDP_COMM_PATH_BLE;
-    path_hdlr.recv_queue = &ble_recv_queue;
-    path_hdlr.recv_mutex_id = ble_recv_queue_mutex_id;
-    path_hdlr.recv_wait_more_cnt = 0;
-    path_hdlr.send_data = sndp_comm_ble_send_data;
-    sndp_comm_main_add_path_hdlr(&path_hdlr);
-
-	sndp_comm_ble_init();
+    	sndp_comm_ble_init();
+        
+        ble_inited = true;
+    }
 }
 
 #endif
 
 
 #if defined(__SNDP_COMM_SPP__)
-static void sndp_comm_main_spp_init(void)
+void sndp_comm_main_spp_init(void)
 {
-	spp_recv_queue_mutex_id = osMutexCreate(osMutex(spp_recv_queue_mutex));
-    ASSERT(spp_recv_queue_mutex_id != NULL, "%s, spp_recv_queue_mutex_id == NULL", __func__);
+    if(!spp_inited) {
+        if(spp_recv_queue_mutex_id == NULL) {
+        	spp_recv_queue_mutex_id = osMutexCreate(osMutex(spp_recv_queue_mutex));
+            ASSERT(spp_recv_queue_mutex_id != NULL, "%s, spp_recv_queue_mutex_id == NULL", __func__);
+        }
+        osMutexWait(spp_recv_queue_mutex_id, osWaitForever);
+        InitCQueue(&spp_recv_queue, sizeof(spp_recv_queue_buf), spp_recv_queue_buf);
+        osMutexRelease(spp_recv_queue_mutex_id);
 
-    osMutexWait(spp_recv_queue_mutex_id, osWaitForever);
-    InitCQueue(&spp_recv_queue, sizeof(spp_recv_queue_buf), spp_recv_queue_buf);
-    osMutexRelease(spp_recv_queue_mutex_id);
+        sndp_comm_path_hdlr_s path_hdlr;
+    	path_hdlr.path_id = SNDP_COMM_PATH_SPP;
+        path_hdlr.recv_queue = &spp_recv_queue;
+        path_hdlr.recv_mutex_id = spp_recv_queue_mutex_id;
+        path_hdlr.recv_wait_more_cnt = 0;
+        path_hdlr.send_data = sndp_comm_spp_send_data;
+        sndp_comm_main_add_path_hdlr(&path_hdlr);
 
-    sndp_comm_path_hdlr_s path_hdlr;
-	path_hdlr.path_id = SNDP_COMM_PATH_SPP;
-    path_hdlr.recv_queue = &spp_recv_queue;
-    path_hdlr.recv_mutex_id = spp_recv_queue_mutex_id;
-    path_hdlr.recv_wait_more_cnt = 0;
-    path_hdlr.send_data = sndp_comm_spp_send_data;
-    sndp_comm_main_add_path_hdlr(&path_hdlr);
-
-	sndp_comm_spp_init();
+    	sndp_comm_spp_init();
+        
+        spp_inited = true;
+    }
 }
 #endif
 
 
 #if defined(__SNDP_COMM_MS__)
-static void sndp_comm_main_ms_init(void)
+void sndp_comm_main_ms_init(void)
 {
-	ms_recv_queue_mutex_id = osMutexCreate(osMutex(ms_recv_queue_mutex));
-    ASSERT(ms_recv_queue_mutex_id != NULL, "%s, ms_recv_queue_mutex_id == NULL", __func__);
+    if(!ms_inited) {
+        if(ms_recv_queue_mutex_id == NULL) {
+        	ms_recv_queue_mutex_id = osMutexCreate(osMutex(ms_recv_queue_mutex));
+            ASSERT(ms_recv_queue_mutex_id != NULL, "%s, ms_recv_queue_mutex_id == NULL", __func__);
+        }
+        
+        osMutexWait(ms_recv_queue_mutex_id, osWaitForever);
+        InitCQueue(&ms_recv_queue, sizeof(ms_recv_queue_buf), ms_recv_queue_buf);
+        osMutexRelease(ms_recv_queue_mutex_id);
 
-    osMutexWait(ms_recv_queue_mutex_id, osWaitForever);
-    InitCQueue(&ms_recv_queue, sizeof(ms_recv_queue_buf), ms_recv_queue_buf);
-    osMutexRelease(ms_recv_queue_mutex_id);
+        sndp_comm_path_hdlr_s path_hdlr;
+    	path_hdlr.path_id = SNDP_COMM_PATH_MS;
+        path_hdlr.recv_queue = &ms_recv_queue;
+        path_hdlr.recv_mutex_id = ms_recv_queue_mutex_id;
+        path_hdlr.recv_wait_more_cnt = 0;
+        path_hdlr.send_data = sndp_comm_ms_send_data;
+        sndp_comm_main_add_path_hdlr(&path_hdlr);
 
-    sndp_comm_path_hdlr_s path_hdlr;
-	path_hdlr.path_id = SNDP_COMM_PATH_MS;
-    path_hdlr.recv_queue = &ms_recv_queue;
-    path_hdlr.recv_mutex_id = ms_recv_queue_mutex_id;
-    path_hdlr.recv_wait_more_cnt = 0;
-    path_hdlr.send_data = sndp_comm_ms_send_data;
-    sndp_comm_main_add_path_hdlr(&path_hdlr);
-
-	sndp_comm_ms_init();
+    	sndp_comm_ms_init();
+        
+        ms_inited = true;
+    }
 }
 #endif
 
@@ -813,35 +848,42 @@ int32_t sndp_comm_main_init(sndp_comm_init_mode_e mode)
 
     sndp_comm_recv_thread_tid = osThreadCreate(osThread(sndp_comm_recv_thread), NULL);
     ASSERT(sndp_comm_recv_thread_tid != NULL, "%s, sndp_comm_recv_thread_tid == NULL", __func__);
-    
-	if(mode == SNDP_COMM_INIT_FOR_RF_TEST) {
+
+
+    if(mode == SNDP_COMM_INIT_BASIC) {
+        
 #if defined(__SNDP_COMM_TRACE_UART__)
         sndp_comm_main_trace_uart_init();
 #endif
-    
 #if defined(__SNDP_COMM_POGOPIN__)
         sndp_comm_main_pogopin_init();
 #endif
 
-	} else {
+    } else if(mode == SNDP_COMM_INIT_ALL) {
+	
 #if defined(__SNDP_COMM_TRACE_UART__)
     	sndp_comm_main_trace_uart_init();
 #endif
-
 #if defined(__SNDP_COMM_POGOPIN__)
     	sndp_comm_main_pogopin_init();
 #endif
-
 #if defined(__SNDP_COMM_BLE__)
     	sndp_comm_main_ble_init();
 #endif
-
 #if defined(__SNDP_COMM_SPP__)
     	sndp_comm_main_spp_init();
 #endif
-
 #if defined(__SNDP_COMM_MS__)
         sndp_comm_main_ms_init();
+#endif
+
+	} else if(mode == SNDP_COMM_INIT_RF_TEST) {
+        
+#if defined(__SNDP_COMM_TRACE_UART__)
+        sndp_comm_main_trace_uart_init();
+#endif
+#if defined(__SNDP_COMM_POGOPIN__)
+        sndp_comm_main_pogopin_init();
 #endif
 
 	}

@@ -2403,7 +2403,7 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #endif
 
 #if defined(__SNDP_COMM_MGR__)
-    sndp_comm_main_init(SNDP_COMM_INIT_ALL);
+    sndp_comm_main_init(SNDP_COMM_INIT_BASIC);
 #endif
 
 #if defined(__SNDP_PROJ__)
@@ -2768,7 +2768,7 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #endif
 
 #if defined(__SNDP_COMM_MGR__)
-        sndp_comm_main_init(SNDP_COMM_INIT_FOR_RF_TEST);
+    sndp_comm_main_init(SNDP_COMM_INIT_ALL);
 #endif
 
 #if defined(__SNDP_UI__)
@@ -2838,6 +2838,10 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #ifdef __WATCHER_DOG_RESET__
         app_wdt_close();
 #endif
+#if defined(__SNDP_COMM_MGR__)
+        sndp_comm_main_init(SNDP_COMM_INIT_RF_TEST);
+#endif
+
         MAIN_TRACE(0,"!!!!!ENGINEER_MODE!!!!!\n");
         nRet = 0;
 #ifndef BESUI_TWS_EN
@@ -3023,7 +3027,9 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
             
 #if defined(__SNDP_COMM_MGR__)
             sndp_comm_main_init(SNDP_COMM_INIT_ALL);
-#endif            
+#endif
+
+
 #if defined(__SNDP_UI__)
             sndp_ui_init();
 #endif            
