@@ -706,6 +706,7 @@ static void sndp_ui_bat_lr_sync(void)
 void sndp_ui_bat_pwr_measure_callback(sndp_dev_bat_info_s old_bat_info, sndp_dev_bat_info_s new_bat_info)
 {
     SPUI_TRACE(0, "new valid=%d, per=%d", new_bat_info.valid,new_bat_info.bat_per);
+    sndp_ui_ctx.lowpwr_check_enable = true;
     sndp_ui_bat_lr_sync();
 }
 
@@ -770,14 +771,8 @@ static void sndp_ui_fn2_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
-#if defined(__SNDP_HEART_RATE_MGR__)            
-            sndp_sleep_analysis_start();
-#endif
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
-#if defined(__SNDP_HEART_RATE_MGR__)            
-            sndp_sleep_analysis_stop();
-#endif
             break;
         case APP_KEY_EVENT_TRIPLECLICK:
             break;
@@ -939,12 +934,6 @@ static void sndp_ui_bat_charging_check(void)
 
 }
 
-
-POSSIBLY_UNUSED void sndp_ui_enable_lowpwr_check(void)
-{
-    sndp_ui_ctx.lowpwr_check_enable = true;
-}
-
 static void sndp_ui_bat_lowpwr_check(void)
 {
 	if(sndp_dev_charger_is_plugin(false)) {
@@ -959,22 +948,33 @@ static void sndp_ui_bat_lowpwr_check(void)
 	/* Low powr warning check */
 	if(sndp_dev_get_bat_percentage(false) < SPUI_LOWPWR_WARNING_PERCENTAGE) {
 		sndp_ui_ctx.lowpwr_warning_last_time += SPUI_TIME_TODO_INTERVAL;
-		SPUI_TRACE(0, "lowpwr_warning_time=%d", sndp_ui_ctx.lowpwr_warning_last_time);
-	
-		if(sndp_ui_ctx.lowpwr_warning_last_time >= SPUI_LOWPWR_WARNING_INTERVAL) {
+		SPUI_TRACE(0, "cnt=%d, time=%d",
+		    sndp_ui_ctx.lowpwr_warning_cnt,
+		    sndp_ui_ctx.lowpwr_warning_last_time);
+
+        if(sndp_ui_ctx.lowpwr_warning_cnt == 0) {
+            sndp_ui_ctx.lowpwr_warning_last_time = 0;
+            sndp_ui_ctx.lowpwr_warning_cnt++;
+            media_PlayAudio(AUD_ID_BT_CHARGE_PLEASE, 0);
+            
+        } else if(sndp_ui_ctx.lowpwr_warning_last_time >= SPUI_LOWPWR_WARNING_INTERVAL) {
 			sndp_ui_ctx.lowpwr_warning_last_time = 0;
 			sndp_ui_ctx.lowpwr_warning_cnt++;
 
+#if 0
 			if(sndp_ui_ctx.lowpwr_warning_cnt < SPUI_LOWPWR_WARNING_CNT_MAX) {
 				media_PlayAudio(AUD_ID_BT_CHARGE_PLEASE, 0);
 			}
+#else
+            media_PlayAudio(AUD_ID_BT_CHARGE_PLEASE, 0);
+#endif
 		}
 	} else {
 		sndp_ui_ctx.lowpwr_warning_last_time = 0;
 		sndp_ui_ctx.lowpwr_warning_cnt = 0;
 	}
 
-#if 1
+
 	/* Low powr shutdown check */
 	if(sndp_dev_get_bat_percentage(false) <= SPUI_LOWPWR_SHUTDOWN_PERCENTAGE) {
 
@@ -982,13 +982,12 @@ static void sndp_ui_bat_lowpwr_check(void)
 		SPUI_TRACE(1, "lowpwr_shutdown_cnt=%d", sndp_ui_ctx.lowpwr_shutdown_cnt);
 		
 		if(sndp_ui_ctx.lowpwr_shutdown_cnt >= SPUI_LOWPWR_SHUTDOWN_CHECK_CNT) {
-				media_PlayAudio(AUD_ID_POWER_OFF, 0);
+            media_PlayAudio(AUD_ID_POWER_OFF, 0);
 		}
 	} else {
 		sndp_ui_ctx.lowpwr_shutdown_cnt = 0;
 
 	}
-#endif
 
 }
 
@@ -1016,7 +1015,7 @@ static void sndp_ui_working_temperature_check(void)
 static void sndp_ui_temperature_measure_callback(int16_t temperature)
 {
 	SPUI_TRACE(1, "T=%d", temperature);
-	sndp_ui_ctx.lowpwr_check_enable = true;
+	sndp_ui_ctx.temperature_check_enable = true;
     sndp_ui_working_temperature_check();
 }
 
