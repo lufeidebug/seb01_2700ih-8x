@@ -817,14 +817,16 @@ static void sndp_ui_fn4_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
+            sndp_ui_gesture_event_generated(SNDP_DEV_GESTURE_EVENT_1_CLICK);
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
+            sndp_ui_gesture_event_generated(SNDP_DEV_GESTURE_EVENT_2_CLICK);
             break;
         case APP_KEY_EVENT_TRIPLECLICK:
+            sndp_ui_gesture_event_generated(SNDP_DEV_GESTURE_EVENT_3_CLICK);
             break;
         case APP_KEY_EVENT_LONGPRESS:
-            break;
-        case APP_KEY_EVENT_LONGLONGPRESS:
+            sndp_ui_gesture_event_generated(SNDP_DEV_GESTURE_EVENT_LONG_PRESS);
             break;
         default:
             break;
@@ -849,6 +851,8 @@ static const APP_KEY_HANDLE  sndp_key_handle_cfg[] = {
 
     {{APP_KEY_CODE_FN4, APP_KEY_EVENT_CLICK         },  "sndp key",  sndp_ui_fn4_key_hdlr, NULL},
     {{APP_KEY_CODE_FN4, APP_KEY_EVENT_DOUBLECLICK   },  "sndp key",  sndp_ui_fn4_key_hdlr, NULL},
+    {{APP_KEY_CODE_FN4, APP_KEY_EVENT_TRIPLECLICK   },  "sndp key",  sndp_ui_fn4_key_hdlr, NULL},
+    {{APP_KEY_CODE_FN4, APP_KEY_EVENT_LONGPRESS     },  "sndp key",  sndp_ui_fn4_key_hdlr, NULL},
 };
 
 void sndp_ui_key_init(void)
