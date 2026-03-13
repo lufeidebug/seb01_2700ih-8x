@@ -96,6 +96,7 @@ typedef enum {
 
 
 typedef struct {
+    bool valid;
 	uint16_t bat_volt;
 	uint8_t bat_per;
 	uint8_t bat_level;

@@ -80,6 +80,8 @@ int sndp_ui_prompt_start_cb(int aud_id);
 void sndp_ui_bt_enter_mobile_pairing(bool play_tone);
 
 
+void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len);
+
 void sndp_ui_timing_to_do(void);
 void sndp_ui_init_pre(void);
 void sndp_ui_init(void);

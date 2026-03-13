@@ -101,6 +101,10 @@ POSSIBLY_UNUSED static bool sndp_comm_is_curr_device_exec(uint8_t earside)
 
 int32_t sndp_comm_cmd_send_cmd_to_peer(sndp_comm_cmd_id_e cmd_id, uint8_t *cmd_data, uint16_t cmd_data_len)
 {
+    if(!sndp_is_besaud_connected()) {
+        return -1;
+    }
+    
     return sndp_comm_main_send_cmd_by_id(cmd_id, 
                 sndp_comm_get_local_device(), 
                 sndp_comm_get_peer_device(), 
@@ -405,13 +409,13 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_volume(sndp_comm_cmd_info_s *cmd_info
 	return 0;
 }
 
-uint32_t sndp_comm_cmd_send_lr_sync_inout_status(uint8_t status)
+uint32_t sndp_comm_cmd_send_lr_sync_iobox_status(uint8_t status)
 {
-	sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_INOUT_STATUS, &status, 1);
+	sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_INBOX_STATUS, &status, 1);
 	return 0;
 }
 
-static uint32_t sndp_comm_cmd_recv_lr_sync_inout_status(sndp_comm_cmd_info_s *cmd_info)
+static uint32_t sndp_comm_cmd_recv_lr_sync_iobox_status(sndp_comm_cmd_info_s *cmd_info)
 {
     if(cmd_info->data_len == 1) {
 	    sndp_dev_iobox_set_status(true, (sndp_dev_iobox_status_e)cmd_info->data[0]);
@@ -553,6 +557,23 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_update_mapping(sndp_comm_cmd_info_s *
     }
     return 0;
 }
+
+uint32_t sndp_comm_cmd_send_lr_sync_all_dev_status(uint8_t *data, uint16_t data_len)
+{
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_ALL_DEV_STATUS, data, data_len);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_all_dev_status(sndp_comm_cmd_info_s *cmd_info)
+{
+    if(cmd_info->data_len > 0) {
+        sndp_ui_all_status_sync_recv(cmd_info->data, cmd_info->data_len);
+    }
+    return 0;
+}
+
+
+
 
 #if defined(__SNDP_PRODUCT_TEST__)
 static uint32_t sndp_comm_cmd_recv_pt_switch_test_mode(sndp_comm_cmd_info_s *cmd_info)
@@ -1103,16 +1124,19 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_LR_SYNC_WORKING_MODE           , "LR_SYNC_WORKING_MODE"    , sndp_comm_cmd_recv_lr_sync_working_mode           },
 	{ COMM_CMDID_LR_SYNC_BAT_INFO               , "LR_SYNC_BAT_INFO"        , sndp_comm_cmd_recv_lr_sync_bat_info               },
 	{ COMM_CMDID_LR_SYNC_VOLUME                 , "LR_SYNC_VOLUME"          , sndp_comm_cmd_recv_lr_sync_volume                 },
-	{ COMM_CMDID_LR_SYNC_INOUT_STATUS           , "LR_SYNC_INOUT_STA"       , sndp_comm_cmd_recv_lr_sync_inout_status           },
+	{ COMM_CMDID_LR_SYNC_INBOX_STATUS           , "LR_SYNC_IOBOX_STA"       , sndp_comm_cmd_recv_lr_sync_iobox_status           },
 	{ COMM_CMDID_LR_SYNC_COVER_STATUS           , "LR_SYNC_COVER_STA"	    , sndp_comm_cmd_recv_lr_sync_cover_status           },
 	{ COMM_CMDID_LR_SYNC_WEAR_STATUS            , "LR_SYNC_WEAR_STA"	    , sndp_comm_cmd_recv_lr_sync_wear_status            },
 	{ COMM_CMDID_LR_SYNC_GESTURE                , "LR_SYNC_GESTURE"         , sndp_comm_cmd_recv_lr_sync_gesture                },
     { COMM_CMDID_LR_SYNC_BOTH_SHUTDOWN          , "LR_SYNC_BOTH_SHUTDOWN"   , sndp_comm_cmd_recv_lr_sync_both_shutdown          },
     { COMM_CMDID_LR_SYNC_MUSIC_CTRL             , "LR_SYNC_MUSIC_CTRL"      , sndp_comm_cmd_recv_lr_sync_music_ctrl             },
     { COMM_CMDID_LR_SYNC_CALL_CTRL              , "LR_SYNC_CALL_CTRL"       , sndp_comm_cmd_recv_lr_sync_call_ctrl              },
-    { COMM_CMDID_LR_SYNC_PROMPT_ONOFF           , "LR_SYNC_PROMPT_ONOFF"    , sndp_comm_cmd_recv_lr_sync_prompt_onoff          },
-    { COMM_CMDID_LR_SYNC_UPDATE_MAPPING         , "LR_SYNC_UPDATE_MAPPING"  , sndp_comm_cmd_recv_lr_sync_update_mapping        },
-    { COMM_CMDID_LR_SYNC_GESTURE_ONOFF          , "LR_SYNC_GESTURE_ONOFF"   , sndp_comm_cmd_recv_lr_sync_gesture_onoff         },
+    { COMM_CMDID_LR_SYNC_PROMPT_ONOFF           , "LR_SYNC_PROMPT_ONOFF"    , sndp_comm_cmd_recv_lr_sync_prompt_onoff           },
+    { COMM_CMDID_LR_SYNC_UPDATE_MAPPING         , "LR_SYNC_UPDATE_MAPPING"  , sndp_comm_cmd_recv_lr_sync_update_mapping         },
+    { COMM_CMDID_LR_SYNC_GESTURE_ONOFF          , "LR_SYNC_GESTURE_ONOFF"   , sndp_comm_cmd_recv_lr_sync_gesture_onoff          },
+    { COMM_CMDID_LR_SYNC_ALL_DEV_STATUS         , "LR_SYNC_ALL_DEV_STATUS"  , sndp_comm_cmd_recv_lr_sync_all_dev_status         },
+
+    
 #if defined(__SNDP_PRODUCT_TEST__)
     /****** 生产测试指令. ******/
 	{ COMM_CMDID_PT_SWITCH_TEST_MODE            , "PT_S_TEST_MODE"          , sndp_comm_cmd_recv_pt_switch_test_mode            },

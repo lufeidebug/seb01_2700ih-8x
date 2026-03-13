@@ -69,6 +69,16 @@ typedef struct {
     sndp_ui_key_hdlr key_hdlr;
 } sndp_ui_key_hdlr_s;
 
+
+typedef struct {
+    sndp_dev_cover_status_e cover_sta;
+    sndp_dev_iobox_status_e iobox_sta;
+    sndp_dev_wear_status_e wear_sta;
+    sndp_dev_bat_info_s bat_info;
+
+} sndp_ui_all_dev_sta_s;
+
+
 /**************************************************************************************************
 * Extern
 **************************************************************************************************/
@@ -362,16 +372,6 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 	}
 }
 
-static void sndp_ui_wear_status_sync(void)
-{
-	if(sndp_is_besaud_connected()) {
-#if defined(__SNDP_COMM_MGR__)        
-        sndp_comm_cmd_send_lr_sync_wear_status(sndp_dev_wear_get_status(false));
-#endif
-	} else {
-		SPUI_TRACE(0, "besaud is not connected.");
-	}
-}
 
 /* Local deal wear status is changed */
 static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
@@ -400,8 +400,6 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 
 	}
 
-	/* sync local wear status to peer */
-	sndp_ui_wear_status_sync();
 	sndp_ui_wear_action(wear_status, false);
 }
 
@@ -427,10 +425,6 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
         bta_tws_box_event_entry(BTA_TWS_OPEN);
     }
     
-    /* sync local cover status to peer */
-#if defined(__SNDP_COMM_MGR__)    
-    sndp_comm_cmd_send_lr_sync_wear_status(sndp_dev_cover_get_status(false));
-#endif
 }
 
 
@@ -686,9 +680,36 @@ void sndp_ui_charger_plug_status_changed(sndp_dev_charger_plug_e plug_status)
 }
 
 //---------------------------------------- bat ctrl --------------------------------------------
+static void sndp_ui_bat_lr_sync(void)
+{
+    
+    static uint8_t last_sync_percent = 0xFF;
+    sndp_dev_bat_info_s curr;
+
+    sndp_dev_get_bat_info(false, &curr);
+
+    SPUI_TRACE(0, "last=%d, curr valid=%d, per=%d", 
+            last_sync_percent,
+            curr.valid,
+            curr.bat_per
+            );
+    
+    if(curr.valid && sndp_is_tws_link_connected()) {
+#if defined(__SNDP_COMM_MGR__)         
+        if((last_sync_percent == 0xFF) || (last_sync_percent != curr.bat_per)) {
+            sndp_comm_cmd_send_lr_sync_bat_info();
+        }
+#endif        
+        last_sync_percent = curr.bat_per;
+    }
+}
+
 void sndp_ui_bat_pwr_measure_callback(sndp_dev_bat_info_s old_bat_info, sndp_dev_bat_info_s new_bat_info)
 {
+    SPUI_TRACE(0, "new valid=%d, per=%d", new_bat_info.valid,new_bat_info.bat_per);
+    sndp_ui_bat_lr_sync();
 }
+
 
 //---------------------------------------- key ctrl --------------------------------------------
 #if defined(__SNDP_KEY_TEST__)
@@ -1058,6 +1079,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
             
 		case SNDP_BT_CONN_STATUS_TWS_CONNECTED:
 			sndp_update_audio_channel(true);
+            sndp_ui_all_status_sync_send();
 			break;
 
 		case SNDP_BT_CONN_STATUS_A2DP_DISCONNECTED:
@@ -1101,10 +1123,6 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			break;
             
 		case SNDP_BT_CONN_STATUS_BES_AUD_CONNECTED:
-            sndp_ui_all_status_sync_send();
-            if(sndp_dev_is_right_earphone() && sndp_is_tws_master_mode()) {
-                sndp_ibrt_tws_switch();
-            }
 			break;
 
     case SNDP_BT_CONN_STATUS_HFP_CALLSETUP_IND:
@@ -1213,11 +1231,32 @@ static void sndp_ui_dev_status_print(void)
 
 static void sndp_ui_all_status_sync_send(void)
 {
+    sndp_ui_all_dev_sta_s all_dev_sta;
+    
 	if(sndp_is_besaud_connected()) {
-#if defined(__SNDP_COMM_MGR__)     
-        sndp_comm_cmd_send_lr_sync_wear_status(sndp_dev_wear_get_status(false));
+        SNDP_TRACE_IMM(0, "\n");
+        
+#if defined(__SNDP_COMM_MGR__)
+        all_dev_sta.cover_sta = sndp_dev_cover_get_status(false);
+        all_dev_sta.iobox_sta = sndp_dev_iobox_get_status(false);
+        all_dev_sta.wear_sta = sndp_dev_wear_get_status(false);
+        sndp_dev_get_bat_info(false, &all_dev_sta.bat_info);
+        sndp_comm_cmd_send_lr_sync_all_dev_status((uint8_t *)&all_dev_sta, sizeof(sndp_ui_all_dev_sta_s));
 #endif        
 	}
+}
+
+void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
+{
+    sndp_ui_all_dev_sta_s all_dev_sta;
+
+    if(len == sizeof(sndp_ui_all_dev_sta_s)) {
+        memcpy(&all_dev_sta, data, len);
+        sndp_dev_cover_set_status(true, all_dev_sta.cover_sta);
+        sndp_dev_iobox_set_status(true, all_dev_sta.iobox_sta);
+        sndp_dev_wear_set_status(true, all_dev_sta.wear_sta);
+        sndp_dev_set_bat_info(true, all_dev_sta.bat_info);
+    }
 }
 
 void sndp_ui_timing_to_do(void)

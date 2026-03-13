@@ -69,7 +69,7 @@ typedef enum {
     COMM_CMDID_LR_SYNC_VOLUME                       = 0x22, /* desc: 左右耳同步音量等级指令。
                                                              * recv: 2 bytes, type(1) + volume level(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_INOUT_STATUS                 = 0x23, /* desc: 左右耳同步出入仓状态指令。
+    COMM_CMDID_LR_SYNC_INBOX_STATUS                 = 0x23, /* desc: 左右耳同步出入仓状态指令。
                                                              * recv: 1 bytes, inout status(1)
                                                              * rsp : 0 bytes */
     COMM_CMDID_LR_SYNC_COVER_STATUS                 = 0x24, /* desc: 左右耳同步开关盖状态指令。
@@ -90,15 +90,20 @@ typedef enum {
     COMM_CMDID_LR_SYNC_CALL_CTRL                    = 0x29, /* desc: 左右耳同步通话控制指令。
                                                              * recv: 1 bytes, event(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_PROMPT_ONOFF                   = 0x2A, /* desc: 左右耳同步提示音开关指令。
+    COMM_CMDID_LR_SYNC_PROMPT_ONOFF                 = 0x2A, /* desc: 左右耳同步提示音开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
     COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x2B, /* desc: 左右耳同步更新按键映射指令。
                                                              * recv: 2 bytes, key behavior(1) + key function(1)
                                                              * rsp : 0 bytes */       
-    COMM_CMDID_LR_SYNC_GESTURE_ONOFF              = 0x2C, /* desc: 左右耳同步手势使能开关指令。
+    COMM_CMDID_LR_SYNC_GESTURE_ONOFF                = 0x2C, /* desc: 左右耳同步手势使能开关指令。
                                                              * recv: 1 bytes, onoff(1)
-                                                             * rsp : 0 bytes */                                           
+                                                             * rsp : 0 bytes */           
+    COMM_CMDID_LR_SYNC_ALL_DEV_STATUS               = 0x2D, /* desc: 左右耳同步所有设备状态指令。
+                                                             * recv: n bytes, 
+                                                             * rsp : 0 bytes */ 
+
+    
     /****** 生产测试指令. ******/
     COMM_CMDID_PT_SWITCH_TEST_MODE                  = 0x40, /* recv: 1 bytes, mode(1).
                                                             rsp: 1 bytes, error code(1). */
@@ -195,7 +200,7 @@ typedef struct {
 
 uint32_t sndp_comm_cmd_send_lr_sync_dev_info(void);
 uint32_t sndp_comm_cmd_send_lr_sync_bat_info(void);
-uint32_t sndp_comm_cmd_send_lr_sync_inout_status(uint8_t status);
+uint32_t sndp_comm_cmd_send_lr_sync_iobox_status(uint8_t status);
 uint32_t sndp_comm_cmd_send_lr_sync_cover_status(uint8_t status);
 uint32_t sndp_comm_cmd_send_lr_sync_wear_status(uint8_t status);
 uint32_t sndp_comm_cmd_send_lr_sync_gesture(uint8_t gesture);
@@ -203,6 +208,9 @@ uint32_t sndp_comm_cmd_send_lr_sync_language_switch(uint8_t language);
 uint32_t sndp_comm_cmd_send_lr_sync_both_shutdown(void);
 uint32_t sndp_comm_cmd_send_lr_sync_music_ctrl(uint8_t event);
 uint32_t sndp_comm_cmd_send_lr_sync_call_ctrl(uint8_t event);
+uint32_t sndp_comm_cmd_send_lr_sync_all_dev_status(uint8_t *data, uint16_t data_len);
+
+
 uint32_t sndp_comm_cmd_send_pt_test_touch(uint8_t *data, uint16_t data_len);
 uint32_t sndp_comm_cmd_send_pt_test_ir(uint8_t *data, uint16_t data_len);
 uint32_t sndp_comm_cmd_send_pt_report_wear_status(uint8_t status);

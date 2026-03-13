@@ -202,6 +202,11 @@ void sndp_dev_wear_status_changed_handler(sndp_dev_wear_status_e status)
 
 	if(status != curr_status) {
 		sndp_dev_wear_set_status(false, status);
+
+ #if defined(__SNDP_COMM_MGR__)        
+        sndp_comm_cmd_send_lr_sync_wear_status(status);
+#endif   
+
 		if(sndp_dev_wear_status_changed_cb_prt) {
             sndp_call_func_in_app_thread((uint32_t)sndp_dev_wear_status_changed_cb_prt, status, 0, 0);
 		}
@@ -470,6 +475,10 @@ POSSIBLY_UNUSED static void sndp_dev_iobox_status_changed_handler(sndp_dev_iobox
 	if(status != SNDP_DEV_IOBOX_UNKNOWN) {
 		sndp_dev_iobox_set_status(false, status);
         
+#if defined(__SNDP_COMM_MGR__)    
+        sndp_comm_cmd_send_lr_sync_iobox_status(status);
+#endif
+
 #if defined(__SNDP_COMM_POGOPIN__)			
         if(SNDP_DEV_IOBOX_OUT == status) {
     		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
@@ -571,7 +580,11 @@ void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status)
     
 	if(status != SNDP_DEV_COVER_UNKNOWN) {
 		sndp_dev_cover_set_status(false, status);
-        
+
+#if defined(__SNDP_COMM_MGR__)    
+        sndp_comm_cmd_send_lr_sync_wear_status(status);
+#endif
+
 #if defined(__SNDP_COMM_POGOPIN__)			
         if(SNDP_DEV_COVER_COLSED == status) {
     		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
@@ -897,22 +910,43 @@ void sndp_dev_charger_plug_init(void)
 /************************************************** Battery Info Start **************************************************/
 uint8_t sndp_dev_get_bat_report_level(void) 
 {
-#if 1    
-	uint8_t local_level = sndp_dev_get_bat_level(false);
-	uint8_t peer_level = sndp_dev_get_bat_level(true);
+    sndp_dev_bat_info_s local;
+    sndp_dev_bat_info_s peer;
+    uint8_t report_level = 9;
+    uint8_t reprot_earside = 0xFF;
 
-    
-	if(sndp_is_tws_link_connected()) {
-		if(local_level > peer_level)
-			return peer_level;
-		else
-			return local_level;
-	} else {
-		return local_level;
-	}
-#else
-    return sndp_dev_get_bat_level(false);
-#endif
+    sndp_dev_get_bat_info(false, &local);
+    sndp_dev_get_bat_info(true, &peer);
+
+    if(sndp_is_tws_link_connected()) {
+        if(local.valid && peer.valid) {
+            if(local.bat_level <= peer.bat_level) {
+    			report_level = local.bat_level;
+                reprot_earside = sndp_dev_get_earside(false);
+    		} else {
+    			report_level = peer.bat_level;
+                reprot_earside = sndp_dev_get_earside(true);
+    		}
+        } else if(local.valid && !peer.valid) {
+            report_level = local.bat_level;
+            reprot_earside = sndp_dev_get_earside(false);
+        } else if(!local.valid && peer.valid) {
+            report_level = peer.bat_level;
+            reprot_earside = sndp_dev_get_earside(true);
+        } else {
+            report_level = 9;
+        }
+    } else {
+        if(local.valid) {
+            report_level = local.bat_level;
+            reprot_earside = sndp_dev_get_earside(false);
+        } else {
+            report_level = 9;
+        }
+    }
+
+    SNDP_IF_TRACE(3, "earside=%d, level=%d", reprot_earside, report_level);
+    return report_level;
 }
 
 uint8_t sndp_dev_get_bat_percentage(bool peer)
@@ -987,7 +1021,8 @@ static void sndp_dev_bat_pwr_measure_callback(sndp_hal_bat_info_s bat_info)
 	SNDP_IF_TRACE(3, "bat_volt=%d, bat_per=%d, bat_level=%d", bat_info.bat_volt, bat_info.bat_per, bat_info.bat_level);
 	
 	sndp_dev_get_bat_info(false, &old_bat_info);
-	
+
+    new_bat_info.valid = true;
 	new_bat_info.bat_per = bat_info.bat_per;
 	new_bat_info.bat_volt = bat_info.bat_volt;
 	new_bat_info.bat_level = bat_info.bat_level;
@@ -1397,9 +1432,10 @@ void sndp_dev_init_device_info(void)
 	uint8_t local_bt_addr[6] = {0};
 	uint8_t local_ble_addr[6] = {0};
     uint8_t box_ver[4] = {0};
-    sndp_dev_bat_info_s bat_info = {4200, 100, 9};
+    sndp_dev_bat_info_s bat_info = {false, 4200, 100, 9};
 
     sndp_dev_set_box_fw_ver(box_ver);
+    
     sndp_dev_set_fw_ver(true, fw_ver);
     sndp_dev_set_hw_ver(true, hw_ver);
     sndp_dev_set_bt_addr(true, local_bt_addr);
@@ -1449,6 +1485,7 @@ void sndp_dev_clear_device_info(bool peer)
 		param = &sndp_dev_ctx.local;
 
 	memset(&param->bat_info, 0, sizeof(sndp_dev_bat_info_s));
+    param->bat_info.valid = false;
 	param->temperature = 0;
 	param->charging_status = SNDP_DEV_CHARGER_NOT_CHARGING;
 	param->cover_status = SNDP_DEV_COVER_UNKNOWN;
