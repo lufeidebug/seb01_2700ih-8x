@@ -102,7 +102,9 @@ typedef enum {
     COMM_CMDID_LR_SYNC_ALL_DEV_STATUS               = 0x2D, /* desc: 左右耳同步所有设备状态指令。
                                                              * recv: n bytes, 
                                                              * rsp : 0 bytes */ 
-
+    COMM_CMDID_LR_SYNC_BT_ONOFF                     = 0x2E, /* desc: 左右耳同步BT开关指令。
+                                                             * recv: 1 bytes, onoff(1)
+                                                             * rsp : 0 bytes */ 
     
     /****** 生产测试指令. ******/
     COMM_CMDID_PT_SWITCH_TEST_MODE                  = 0x40, /* recv: 1 bytes, mode(1).
@@ -209,6 +211,7 @@ uint32_t sndp_comm_cmd_send_lr_sync_both_shutdown(void);
 uint32_t sndp_comm_cmd_send_lr_sync_music_ctrl(uint8_t event);
 uint32_t sndp_comm_cmd_send_lr_sync_call_ctrl(uint8_t event);
 uint32_t sndp_comm_cmd_send_lr_sync_all_dev_status(uint8_t *data, uint16_t data_len);
+uint32_t sndp_comm_cmd_send_lr_sync_bt_onoff(uint8_t onoff);
 
 
 uint32_t sndp_comm_cmd_send_pt_test_touch(uint8_t *data, uint16_t data_len);

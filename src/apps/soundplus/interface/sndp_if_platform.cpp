@@ -1226,6 +1226,24 @@ int sndp_language_switch_handler(int new_lan)
     return 0;
 }
 
+void sndp_bt_switch(bool onoff, bool sync)
+{
+    if(sync) {
+        sndp_comm_cmd_send_lr_sync_bt_onoff(onoff);
+    }
+    
+    if(onoff) {
+        SNDP_IF_TRACE(0, "on..");
+        bta_tws_enable_access_mode(true);
+        bta_tws_connect_all_bt_devices();
+    } else {
+        SNDP_IF_TRACE(0, "off..");
+        bta_tws_remove_all_bt_devices();
+        bta_tws_enable_access_mode(false);
+    }
+}
+
+
 #endif	/* __SNDP_PROJ__ */
 
 

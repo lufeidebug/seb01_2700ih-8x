@@ -205,6 +205,7 @@ void sndp_connect_status_print(void);
 uint8_t *sndp_get_nvrecord_bt_peer_address(void);
 
 int sndp_language_switch_handler(int new_lan);
+void sndp_bt_switch(bool onoff, bool sync);
 
 
 #ifdef __cplusplus

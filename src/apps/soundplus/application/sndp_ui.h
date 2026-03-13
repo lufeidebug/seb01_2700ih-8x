@@ -55,7 +55,6 @@ typedef struct {
 } sndp_ui_ctx_s;
 
 
-
 void sndp_ui_pairing_type_set(sndp_pairing_type_e type);
 bool sndp_ui_pairing_type_is(sndp_pairing_type_e type);
 

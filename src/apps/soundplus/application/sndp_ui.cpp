@@ -98,19 +98,6 @@ static sndp_pairing_type_e sndp_pairing_type = SNDP_PAIRING_NONE;  //0:none, 1:t
 * Function
 **************************************************************************************************/
 
-void sndp_ui_bt_switch(bool onoff)
-{
-    if(onoff) {
-        SPUI_TRACE(0, "on..");
-        bta_tws_enable_access_mode(true);
-        bta_tws_connect_all_bt_devices();
-    } else {
-        SPUI_TRACE(0, "off..");
-        bta_tws_remove_all_bt_devices();
-        bta_tws_enable_access_mode(false);
-    }
-}
-
 void sndp_ui_working_mode_switch(void)
 {
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
@@ -132,13 +119,13 @@ void sndp_ui_working_mode_switch(void)
 #endif
 
         //Open BT.
-        sndp_ui_bt_switch(true);
+        sndp_bt_switch(true, true);
         
     } else {
         SPUI_TRACE(0, "SLEEP_MODE");
         
         //Close BT.
-        sndp_ui_bt_switch(false );
+        sndp_bt_switch(false, true);
 
         //set the working mode to Sleep mode.
         sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_SLEEP);
@@ -810,7 +797,6 @@ static void sndp_ui_fn3_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
-            sndp_ui_bt_switch(true);
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
             break;
@@ -831,7 +817,6 @@ static void sndp_ui_fn4_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
-            sndp_ui_bt_switch(false);
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
             break;
