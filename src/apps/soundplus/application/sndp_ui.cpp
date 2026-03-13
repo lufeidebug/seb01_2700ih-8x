@@ -526,22 +526,33 @@ void sndp_function_play_pause(void) {
     }
 }
 
-void sndp_function_next_track(void) {
+void sndp_function_next_track(void) 
+{
     // 下一曲功能
+    if(sndp_music_is_playing()) {
+        sndp_music_ctrl(SNDP_MUSIC_CTRL_FORWARD);
+    }
 }
 
-void sndp_function_prev_track(void) {
+void sndp_function_prev_track(void) 
+{
     // 上一曲功能
+    if(sndp_music_is_playing()) {
+        sndp_music_ctrl(SNDP_MUSIC_CTRL_BACKWARD);
+    }
 }
 
-void sndp_function_voice_assistant(void) {
+void sndp_function_voice_assistant(void) 
+{
     // 唤醒语音助手
+    sndp_wakeup_voice_assistant(true);
 
 }
  
-void sndp_function_anc_mode_switch(void) {
-		// ANC模式切换
-		if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
+void sndp_function_anc_mode_switch(void) 
+{
+    // ANC模式切换
+    if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
         if(sndp_dev_is_left_earphone()) {
             sndp_ui_anc_switch();
         } else {
@@ -571,6 +582,7 @@ static function_callback_t sndp_ui_gesture_func_table[SNDP_FUNC_MAX] = {
     sndp_function_voice_assistant,
     sndp_function_anc_mode_switch,  
 };
+    
 /**
 * 本地处理手势事件
 */
@@ -583,7 +595,7 @@ void sndp_ui_gesture_event_local_hdlr(sndp_dev_gesture_event_e gesture_event)
         return;
     }
     
-#if 0
+#if 1
     //user gesture mapper, cancel this switch!!!!!!!
     switch(gesture_event) {
         case SNDP_DEV_GESTURE_EVENT_1_CLICK:
