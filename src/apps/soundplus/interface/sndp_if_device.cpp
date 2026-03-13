@@ -1613,6 +1613,7 @@ void sndp_dev_init(void)
 	//SPUI_TRACE_ENTER();
     
 	sndp_dev_init_device_info();
+    sndp_dev_set_prompt_onoff(false, true);
     
 	sndp_dev_charger_plug_init();
     sndp_dev_charger_init();
