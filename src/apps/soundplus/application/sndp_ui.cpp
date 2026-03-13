@@ -982,7 +982,8 @@ static void sndp_ui_bat_lowpwr_check(void)
 		SPUI_TRACE(1, "lowpwr_shutdown_cnt=%d", sndp_ui_ctx.lowpwr_shutdown_cnt);
 		
 		if(sndp_ui_ctx.lowpwr_shutdown_cnt >= SPUI_LOWPWR_SHUTDOWN_CHECK_CNT) {
-            media_PlayAudio(AUD_ID_POWER_OFF, 0);
+            //media_PlayAudio(AUD_ID_POWER_OFF, 0);
+            sndp_app_shutdown(SNDP_SHUTDOWN_REASON_LOWPWR);
 		}
 	} else {
 		sndp_ui_ctx.lowpwr_shutdown_cnt = 0;
