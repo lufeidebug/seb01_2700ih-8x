@@ -10,6 +10,7 @@
 #include "app_utils.h"
 #include "factory_section.h"
 #include "app_media_player.h"
+#include "app_anc.h"
 
 #include "sndp_if_common.h"
 #include "sndp_if_device.h"
@@ -1221,16 +1222,36 @@ int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd)
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    COMM_CMD_TRACE(1, "eq mode=%d", cmd_info->value[0]);
+    sndp_set_eq_index(cmd_info->value[0]);
+
+    cmd_info->value[0] = 0; // success
+
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    uint8_t eq_index = sndp_get_eq_index(app_anc_work_status());
+    cmd_info->data_len = 0x02;
+
+    if(app_anc_work_status()){
+        eq_index += EQ_HW_DAC_IIR_LIST_NUM/2;
+    }
+
+    cmd_info->value[0] = eq_index;
+    
+    COMM_CMD_TRACE(1, "eq mode=%d", cmd_info->value[0]);
+
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_param(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    // IIR_CFG_T *eq_param = (IIR_CFG_T *)&audio_eq_hw_dac_iir_custom_mode;
+
     return 0;
 }
 
@@ -1246,6 +1267,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_find_my_earphone(sleep_a
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    COMM_CMD_TRACE(1, "anc mode=%d", cmd_info->value[0]);
     sndp_anc_mode_set((sndp_anc_mode_e)cmd_info->value[0]);
 
     cmd_info->value[0] = 0; // success

@@ -74,7 +74,7 @@ typedef struct {
 typedef struct {
 	sndp_da_field_bat_info_s field_bat_info;
 	sndp_da_field_sn_s field_sn;
-    sndp_da_field_sn_s field_bt_name;
+    sndp_da_field_bt_name_s field_bt_name;
 	sndp_da_field_touch_calib_data_s  field_touch_calib_data;
 #if defined(__SNDP_ALG_MGR__)	
 	sndp_da_field_alg_data_s field_alg_data;

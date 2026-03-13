@@ -35,7 +35,9 @@
 #include "bts_bt_if.h"
 #include "bts_bt_conn.h"
 #include "bts_core_conn.h"
-
+#include "fir_process.h"
+#include "iir_process.h"
+#include "audio_process.h"
 
 #include "sndp_if_common.h"
 #include "sndp_if_device.h"
@@ -72,7 +74,7 @@
 static void sndp_ibrt_reconfig_save_to_nvrecord(ibrt_config_t *config);
 extern "C" uint8_t is_a2dp_mode(void);
 extern "C" uint8_t is_sco_mode(void);
-
+extern const IIR_CFG_T * const POSSIBLY_UNUSED audio_eq_hw_dac_iir_cfg_list[EQ_HW_DAC_IIR_LIST_NUM];
 
 
 /**************************************************************************************************
@@ -1163,6 +1165,68 @@ sndp_anc_mode_e sndp_anc_get_curr_mode(void)
     return (sndp_anc_mode_e)anc_mode;
 }
 
+/******************************************* EQ Contrl Interface ****************************************/
+uint8_t eq_index = 0; //开机默认就是normal mode
+uint32_t sndp_bt_audio_set_eq(uint8_t index)
+{
+    const FIR_CFG_T *fir_cfg=NULL;
+    const FIR_CFG_T *fir_cfg_2=NULL;
+    const IIR_CFG_T *iir_cfg=NULL;
+    const IIR_CFG_T *iir_cfg_2=NULL;
+
+    SNDP_IF_TRACE(0,"[EQ] index=%d",  index);
+
+		if(index >= EQ_HW_DAC_IIR_LIST_NUM)
+		{
+				SNDP_IF_TRACE(0,"[EQ] SET index %u > EQ_HW_DAC_IIR_LIST_NUM", index);
+				return 1;
+		}
+
+
+		iir_cfg=audio_eq_hw_dac_iir_cfg_list[index];
+
+    return audio_eq_set_cfg_full(fir_cfg,fir_cfg_2,iir_cfg,iir_cfg_2,AUDIO_EQ_TYPE_HW_DAC_IIR);
+}
+void sndp_set_eq_index(uint8_t index)
+{
+	SNDP_IF_TRACE(1, "index=%d", index);
+	if(index > EQ_HW_DAC_IIR_LIST_NUM - 1) {
+		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+		return;
+	}
+	eq_index = index;
+}
+
+uint8_t sndp_get_eq_index(uint8_t anc_statu)
+{
+	uint8_t select_eq_num = 0;
+	SNDP_IF_TRACE(1, "index=%d", eq_index);
+	
+	if(eq_index > EQ_HW_DAC_IIR_LIST_NUM - 1) {
+		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+		return 0;
+	}
+
+	if(anc_statu){
+		select_eq_num = eq_index + 6;
+	}else{
+		select_eq_num = eq_index;
+	}
+	return select_eq_num;
+}
+
+uint8_t sndp_bt_audio_updata_eq_for_anc(void)
+{
+	bool anc_status = app_anc_work_status();
+	SNDP_IF_TRACE(1, "anc_status=%d", anc_status);
+	hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_104M);
+
+	sndp_bt_audio_set_eq(sndp_get_eq_index(anc_status));
+
+	hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_32K);
+	return 0;
+
+}
 
 /******************************************* Voice Assistant Interface ****************************************/
 extern int app_hfp_siri_voice(bool en);
