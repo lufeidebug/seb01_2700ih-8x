@@ -903,7 +903,8 @@ void sndp_dev_charger_plug_set_status_changed_callback(sndp_dev_charger_plug_cb 
 void sndp_dev_charger_plug_init(void)
 {
 	SNDP_IF_TRACE_ENTER();
-
+    sndp_dev_charger_plug_set_status(false, SNDP_DEV_CHARGER_PLUG_UNKNOWN);
+    sndp_dev_charger_plug_set_status(true, SNDP_DEV_CHARGER_PLUG_UNKNOWN);
 #if defined(__SNDP_CHARGER_PLUG_MGR__)   
     sndp_hal_charger_plug_init();
 	sndp_hal_charger_plug_set_status_changed_callback(sndp_dev_charger_plug_status_changed);
