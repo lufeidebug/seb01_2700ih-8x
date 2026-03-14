@@ -948,10 +948,12 @@ bool sndp_call_is_active(void)
 bool sndp_call_is_incoming(void)
 {
 	struct BT_DEVICE_T* device;
-	
+
+#if 0	
 	if(sndp_call_get_in_out_flag() != 1)
 		return false;
-	
+#endif
+
 	for (uint8_t id = 0; id < BT_DEVICE_NUM; id++) {
 		device = app_bt_get_device(id);
 		if(device == NULL)
@@ -973,9 +975,11 @@ bool sndp_call_is_outgoing(void)
 {
 	struct BT_DEVICE_T* device;
 
+#if 0	
 	if(sndp_call_get_in_out_flag() != 2)
 		return false;
-	
+#endif
+
 	for (uint8_t id = 0; id < BT_DEVICE_NUM; id++) {
 		device = app_bt_get_device(id);
 		if(device == NULL)
