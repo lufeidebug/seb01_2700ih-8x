@@ -443,10 +443,10 @@ void sndp_ui_gesture_2click_hdlr(bool remote)
     } else if(sndp_call_is_active()) {
         if(sndp_call_is_threeway_incoming()) {
             sndp_call_ctrl(SNDP_CALL_CTRL_THREEWAY_HOLD_ANSWER);
-        } else if(sndp_call_is_threeway_calling()) {
-            sndp_call_ctrl(SNDP_CALL_CTRL_HANGUP);
         } else if(sndp_call_is_incoming()) {
             sndp_call_ctrl(SNDP_CALL_CTRL_ANSWER);
+        } else if(sndp_call_is_threeway_calling()) {
+            sndp_call_ctrl(SNDP_CALL_CTRL_HANGUP);
         } else {
             sndp_call_ctrl(SNDP_CALL_CTRL_HANGUP);
         }
