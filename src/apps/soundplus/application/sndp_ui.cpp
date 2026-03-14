@@ -177,7 +177,7 @@ void sndp_ui_volume_dec(uint8_t type, uint8_t level)
 
 
 //---------------------------------------- music ctrl --------------------------------------------
-static void sndp_ui_wear_play_music(void)
+POSSIBLY_UNUSED static void sndp_ui_wear_on_play_music(void)
 {
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
         SPUI_TRACE(0, "%d, rtn", __LINE__);
@@ -202,7 +202,7 @@ static void sndp_ui_wear_play_music(void)
 	sndp_music_ctrl(SNDP_MUSIC_CTRL_PLAY);
 }
 
-static void sndp_ui_wear_stop_music(void)
+static void sndp_ui_wear_off_stop_music(void)
 {				
 	if(sndp_is_sco_mode()) {
 		SPUI_TRACE(0, "%d, rtn", __LINE__);
@@ -221,7 +221,7 @@ static void sndp_ui_wear_stop_music(void)
 
 
 //---------------------------------------- call ctrl --------------------------------------------
-static POSSIBLY_UNUSED void sndp_ui_wear_tone_switch_to_phone(void)
+static POSSIBLY_UNUSED void sndp_ui_wear_off_tone_switch_to_phone(void)
 {
 //	return;
 	
@@ -230,24 +230,24 @@ static POSSIBLY_UNUSED void sndp_ui_wear_tone_switch_to_phone(void)
 		return;
 	}
 
-    if(sndp_is_tws_link_connected() && !sndp_is_tws_master_mode()) {
-		SPUI_TRACE(0, "%d, rtn", __LINE__);
-		return;
+    if(sndp_is_tws_link_connected()) {
+        if(!sndp_is_tws_master_mode()) {
+		    SPUI_TRACE(0, "%d, rtn", __LINE__);
+            return;
+        } else if(sndp_dev_wear_is_worn(true)) {
+            SPUI_TRACE(0, "%d, rtn", __LINE__);
+            return;
+        }
 	}
     
     sndp_call_ctrl(SNDP_CALL_CTRL_TONE_SWITCH_TO_PHONE);
 }
 
-static POSSIBLY_UNUSED void sndp_ui_wear_tone_switch_to_earbuds(void)
+static POSSIBLY_UNUSED void sndp_ui_wear_on_tone_switch_to_earbuds(void)
 {
 //	return;
 
 	if(!sndp_call_is_active()){
-		SPUI_TRACE(0, "%d, rtn", __LINE__);
-		return;
-	}
-
-	if(sndp_is_tws_link_connected() && !sndp_is_tws_master_mode()) {
 		SPUI_TRACE(0, "%d, rtn", __LINE__);
 		return;
 	}
@@ -342,11 +342,11 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 
 	if(remote == false) {
 		if(SNDP_DEV_WEAR_ON == wear_action) {	
-			sndp_ui_wear_tone_switch_to_phone();
-			sndp_ui_wear_play_music();
+            sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds, 0, 0, 0);
+			//sndp_ui_wear_play_music();
 	    } else if(SNDP_DEV_WEAR_OFF == wear_action) {
-			sndp_ui_wear_tone_switch_to_earbuds();
-			sndp_ui_wear_stop_music();		
+            sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_off_tone_switch_to_phone, 0, 0, 0);
+			sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_off_stop_music, 0, 0, 0);		
 		}
 
 	} else if(remote == true) {
@@ -354,7 +354,7 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 		if(SNDP_DEV_WEAR_ON == wear_action) {		
 
 		} else if(SNDP_DEV_WEAR_OFF == wear_action) {
-			sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_stop_music, 0, 0, 0);	
+			sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_off_stop_music, 0, 0, 0);	
 		}
 	}
 }
@@ -366,8 +366,10 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 	SPUI_TRACE(1, "WEAR_%s", (SNDP_DEV_WEAR_ON == wear_status) ? "ON" : "OFF");
 
 	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_tone);
-	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_play_music);
-	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_stop_music);
+	//sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_music);
+	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_stop_music);
+    sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds);
+    sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_tone_switch_to_phone);
 
     if(sndp_ui_pairing_type_is(SNDP_PAIRING_FREEMAN)) {
         SPUI_TRACE(0, "freeman pairing return.");
@@ -754,11 +756,7 @@ static void sndp_ui_fn1_key_hdlr(APP_KEY_STATUS *status, void *param)
             sndp_sleep_analysis_stop();
 #endif
             break;
-        case APP_KEY_EVENT_TRIPLECLICK:
-            break;
         case APP_KEY_EVENT_LONGPRESS:
-            break;
-        case APP_KEY_EVENT_LONGLONGPRESS:
             break;
         default:
             break;
@@ -771,14 +769,13 @@ static void sndp_ui_fn2_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
+            sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_OPENED);
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
-            break;
-        case APP_KEY_EVENT_TRIPLECLICK:
+            sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_COLSED);
             break;
         case APP_KEY_EVENT_LONGPRESS:
-            break;
-        case APP_KEY_EVENT_LONGLONGPRESS:
+            sndp_dev_wear_status_changed_handler(SNDP_DEV_WEAR_ON);
             break;
         default:
             break;
@@ -792,14 +789,13 @@ static void sndp_ui_fn3_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
+            sndp_dev_iobox_status_changed_handler(SNDP_DEV_IOBOX_OUT);
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
-            break;
-        case APP_KEY_EVENT_TRIPLECLICK:
+            sndp_dev_iobox_status_changed_handler(SNDP_DEV_IOBOX_IN);
             break;
         case APP_KEY_EVENT_LONGPRESS:
-            break;
-        case APP_KEY_EVENT_LONGLONGPRESS:
+            sndp_dev_wear_status_changed_handler(SNDP_DEV_WEAR_OFF);
             break;
         default:
             break;
@@ -821,7 +817,6 @@ static void sndp_ui_fn4_key_hdlr(APP_KEY_STATUS *status, void *param)
             sndp_ui_gesture_event_generated(SNDP_DEV_GESTURE_EVENT_3_CLICK);
             break;
         case APP_KEY_EVENT_LONGPRESS:
-            sndp_ui_gesture_event_generated(SNDP_DEV_GESTURE_EVENT_LONG_PRESS);
             break;
         default:
             break;
@@ -837,12 +832,15 @@ static const APP_KEY_HANDLE  sndp_key_handle_cfg[] = {
 
     {{APP_KEY_CODE_FN1, APP_KEY_EVENT_CLICK         },  "sndp key",  sndp_ui_fn1_key_hdlr, NULL},
     {{APP_KEY_CODE_FN1, APP_KEY_EVENT_DOUBLECLICK   },  "sndp key",  sndp_ui_fn1_key_hdlr, NULL},
+    {{APP_KEY_CODE_FN1, APP_KEY_EVENT_LONGPRESS     },  "sndp key",  sndp_ui_fn1_key_hdlr, NULL},
 
     {{APP_KEY_CODE_FN2, APP_KEY_EVENT_CLICK         },  "sndp key",  sndp_ui_fn2_key_hdlr, NULL},
     {{APP_KEY_CODE_FN2, APP_KEY_EVENT_DOUBLECLICK   },  "sndp key",  sndp_ui_fn2_key_hdlr, NULL},
-
+    {{APP_KEY_CODE_FN2, APP_KEY_EVENT_LONGPRESS     },  "sndp key",  sndp_ui_fn2_key_hdlr, NULL},
+        
     {{APP_KEY_CODE_FN3, APP_KEY_EVENT_CLICK         },  "sndp key",  sndp_ui_fn3_key_hdlr, NULL},
     {{APP_KEY_CODE_FN3, APP_KEY_EVENT_DOUBLECLICK   },  "sndp key",  sndp_ui_fn3_key_hdlr, NULL},
+    {{APP_KEY_CODE_FN3, APP_KEY_EVENT_LONGPRESS     },  "sndp key",  sndp_ui_fn3_key_hdlr, NULL},
 
     {{APP_KEY_CODE_FN4, APP_KEY_EVENT_CLICK         },  "sndp key",  sndp_ui_fn4_key_hdlr, NULL},
     {{APP_KEY_CODE_FN4, APP_KEY_EVENT_DOUBLECLICK   },  "sndp key",  sndp_ui_fn4_key_hdlr, NULL},
@@ -923,7 +921,7 @@ static void sndp_ui_bat_charging_check(void)
 		if(sndp_dev_cover_is_closed(false)) {
 			sndp_ui_ctx.close_discharge_time += 10;
 			SPUI_TRACE(0, "close_dischg_t = %d.", sndp_ui_ctx.close_discharge_time);
-			if(sndp_ui_ctx.close_discharge_time >= SPUI_CLOSE_DISCHARGE_MAX) {
+			if(sndp_ui_ctx.close_discharge_time > SPUI_CLOSE_DISCHARGE_MAX) {
 				sndp_call_func_in_app_thread((uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_CLOSE_DISCHARGE, 0, 0);
 				return;
 			}

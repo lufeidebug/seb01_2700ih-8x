@@ -475,7 +475,7 @@ void sndp_dev_iobox_check_curr_status(void)
 
 }
 
-POSSIBLY_UNUSED static void sndp_dev_iobox_status_changed_handler(sndp_dev_iobox_status_e status)
+void sndp_dev_iobox_status_changed_handler(sndp_dev_iobox_status_e status)
 {
 	SNDP_IF_TRACE(0, "status=%d", status);
 

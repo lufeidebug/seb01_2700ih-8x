@@ -247,6 +247,7 @@ bool sndp_dev_iobox_is_out_box(bool peer);
 sndp_dev_iobox_status_e sndp_dev_iobox_get_status(bool peer);
 void sndp_dev_iobox_set_status(bool peer, sndp_dev_iobox_status_e inout_status);
 void sndp_dev_iobox_check_curr_status(void);
+void sndp_dev_iobox_status_changed_handler(sndp_dev_iobox_status_e status);
 void sndp_dev_iobox_set_status_changed_callback(sndp_dev_iobox_status_changed_cb callback);
 void sndp_dev_iobox_init(sndp_dev_iobox_status_changed_cb callback);
 
