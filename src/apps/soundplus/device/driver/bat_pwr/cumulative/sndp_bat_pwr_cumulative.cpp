@@ -295,13 +295,12 @@ static int32_t bat_cumulative_conver_volt_to_percentage(void)
             bat_cumulative_ctx.last.bat_volt, bat_cumulative_ctx.last.bat_per,
             bat_cumulative_ctx.curr.bat_volt, bat_cumulative_ctx.curr.bat_per);
 
-#if 0
-	if(bat_cumulative_ctx.last.bat_per != bat_cumulative_ctx.curr.bat_per) {
-		bat_cumulative_ctx.last.bat_volt = bat_cumulative_ctx.curr.bat_volt;
-		bat_cumulative_ctx.last.bat_per = bat_cumulative_ctx.curr.bat_per;
-		bat_cumulative_ctx.last.bat_level = bat_cumulative_ctx.curr.bat_level;
-		spif_call_func_in_app_thread((uint32_t) bat_cumulative_info_changed, 0, 0, 0);
-	}
+#if 0 //test
+	
+	bat_cumulative_ctx.last.bat_volt = 3300;
+	bat_cumulative_ctx.last.bat_per = 0;
+	bat_cumulative_ctx.last.bat_level = 0;
+	sndp_call_func_in_app_thread((uint32_t) bat_cumulative_info_changed, 0, 0, 0);
 #else
 	bat_cumulative_ctx.last.bat_volt = bat_cumulative_ctx.curr.bat_volt;
 	bat_cumulative_ctx.last.bat_per = bat_cumulative_ctx.curr.bat_per;
