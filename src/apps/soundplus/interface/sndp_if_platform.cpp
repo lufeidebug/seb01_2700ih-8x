@@ -369,11 +369,9 @@ uint8_t *sndp_get_nvrecord_bt_peer_address(void)
 static void sndp_ibrt_reconfig_save_to_nvrecord(ibrt_config_t *config)
 { 
     struct nvrecord_env_t *nvrecord_env = NULL;
-#if defined(__SNDP_EQ_MODE_SETTING__)
     nv_record_env_get(&nvrecord_env);
     memset((uint8_t *)&(nvrecord_env->ibrt_mode), 0xff, sizeof(nvrecord_env->ibrt_mode));
     nv_record_env_set(nvrecord_env);
-#endif
 
     bta_tws_reconfig_nv_role(config->nv_role, (bt_bdaddr_t *)&config->peer_addr);
     nv_record_flash_flush();
