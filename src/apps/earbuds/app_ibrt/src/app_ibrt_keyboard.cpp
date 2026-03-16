@@ -25,6 +25,7 @@
 #include "app_hfp.h"
 #include "app_ibrt_debug.h"
 #include "bts_module_if.h"
+#include "bts_tws_channel.h"
 #include "bta_tws_ux_api.h"
 #include "bta_tws_audio_api.h"
 #include "app_ibrt_search_pair_ui.h"
@@ -47,14 +48,6 @@ extern void app_otaMode_enter(APP_KEY_STATUS *status, void *param);
 #ifdef SUPPORT_SIRI
 extern uint8_t voice_assistant_flag;
 #endif
-
-struct ibrt_if_action_header
-{
-    uint8_t action;
-    bt_bdaddr_t remote;
-    uint32_t param;
-    uint32_t param2;
-} __attribute__ ((packed));
 
 #ifdef APP_KEY_ENABLE
 void app_ibrt_handle_longpress_v2(APP_KEY_STATUS *status)
@@ -335,7 +328,7 @@ void app_ibrt_if_start_user_action_v2(uint8_t device_id, uint8_t action, uint32_
     }
 #endif
 
-    if (bes_bt_tws_besaud_is_connected() && bts_ibrt_if_is_ibrt_link_connected(&curr_device->remote))
+    if (bts_tws_channel_is_connected() && bts_ibrt_if_is_ibrt_link_connected(&curr_device->remote))
     {
         bts_tws_if_send_user_action(action_data, action_length);
     }
@@ -461,7 +454,7 @@ void app_ibrt_ui_perform_user_action_v2(uint8_t *p_buff, uint16_t length)
             app_bt_local_volume_down(app_ibrt_keyboard_sync_volume_info_v2);
             break;
         case IBRT_ACTION_SWITCH_A2DP:
-            bts_am_switch_streaming_a2dp_handler(action_header->param, action_header->param2);
+            bts_am_switch_streaming_a2dp_handler(action_header->param, action_header->param2, &action_header->remote);
             break;
         case IBRT_ACTION_SWITCH_SCO:
             bts_am_switch_streaming_sco_handler();

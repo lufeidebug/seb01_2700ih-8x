@@ -355,6 +355,56 @@ const AdaptiveVolumeConfig audio_adaptive_volume_cfg =
     .smooth_factor = 0.6,
 };
 
+const AdjEQConfig audio_adj_eq_rev_cfg = {
+    .debug_en = 1,
+    .forget_factor = 0.1, // 0 ~ 1, the smaller, the faster.
+    .adj_eq_rev_num = 5, //max 5
+    .normalsz_lab = {
+        /* default in-ear ref/fb */
+        3.62193,2.8863,2.6083,2.4545,2.168,1.8439,1.5996,1.5367,1.4452,1.3541,1.3029,1.236,1.1745,1.1502,1.1111,1.0944,1.0768,1.1609,1.1024,1.0235,1.1367,0.90604,0.88235,0.90596,1.1543,0.81243,0.78145,1.3122,4.1499,1.0651,1.3106,2.2671,1.1991
+        // /* default on-ear ref/fb */
+        // 1.8517,1.1662,1.1377,1.0753,0.99899,0.90121,0.81115,0.75371,0.71601,0.68958,0.67433,0.67873,0.68826,0.69131,0.69101,0.68153,0.66703,0.64742,0.62056,0.58568,0.56067,0.54479,0.55702,0.51505,0.47969,0.50826,0.40059,0.44995,0.34503,0.4123,0.44098,0.45335,0.23673
+        },
+    .adj_eq_rev_cfg = {  // filter type: IIR_BIQUARD_LOWSHELF/IIR_BIQUARD_PEAKINGEQ
+        {
+            .type = IIR_BIQUARD_LOWSHELF,
+            .freq = 62.5,
+            .Q = 1.,
+            .gain_cali = 0,//-24,
+            .min_gain = -15,
+            .max_gain = 20,
+        },{
+            .type = IIR_BIQUARD_LOWSHELF,
+            .freq = 125,
+            .Q = 0.5,
+            .gain_cali = 0,// -19,
+            .min_gain = -15,
+            .max_gain = 20,
+        },{
+            .type = IIR_BIQUARD_PEAKINGEQ,
+            .freq = 125,
+            .Q = 1.5,
+            .gain_cali = 0,//-19,
+            .min_gain = -15,
+            .max_gain = 20,
+        },{
+            .type = IIR_BIQUARD_PEAKINGEQ,
+            .freq = 250,
+            .Q = 1.2,
+            .gain_cali = 0,//-13,
+            .min_gain = -15,
+            .max_gain = 20,
+        },{
+            .type = IIR_BIQUARD_PEAKINGEQ,
+            .freq = 500,
+            .Q = 1.4,
+            .gain_cali = 0,//-6,
+            .min_gain = -15,
+            .max_gain = 20,
+        }
+    }
+};
+
 /* AUDIO_VOL_CTRL_EQ */
 const IIR_CFG_T audio_eq_cfg_vol_0 = {
     .gain0 = 0,

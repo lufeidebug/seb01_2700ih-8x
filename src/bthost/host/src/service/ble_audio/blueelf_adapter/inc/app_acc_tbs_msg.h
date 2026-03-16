@@ -21,8 +21,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_ACC_TBS_MSG_H_
-#define APP_ACC_TBS_MSG_H_
+#ifndef __APP_ACC_TBS_MSG_H__
+#define __APP_ACC_TBS_MSG_H__
 
 #include "ble_acc_common.h"
 

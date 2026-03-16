@@ -18,7 +18,7 @@
 
 #include "bluetooth.h"
 #include "bes_me_api.h"
-
+#include "bt_base_attributes.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,14 +51,19 @@ extern "C" {
 
 #define APP_BT_AUDIO_A2DP_WAIT_AVRCP_PAUSED_STREAM_SUSPEND_MS (10000)
 
-enum SWITCH_A2DP_ERROR{
+
+#define APP_BT_AUDIO_STREAM_AVA_CHECK_MS   (4000)
+
+enum SWITCH_A2DP_ERROR
+{
     SWITCH_A2DP_NO_ERROR,
     SWITCH_A2DP_NOW,
     SWITCH_A2DP_RSP_NO_ERROR,
     SWITCH_A2DP_RSP_ERROR,
 };
 
-enum TONGGLE_A2DP_CIS_ERROR{
+enum TONGGLE_A2DP_CIS_ERROR
+{
     TOGGLE_A2DP_CIS_NO_ERROR,
     TOGGLE_A2DP_CIS_NOW,
     TOGGLE_A2DP_CIS_RSP_NO_ERROR,
@@ -71,7 +76,8 @@ typedef enum
     BT_AUDIO_EVENT_PROFILE_EXC_DONE                      = 0x01,
 } app_bt_audio_switch_event_t;
 
-typedef enum {
+typedef enum
+{
     APP_BT_AUDIO_A2DP_RECHECK_CONTEXT_NULL,
     APP_BT_AUDIO_A2DP_WAIT_PHONE_AUTO_START_STREAM = 1,
     APP_BT_AUDIO_A2DP_WAIT_PAUSED_STREAM_SUSPEND,
@@ -122,13 +128,15 @@ typedef bool (*app_bt_audio_ui_allow_resume_request)(bt_bdaddr_t *bdaddr);
 
 typedef void(*app_bt_audio_adapter_player)(app_bt_audio_action_t action, uint8_t device_id, uint32_t aud_id);
 
-typedef int(*app_bt_audio_event_callback)(uint8_t device_id, uint8_t event, uint32_t data);
+typedef int(*app_bt_audio_event_callback)(bt_bdaddr_t *addr, enum app_bt_base_event_t event, uint32_t data);
 
-void app_bt_audio_event_callback_init(int(*cb)(uint8_t device_id, uint8_t event, uint32_t data));
+void app_bt_audio_event_callback_init(int(*cb)(bt_bdaddr_t *addr, enum app_bt_base_event_t event, uint32_t data));
 
 void app_bt_audio_adapter_player_init(app_bt_audio_adapter_player player);
 
 void app_bt_audio_strategy_init(void);
+
+void app_bt_audio_strategy_deinit(void);
 
 uint32_t app_bt_audio_create_new_prio(void);
 
@@ -162,7 +170,11 @@ uint8_t app_bt_audio_get_curr_audio_focus_type(void);
 
 int app_bt_audio_event_handler(uint8_t device_id, enum app_bt_audio_event_t event, uint32_t data);
 
+bool a2dp_bt_audio_is_in_switch(void);
+
 #if defined(BT_A2DP_SUPPORT)
+void app_bt_audio_stop_a2dp_playing(uint8_t device_id);
+
 void app_bt_audio_toggle_a2dp_cis(void);
 
 void app_bt_audio_toggle_a2dp_cis_handler(uint32_t btclk, uint8_t error_code);
@@ -173,7 +185,7 @@ void app_bt_audio_register_toggle_a2dp_cis_cmp_cb(void (*cb)(uint8_t device_id))
 
 void app_bt_audio_switch_streaming_a2dp();
 
-void app_bt_audio_switch_streaming_a2dp_handler(uint32_t btclk, uint8_t error_code);
+void app_bt_audio_switch_streaming_a2dp_handler(uint32_t btclk, uint8_t error_code,  bt_bdaddr_t* remote)
 
 void app_bt_audio_check_switch_streaming_a2dp(void);
 
@@ -208,12 +220,18 @@ void app_bt_audio_switch_to_multi_a2dp_quick_switch_play_mode(void);
 
 uint8_t app_bt_audio_select_another_streaming_a2dp(uint8_t curr_device_id);
 
-void app_bt_ibrt_audio_play_a2dp_stream(uint8_t device_id);
+void app_bt_audio_play_a2dp_stream(uint8_t device_id);
 
-void app_bt_audio_stop_a2dp_playing(uint8_t device_id);
-#endif
+void app_bt_audio_pause_a2dp_stream(uint8_t device_id);
+
+uint8_t app_bt_audio_select_last_paused_a2dp_device(void);
+#endif /* BT_A2DP_SUPPORT */
 
 #if defined(BT_HFP_SUPPORT)
+bool app_bt_audio_current_device_is_hfp_idle_state(uint8_t device_id);
+
+void app_bt_audio_stop_sco_playing(uint8_t device_id);
+
 void app_bt_audio_switch_streaming_sco(void);
 
 void app_bt_audio_switch_streaming_sco_handler(void);
@@ -249,7 +267,8 @@ uint8_t app_bt_audio_select_another_call_setup_hfp(uint8_t curr_device_id);
 uint8_t app_bt_audio_select_another_device_to_create_sco(uint8_t curr_device_id);
 
 uint8_t app_bt_audio_get_another_hfp_device_for_user_action(uint8_t curr_device_id);
-#endif // BT_HFP_SUPPORT
+#endif /* BT_HFP_SUPPORT */
+
 #ifdef __cplusplus
 }
 #endif

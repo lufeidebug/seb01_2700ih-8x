@@ -16,6 +16,7 @@
 #ifndef BESBT_CFG_H
 #define BESBT_CFG_H
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

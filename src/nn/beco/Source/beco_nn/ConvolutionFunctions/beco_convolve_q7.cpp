@@ -216,7 +216,7 @@ void beco_convolve_q7_process(const int8_t *Im_in,
     const int padding_start_x = padding_x;
     const int padding_end_x = (dim_im_out_x - 1) * stride_x + dim_kernel_x +
                               (dim_kernel_x - 1) * (dilation_x - 1) - dim_im_in_x - padding_x;
-    assert((padding_start_x - padding_end_x) == 1 || (padding_start_x - padding_end_x) == 0);
+    // assert((padding_start_x - padding_end_x) == 1 || (padding_start_x - padding_end_x) == 0);
 
     const int maxStepX = (dim_im_out_x >> 3) - 1;
     const int kernel_och_stride = (ch_im_out * dim_kernel_x * dim_kernel_y) >> 3;

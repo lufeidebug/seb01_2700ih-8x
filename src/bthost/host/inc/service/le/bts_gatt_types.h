@@ -499,15 +499,6 @@ typedef struct
 
 struct bt_gatt_peer_char_node_t;
 
-typedef struct bt_gatt_peer_char_node_t
-{
-    struct bt_gatt_peer_char_node_t *next;
-    bt_gatt_peer_serv_t *service;
-    uint8_t count; // same uuid char count
-    uint16_t char_uuid; // set when 16-bit uuid
-    bt_gatt_peer_char_t character[BTS_GATT_ARRAY_SIZE_1];
-} bt_gatt_peer_char_node_t;
-
 #ifdef __cplusplus
 }
 #endif

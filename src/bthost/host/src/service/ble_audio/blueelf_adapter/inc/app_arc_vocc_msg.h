@@ -21,8 +21,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_ARC_VOCC_MSG_H_
-#define APP_ARC_VOCC_MSG_H_
+#ifndef __APP_ARC_VOCC_MSG_H__
+#define __APP_ARC_VOCC_MSG_H__
 #if BLE_AUDIO_ENABLED
 #include "bluetooth.h"
 

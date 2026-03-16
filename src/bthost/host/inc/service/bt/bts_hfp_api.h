@@ -47,6 +47,13 @@ void bts_hfp_hf_register_callbacks(bt_hfp_hf_callback_user_t user, bt_hfp_hf_cal
 
 /**
  ****************************************************************************************
+ * @brief       Ddinit the hfp profile.
+ ****************************************************************************************
+ */
+void bts_hfp_deinit(void);
+
+/**
+ ****************************************************************************************
  * @brief       Register the hf event callbacks.
  * @param[in]   user: Registered user.
  * @return      none
@@ -286,22 +293,6 @@ bts_status_t bts_hfp_hf_turning_off_ec_and_nr(const bt_bdaddr_t *address);
  ****************************************************************************************
  */
 bts_status_t bts_hfp_hf_send_battery_level(const bt_bdaddr_t *address, uint8_t level);
-
-/**
- ****************************************************************************************
- * @brief       convert a customer battery level to SDK battery level.
- * @param[in]   level, max ,min
- ****************************************************************************************
- */
-bts_status_t bts_hfp_hf_battery_report_ext(uint8_t level, uint8_t min, uint8_t max);
-
-/**
- ****************************************************************************************
- * @brief       Report battery level.
- * @param[in]   level: battery level.
- ****************************************************************************************
- */
-bts_status_t bts_hfp_hf_battery_report(uint8_t level);
 
 /**
  ****************************************************************************************

@@ -43,6 +43,7 @@ bool app_audio_focus_stack_insert_after_top(audio_focus_stack_t* af_stack,audio_
 bool app_audio_focus_stack_remove(audio_focus_stack_t* af_stack,void* data);
 bool app_audio_focus_get_focus_by_idx(audio_focus_stack_t* af_stack, size_t index, audio_focus_req_info_t** data);
 bool app_audio_focus_find_foucus(audio_focus_stack_t* af_stack, audio_focus_req_info_t* data);
+bool app_find_media_foucus_device_idx(audio_focus_stack_t* af_stack,  uint8_t device_id);
 audio_focus_req_info_t* app_audio_focus_get_curr_device_focus(audio_focus_stack_t* af_stack, BT_AUDIO_DEVICE_T* device);
 bool app_audio_focus_stack_push_to_bottom(audio_focus_stack_t* af_stack, audio_focus_req_info_t* focus_request);
 #ifdef __cplusplus

@@ -80,9 +80,9 @@ bt_status_t ddbif_delete_record(const bt_bdaddr_t *bdAddr)
     return nv_record_ddbrec_delete(bdAddr);
 }
 
-bt_status_t ddbif_enum_device_records(I16 index, btif_device_record_t *record)
+bt_status_t ddbif_enum_device_records(unsigned short index, btif_device_record_t *record)
 {
-    return nv_record_enum_dev_records((unsigned short)index,record);
+    return nv_record_enum_dev_records(index,record);
 }
 #else
 typedef struct _DDB_List {
@@ -377,7 +377,7 @@ bt_status_t ddbif_delete_record(const bt_bdaddr_t *bdAddr)
     return BT_STS_FAILED;
 }
 
-bt_status_t ddbif_enum_device_records(I16 index, btif_device_record_t *record)
+bt_status_t ddbif_enum_device_records(unsigned short index, btif_device_record_t *record)
 {
     DDB_List *databaselist;
     databaselist = head;

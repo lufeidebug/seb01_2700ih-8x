@@ -19,15 +19,12 @@
 #include "bt_types.h"
 #include "bt_base_attributes.h"
 
-#define PAGE_ENTRY_NUM_MAX BT_DEVICE_NUM
-#define PAGE_REASON_NUM_MAX 4
-
 typedef struct
 {
-    bt_bdaddr_t addrs[PAGE_ENTRY_NUM_MAX];
-} bta_page_policy_t;
+    bool enter_pairing_on_reconnect_mobile_failed;
+} bta_ux_attributes_t;
 
-void bta_normal_init(const bt_am_attributes_t *am_attributes);
+void bta_normal_init(const bt_am_attributes_t *am_attributes, const bta_ux_attributes_t *ux_attributes);
 
 typedef enum
 {
@@ -53,6 +50,7 @@ typedef struct
     void (*bt_subsys_state_changed)(bta_subsys_state_t state);
     // Notifies entry into or exit from pairing mode
     void (*pairing_mode_changed)(bool enabled);
+    void (*page_state_changed)(const bt_bdaddr_t *addr, bool page_started);
 } bta_ui_state_changed_t;
 
 void bta_register_ui_state_changed_hook(bta_ux_user_t user, const bta_ui_state_changed_t *hooks);
@@ -72,6 +70,15 @@ void bta_register_ui_state_changed_hook(bta_ux_user_t user, const bta_ui_state_c
  */
 typedef bool (*bta_accept_connection_callback_t)(const bt_bdaddr_t *addr, const uint8_t cod[3], bt_bdaddr_t *preempt);
 void bta_set_accept_connection_callback(bta_accept_connection_callback_t callback);
+
+void bta_ux_open(uint8_t num_of_loaded_addrs, uint16_t page_count_of_each_addr, uint16_t page_timeout, uint32_t lea_adv_duration);
+void bta_ux_close();
+
+void bta_connect_bt_device(const bt_bdaddr_t *addr, uint8_t page_count, uint16_t page_timeout);
+void bta_connect_all_bt_devices(uint8_t page_count, uint16_t page_timeout);
+
+void bta_connect_lea_device(const bt_bdaddr_t *addr, uint32_t duration);
+void bta_connect_all_lea_device(uint32_t duration);
 
 /**
  ****************************************************************************************
@@ -103,54 +110,13 @@ bool bta_is_pairing_mode_enabled(void);
 
 /**
  ****************************************************************************************
- * @brief       Sets the address sequence for page module. The page module will periodically
- *              page these addresses in order, provided that the page attempt
- *              count for the address is non-zero.
- * @return      None
- ****************************************************************************************
- */
-void bta_set_page_policy(const bta_page_policy_t *policy);
-
-/**
- ****************************************************************************************
- * @brief       Sets page attempt count for a given address under a specific reason.
- *              If the address is not present in the current page policy, this call is ignored.
- * @param[in]   addr: Bluetooth device address.
- * @param[in]   reason: Reason code for the page attempts. Must be less than PAGE_REASON_NUM_MAX.
- *              The total page attempt count for an address is the sum of counts across all reasons.
- *              Each completed page consumes one attempt from the lowest-indexed non-zero reason.
- *              For the same reason, new counts overwrite previous ones.
- * @param[in]   count: Number of page attempts to assign for the given address and reason.
- *              Set to zero to disable page for this reason.
- * @return      None
- ****************************************************************************************
- */
-void bta_set_page_count(const bt_bdaddr_t *addr, uint8_t reason, uint16_t count);
-
-/**
- ****************************************************************************************
- * @brief       Sets page attempt count for all addresses in the page policy
- *              under the specified reason.
- * @param[in]   reason: Reason code for the page attempts. Must be less than PAGE_REASON_NUM_MAX.
- *              The total page attempt count for an address is the sum of counts across all reasons.
- *              Each completed page consumes one attempt from the lowest-indexed non-zero reason.
- *              For the same reason, new counts overwrite previous ones.
- * @param[in]   count: Number of page attempts to assign for the given reason.
- *              Set to zero to disable page for this reason.
- * @return      None
- ****************************************************************************************
- */
-void bta_set_all_page_count(uint8_t reason, uint16_t count);
-
-/**
- ****************************************************************************************
  * @brief       Clears (resets to zero) the page attempt count for all addresses.
  *              This effectively stops all page activities. The page policy itself
  *              (i.e., address sequence) remains unchanged.
  * @return      None
  ****************************************************************************************
  */
-void bta_clear_all_page_count();
+void bta_clear_all_page();
 
 /**
  ****************************************************************************************
@@ -175,9 +141,13 @@ void bta_block_page(bool block);
  */
 void bta_block_page_when_streaming(bool block);
 
-uint8_t bta_find_all_connected_device(bt_bdaddr_t *out_addrs);
+void bta_support_preempt_when_a2dp_streaming(bool support);
 
-void bta_remove_device(const bt_bdaddr_t *addr);
+uint8_t bta_find_all_connected_bt_device(bt_bdaddr_t *out_addrs);
+
+void bta_remove_bt_device(const bt_bdaddr_t *addr);
+
+void bta_remove_lea_device(const bt_bdaddr_t *addr);
 
 void bta_remove_all_devices();
 

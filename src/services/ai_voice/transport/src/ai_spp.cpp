@@ -22,7 +22,7 @@
 #ifdef BIXBY_USE_BESTOOL
 #include "app_bixbycontrol_handle.h"
 #endif
-
+#include "bta_bt_api.h"
 #define SPP_RECV_BUFFER_SIZE    (L2CAP_CFG_MTU*4)
 #define SPP_RCV_BUFFER_SIZE_EXT (L2CAP_CFG_MTU)
 
@@ -349,7 +349,7 @@ bool app_ai_spp_send(uint8_t* ptrData, uint32_t length, uint8_t ai_index, uint8_
     bt_spp_channel_t *_ai_spp_dev = ai_spp_find_device_from_id(ai_index, device_id);
     if(_ai_spp_dev)
     {
-        ret = (bta_spp_write(_ai_spp_dev->rfcomm_handle, ptrData, valid_len)==BT_STS_FAILED)?FALSE:TRUE;
+        ret = bta_spp_send_data(_ai_spp_dev->rfcomm_handle, ptrData, valid_len);
     }
 
     return ret;

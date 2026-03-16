@@ -73,36 +73,6 @@ typedef int S32;
 typedef short S16;
 typedef char S8;
 
-#ifndef U32_PTR_DEFINED
-typedef U32 U32_PTR;
-#define U32_PTR_DEFINED
-#endif
-
-#ifndef __I32_TYPE
-#define __I32_TYPE
-typedef unsigned long I32;
-#endif
-
-#if XA_INTEGER_SIZE == 4
-#ifndef __I16_TYPE
-#define __I16_TYPE
-typedef unsigned long I16;
-#endif
-#ifndef __I8_TYPE
-#define __I8_TYPE
-typedef unsigned long I8;
-#endif
-
-#elif XA_INTEGER_SIZE == 2
-typedef unsigned short I16;
-typedef unsigned short I8;
-#elif XA_INTEGER_SIZE == 1
-typedef unsigned short I16;
-typedef unsigned char I8;
-#else
-#error No XA_INTEGER_SIZE specified!
-#endif
-
 typedef uint8_t UINT8;
 typedef uint16_t UINT16;
 typedef uint32_t UINT32;
@@ -501,15 +471,8 @@ typedef enum {
 /**
  * bt device
  */
-
 #ifndef BT_DEVICE_NUM
-#if defined(IBRT_UI)
 #define BT_DEVICE_NUM 2
-#elif defined(__BT_ONE_BRING_TWO__)
-#define BT_DEVICE_NUM 2
-#else
-#define BT_DEVICE_NUM 1
-#endif
 #endif
 
 enum BT_DEVICE_ID_T {
@@ -528,19 +491,6 @@ enum BT_DEVICE_ID_T {
 #define BLE_DEVICE_ID_2 (BLE_DEVICE_ID_BASE + 1)
 #define BLE_DEVICE_ID_3 (BLE_DEVICE_ID_BASE + 2)
 #define BLE_DEVICE_ID_N (BLE_DEVICE_ID_BASE + 0x10)
-
-#ifdef BT_SOURCE
-#if defined(BT_MULTI_SOURCE)
-#define BT_SOURCE_DEVICE_NUM 2
-#else
-#define BT_SOURCE_DEVICE_NUM 1
-#endif
-#endif
-
-#ifndef BT_SOURCE_DEVICE_NUM
-#define BT_SOURCE_DEVICE_NUM 0
-#endif
-
 
 #define BT_INVALID_CONN_HANDLE 0xFFFF
 
@@ -631,9 +581,6 @@ typedef struct {
     uint8_t io_cap;
     uint8_t oob_present;
 } bt_iocap_requirement_t;
-
-struct BT_DEVICE_T;
-struct BT_SOURCE_DEVICE_T;
 
 typedef struct _evm_timer evm_timer_t;
 typedef void (*evm_timer_notify) (evm_timer_t *);

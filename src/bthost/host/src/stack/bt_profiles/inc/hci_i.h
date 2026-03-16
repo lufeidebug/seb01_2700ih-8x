@@ -2736,22 +2736,41 @@ struct hci_ev_le_ext_conn_cmpl_v1 {
  * one or more frame space values. This command may be issued on both the Central and
  * the Peripheral.
  *
+ * The HCI_LE_Set_Default_Rate_Parameters command is used by the Host to set the initial values of the
+ * acceptable parameters for the Connection Rate Request procedure for all future ACL connections where the
+ * Controller is Central. The command does not affect any existing connection.
+ *
+ * The HCI_LE_Read_Minimum_Supported_Connection_Interval command is used by the Host to read the Controller’s
+ * minimum supported connection interval and the Controller’s minimum supported connection interval resolution
+ *
+ * The HCI_LE_Connection_Rate_Request command is used by a Central or a Peripheral to request a change to
+ * existing connection parameters (see [Vol 6] Part B, Section 4.5.1) using the Connection Rate Update
+ * procedure or the Connection Rate Request procedure
+ *
+ * The HCI_LE_Connection_Rate_Change event is used to indicate that the Connection Rate Update procedure
+ * has completed.
+ *
  */
 #define HCI_LE_CONNECTION_UPDATE 0x2013
 #define HCI_LE_REMOTE_CONN_PARAM_REQ_REPLY 0x2020
 #define HCI_LE_REMOTE_CONN_PARAM_REQ_REJECT 0x2021
 #define HCI_LE_SET_DATA_LENGTH 0x2022
+#define HCI_LE_SET_DATA_LENGTH_V2 0xFBF4
 #define HCI_LE_READ_DEFAULT_DATA_LENGTH 0x2023
+#define HCI_LE_READ_DEFAULT_DATA_LENGTH_V2 0xFBFF
+#define HCI_LE_READ_MAX_DATA_LENGTH 0x202F
+#define HCI_LE_READ_MAX_DATA_LENGTH_V2 0xFBFF
 #define HCI_LE_WRITE_DEFAULT_DATA_LENGTH 0x2024
 #define HCI_LE_LL_DATA_PDU_TX_MAX_OCTETS_MIN 0x001B
 #define HCI_LE_LL_DATA_PDU_TX_MAX_OCTETS_MAX 0x00FB
 #define HCI_LE_LL_HDT_DATA_PDU_TX_MAX_OCTETS_MAX 0x1FEF
 #define HCI_LE_LL_DATA_PDU_TX_MAX_TIME_US_MIN 0x0148
 #define HCI_LE_LL_DATA_PDU_TX_MAX_TIME_US_MAX 0x4290
+#define HCI_LE_LL_DATA_PDU_NO_CODED_TX_MAX_TIME_US_MAX 0x0848
 #define HCI_LE_READ_PHY 0x2030
 #define HCI_LE_SET_DEFAULT_PHY 0x2031
-#define HCI_LE_SET_HDT_PARAMETERS 0xFBFE
-#define HCI_LE_SET_HDT_PARAMETERS_TEST 0xFBFD
+#define HCI_LE_SET_HDT_DEFAUT_PARAMETERS 0xFBF7
+#define HCI_LE_SET_HDT_PARAMETERS_TEST 0xFBF6
 #define HCI_LE_SET_PHY 0x2032
 #define HCI_LE_READ_TX_POWER 0x204B
 #define HCI_LE_READ_ADV_TX_POWER 0x2007
@@ -2760,12 +2779,16 @@ struct hci_ev_le_ext_conn_cmpl_v1 {
 #define HCI_LE_SET_TX_POWER_REPORT_ENABLE 0x207A
 #define HCI_LE_SET_DEFAULT_SUBRATE 0x207D
 #define HCI_LE_SUBRATE_REQUEST 0x207E
+#define HCI_LE_CONNECTION_RATE_REQUEST 0x20A1
+#define HCI_LE_SET_DEFAULT_RATE_PARAMETERS 0x20A2
+#define HCI_LE_READ_MIN_SUPP_CONN_INTERVAL 0x20A3
 #define HCI_LE_EV_REMOTE_CONN_PARAM_REQ 0x06
 #define HCI_LE_EV_CONN_UPDATE_CMPL 0x03
 #define HCI_LE_EV_DATA_LENGTH_CHANGED 0x07
 #define HCI_LE_EV_PHY_UPDATE_CMPL 0x0C
 #define HCI_LE_EV_TX_POWER_REPORTING 0x21
 #define HCI_LE_EV_SUBRATE_CHANGE 0x23
+#define HCI_LE_CONNECTION_RATE_CHANGE 0x37
 #define HCI_LE_FRAME_SPACE_UPDATE 0x209D // Core Spec 6.0
 #define HCI_LE_EV_FRAME_SPACE_UPD_CMPL 0x35
 #define HCI_LE_FS_UPD_INITIATOR_LOCAL_HOST 0x00
@@ -2776,6 +2799,8 @@ struct hci_ev_le_ext_conn_cmpl_v1 {
 #define HCI_LE_SPACING_TYPE_T_MCES 0x04
 #define HCI_LE_SPACING_TYPE_T_IFS_CIS 0x08
 #define HCI_LE_SPACING_TYPE_T_MSS_CIS 0x10
+#define HCI_LE_READ_ENC_KEY_SCHEDULE_DBG_MODE 0xFBFF
+#define HCI_LE_WRITE_ENC_KEY_SCHEDULE_DBG_MODE 0xFBFF
 
 struct hci_le_connection_update {
     uint16_t conn_handle;
@@ -2855,6 +2880,12 @@ struct hci_le_set_data_length {
     uint16_t tx_octets; // 0x1B to 0xFB 27 to 251, HDT:0x1B to 0x1FEF
     uint16_t tx_time; // 0x0148 to 0x4290 preferred max packet transmission time for LL data PDUs on this connection
 } __attribute__ ((packed));
+struct hci_le_set_data_length_v2 {
+    uint16_t conn_handle;
+    uint16_t tx_octets; // 0x1B to 0xFB 27 to 251, HDT:0x1B to 0x1FEF
+    uint16_t tx_time; // 0x0148 to 0x4290 preferred max packet transmission time for LL data PDUs on this connection
+    uint8_t phys; // 0x00 All GFSK PHYs, 0x01 LE HDT PHY
+} __attribute__ ((packed));
 struct hci_le_set_data_length_cmpl {
     uint8_t status;
     uint16_t conn_handle;
@@ -2867,6 +2898,15 @@ struct hci_ev_le_data_length_change {
     uint16_t max_rx_octets;
     uint16_t max_rx_time;
 } __attribute__ ((packed));
+struct hci_ev_le_data_length_change_v2 {
+    uint8_t subcode;
+    uint16_t conn_handle;
+    uint16_t max_tx_octets;
+    uint16_t max_tx_time;
+    uint16_t max_rx_octets;
+    uint16_t max_rx_time;
+    uint8_t phys; // 0x00 All GFSK PHYs, 0x01 LE HDT PHY
+} __attribute__ ((packed));
 struct hci_le_write_default_data_length {
     uint16_t suggested_max_tx_octets; // 0x1B to 0xFB 27 to 251, HDT:0x1B to 0x1FEF
     uint16_t suggested_max_tx_time; // 0x0148 to 0x4290 suggested max packet transmission time for LL data PDUs for new connections
@@ -2874,10 +2914,33 @@ struct hci_le_write_default_data_length {
 struct hci_le_write_default_data_length_cmpl {
     uint8_t status;
 } __attribute__ ((packed));
+struct hci_le_read_default_data_length_v2 {
+    uint8_t phys; // 0x00 All GFSK PHYs, 0x01 LE HDT PHY
+} __attribute__ ((packed));
 struct hci_le_read_default_data_length_cmpl {
     uint8_t status;
     uint16_t suggested_max_tx_octets; // 0x1B to 0xFB 27 to 251, HDT:0x1B to 0x1FEF
     uint16_t suggested_max_tx_time; // 0x0148 to 0x4290 suggested max packet transmission time for LL data PDUs for new connections
+} __attribute__ ((packed));
+struct hci_le_read_max_data_length_cmpl {
+    uint8_t status;
+    uint16_t supported_max_tx_octets; // 0x1B to 0xFB 27 to 251, HDT:0x1B to 0x1FEF
+    uint16_t supported_max_tx_time; // 0x0148 to 0x4290 supported max packet transmission time for LL data PDUs for new connections
+    uint16_t supported_max_rx_octets; // 0x1B to 0xFB 27 to 251, HDT:0x1B to 0x1FEF
+    uint16_t supported_max_rx_time; // 0x0148 to 0x4290 supported max packet reception time for LL data PDUs for new connections
+} __attribute__ ((packed));
+struct hci_le_read_max_data_length_v2 {
+    uint8_t phys; // 0x00 All GFSK PHYs, 0x01 LE HDT PHY
+} __attribute__ ((packed));
+struct hci_le_read_max_data_length_cmpl_v2 {
+    uint8_t status;
+    uint16_t supported_max_tx_octets; // 0x1B to 0xFB 27 to 251, HDT:0x1B to 0x1FEF
+    uint16_t supported_max_tx_time; // 0x0148 to 0x4290 supported max packet transmission time for LL data PDUs for new connections
+    uint16_t supported_max_rx_octets; // 0x1B to 0xFB 27 to 251, HDT:0x1B to 0x1FEF
+    uint16_t supported_max_rx_time; // 0x0148 to 0x4290 supported max packet reception time for LL data PDUs for new connections
+    uint8_t supported_max_tx_pld_window_size; // 1 to 4 Maximum size of the transmit payload window size supported by the local Controller c 2 p
+    uint8_t supported_max_rx_pld_window_size; // 1 to 4 Maximum size of the transmit payload window size supported by the local Controller p 2 c
+    uint16_t supported_max_rx_octets_per_pkt; // 0x001B to 0x1FEF, the local Controller supports for reception of a single packet.
 } __attribute__ ((packed));
 struct hci_le_read_phy {
     uint16_t conn_handle;
@@ -2893,21 +2956,27 @@ struct hci_le_set_default_phy {
     uint8_t tx_phys; // bit-0 LE 1M, bit-1 LE 2M, bit-2 LE Coded
     uint8_t rx_phys; // bit-0 LE 1M, bit-1 LE 2M, bit-2 LE Coded
 } __attribute__ ((packed));
-struct hci_le_set_hdt_parameters
+struct hci_le_set_hdt_default_parameters
 {
-    uint16_t conn_handle;
     uint8_t pref_mic_length; // 0x01 Preferred MIC length is 64 bits, 0x02 Preferred MIC length is 128 bits
-    uint8_t max_tx_payloads_per_pkt; // Range 1 to 4, maximum number of payloads that can be received per packet on the connection
-    uint8_t max_rx_payloads_per_pkt; // Range 1 to 4, maximum number of payloads that can be received per packet on the connection
-} __attribute__ ((packed));
-struct hci_le_set_hdt_parameters_test
-{
-    uint16_t conn_handle;
     // 0 = Host prefers to use HDT packets with any supported PFI
     // 1 = Host prefers to use HDT packet format 0 only for data
     // 2 = Host prefers to use HDT packet format 1 only for data
     // 3 = Reserved for future use
-    uint8_t pkt_fmt_Support; // 0x00: Any format supported, 0x01: Format 0, 0x02: Format 1
+    uint8_t pref_pkt_fmt;
+    uint16_t pref_acl_rates; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
+} __attribute__ ((packed));
+struct hci_le_set_hdt_parameters_test
+{
+    uint16_t conn_handle;
+    uint8_t mic_length; // 0x01 Preferred MIC length is 64 bits, 0x02 Preferred MIC length is 128 bits
+    // 0 = Host prefers to use HDT packets with any supported PFI
+    // 1 = Host prefers to use HDT packet format 0 only for data
+    // 2 = Host prefers to use HDT packet format 1 only for data
+    // 3 = Reserved for future use
+    uint8_t pkt_fmt;
+    uint8_t blocks_per_pld; // Rang 1 to 16, Number of blocks per payload to be used on the BIS over LE HDT PHY by the local Controller
+    uint16_t tx_rate_bf; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
 } __attribute__ ((packed));
 struct hci_le_set_default_phy_cmpl {
     uint8_t status;
@@ -2917,7 +2986,7 @@ struct hci_le_set_phy {
     uint8_t all_phys; // bit-0 host has no tx phy prefer, bit-1 host has no rx phy prefer
     uint8_t tx_phys; // bit-0 LE 1M, bit-1 LE 2M, bit-2 LE Coded
     uint8_t rx_phys; // bit-0 LE 1M, bit-1 LE 2M, bit-2 LE Coded
-    uint16_t phy_options; // 0x00 host has no preferred coding when tx on LE Coded, 0x01 S=2, 0x02 S=8, bit 2 to 6 for hdt
+    uint16_t phy_options; // 0x00 host has no preferred coding when tx on LE Coded, 0x01 S=2, 0x02 S=8, bit 2 to 7 for hdt
 } __attribute__ ((packed));
 struct hci_ev_le_phy_update {
     uint8_t subcode;
@@ -2993,7 +3062,65 @@ struct hci_le_frame_space_update_cmpl {
     /// 0x00 ~ 0x04 @see HCI_LE_SPACING_TYPE_T_IFS_ACL_CP more
     uint16_t spacing_types;
 } __attribute__ ((packed));
-
+struct hci_le_connection_rate_change {
+    uint8_t subcode;
+    uint8_t status;
+    uint16_t conn_handle;
+    uint16_t conn_intv_125us; // 0x0003 to 0x7D00 * 125us, 375us to 4s
+    uint16_t subrate_factor; // 0x01 to 0x01F4, new subrate factor applied to the specified underlying conn interval
+    uint16_t peripheral_latency; // peripheral latency in num of subrated conn events, 0x00 to 0x01F3 (499)
+    uint16_t continuation_number; // 0x00 to 0x01F3, num of underlying conn events to remain active after a packet contain a LL PDU with non-zero length is sent or received
+    uint16_t superv_timeout; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
+} __attribute__ ((packed));
+struct hci_le_connection_rate_request {
+    uint16_t conn_handle;
+    uint16_t conn_intv_125us_min; // 0x0003 to 0x7D00 * 125us, 375us to 4s
+    uint16_t conn_intv_125us_max; // 0x0003 to 0x7D00 * 125us, 375us to 4s
+    uint16_t subrate_min; // min subrate factor to be applied to the underlying conn interval, 0x01 to 0x01F4
+    uint16_t subrate_max; // max subrate factor to be applied to the underlying conn interval, 0x01 to 0x01F4
+    uint16_t max_latency; // 0x00 to 0x01F3, max peripheral latency in units of subrated conn intervals
+    uint16_t continuation_number; // 0x00 to 0x01F3, default 0x00, num of underlying conn events to remain active after a packet contain a LL PDU with non-zero length is sent or received
+    uint16_t superv_timeout; // 0x0A to 0x0C80 * 10ms, 100ms to 32s, superv timeout for this connection
+    uint16_t ce_len_125us_min; // min len of connection event, 0x00 to 0xFFFF * 125us
+    uint16_t ce_len_125us_max; // max len of connection event, 0x00 to 0xFFFF * 125us
+} __attribute__ ((packed));
+struct hci_le_set_default_rate_parameters {
+    uint16_t conn_intv_125us_min; // 0x0003 to 0x7D00 * 125us, 375us to 4s
+    uint16_t conn_intv_125us_max; // 0x0003 to 0x7D00 * 125us, 375us to 4s
+    uint16_t subrate_min; // min subrate factor to be applied to the underlying conn interval, 0x01 to 0x01F4
+    uint16_t subrate_max; // max subrate factor to be applied to the underlying conn interval, 0x01 to 0x01F4
+    uint16_t max_latency; // 0x00 to 0x01F3, max peripheral latency in units of subrated conn intervals
+    uint16_t continuation_number; // 0x00 to 0x01F3, default 0x00, num of underlying conn events to remain active after a packet contain a LL PDU with non-zero length is sent or received
+    uint16_t superv_timeout; // 0x0A to 0x0C80 * 10ms, 100ms to 32s, superv timeout for this connection
+    uint16_t ce_len_125us_min; // min len of connection event, 0x00 to 0xFFFF * 125us
+    uint16_t ce_len_125us_max; // max len of connection event, 0x00 to 0xFFFF * 125us
+} __attribute__ ((packed));
+struct hci_le_supp_conn_intv_group {
+    uint16_t group_125us_min; // Minimum supported connection interval in this group, 0x0003 to 0x7D00
+    uint16_t group_125us_max; // Minimum supported connection interval in this group, 0x0003 to 0x7D00
+    uint16_t group_125us_stride; // The Connection Interval resolution of this group, 0x0001 to 0x7D00
+} __attribute__ ((packed));
+struct hci_le_read_min_supp_conn_intv_cmpl {
+    uint8_t status;
+    uint8_t min_conn_intv_125us_supp; // 0x03 to 0x3C * 125us, 375 µs to 7.5 ms
+    uint8_t num_groups_supp; // 0x01 to 0x0A * 125us, 125 µs to 1.25 ms
+    struct hci_le_supp_conn_intv_group group[0]; // a set of supported connection intervals forming an arithmetic sequence
+} __attribute__ ((packed));
+struct hci_le_read_enc_key_schedule_dbg_mode_cmpl {
+    uint8_t status;
+    // 0x00 Do not use Encryption Key Schedule debug key locally and do not accept Encryption Key Schedule debug key from remote side. (default)
+    // 0x01 Do not use Encryption Key Schedule debug key locally but can accept Encryption Key Schedule debug key from remote side.
+    // 0x02 Use Encryption Key Schedule debug key locally and can accept Encryption Key Schedule debug key from remote side.
+    // All other values	Reserved for future use.
+    uint8_t debug_mode;
+} __attribute__ ((packed));
+struct hci_le_write_enc_key_schedule_dbg_mode {
+    // 0x00 Do not use Encryption Key Schedule debug key locally and do not accept Encryption Key Schedule debug key from remote side. (default)
+    // 0x01 Do not use Encryption Key Schedule debug key locally but can accept Encryption Key Schedule debug key from remote side.
+    // 0x02 Use Encryption Key Schedule debug key locally and can accept Encryption Key Schedule debug key from remote side.
+    // All other values	Reserved for future use.
+    uint8_t debug_mode;
+} __attribute__ ((packed));
 /**
  * If the connection is already encrypted then the Controller shall pause connection
  * encryption before attempting to authenticate the given encryption key, and then
@@ -3051,11 +3178,14 @@ struct hci_ev_le_ltk_request {
  *
  */
 #define HCI_READ_ENC_KEY_SIZE 0x1408
+#define HCI_REFRESH_ENC_KEY 0x0C53
+#define HCI_REFRESH_ENC_KEY_V2 0xFBE5
 #define HCI_EV_LINK_KEY_NOTIFY  0x18
 #define HCI_EV_ENCRYPTION_CHANGE_V1 0x08
 #define HCI_EV_ENCRYPTION_CHANGE_V2 0x59
 #define HCI_EV_ENCRYPTION_CHANGE_V3 0xAB
 #define HCI_EV_ENCRYPT_KEY_REFRESH_COMPLETE 0x30
+#define HCI_EV_ENCRYPT_KEY_REFRESH_COMPLETE_V2 0x30
 #define HCI_ENCRYPTION_OFF 0x00
 #define HCI_BT_E0_LE_AES_CCM_ENC_ON 0x01
 #define HCI_BT_AES_CCM_ENC_ON 0x02
@@ -3088,6 +3218,8 @@ struct hci_ev_encryption_change_v3 {
     uint8_t encryption_enable; // 0x00 LL ENC OFF, 0x01 LL ENC ON with E0 for BR, AES-CCM for LE, 0x02 LL ENC ON with AES-CCM for BR
     uint8_t encryption_key_size; // 0x01 to 0x10, this parameter shall be ignored for LE connections
     uint8_t mic_length; // 0x00 32bits, 0x01 64 bits, 0x02 128 bits, 0xFF mic is not used, only valid when encryption is enabled
+    uint8_t key_schedule_enable; // 0x00 off for LE, 0x01 on with AES-CCM for LE, 0x02 opportunistic encryption is on with AES-CCM for LE
+    uint8_t key_schedule_dbg_flag; // 0x00 Random key pair, 0x01 Debug key pair used in Encryption Start with Key Schedule procedure
 }__attribute__ ((packed));
 struct hci_ev_encryption_refresh {
     uint8_t status;
@@ -3097,6 +3229,8 @@ struct hci_ev_encryption_refresh_v2 {
     uint8_t status;
     uint16_t conn_handle;
     uint8_t mic_length; // 0x00 32bits, 0x01 64 bits, 0x02 128 bits, 0xFF mic is not used, only valid when encryption is enabled
+    uint8_t key_schedule_enable; // 0x00 off for LE, 0x01 on with AES-CCM for LE, 0x02 opportunistic encryption is on with AES-CCM for LE
+    uint8_t key_schedule_dbg_flag; // 0x00 Random key pair, 0x01 Debug key pair used in Encryption Start with Key Schedule procedure
 }__attribute__ ((packed));
 struct hci_read_enc_key_size {
     uint16_t conn_handle;
@@ -3226,8 +3360,8 @@ struct hci_ev_le_gen_dhkey_cmpl {
  */
 #define HCI_LE_SET_CIG_PARAMETERS 0x2062
 #define HCI_LE_SET_CIG_PARAMETERS_TEST 0x2063
-#define HCI_LE_SET_CIG_PARAMETERS_V3 0xFBF9
-#define HCI_LE_SET_CIG_PARAMETERS_TEST_V3 0xFBFD
+#define HCI_LE_SET_CIG_PARAMETERS_V2 0xFBF9
+#define HCI_LE_SET_CIG_PARAMETERS_TEST_V2 0xFBFD
 
 struct hci_le_cis_configure {
     uint8_t cis_id; // 0x00 to 0xEF, used to identify a CIS
@@ -3238,7 +3372,7 @@ struct hci_le_cis_configure {
     uint8_t rtn_c2p; // retransmission number of every CIS Data PDU from C to P before ack or flushed, just recommendation
     uint8_t rtn_p2c; // retransmission number of every CIS Data PDU from P to C before ack or flushed, just recommendation
 } __attribute__ ((packed));
-struct hci_le_cis_configure_v3 {
+struct hci_le_cis_configure_v2 {
     uint8_t cis_id; // 0x00 to 0xEF, used to identify a CIS
     uint16_t max_sdu_c2p; // 0x0000 to 0x0FFFF, max octets of the sdu payload from C host
     uint16_t max_sdu_p2c; // 0x0000 to 0x0FFFF, max octets of the sdu payload from P Host
@@ -3246,8 +3380,8 @@ struct hci_le_cis_configure_v3 {
     uint8_t phy_p2c; // bit 0 - P TX PHY is LE 1M, bit 1 - LE 2M, bit 2 - LE Coded, host shall set at least one bit
     uint8_t rtn_c2p; // retransmission number of every CIS Data PDU from C to P before ack or flushed, just recommendation
     uint8_t rtn_p2c; // retransmission number of every CIS Data PDU from P to C before ack or flushed, just recommendation
-    uint16_t coded_rates_c2p; // bit 0 - Coded S=2, 1 - Coded S=8
-    uint16_t coded_rates_p2c; // bit 0 - Coded S=2, 1 - Coded S=8
+    uint16_t coded_rates_c2p; // bit 0 - Coded S=8, 1 - Coded S=2
+    uint16_t coded_rates_p2c; // bit 0 - Coded S=8, 1 - Coded S=2
     uint16_t hdt_rates_c2p; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
     uint16_t hdt_rates_p2c; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
     uint8_t hdt_mic_length; // MIC length, 0x01 - 64bits, 0x02 - 128bits
@@ -3265,7 +3399,7 @@ struct hci_le_set_cig_parameters {
     uint8_t cis_count; // 0x00 to 0x1F, total number of CIS configurations in the CIG being added or modified
     struct hci_le_cis_configure cis_cfg[1];
 } __attribute__ ((packed));
-struct hci_le_set_cig_parameters_v3 {
+struct hci_le_set_cig_parameters_v2 {
     uint8_t cig_id; // 0x00 to 0xEF, used to identify the CIG
     uint8_t sdu_interval_c2p[3]; // us, 0xFF to 0x0F_FFFF, SDU interval from the C Host for all CISes in CIG
     uint8_t sdu_interval_p2c[3]; // us, 0xFF to 0x0F_FFFF, SDU interval from the P host for all CISes in CIG
@@ -3275,7 +3409,7 @@ struct hci_le_set_cig_parameters_v3 {
     uint16_t max_transport_latency_c2p; // ms, 0x05 to 0x0FA0, max transport latency from C btc to P btc
     uint16_t max_transport_latency_p2c; // ms
     uint8_t cis_count; // 0x00 to 0x1F, total number of CIS configurations in the CIG being added or modified
-    struct hci_le_cis_configure_v3 cis_cfg[1];
+    struct hci_le_cis_configure_v2 cis_cfg[1];
 } __attribute__ ((packed));
 struct hci_le_cis_configure_test {
     uint8_t cis_id; // 0x00 to 0xEF, used to identify a CIS
@@ -3289,7 +3423,7 @@ struct hci_le_cis_configure_test {
     uint8_t bn_c2p; // 0x00 no ISO data from C to P, 0x01 to 0x0F BN for C to P transmission
     uint8_t bn_p2c; // 0x00 no ISO data from P to C, 0x01 to 0x0F BN for P to C transmission
 } __attribute__ ((packed));
-struct hci_le_cis_configure_test_v3 {
+struct hci_le_cis_configure_test_v2 {
     uint8_t cis_id; // 0x00 to 0xEF, used to identify a CIS
     uint8_t nse; // 0x01 to 0x1F, max number of subevents in each CIS event
     uint16_t max_sdu_c2p; // 0x0000 to 0x0FFFF, max octets of the sdu payload from C host
@@ -3300,12 +3434,14 @@ struct hci_le_cis_configure_test_v3 {
     uint8_t phy_p2c; // bit 0 - P TX PHY is LE 1M, bit 1 - LE 2M, bit 2 - LE Coded, bit 4 - LE HDT, host shall set at least one bit
     uint8_t bn_c2p; // 0x00 no ISO data from C to P, 0x01 to 0x0F BN for C to P transmission
     uint8_t bn_p2c; // 0x00 no ISO data from P to C, 0x01 to 0x0F BN for P to C transmission
-    uint16_t coded_rates_c2p; // bit 0 - Coded S=2, 1 - Coded S=8
-    uint16_t coded_rates_p2c; // bit 0 - Coded S=2, 1 - Coded S=8
+    uint16_t coded_rates_c2p; // bit 0 - Coded S=8, 1 - Coded S=2
+    uint16_t coded_rates_p2c; // bit 0 - Coded S=8, 1 - Coded S=2
     uint16_t hdt_rates_c2p; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
     uint16_t hdt_rates_p2c; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
     uint8_t hdt_mic_length; // MIC length, 0x01 - 64bits, 0x02 - 128bits
     uint8_t hdt_pkt_fmt; // 0x00: Any format pref, 0x01: Format 0, 0x02: Format 1
+    uint8_t hdt_pld_window_size_c2p; // 1 to 4 Size of the transmit payload window size c 2 p
+    uint8_t hdt_pld_window_size_p2c; // 1 to 4 Size of the transmit payload window size p 2 c
 } __attribute__ ((packed));
 struct hci_le_set_cig_parameters_test {
     uint8_t cig_id; // 0x00 to 0xEF, used to identify the CIG
@@ -3320,7 +3456,7 @@ struct hci_le_set_cig_parameters_test {
     uint8_t cis_count; // 0x00 to 0x1F, total number of CIS configurations in the CIG being added or modified
     struct hci_le_cis_configure_test cis_cfg[1];
 } __attribute__ ((packed));
-struct hci_le_set_cig_parameters_test_v3 {
+struct hci_le_set_cig_parameters_test_v2 {
     uint8_t cig_id; // 0x00 to 0xEF, used to identify the CIG
     uint8_t sdu_interval_c2p[3]; // us, 0xFF to 0x0F_FFFF, SDU interval from the C Host for all CISes in CIG
     uint8_t sdu_interval_p2c[3]; // us, 0xFF to 0x0F_FFFF, SDU interval from the P host for all CISes in CIG
@@ -3328,10 +3464,11 @@ struct hci_le_set_cig_parameters_test_v3 {
     uint8_t ft_p2c; // 0x01 to 0xFF, flush timeout in multiples of ISO_Interval for each payload sent from P to C
     uint16_t iso_interval; // 0x04 to 0x0C80, per 1.25ms, 5ms to 4s, CIS anchor points interval
     uint8_t worst_case_sca; // worst case sleep clock accuracy of all the Peripherals that will participate in the CIG
+    uint16_t anchor_update_buffer_time; // Indicates the additional buffer time in ms to be inc when calc the CIG_Sync_Delay to handle any CIS anchor point updates
     uint8_t packing; // 0x00 sequential, 0x01 interleaved, this is a recommendation the controller may ignore
     uint8_t framing; // 0x00 unframed, 0x01 framed (Segmentable mode), Core Spec 6.0: 0x02 framed (Unsegmented mode)
     uint8_t cis_count; // 0x00 to 0x1F, total number of CIS configurations in the CIG being added or modified
-    struct hci_le_cis_configure_test_v3 cis_cfg[1];
+    struct hci_le_cis_configure_test_v2 cis_cfg[1];
 } __attribute__ ((packed));
 struct hci_le_set_cig_params_cmpl {
     uint8_t status;
@@ -3418,8 +3555,7 @@ struct hci_le_reject_cis_request_cmpl {
 
 #define HCI_LE_EV_CIS_ESTABLISH_V1 0x19
 #define HCI_LE_EV_CIS_ESTABLISH_V2 0x2A
-#define HCI_LE_EV_CIS_ESTABLISH_V3 0xFA
-#define HCI_LE_EV_CIS_ESTABLISH_V4 0xF5
+#define HCI_LE_EV_CIS_ESTABLISH_V3 0xF5
 
 struct hci_ev_le_cis_establish {
     uint8_t subcode;
@@ -3490,37 +3626,10 @@ struct hci_ev_le_cis_establish_v3 {
     uint8_t sdu_interval_c2p[3]; // 0x0000FF to 0x0FFFFF in us
     uint8_t sdu_interval_p2c[3]; // 0x0000FF to 0x0FFFFF in us
     uint8_t framing; // 0x00 Unframed, 0x01 Framed
-    uint8_t rates_bf_c2p; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=2/HDT2, 1 - S=8/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
-    uint8_t rates_bf_p2c; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=2/HDT2, 1 - S=8/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
+    uint16_t rates_bf_c2p; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=8/HDT2, 1 - S=2/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
+    uint16_t rates_bf_p2c; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=8/HDT2, 1 - S=2/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
     uint8_t config_index; // Transport latency group identifier associated with the Config_ID, 0x00 - 0x1F
     uint8_t trans_latency_grp_index; // Transport latency group identifier associated with the Config_ID, 0x00 - 0x0F
-} __attribute__ ((packed));
-struct hci_ev_le_cis_establish_v4 {
-    uint8_t subcode;
-    uint8_t status;
-    uint16_t cis_handle;
-    uint8_t cig_sync_delay[3]; // 0xEA to 0x7F_FFFF, max us for transmission of PDUs of all CISes in a CIG event
-    uint8_t cis_sync_delay[3]; // 0xEA to 0x7F_FFFF, max us for transmission of PDUs of the specified CIS in a CIG event
-    uint8_t transport_latency_c2p[3]; // us, 0xEA to 0x7F_FFFF, the actual transport latency us from C btc to P btc
-    uint8_t transport_latency_p2c[3]; // us
-    uint8_t phy_c2p;
-    uint8_t phy_p2c;
-    uint8_t nse; // 0x01 to 0x1F, max number of subevents in each ISO event (CIS event)
-    uint8_t bn_c2p; // 0x00 no ISO data from C to P, 0x01 to 0x0F BN for C to P transmission
-    uint8_t bn_p2c; // 0x00 no ISO data from P to C, 0x01 to 0x0F BN for P to C transmission
-    uint8_t ft_c2p; // 0x01 to 0xFF, flush timeout in multiples of ISO_Interval for each payload sent from C to P
-    uint8_t ft_p2c; // 0x01 to 0xFF
-    uint16_t max_pdu_c2p; // 0x00 to 0xFB, (phy_c2p is set to LE HDT PHY, 0x0000 to 0x1FEF) max octets of the pdu payload from C LL to P LL
-    uint16_t max_pdu_p2c; // 0x00 to 0xFB, (phy_p2c is set to LE HDT PHY, 0x0000 to 0x1FEF)
-    uint16_t iso_interval; // 0x04 to 0x0C80, per 1.25ms, 5ms to 4s, CIS anchor points interval
-    uint8_t sub_interval[3]; // 0x000000, NSE = 1, 0x000190 to ISO_Interval×1250 – 1 in us
-    uint16_t max_sdu_c2p; // 0 to 0x0FFF
-    uint16_t max_sdu_p2c; // 0 to 0x0FFF
-    uint8_t sdu_interval_c2p[3]; // 0x0000FF to 0x0FFFFF in us
-    uint8_t sdu_interval_p2c[3]; // 0x0000FF to 0x0FFFFF in us
-    uint8_t framing; // 0x00 Unframed, 0x01 Framed
-    uint8_t rates_bf_c2p; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=2/HDT2, 1 - S=8/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
-    uint8_t rates_bf_p2c; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=2/HDT2, 1 - S=8/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
     uint8_t encryption_enabled; // Encryption is enabled or disabled on the CIS
     uint8_t mic_length; // MIC length, 0x00 - 32bits, 0x01 - 64bits, 0x02 - 128bits
 } __attribute__ ((packed));
@@ -3824,10 +3933,10 @@ struct hci_le_create_big_v2 {
     uint8_t framing; // 0x00 unframed, 0x01 framed
     uint8_t encryption; // 0x00 unencrypted, 0x01 encrypted
     uint8_t broadcast_code[16]; // used to derive the session key that is used to encrypt and decrpt BIS payloads
-    uint16_t coded_rates_bf; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=2, 1 - S=8
+    uint16_t coded_rates_bf; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=8, 1 - S=8
     uint16_t hdt_rates_bf; // Multiple rates, specifies the set of contiguous rates, bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
-    uint8_t mic_length; // MIC length, 0x00 - 32bits, 0x01 - 64bits, 0x02 - 128bits
-    uint8_t max_plds_per_pkt; // Rang 1 to 4, maximum number of payloads that can be transmitted per packet on the BIG
+    uint8_t hdt_mic_length; // MIC length, 0x00 - 32bits, 0x01 - 64bits, 0x02 - 128bits
+    uint8_t hdt_pkt_fmt; // 0x00: Any format supported, 0x01: Format 0, 0x02: Format 1
 } __attribute__ ((packed));
 struct hci_le_create_big_test {
     uint8_t big_handle; // 0x00 to 0xEF, used to identify the BIG
@@ -3864,13 +3973,15 @@ struct hci_le_create_big_test_v2 {
     uint8_t pto; // 0x00 to 0x0F, offset used for pre-transmissions
     uint8_t encryption; // 0x00 unencrypted, 0x01 encrypted
     uint8_t broadcast_code[16]; // used to derive the session key that is used to encrypt and decrpt BIS payloads
-    uint16_t coded_rates_bf; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=2, 1 - S=8
+    uint16_t coded_rates_bf; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=8, 1 - S=2
     uint16_t hdt_rates_bf; // Multiple rates, specifies the set of contiguous rates, bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
-    uint8_t mic_length; // MIC length, 0x00 - 32bits, 0x01 - 64bits, 0x02 - 128bits
-    uint8_t max_plds_per_pkt; // Rang 1 to 4, maximum number of payloads that can be transmitted per packet on the BIG
+    uint8_t hdt_mic_length; // MIC length, 0x00 - 32bits, 0x01 - 64bits, 0x02 - 128bits
+    uint8_t hdt_pkt_fmt; // 0x00: Any format supported, 0x01: Format 0, 0x02: Format 1
+    uint8_t hdt_blocks_per_pld; // Rang 1 to 16, Number of blocks per payload to be used on the BIS over LE HDT PHY by the local Controller
 } __attribute__ ((packed));
 
 #define HCI_LE_EV_CREATE_BIG_COMPLETE 0x1B
+#define HCI_LE_EV_CREATE_BIG_COMPLETE_V2 0xFF
 struct hci_ev_le_create_big_complete {
     uint8_t subcode;
     uint8_t status;
@@ -3884,6 +3995,25 @@ struct hci_ev_le_create_big_complete {
     uint8_t irc; // 0x01 to 0x0F, num of times a payload is transmitted in a BIS event
     uint16_t max_pdu; // 0x01 to 0xFB, max octets of the PDU payload, HDT:0x0000 to 0x1FEF
     uint16_t iso_interval; // 0x04 to 0x0C80, per 1.25ms, 5ms to 4s, BIG anchor points interval
+    uint8_t num_bis; // 0x01 to 0x1F, total number of BISes in the BIG
+    uint16_t bis_handle[1];
+} __attribute__ ((packed));
+struct hci_ev_le_create_big_complete_v2 {
+    uint8_t subcode;
+    uint8_t status;
+    uint8_t big_handle; // 0x00 to 0xEF, the identifier of the BIG
+    uint8_t big_sync_delay[3]; // 0xEA to 0x7F_FFFF, max time in us for transmission of PDUs of all BISes in a BIG event
+    uint8_t transport_latency_big[3]; // 0xEA to 0x7F_FFFF, actual transport latency, in us
+    uint8_t phy; // 0x01 the phy used to create the BIG is LE 1M, 0x02 LE 2M, 0x03 LE Coded, 0x05 LE HDT
+    uint8_t nse; // 0x01 to 0x1F, num of subevents in each BIS event in the BIG
+    uint8_t bn; // 0x01 to 0x07, the number of new payloads in each BIS event
+    uint8_t pto; // 0x00 to 0x0F, offset used for pre-transmissions
+    uint8_t irc; // 0x01 to 0x0F, num of times a payload is transmitted in a BIS event
+    uint16_t max_pdu; // 0x01 to 0xFB, max octets of the PDU payload, HDT:0x0000 to 0x1FEF
+    uint16_t iso_interval; // 0x04 to 0x0C80, per 1.25ms, 5ms to 4s, BIG anchor points interval
+    uint16_t rates_bf; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=8/HDT2, 1 - S=2/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
+    uint8_t encryption_enabled; // Encryption is enabled or disabled on the BIG
+    uint8_t mic_length; // MIC length, 0x00 - 32bits, 0x01 - 64bits, 0x02 - 128bits
     uint8_t num_bis; // 0x01 to 0x1F, total number of BISes in the BIG
     uint16_t bis_handle[1];
 } __attribute__ ((packed));
@@ -4137,7 +4267,7 @@ struct hci_le_add_cig_cfg_cis_item
     /// Retransmission number of every CIS Data PDU before ack or flushed, just recommendation
     uint8_t rtn_c2p;
     uint8_t rtn_p2c;
-    /// bit 0 - HDT2/Coded S=2, 1 - HDT3/Coded S=8, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
+    /// bit 0 - HDT2/Coded S=8, 1 - HDT3/Coded S=2, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
     uint8_t rates_bf_c2p;
     uint8_t rates_bf_p2c;
 } __attribute__ ((packed));
@@ -4183,7 +4313,7 @@ struct hci_le_add_cig_cfg_cis_item_test
     /// 0x01 to 0x0F The burst number for transmission.
     uint8_t bn_c2p;
     uint8_t bn_p2c;
-    /// bit 0 - HDT2/Coded S=2, 1 - HDT3/Coded S=8, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
+    /// bit 0 - HDT2/Coded S=8, 1 - HDT3/Coded S=2, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
     uint16_t rates_bf_c2p;
     uint16_t rates_bf_p2c;
 } __attribute__ ((packed));
@@ -4307,7 +4437,7 @@ struct hci_le_cis_update_event
     /// 0x0000 to 0x0FFFF, max octets of the sdu payload
     uint16_t max_sdu_c2p;
     uint16_t max_sdu_p2c;
-    /// bit 0 - HDT2/Coded S=2, 1 - HDT3/Coded S=8, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
+    /// bit 0 - HDT2/Coded S=8, 1 - HDT3/Coded S=2, 2 - HDT4, 3 - HDT6, 4 - HDT7.5
     uint16_t rates_bf_c2p;
     uint16_t rates_bf_p2c;
 } __attribute__ ((packed));

@@ -363,6 +363,7 @@ typedef struct
     void (*call_incoming_number_inf_ind_cb)(uint8_t con_lid, uint8_t call_id, uint8_t url_len, uint8_t *url);
     void (*call_svc_changed_ind_cb)(uint8_t con_lid);
     void (*call_action_result_ind_cb)(uint8_t con_lid, void *param);
+    void (*call_tbc_set_cfg_cmp_cb)(uint8_t con_lid, uint8_t bearer_lid, uint8_t char_type, uint8_t error_code);
 } call_event_handler_t;
 
 #ifdef AOB_MOBILE_ENABLED
@@ -381,6 +382,7 @@ typedef struct
                                     uint8_t char_type, uint16_t val_len, const uint8_t *val);
     void (*media_mcc_set_cfg_cmp_cb)(uint8_t con_lid, uint8_t media_lid, uint8_t char_type, uint8_t err_code);
     void (*media_mcc_svc_discoveryed_cb)(uint8_t con_lid, uint8_t err_code);
+    void (*media_mcc_svc_changed_cb)(uint8_t con_lid);
     void (*media_mic_state_cb)(uint8_t mute);
     void (*media_iso_link_quality_cb)(void *event);
     void (*media_pacs_cccd_written_cb)(uint8_t con_lid);
@@ -411,7 +413,7 @@ typedef struct
 
 typedef struct
 {
-    void (*vol_changed_cb)(uint8_t con_lid, uint8_t volume, uint8_t mute, uint8_t change_cnt, uint8_t reason);
+    void (*vol_changed_cb)(uint8_t con_lid, uint8_t volume, uint8_t mute, uint8_t change_cnt, bool is_local);
     void (*vcs_bond_data_changed_cb)(uint8_t con_lid, uint8_t char_type, uint8_t cfg_bf);
     void (*vocs_offset_changed_cb)(int16_t offset, uint8_t output_lid);
     void (*vocc_offset_changed_cb)(uint8_t con_lid, int16_t value, uint8_t output_lid);

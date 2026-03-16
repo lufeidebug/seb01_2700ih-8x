@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __APP_TWS_IBRT_CMD_HANDLER__
-#define __APP_TWS_IBRT_CMD_HANDLER__
+#ifndef __APP_TWS_IBRT_CMD_HANDLER_H__
+#define __APP_TWS_IBRT_CMD_HANDLER_H__
 #include "app_tws_ibrt.h"
 #include "app_tws_ibrt_cmd_audio_analysis.h"
 #include "app_tws_profile_sync.h"

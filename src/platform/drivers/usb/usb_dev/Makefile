@@ -26,9 +26,13 @@ ifeq ($(USB_HIGH_SPEED),1)
 ccflags-y += -DUSB_HIGH_SPEED
 endif
 
+ifeq ($(USB_SPEED_SELF_ADAPT),1)
+ccflags-y += -DUSB_SPEED_SELF_ADAPT
+endif
+
 CFLAGS_usb_cdc.o += -Itests/programmer/inc
 
-CFLAGS_usb_audio.o += -Iutils/hwtimer_list
+CFLAGS_usb_audio.o += -Iutils/hwtimer_list -Itests/anc_usb
 
 CFLAGS_usb_audio_sync.o += -Iplatform/drivers/ana
 

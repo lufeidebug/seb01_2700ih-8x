@@ -27,6 +27,9 @@ endif
 ifeq ($(AUDIO_OUTPUT_SET_LARGE_ANA_DC),1)
 ccflags-y += -DAUDIO_OUTPUT_SET_LARGE_ANA_DC
 endif
+ifeq ($(AUDIO_OUTPUT_DC_CALIB_ANA),1)
+ccflags-y += -DAUDIO_OUTPUT_DC_CALIB_ANA
+endif
 ifeq ($(AUDIO_OUTPUT_ERROR_LARGE_DC),1)
 ccflags-y += -DAUDIO_OUTPUT_ERROR_LARGE_DC
 endif

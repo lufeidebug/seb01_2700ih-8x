@@ -29,6 +29,9 @@
 #include "usb_audio_app.h"
 #include "usb_audio_frm_defs.h"
 #include "cmsis.h"
+#ifdef USB_BLE_AUDIO_HW_TIMER_TRIGGER
+#include "cmsis_os2.h"
+#endif
 #include "safe_queue.h"
 #include "memutils.h"
 #include "tgt_hardware.h"
@@ -44,7 +47,7 @@
 
 #if defined(USB_AUDIO_SPEECH)
 #include "speech_process.h"
-#include "app_overlay.h"
+//#include "app_overlay.h"
 #endif
 
 #if defined(__HW_FIR_DSD_PROCESS__)
@@ -55,15 +58,27 @@
 #include"anc_process.h"
 #endif
 
+#ifdef USB_BIS_AUDIO_STREAM
+#include "app_usb_bis_stream.h"
+#endif
+
 #include "hw_codec_iir_process.h"
 #include "hw_iir_process.h"
-#include "system_utils.h"
 
-#if defined(APP_USB_A2DP_SOURCE) || defined(BLE_USB_AUDIO_SUPPORT) || defined(BLE_BIS_TRANSPORT) || defined(WIFI_USB_AUDIO_SUPPORT)
+#ifdef USB_AUDIO_CUSTOM_USB_HID_KEY
+#ifndef BLE_STACK_NEW_DESIGN
+#include "app_ble_custom_cmd.h"
+#include "app_ble_cmd_handler.h"
+#else
+//#include "app_custom.h"
+#endif
+#endif
+
+#if defined(APP_USB_A2DP_SOURCE) || defined(BLE_USB_AUDIO_SUPPORT)
 #define APP_USB_AUDIO_SOURCE_SUPPORT
 #endif
 
-#if defined(BLE_USB_AUDIO_SUPPORT) || defined(BLE_BIS_TRANSPORT) || defined(WIFI_USB_AUDIO_SUPPORT)
+#ifdef BLE_USB_AUDIO_SUPPORT
 #define USB_AUD_STREAM_ID                 AUD_STREAM_ID_1
 #else
 #define USB_AUD_STREAM_ID                 AUD_STREAM_ID_0
@@ -158,6 +173,10 @@ extern const IIR_CFG_T * const audio_eq_hw_iir_cfg_list[];
 #endif
 #endif // TARGET_TO_MAX_DIFF
 
+#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
+static struct USB_AUDIO_SOURCE_EVENT_CALLBACK_T usb_audio_source_cb_list;
+#endif
+
 #ifndef VERBOSE_TRACE
 #define VERBOSE_TRACE                   0
 #endif
@@ -176,7 +195,7 @@ extern const IIR_CFG_T * const audio_eq_hw_iir_cfg_list[];
 #define DIFF_ERR_THRESH_PLAYBACK        (sample_rate_recv / 1000 / 2)
 #define DIFF_ERR_THRESH_CAPTURE         (sample_rate_send / 1000 / 2)
 
-#define DIFF_SYNC_THRESH_PLAYBACK       10
+#define DIFF_SYNC_THRESH_PLAYBACK       (USB_BUFF_FRAME_NUM / 2)
 #define DIFF_SYNC_THRESH_CAPTURE        10
 
 #define DIFF_AVG_CNT                    30
@@ -222,8 +241,8 @@ extern const IIR_CFG_T * const audio_eq_hw_iir_cfg_list[];
 #endif
 #define USB_AUDIO_KEY_MAP               { \
     { USB_AUDIO_HID_PLAY_PAUSE,     HAL_KEY_CODE_FN1,   KEY_EVENT_SET2(DOWN, UP), }, \
-    { USB_AUDIO_HID_VOL_UP,         HAL_KEY_CODE_FN2,   KEY_EVENT_SET2(DOWN, UP), }, \
-    { USB_AUDIO_HID_VOL_DOWN,       HAL_KEY_CODE_FN3,   KEY_EVENT_SET2(DOWN, UP), }, \
+    { USB_AUDIO_HID_VOL_UP,         HAL_KEY_CODE_PWR,   KEY_EVENT_SET(CLICK), }, \
+    { USB_AUDIO_HID_VOL_DOWN,       HAL_KEY_CODE_PWR,  KEY_EVENT_SET(DOUBLECLICK), }, \
     USB_AUDIO_KEY_VOICE_CMD \
 }
 #else
@@ -237,40 +256,6 @@ extern const IIR_CFG_T * const audio_eq_hw_iir_cfg_list[];
 }
 #endif
 #endif
-
-enum AUDIO_CMD_T {
-    AUDIO_CMD_START_PLAYBACK = 0,
-    AUDIO_CMD_STOP_PLAYBACK,
-    AUDIO_CMD_START_CAPTURE,
-    AUDIO_CMD_STOP_CAPTURE,
-    AUDIO_CMD_SET_VOLUME,
-    AUDIO_CMD_SET_CAP_VOLUME,
-    AUDIO_CMD_MUTE_CTRL,
-    AUDIO_CMD_CAP_MUTE_CTRL,
-    AUDIO_CMD_USB_RESET,
-    AUDIO_CMD_USB_DISCONNECT,
-    AUDIO_CMD_USB_CONFIG,
-    AUDIO_CMD_USB_SLEEP,
-    AUDIO_CMD_USB_WAKEUP,
-    AUDIO_CMD_RECV_PAUSE,
-    AUDIO_CMD_RECV_CONTINUE,
-    AUDIO_CMD_SET_RECV_RATE,
-    AUDIO_CMD_SET_SEND_RATE,
-    AUDIO_CMD_RESET_CODEC,
-    AUDIO_CMD_NOISE_GATING,
-    AUDIO_CMD_NOISE_REDUCTION,
-    AUDIO_CMD_TUNE_RATE,
-    AUDIO_CMD_SET_DSD_CFG,
-    AUDIO_CMD_ALLOW_PLAYBACK,
-    AUDIO_CMD_DISALLOW_PLAYBACK,
-    AUDIO_CMD_ALLOW_CAPTURE,
-    AUDIO_CMD_DISALLOW_CAPTURE,
-
-    TEST_CMD_PERF_TEST_POWER,
-    TEST_CMD_PA_ON_OFF,
-
-    AUDIO_CMD_QTY
-};
 
 enum AUDIO_ITF_STATE_T {
     AUDIO_ITF_STATE_STOPPED = 0,
@@ -361,17 +346,13 @@ static const uint8_t sample_size_send = SAMPLE_SIZE_SEND;
 
 #endif // !USB_AUDIO_DYN_CFG
 
-#if defined(AUDIO_OUTPUT_SW_GAIN) && defined(AUDIO_OUTPUT_SW_GAIN_BEFORE_DRC)
-extern void audio_process_set_aud_stream_id(enum AUD_STREAM_ID_T id);
-#endif
-
 #if defined(CHIP_BEST1000) && (defined(ANC_APP) || defined(_DUAL_AUX_MIC_))
 #ifdef USB_AUDIO_DYN_CFG
 static enum AUD_SAMPRATE_T sample_rate_ref_cap;
 #else // !USB_AUDIO_DYN_CFG
 #ifdef __AUDIO_RESAMPLE__
 static const enum AUD_SAMPRATE_T sample_rate_ref_cap = SAMPLE_RATE_CAPTURE;
-#elif defined(USB_AUDIO_32K) || defined(USB_AUDIO_16K) || defined(USB_AUDIO_8K)
+#elif defined(USB_AUDIO_16K) || defined(USB_AUDIO_8K)
 static const enum AUD_SAMPRATE_T sample_rate_ref_cap = SAMPLE_RATE_CAPTURE;
 #else
 static const enum AUD_SAMPRATE_T sample_rate_ref_cap = (SAMPLE_RATE_RECV % AUD_SAMPRATE_8000) ? AUD_SAMPRATE_44100 : AUD_SAMPRATE_48000;
@@ -453,6 +434,21 @@ static uint8_t *resample_history_buf;
 static uint32_t resample_history_size;
 static uint8_t *resample_input_buf;
 static uint32_t resample_input_size;
+#endif
+
+#ifdef APP_BLE_USB_AUDIO_RESAMPLE_SYNC
+//#define APP_BLE_USB_AUDIO_RESAMPLE_SYNC_DEBUG
+#define USB_AUDIO_RESAMPLE_NORMAL_RATIO 1.0
+static RESAMPLE_ID recv_resample_id;
+static uint8_t *recv_resample_input_buf = NULL;
+static uint32_t recv_resample_input_size = 0;
+static uint32_t recv_resample_input_offset = 0;
+static uint32_t recv_cache_diff = 0;
+
+static RESAMPLE_ID send_resample_id;
+static uint8_t *send_resample_input_buf = NULL;
+static uint32_t send_resample_input_size = 0;
+static uint32_t send_cache_diff = 0;
 #endif
 
 static uint8_t *usb_recv_buf;
@@ -552,7 +548,9 @@ STATIC_ASSERT(USB_AUDIO_STATE_EVENT_QTY <= 0xFF, "uaud evt num exceeds size in q
 STATIC_ASSERT(sizeof(usb_recv_seq) <= 1, "usb recv seq exceeds size in queue");
 STATIC_ASSERT(sizeof(usb_send_seq) <= 1, "usb send seq exceeds size in queue");
 
+#ifndef USB_AUDIO_CUSTOM_USB_HID_KEY
 static const struct USB_AUDIO_KEY_MAP_T key_map[] = USB_AUDIO_KEY_MAP;
+#endif
 
 #ifdef PERF_TEST_POWER_KEY
 static enum HAL_CODEC_PERF_TEST_POWER_T perft_power_type;
@@ -572,7 +570,7 @@ static uint8_t dsd_saved_sample_size;
 #endif
 #endif
 
-#if defined(BT_USB_AUDIO_DUAL_MODE) || defined(WIFI_USB_AUDIO_SUPPORT)
+#ifdef BT_USB_AUDIO_DUAL_MODE
 static USB_AUDIO_ENQUEUE_CMD_CALLBACK enqueue_cmd_cb;
 #endif
 
@@ -581,25 +579,12 @@ static void usb_audio_set_codec_volume(enum AUD_STREAM_T stream, uint8_t vol);
 static void usb_audio_cmd_tune_rate(enum AUD_STREAM_T stream);
 
 #ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-static uint8_t playback_allowed;
-static uint8_t playback_usb_started;
-static uint8_t capture_allowed;
-static uint8_t capture_usb_started;
-
-static USB_AUDIO_DISALLOW_PLAYBACK_CALLBACK disallow_play_cb;
-static USB_AUDIO_DISALLOW_CAPTURE_CALLBACK disallow_cap_cb;
-
-static struct USB_AUDIO_SOURCE_EVENT_CALLBACK_T usb_audio_source_cb_list;
-
 void usb_audio_source_config_init(const struct USB_AUDIO_SOURCE_EVENT_CALLBACK_T *cb_list)
 {
-    if (cb_list) {
-        memcpy(&usb_audio_source_cb_list, cb_list, sizeof(usb_audio_source_cb_list));
-    } else {
-        memset(&usb_audio_source_cb_list, 0, sizeof(usb_audio_source_cb_list));
-    }
+     memcpy(&usb_audio_source_cb_list, cb_list, sizeof(usb_audio_source_cb_list));
 }
 #endif
+
 
 #if defined(CHIP_BEST1000) && defined(_DUAL_AUX_MIC_)
 
@@ -816,11 +801,6 @@ static enum AUD_BITS_T sample_size_to_enum_playback(uint32_t size)
     }
 
     return 0;
-}
-
-enum AUD_BITS_T usb_audio_get_sample_bits(void)
-{
-    return sample_size_to_enum_playback(sample_size_play);
 }
 
 static enum AUD_BITS_T sample_size_to_enum_capture(uint32_t size)
@@ -1091,10 +1071,13 @@ uint8_t usb_audio_get_eq_index(AUDIO_EQ_TYPE_T audio_eq_type,uint8_t anc_status)
 #if defined(__SW_IIR_EQ_PROCESS__)
         case AUDIO_EQ_TYPE_SW_IIR:
         {
-            if (anc_status) {
-                index_eq = audio_eq_sw_iir_index + 1;
-            } else {
-                index_eq = audio_eq_sw_iir_index;
+            if(anc_status)
+            {
+                index_eq=audio_eq_sw_iir_index+1;
+            }
+            else
+            {
+                index_eq=audio_eq_sw_iir_index;
             }
 
         }
@@ -1120,7 +1103,8 @@ uint8_t usb_audio_get_eq_index(AUDIO_EQ_TYPE_T audio_eq_type,uint8_t anc_status)
 #else
             index_eq=audio_eq_hw_fir_index;
 #endif
-            if (anc_status) {
+            if(anc_status)
+            {
                 index_eq=index_eq+4;
             }
         }
@@ -1130,9 +1114,12 @@ uint8_t usb_audio_get_eq_index(AUDIO_EQ_TYPE_T audio_eq_type,uint8_t anc_status)
 #if defined(__HW_DAC_IIR_EQ_PROCESS__)
         case AUDIO_EQ_TYPE_HW_DAC_IIR:
         {
-            if (anc_status) {
-                index_eq=audio_eq_hw_dac_iir_index + 1;
-            } else {
+            if(anc_status)
+            {
+                index_eq=audio_eq_hw_dac_iir_index+1;
+            }
+            else
+            {
                 index_eq=audio_eq_hw_dac_iir_index;
             }
         }
@@ -1142,9 +1129,12 @@ uint8_t usb_audio_get_eq_index(AUDIO_EQ_TYPE_T audio_eq_type,uint8_t anc_status)
 #if defined(__HW_IIR_EQ_PROCESS__)
         case AUDIO_EQ_TYPE_HW_IIR:
         {
-            if (anc_status) {
-                index_eq=audio_eq_hw_iir_index + 1;
-            } else {
+            if(anc_status)
+            {
+                index_eq=audio_eq_hw_iir_index+1;
+            }
+            else
+            {
                 index_eq=audio_eq_hw_iir_index;
             }
         }
@@ -1291,7 +1281,7 @@ static uint32_t audio_mc_data_playback(uint8_t *buf, uint32_t mc_len_bytes)
     //uint32_t begin_time;
     //uint32_t end_time;
     //begin_time = hal_sys_timer_get();
-    //ANC_USB_TRACE(1,"cancel: %d",begin_time);
+    //TRACE(1,"cancel: %d",begin_time);
 
     float left_gain;
     float right_gain;
@@ -1301,127 +1291,154 @@ static uint32_t audio_mc_data_playback(uint8_t *buf, uint32_t mc_len_bytes)
 
     hal_codec_get_dac_gain(&left_gain,&right_gain);
 
-    //ANC_USB_TRACE(1,"playback_samplerate_ratio:  %d",playback_samplerate_ratio);
+    //TRACE(1,"playback_samplerate_ratio:  %d",playback_samplerate_ratio);
 
-    //ANC_USB_TRACE(1,"left_gain:  %d",(int)(left_gain*(1<<12)));
-    //ANC_USB_TRACE(1,"right_gain: %d",(int)(right_gain*(1<<12)));
+    //TRACE(1,"left_gain:  %d",(int)(left_gain*(1<<12)));
+    //TRACE(1,"right_gain: %d",(int)(right_gain*(1<<12)));
 
     playback_len_bytes=mc_len_bytes/playback_samplerate_ratio;
 
     mc_len_bytes_run=mc_len_bytes/SAMPLERATE_RATIO_THRESHOLD;
 
-    if (sample_size_play == 2) {
-        int16_t *sour_p = (int16_t *)(playback_buf + playback_size / 2);
-        int16_t *mid_p = (int16_t *)(buf);
-        int16_t *mid_p_8 = (int16_t *)(buf + mc_len_bytes - mc_len_bytes_run);
-        int16_t *dest_p = (int16_t *)buf;
-        int i, j,k;
+    if (sample_size_play == 2)
+    {
+        int16_t *sour_p=(int16_t *)(playback_buf+playback_size/2);
+        int16_t *mid_p=(int16_t *)(buf);
+        int16_t *mid_p_8=(int16_t *)(buf+mc_len_bytes-mc_len_bytes_run);
+        int16_t *dest_p=(int16_t *)buf;
+        int i,j,k;
 
-        if (buf == (playback_buf + playback_size)) {
-            sour_p = (int16_t *)playback_buf;
+        if(buf == (playback_buf+playback_size))
+        {
+            sour_p=(int16_t *)playback_buf;
         }
 
-        delay_sample = DELAY_SAMPLE_MC;
+        delay_sample=DELAY_SAMPLE_MC;
 
-        for (i = 0, j = 0; i < delay_sample; i = i + 2) {
-            mid_p[j++] = delay_buf[i];
-            mid_p[j++] = delay_buf[i + 1];
+        for(i=0,j=0;i<delay_sample;i=i+2)
+        {
+            mid_p[j++]=delay_buf[i];
+            mid_p[j++]=delay_buf[i+1];
         }
 
-        for (i = 0; i<playback_len_bytes / 2 - delay_sample; i = i + 2) {
-            mid_p[j++] = sour_p[i];
-            mid_p[j++] = sour_p[i + 1];
+        for(i=0;i<playback_len_bytes/2-delay_sample;i=i+2)
+        {
+            mid_p[j++]=sour_p[i];
+            mid_p[j++]=sour_p[i+1];
         }
 
-        for (j = 0; i < playback_len_bytes / 2; i = i + 2) {
-            delay_buf[j++] = sour_p[i];
-            delay_buf[j++] = sour_p[i + 1];
+        for(j=0;i<playback_len_bytes/2;i=i+2)
+        {
+            delay_buf[j++]=sour_p[i];
+            delay_buf[j++]=sour_p[i+1];
         }
 
-        if (playback_samplerate_ratio <= SAMPLERATE_RATIO_THRESHOLD) {
-            for (i = 0, j = 0; i < playback_len_bytes / 2; i = i + 2 * (SAMPLERATE_RATIO_THRESHOLD / playback_samplerate_ratio)) {
-                mid_p_8[j++] = mid_p[i];
-                mid_p_8[j++] = mid_p[i + 1];
+        if(playback_samplerate_ratio<=SAMPLERATE_RATIO_THRESHOLD)
+        {
+            for(i=0,j=0;i<playback_len_bytes/2;i=i+2*(SAMPLERATE_RATIO_THRESHOLD/playback_samplerate_ratio))
+            {
+                mid_p_8[j++]=mid_p[i];
+                mid_p_8[j++]=mid_p[i+1];
             }
-        } else {
-            for (i = 0, j = 0; i < playback_len_bytes / 2; i = i + 2) {
-                for (k = 0; k < playback_samplerate_ratio / SAMPLERATE_RATIO_THRESHOLD; k++) {
-                    mid_p_8[j++] = mid_p[i];
-                    mid_p_8[j++] = mid_p[i + 1];
+        }
+        else
+        {
+            for(i=0,j=0;i<playback_len_bytes/2;i=i+2)
+            {
+                for(k=0;k<playback_samplerate_ratio/SAMPLERATE_RATIO_THRESHOLD;k++)
+                {
+                    mid_p_8[j++]=mid_p[i];
+                    mid_p_8[j++]=mid_p[i+1];
                 }
             }
         }
 
-        anc_mc_run_stereo((uint8_t *)mid_p_8, mc_len_bytes_run, left_gain, right_gain, AUD_BITS_16);
+        anc_mc_run_stereo((uint8_t *)mid_p_8,mc_len_bytes_run,left_gain,right_gain,AUD_BITS_16);
 
-        for (i = 0, j = 0; i < (mc_len_bytes_run) / 2; i = i + 2) {
-           float delta_l = (mid_p_8[i] - mid_p_8_old_l) / (float)SAMPLERATE_RATIO_THRESHOLD;
-           float delta_r = (mid_p_8[i + 1] - mid_p_8_old_r) / (float)SAMPLERATE_RATIO_THRESHOLD;
-            for (k = 1; k <= SAMPLERATE_RATIO_THRESHOLD; k++) {
-                dest_p[j++] = mid_p_8_old_l + (int32_t)(delta_l * k);
-                dest_p[j++] = mid_p_8_old_r + (int32_t)(delta_r * k);
+        for(i=0,j=0;i<(mc_len_bytes_run)/2;i=i+2)
+        {
+           float delta_l=(mid_p_8[i]-mid_p_8_old_l)/(float)SAMPLERATE_RATIO_THRESHOLD;
+           float delta_r=(mid_p_8[i+1]-mid_p_8_old_r)/(float)SAMPLERATE_RATIO_THRESHOLD;
+            for(k=1;k<=SAMPLERATE_RATIO_THRESHOLD;k++)
+            {
+                dest_p[j++]=mid_p_8_old_l+(int32_t)(delta_l*k);
+                dest_p[j++]=mid_p_8_old_r+(int32_t)(delta_r*k);
             }
-            mid_p_8_old_l = mid_p_8[i];
-            mid_p_8_old_r = mid_p_8[i + 1];
+            mid_p_8_old_l=mid_p_8[i];
+            mid_p_8_old_r=mid_p_8[i+1];
         }
-    } else if (sample_size_play == 4) {
-        int32_t *sour_p = (int32_t *)(playback_buf + playback_size / 2);
-        int32_t *mid_p = (int32_t *)(buf);
-        int32_t *mid_p_8 = (int32_t *)(buf + mc_len_bytes - mc_len_bytes_run);
-        int32_t *dest_p = (int32_t *)buf;
+    }
+    else if (sample_size_play == 4)
+    {
+        int32_t *sour_p=(int32_t *)(playback_buf+playback_size/2);
+        int32_t *mid_p=(int32_t *)(buf);
+        int32_t *mid_p_8=(int32_t *)(buf+mc_len_bytes-mc_len_bytes_run);
+        int32_t *dest_p=(int32_t *)buf;
 
-        if (buf == (playback_buf + playback_size)) {
-            sour_p = (int32_t *)playback_buf;
-        }
-
-        delay_sample = DELAY_SAMPLE_MC;
-
-        for (i = 0, j = 0; i<delay_sample; i = i + 2) {
-            mid_p[j++] = delay_buf[i];
-            mid_p[j++] = delay_buf[i + 1];
-
+        if(buf == (playback_buf+playback_size))
+        {
+            sour_p=(int32_t *)playback_buf;
         }
 
-        for (i = 0; i < playback_len_bytes / 4 - delay_sample; i = i + 2) {
-            mid_p[j++] = sour_p[i];
-            mid_p[j++] = sour_p[i + 1];
+        delay_sample=DELAY_SAMPLE_MC;
+
+        for(i=0,j=0;i<delay_sample;i=i+2)
+        {
+            mid_p[j++]=delay_buf[i];
+            mid_p[j++]=delay_buf[i+1];
+
         }
 
-        for (j = 0; i < playback_len_bytes / 4; i = i + 2) {
-            delay_buf[j++] = sour_p[i];
-            delay_buf[j++] = sour_p[i + 1];
+         for(i=0;i<playback_len_bytes/4-delay_sample;i=i+2)
+        {
+            mid_p[j++]=sour_p[i];
+            mid_p[j++]=sour_p[i+1];
         }
 
-        if (playback_samplerate_ratio <= SAMPLERATE_RATIO_THRESHOLD) {
-            for (i = 0, j = 0; i < playback_len_bytes / 4; i = i + 2 * (SAMPLERATE_RATIO_THRESHOLD / playback_samplerate_ratio)) {
-                mid_p_8[j++] = mid_p[i];
-                mid_p_8[j++] = mid_p[i + 1];
+         for(j=0;i<playback_len_bytes/4;i=i+2)
+        {
+            delay_buf[j++]=sour_p[i];
+            delay_buf[j++]=sour_p[i+1];
+        }
+
+        if(playback_samplerate_ratio<=SAMPLERATE_RATIO_THRESHOLD)
+        {
+            for(i=0,j=0;i<playback_len_bytes/4;i=i+2*(SAMPLERATE_RATIO_THRESHOLD/playback_samplerate_ratio))
+            {
+                mid_p_8[j++]=mid_p[i];
+                mid_p_8[j++]=mid_p[i+1];
             }
-        } else {
-            for (i = 0, j = 0; i < playback_len_bytes / 4; i = i + 2) {
-                for (k = 0; k < playback_samplerate_ratio / SAMPLERATE_RATIO_THRESHOLD; k++) {
-                    mid_p_8[j++] = mid_p[i];
-                    mid_p_8[j++] = mid_p[i + 1];
+        }
+        else
+        {
+            for(i=0,j=0;i<playback_len_bytes/4;i=i+2)
+            {
+                for(k=0;k<playback_samplerate_ratio/SAMPLERATE_RATIO_THRESHOLD;k++)
+                {
+                    mid_p_8[j++]=mid_p[i];
+                    mid_p_8[j++]=mid_p[i+1];
                 }
             }
         }
 
-        anc_mc_run_stereo((uint8_t *)mid_p_8, mc_len_bytes_run, left_gain, right_gain, AUD_BITS_24);
+        anc_mc_run_stereo((uint8_t *)mid_p_8,mc_len_bytes_run,left_gain,right_gain,AUD_BITS_24);
 
-        for (i = 0, j = 0; i < (mc_len_bytes_run) / 4; i = i + 2) {
-           float delta_l = (mid_p_8[i] - mid_p_8_old_l) / (float)SAMPLERATE_RATIO_THRESHOLD;
-           float delta_r = (mid_p_8[i + 1] - mid_p_8_old_r) / (float)SAMPLERATE_RATIO_THRESHOLD;
-            for (k = 1; k <= SAMPLERATE_RATIO_THRESHOLD; k++) {
-                dest_p[j++] = mid_p_8_old_l + (int32_t)(delta_l * k);
-                dest_p[j++] = mid_p_8_old_r + (int32_t)(delta_r * k);
+        for(i=0,j=0;i<(mc_len_bytes_run)/4;i=i+2)
+        {
+           float delta_l=(mid_p_8[i]-mid_p_8_old_l)/(float)SAMPLERATE_RATIO_THRESHOLD;
+           float delta_r=(mid_p_8[i+1]-mid_p_8_old_r)/(float)SAMPLERATE_RATIO_THRESHOLD;
+            for(k=1;k<=SAMPLERATE_RATIO_THRESHOLD;k++)
+            {
+                dest_p[j++]=mid_p_8_old_l+(int32_t)(delta_l*k);
+                dest_p[j++]=mid_p_8_old_r+(int32_t)(delta_r*k);
             }
-            mid_p_8_old_l = mid_p_8[i];
-            mid_p_8_old_r = mid_p_8[i + 1];
+            mid_p_8_old_l=mid_p_8[i];
+            mid_p_8_old_r=mid_p_8[i+1];
         }
     }
 
     //end_time = hal_sys_timer_get();
-    //TRACE(2, "%s:run time: %d", __FUNCTION__, end_time - begin_time);
+    //TRACE(2,"%s:run time: %d", __FUNCTION__, end_time-begin_time);
 
     return 0;
 }
@@ -1471,6 +1488,15 @@ static uint32_t usb_audio_data_playback(uint8_t *buf, uint32_t len)
         if (usb_recv_init_rpos == 0) {
             init_pos = 1;
         }
+
+#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
+        if (usb_audio_source_cb_list.check_first_processed_usb_data_cb)
+        {
+            bool isFirstProcessedPacket = usb_audio_source_cb_list.check_first_processed_usb_data_cb();
+            init_pos = isFirstProcessedPacket?1:0;
+        }
+#endif
+
     } else {
         recv_valid = 0;
     }
@@ -1638,6 +1664,14 @@ _invalid_play:
     }
 #endif
     int_unlock(lock);
+
+#ifdef APP_BLE_USB_AUDIO_RESAMPLE_SYNC
+    if (new_rpos < wpos) {
+        recv_cache_diff = wpos - new_rpos;
+    } else {
+        recv_cache_diff = wpos + usb_recv_size - new_rpos;
+    }
+#endif
 
     if (conflicted) {
         ANC_USB_TRACE(4,"playback: Error: rpos=%u goes beyond wpos=%u with usb_len=%u. Reset to %u", saved_old_rpos, wpos, usb_len, old_rpos);
@@ -2246,14 +2280,200 @@ _conv_end:
     }
 #endif
 
+#ifndef APP_BLE_USB_AUDIO_RESAMPLE_SYNC
 #ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-    if (usb_audio_source_cb_list.data_playback_cb) {
+    if(usb_audio_source_cb_list.data_playback_cb) {
         usb_audio_source_cb_list.data_playback_cb(buf, len);
     }
+#endif
 #endif
 
     return 0;
 }
+
+#ifdef APP_BLE_USB_AUDIO_RESAMPLE_SYNC
+
+typedef struct
+{
+    int32_t diff_time0;
+    int32_t diff_time1;
+    int32_t diff_time2;
+    float Kp;
+    float Ki;
+    float Kd;
+    float result;
+} usb_audio_resample_pid_t;
+
+
+#if 0
+#elif defined(USB_AUDIO_96K)
+#define THREADHOLD_RECV                           384
+#define THREADHOLD_SEND                           192
+#elif defined(USB_AUDIO_48K)
+#define THREADHOLD_RECV                           192
+#define THREADHOLD_SEND                           192
+#elif defined(USB_AUDIO_16K)
+#define THREADHOLD_RECV                           64
+#define THREADHOLD_SEND                           64
+#elif defined(USB_AUDIO_8K)
+#define THREADHOLD_RECV                           32
+#define THREADHOLD_SEND                           32
+#endif
+
+
+#define RECV_BUFF_THREADHOLD (THREADHOLD_RECV * 3)
+#define SEND_BUFF_THREADHOLD (THREADHOLD_SEND * 3)
+
+#define MIN_TOTAL_TUNE_RATIO 0.001
+
+static void usb_audio_tune_rate(enum AUD_STREAM_T stream, float ratio);
+static void usb_audio_recv_resample_sync(uint32_t diff)
+{
+    static usb_audio_resample_pid_t pid;
+
+    pid.Kp = 0.0000005;
+    pid.Ki = 0.00000004;
+    pid.Kd = 0.00000000;
+
+    float result_P, result_I, result_D;
+
+    pid.diff_time0 = diff - RECV_BUFF_THREADHOLD;
+    result_P = pid.Kp * (float)(pid.diff_time0 - pid.diff_time1);
+    result_I = pid.Ki * (float)pid.diff_time0;
+    result_D = pid.Kd * (float)(pid.diff_time0 - 2 * pid.diff_time1 + pid.diff_time2);
+    pid.result += (result_P + result_I + result_D);
+    if (pid.result > MIN_TOTAL_TUNE_RATIO)
+    {
+        pid.result = MIN_TOTAL_TUNE_RATIO;
+    }
+    else if (pid.result < -MIN_TOTAL_TUNE_RATIO)
+    {
+        pid.result = -MIN_TOTAL_TUNE_RATIO;
+    }
+
+    pid.diff_time2 = pid.diff_time1;
+    pid.diff_time1 = pid.diff_time0;
+
+    //TRACE(0, "%s: %4d, %d", __func__, (int)pid.diff_time0, FLOAT_TO_PPB_INT(pid.result));
+
+    audio_resample_ex_set_ratio_step(recv_resample_id, USB_AUDIO_RESAMPLE_NORMAL_RATIO + pid.result);
+}
+
+static void usb_audio_send_resample_sync(uint32_t diff)
+{
+    static usb_audio_resample_pid_t pid;
+
+    pid.Kp = 0.0000005;
+    pid.Ki = 0.00000004;
+    pid.Kd = 0.00000000;
+
+    float result_P, result_I, result_D;
+
+    pid.diff_time0 = diff - SEND_BUFF_THREADHOLD;
+    result_P = pid.Kp * (float)(pid.diff_time0 - pid.diff_time1);
+    result_I = pid.Ki * (float)pid.diff_time0;
+    result_D = pid.Kd * (float)(pid.diff_time0 - 2 * pid.diff_time1 + pid.diff_time2);
+    pid.result += (result_P + result_I + result_D);
+    if (pid.result > MIN_TOTAL_TUNE_RATIO)
+    {
+        pid.result = MIN_TOTAL_TUNE_RATIO;
+    }
+    else if (pid.result < -MIN_TOTAL_TUNE_RATIO)
+    {
+        pid.result = -MIN_TOTAL_TUNE_RATIO;
+    }
+
+    pid.diff_time2 = pid.diff_time1;
+    pid.diff_time1 = pid.diff_time0;
+
+    //TRACE(0, "%s: %4d, %d", __func__, (int)pid.diff_time0, FLOAT_TO_PPB_INT(pid.result));
+
+    audio_resample_ex_set_ratio_step(send_resample_id, USB_AUDIO_RESAMPLE_NORMAL_RATIO - pid.result);
+}
+
+static uint32_t usb_audio_data_playback_sync_handler(uint8_t *buf, uint32_t len)
+{
+    ASSERT(recv_resample_input_size == len, "input buf not enough %d", recv_resample_input_size);
+    ASSERT(recv_resample_input_offset < recv_resample_input_size, "offset error %d", recv_resample_input_offset);
+    // get len data
+    usb_audio_data_playback(recv_resample_input_buf + recv_resample_input_offset, len - recv_resample_input_offset);
+
+    // resample len
+    struct RESAMPLE_IO_BUF_T io;
+    io.in = recv_resample_input_buf;
+    io.in_size = len;
+    io.out = buf;
+    io.out_size = len;
+    io.out_cyclic_start = NULL;
+    io.out_cyclic_end = NULL;
+
+    uint32_t in_size = 0;
+    uint32_t out_size = 0;
+
+    //uint32_t start_ticks = hal_fast_sys_timer_get();
+    int ret = audio_resample_ex_run(recv_resample_id, &io, &in_size, &out_size);
+    //uint32_t end_ticks = hal_fast_sys_timer_get();
+    //TRACE(0, "%s: %d/%d, %d us", __func__, in_size, out_size, FAST_TICKS_TO_US(end_ticks - start_ticks));
+
+    ASSERT((ret == RESAMPLE_STATUS_IN_EMPTY || ret == RESAMPLE_STATUS_DONE || ret == RESAMPLE_STATUS_OUT_FULL) && io.out_size >= out_size,
+            "Failed to resample: %d io.out_size=%u in_size=%u out_size=%u",
+            ret, io.out_size, in_size, out_size);
+
+    if (in_size < len) {
+        recv_resample_input_offset = len - in_size;
+        // keep left input buff
+        for (int i = 0; i < recv_resample_input_offset; i++) {
+            recv_resample_input_buf[i] = recv_resample_input_buf[i + in_size];
+        }
+    } else if (out_size < len) {
+#define RECV_RESAMPLE_INPUT_BUF_FACTOR 10
+        uint32_t input_buf_more_len = len / RECV_RESAMPLE_INPUT_BUF_FACTOR;
+        uint32_t recv_expected_len = len - out_size;
+
+        usb_audio_data_playback(recv_resample_input_buf, input_buf_more_len);
+
+        io.in = recv_resample_input_buf;
+        io.in_size = input_buf_more_len;
+        io.out = buf + out_size;
+        io.out_size = recv_expected_len;
+        io.out_cyclic_start = NULL;
+        io.out_cyclic_end = NULL;
+
+        //uint32_t start_ticks = hal_fast_sys_timer_get();
+        int ret = audio_resample_ex_run(recv_resample_id, &io, &in_size, &out_size);
+        //uint32_t end_ticks = hal_fast_sys_timer_get();
+        //TRACE(0, "%s: %d/%d, %d us", __func__, in_size, out_size, FAST_TICKS_TO_US(end_ticks - start_ticks));
+
+        ASSERT((ret == RESAMPLE_STATUS_IN_EMPTY || ret == RESAMPLE_STATUS_DONE || ret == RESAMPLE_STATUS_OUT_FULL) && io.out_size >= out_size,
+                "Failed to resample: %d io.out_size=%u in_size=%u out_size=%u",
+                ret, io.out_size, in_size, out_size);
+
+        ASSERT(recv_expected_len == out_size,
+                "Failed to resample: %d io.out_size=%u in_size=%u out_size=%u",
+                ret, io.out_size, in_size, out_size);
+
+        if (in_size < input_buf_more_len) {
+            recv_resample_input_offset = input_buf_more_len - in_size;
+            for (int i = 0; i < recv_resample_input_offset; i++) {
+                recv_resample_input_buf[i] = recv_resample_input_buf[i + in_size];
+            }
+        } else {
+            // input len just fit
+            recv_resample_input_offset = 0;
+        }
+    } else {
+        recv_resample_input_offset = 0;
+    }
+
+    usb_audio_recv_resample_sync(recv_cache_diff);
+#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
+    if(usb_audio_source_cb_list.data_playback_cb) {
+        usb_audio_source_cb_list.data_playback_cb(buf, len);
+    }
+#endif
+    return ret;
+}
+#endif
 
 static uint32_t usb_audio_data_capture(uint8_t *buf, uint32_t len)
 {
@@ -2358,6 +2578,13 @@ _invalid_cap:
     }
     int_unlock(lock);
 
+#ifdef APP_BLE_USB_AUDIO_RESAMPLE_SYNC
+    if (rpos > new_wpos) {
+        send_cache_diff = rpos - new_wpos;
+    } else {
+        send_cache_diff = rpos + usb_send_size - new_wpos;
+    }
+#endif
     if (conflicted) {
         ANC_USB_TRACE(4,"capture: Error: wpos=%u goes beyond rpos=%u with usb_len=%u. Reset to %u", saved_old_wpos, rpos, usb_len, old_wpos);
     }
@@ -2804,6 +3031,42 @@ _invalid_cap:
         }
 #endif
 #endif
+
+#ifdef APP_BLE_USB_AUDIO_RESAMPLE_SYNC
+        usb_audio_send_resample_sync(send_cache_diff);
+
+        ASSERT(send_resample_input_size == len, "input buf not enough %d", recv_resample_input_size);
+        memcpy(send_resample_input_buf, cur_buf, len);
+
+        // resample len
+        struct RESAMPLE_IO_BUF_T io;
+        io.in = send_resample_input_buf;
+        io.in_size = len;
+        io.out = usb_send_buf + old_wpos;
+        io.out_size = usb_send_size / 2;
+        io.out_cyclic_start = usb_send_buf;
+        io.out_cyclic_end = usb_send_buf + usb_send_size;
+
+        uint32_t in_size = 0;
+        uint32_t out_size = 0;
+
+        //uint32_t start_ticks = hal_fast_sys_timer_get();
+        int ret = audio_resample_ex_run(send_resample_id, &io, &in_size, &out_size);
+        //uint32_t end_ticks = hal_fast_sys_timer_get();
+        //TRACE(0, "%s: %d/%d, %d us", __func__, in_size, out_size, FAST_TICKS_TO_US(end_ticks - start_ticks));
+
+        ASSERT((ret == RESAMPLE_STATUS_IN_EMPTY || ret == RESAMPLE_STATUS_DONE) && io.out_size >= out_size,
+                "Failed to resample: %d io.out_size=%u in_size=%u out_size=%u",
+                ret, io.out_size, in_size, out_size);
+
+        uint32_t diff = usb_len - out_size;
+        if (new_wpos - diff < usb_send_size) {
+            new_wpos -= diff;
+        } else {
+            new_wpos = new_wpos + usb_send_size - diff;
+        }
+#endif
+
     }
 
     //----------------------------------------
@@ -2865,6 +3128,44 @@ static void update_capture_sync_info(void)
     ANC_USB_TRACE(4,"%s: rate=%u cnt=%u (%u)", __FUNCTION__, capture_info.samp_rate, capture_info.samp_cnt, usb_send_size);
 }
 
+#ifdef USB_BLE_AUDIO_HW_TIMER_TRIGGER
+void send_usb_audio_buffer(uint32_t stream)
+{
+    if (stream == AUD_STREAM_PLAYBACK)
+    {
+        usb_audio_data_playback_sync_handler(playback_buf, playback_size/2);
+    }
+    else if(stream == AUD_STREAM_CAPTURE)
+    {
+        usb_audio_data_capture(capture_buf, capture_size/2);
+    }
+}
+
+static int usb_audio_open_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STREAM_REQ_USER_T user)
+{
+    int ret = 0;
+    TRACE(4,"%s: stream=%d user=%d map=0x%x", __FUNCTION__, stream, user, codec_stream_map[stream][AUDIO_STREAM_OPENED]);
+
+    if (user >= AUDIO_STREAM_REQ_USER_QTY || codec_stream_map[stream][AUDIO_STREAM_OPENED] == 0) {
+        if (stream == AUD_STREAM_PLAYBACK) {
+            update_playback_sync_info();
+        }
+        else {
+            codec_cap_valid = 0;
+            usb_send_init_wpos = 0;
+            capture_pos = 0;
+            capture_conflicted = 0;
+
+            update_capture_sync_info();
+        }
+    }
+
+    if (user < AUDIO_STREAM_REQ_USER_QTY) {
+        codec_stream_map[stream][AUDIO_STREAM_OPENED] |= (1 << user);
+    }
+    return ret;
+}
+#else
 static int usb_audio_open_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STREAM_REQ_USER_T user)
 {
     int ret = 0;
@@ -2872,24 +3173,13 @@ static int usb_audio_open_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STRE
 
     ANC_USB_TRACE(4,"%s: stream=%d user=%d map=0x%x", __FUNCTION__, stream, user, codec_stream_map[stream][AUDIO_STREAM_OPENED]);
 
-
-#if defined(APP_USB_AUDIO_SOURCE_SUPPORT)
-    if ((usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_BLE_BIS) || (usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_WIFI)) {
-        if (((stream == AUD_STREAM_PLAYBACK) && usb_audio_source_cb_list.playback_start_cb) ||
-            ((stream == AUD_STREAM_CAPTURE) && usb_audio_source_cb_list.capture_start_cb)) {
-            return ret;
-        }
-    } else if (usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_BW) {
-        if (stream == AUD_STREAM_PLAYBACK)
-            return ret;
-    }
-#endif
     if (user >= AUDIO_STREAM_REQ_USER_QTY || codec_stream_map[stream][AUDIO_STREAM_OPENED] == 0) {
         memset(&stream_cfg, 0, sizeof(stream_cfg));
 
         if (stream == AUD_STREAM_PLAYBACK) {
-#if defined(APP_USB_A2DP_SOURCE)
-            if (usb_audio_source_cb_list.init_cb != NULL) {
+
+#ifdef APP_USB_A2DP_SOURCE
+            if(usb_audio_source_cb_list.init_cb){
                 usb_audio_source_cb_list.init_cb();
             }
 #endif
@@ -2920,7 +3210,11 @@ static int usb_audio_open_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STRE
             stream_cfg.device = AUD_STREAM_USE_INT_CODEC;
 #endif
             stream_cfg.vol = playback_vol;
+#ifdef APP_BLE_USB_AUDIO_RESAMPLE_SYNC
+            stream_cfg.handler = usb_audio_data_playback_sync_handler;
+#else
             stream_cfg.handler = usb_audio_data_playback;
+#endif
             stream_cfg.io_path = AUD_OUTPUT_PATH_SPEAKER;
             stream_cfg.data_ptr = playback_buf;
             stream_cfg.data_size = playback_size;
@@ -2947,20 +3241,33 @@ static int usb_audio_open_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STRE
             mid_p_8_old_l=0;
             mid_p_8_old_r=0;
 
-            if (sample_rate_play == AUD_SAMPRATE_8000) {
-                playback_samplerate_ratio = 8 * 6;
-            } else if (sample_rate_play == AUD_SAMPRATE_16000) {
-                playback_samplerate_ratio = 8 * 3;
-            } else if ((sample_rate_play == AUD_SAMPRATE_44100) || (sample_rate_play == AUD_SAMPRATE_48000) || (sample_rate_play == AUD_SAMPRATE_50781)) {
-                playback_samplerate_ratio = 8;
-            } else if ((sample_rate_play == AUD_SAMPRATE_88200) || (sample_rate_play == AUD_SAMPRATE_96000)) {
-                playback_samplerate_ratio = 4;
-            } else if ((sample_rate_play == AUD_SAMPRATE_176400) || (sample_rate_play == AUD_SAMPRATE_192000)) {
-                playback_samplerate_ratio = 2;
-            } else if (sample_rate_play == AUD_SAMPRATE_384000) {
-                playback_samplerate_ratio = 1;
-            } else {
-                playback_samplerate_ratio = 1;
+            if(sample_rate_play==AUD_SAMPRATE_8000)
+            {
+                playback_samplerate_ratio=8*6;
+            }
+            else if(sample_rate_play==AUD_SAMPRATE_16000)
+            {
+                playback_samplerate_ratio=8*3;
+            }
+            else if((sample_rate_play==AUD_SAMPRATE_44100)||(sample_rate_play==AUD_SAMPRATE_48000)||(sample_rate_play==AUD_SAMPRATE_50781))
+            {
+                playback_samplerate_ratio=8;
+            }
+            else if((sample_rate_play==AUD_SAMPRATE_88200)||(sample_rate_play==AUD_SAMPRATE_96000))
+            {
+                playback_samplerate_ratio=4;
+            }
+            else if((sample_rate_play==AUD_SAMPRATE_176400)||(sample_rate_play==AUD_SAMPRATE_192000))
+            {
+                playback_samplerate_ratio=2;
+            }
+            else if(sample_rate_play==AUD_SAMPRATE_384000)
+            {
+                playback_samplerate_ratio=1;
+            }
+            else
+            {
+                playback_samplerate_ratio=1;
                 ASSERT(false, "Music cancel can't support playback sample rate:%d",sample_rate_play);
             }
 
@@ -3018,24 +3325,13 @@ static int usb_audio_open_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STRE
 
     return ret;
 }
+#endif
 
 static int usb_audio_close_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STREAM_REQ_USER_T user)
 {
     int ret = 0;
 
     ANC_USB_TRACE(4,"%s: stream=%d user=%d map=0x%x", __FUNCTION__, stream, user, codec_stream_map[stream][AUDIO_STREAM_OPENED]);
-
-#if defined(APP_USB_AUDIO_SOURCE_SUPPORT)
-    if ((usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_BLE_BIS) || (usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_WIFI)) {
-        if (((stream == AUD_STREAM_PLAYBACK) && usb_audio_source_cb_list.playback_stop_cb) ||
-            ((stream == AUD_STREAM_CAPTURE) && usb_audio_source_cb_list.capture_stop_cb)) {
-            return ret;
-        }
-    } else if (usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_BW) {
-        if (stream == AUD_STREAM_PLAYBACK)
-            return ret;
-    }
-#endif
 
     if (user < AUDIO_STREAM_REQ_USER_QTY) {
         codec_stream_map[stream][AUDIO_STREAM_OPENED] &= ~(1 << user);
@@ -3067,10 +3363,7 @@ POSSIBLY_UNUSED static int usb_audio_open_eq(void)
     enum AUD_CHANNEL_NUM_T chan_num = chan_num_to_enum(CHAN_NUM_PLAYBACK);
     ret = audio_process_open(sample_rate_play, sample_bits, chan_num, chan_num, playback_eq_size/chan_num/2, playback_eq_buf, playback_eq_size);
 
-    //ANC_USB_TRACE(1,"audio_process_open: %d", ret);
-#if defined(AUDIO_OUTPUT_SW_GAIN) && defined(AUDIO_OUTPUT_SW_GAIN_BEFORE_DRC)
-    audio_process_set_aud_stream_id(USB_AUD_STREAM_ID);
-#endif
+    //TRACE(1,"audio_process_open: %d", ret);
 
 #ifdef __SW_IIR_EQ_PROCESS__
     usb_audio_set_eq(AUDIO_EQ_TYPE_SW_IIR,usb_audio_get_eq_index(AUDIO_EQ_TYPE_SW_IIR,0));
@@ -3095,15 +3388,12 @@ POSSIBLY_UNUSED static int usb_audio_open_eq(void)
     return ret;
 }
 
-POSSIBLY_UNUSED static int usb_audio_close_eq(void)
+static int usb_audio_close_eq(void)
 {
     int ret = 0;
 
 #if defined(__SW_IIR_EQ_PROCESS__) || defined(__HW_FIR_EQ_PROCESS__) || defined(__HW_IIR_EQ_PROCESS__) || defined(__HW_DAC_IIR_EQ_PROCESS__)
     ret = audio_process_close();
-#if defined(AUDIO_OUTPUT_SW_GAIN) && defined(AUDIO_OUTPUT_SW_GAIN_BEFORE_DRC)
-    audio_process_set_aud_stream_id(AUD_STREAM_ID_0);
-#endif
 #endif
 
     eq_opened = 0;
@@ -3115,17 +3405,6 @@ static int usb_audio_start_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STR
 {
     int ret = 0;
 
-#if defined(APP_USB_AUDIO_SOURCE_SUPPORT)
-    if ((usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_BLE_BIS) || (usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_WIFI)) {
-        if (((stream == AUD_STREAM_PLAYBACK) && usb_audio_source_cb_list.playback_start_cb) ||
-            ((stream == AUD_STREAM_CAPTURE) && usb_audio_source_cb_list.capture_start_cb)) {
-            return ret;
-        }
-    } else if (usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_BW) {
-        if (stream == AUD_STREAM_PLAYBACK)
-            return ret;
-    }
-#endif
     ANC_USB_TRACE(4,"%s: stream=%d user=%d map=0x%x", __FUNCTION__, stream, user, codec_stream_map[stream][AUDIO_STREAM_STARTED]);
 
     if (user >= AUDIO_STREAM_REQ_USER_QTY || codec_stream_map[stream][AUDIO_STREAM_STARTED] == 0) {
@@ -3157,8 +3436,7 @@ static int usb_audio_start_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STR
 #endif
             }
 #endif
-
-            //  usb_audio_open_eq();
+            usb_audio_open_eq();
         } else {
 #if defined(CHIP_BEST1000) && defined(_DUAL_AUX_MIC_)
             damic_init();
@@ -3166,7 +3444,7 @@ static int usb_audio_start_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STR
 #endif
 
 #ifdef USB_AUDIO_SPEECH
-            app_overlay_select(APP_OVERLAY_HFP);
+//            app_overlay_select(APP_OVERLAY_HFP);
 
             speech_process_init(sample_rate_cap, CHAN_NUM_CAPTURE, sample_size_to_enum_playback(sample_size_cap),
                                 sample_rate_play, CHAN_NUM_PLAYBACK, sample_size_to_enum_playback(sample_size_play),
@@ -3181,14 +3459,16 @@ static int usb_audio_start_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STR
 
         // Tune rate according to the newest sync ratio info
         usb_audio_cmd_tune_rate(stream);
-
 #ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-        if (usb_audio_source_cb_list.data_prep_cb != NULL) {
+        if ((AUDIO_STREAM_REQ_USB == user) &&
+            (usb_audio_source_cb_list.data_prep_cb != NULL)) {
             usb_audio_source_cb_list.data_prep_cb(stream);
         }
-#endif
 
         ret = af_stream_start(USB_AUD_STREAM_ID, stream);
+#else
+        ret = af_stream_start(USB_AUD_STREAM_ID, stream);
+#endif
 
         ASSERT(ret == 0, "af_stream_start %d failed: %d", stream, ret);
 
@@ -3213,17 +3493,7 @@ static int usb_audio_stop_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STRE
 {
     int ret = 0;
 
-#if defined(APP_USB_AUDIO_SOURCE_SUPPORT)
-    if ((usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_BLE_BIS) || (usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_WIFI)) {
-        if (((stream == AUD_STREAM_PLAYBACK) && usb_audio_source_cb_list.playback_stop_cb) ||
-            ((stream == AUD_STREAM_CAPTURE) && usb_audio_source_cb_list.capture_stop_cb)) {
-            return ret;
-        }
-    } else if (usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_BW) {
-        if (stream == AUD_STREAM_PLAYBACK)
-            return ret;
-    }
-#endif
+
     ANC_USB_TRACE(4,"%s: stream=%d user=%d map=0x%x", __FUNCTION__, stream, user, codec_stream_map[stream][AUDIO_STREAM_STARTED]);
 
     if (user < AUDIO_STREAM_REQ_USER_QTY) {
@@ -3247,7 +3517,7 @@ static int usb_audio_stop_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STRE
 #endif
             }
 #endif
-            // usb_audio_close_eq();
+            usb_audio_close_eq();
         } else {
 #if defined(CHIP_BEST1000) && defined(_DUAL_AUX_MIC_)
             damic_deinit();
@@ -3255,7 +3525,7 @@ static int usb_audio_stop_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STRE
 
 #ifdef USB_AUDIO_SPEECH
             speech_process_deinit();
-            app_overlay_unloadall();
+//            app_overlay_unloadall();
 #endif
         }
     }
@@ -3377,7 +3647,11 @@ static void usb_audio_set_codec_volume(enum AUD_STREAM_T stream, uint8_t vol)
 #endif
 }
 
-static void usb_audio_enqueue_cmd(uint32_t data)
+#ifdef USB_HID_COMMAND_ENABLE
+void usb_audio_enqueue_cmd(uint32_t data)
+#else
+void usb_audio_enqueue_cmd(uint32_t data)
+#endif
 {
     int ret;
     uint32_t mark;
@@ -3393,14 +3667,14 @@ static void usb_audio_enqueue_cmd(uint32_t data)
         ANC_USB_TRACE(2,"%s: new watermark %u", __FUNCTION__, mark);
     }
 
-#if defined(BT_USB_AUDIO_DUAL_MODE) || defined(WIFI_USB_AUDIO_SUPPORT)
+#ifdef BT_USB_AUDIO_DUAL_MODE
     if (enqueue_cmd_cb) {
         enqueue_cmd_cb(data);
     }
 #endif
 }
 
-#if defined(BT_USB_AUDIO_DUAL_MODE) || defined(WIFI_USB_AUDIO_SUPPORT)
+#ifdef BT_USB_AUDIO_DUAL_MODE
 void usb_audio_set_enqueue_cmd_callback(USB_AUDIO_ENQUEUE_CMD_CALLBACK cb)
 {
     enqueue_cmd_cb = cb;
@@ -3478,9 +3752,9 @@ static void usb_audio_playback_start(enum USB_AUDIO_ITF_CMD_T cmd)
 #ifdef USB_AUDIO_DYN_CFG
         playback_itf_set = 0;
 #ifdef USB_AUDIO_UAC2
-        enqueue_unique_cmd_with_opp(AUDIO_CMD_STOP_PLAYBACK, usb_recv_seq, 0, AUDIO_CMD_START_PLAYBACK);
+        enqueue_unique_cmd_with_opp(AUDIO_CMD_STOP_PLAY, usb_recv_seq, 0, AUDIO_CMD_START_PLAY);
 #else
-        enqueue_unique_cmd_with_opp(AUDIO_CMD_STOP_PLAYBACK, usb_recv_seq, 0, AUDIO_CMD_SET_RECV_RATE);
+        enqueue_unique_cmd_with_opp(AUDIO_CMD_STOP_PLAY, usb_recv_seq, 0, AUDIO_CMD_SET_RECV_RATE);
 #endif
 #else
 
@@ -3490,7 +3764,7 @@ static void usb_audio_playback_start(enum USB_AUDIO_ITF_CMD_T cmd)
         }
 #endif
 
-        enqueue_unique_cmd_with_opp(AUDIO_CMD_STOP_PLAYBACK, usb_recv_seq, 0, AUDIO_CMD_START_PLAYBACK);
+        enqueue_unique_cmd_with_opp(AUDIO_CMD_STOP_PLAY, usb_recv_seq, 0, AUDIO_CMD_START_PLAY);
 #endif
     } else {
 #ifdef USB_AUDIO_DYN_CFG
@@ -3518,8 +3792,7 @@ static void usb_audio_playback_start(enum USB_AUDIO_ITF_CMD_T cmd)
         usb_audio_start_usb_stream(AUD_STREAM_PLAYBACK);
         recv_state = AUDIO_ITF_STATE_STARTED;
 
-        // Start play
-        enqueue_unique_cmd_with_opp(AUDIO_CMD_START_PLAYBACK, usb_recv_seq, 0, AUDIO_CMD_STOP_PLAYBACK);
+        enqueue_unique_cmd_with_opp(AUDIO_CMD_START_PLAY, usb_recv_seq, 0, AUDIO_CMD_STOP_PLAY);
 #else
         // Wait for sampling freq ctrl msg to start the stream
 #endif
@@ -3536,7 +3809,7 @@ static void usb_audio_playback_start(enum USB_AUDIO_ITF_CMD_T cmd)
         }
 #endif
 
-        enqueue_unique_cmd_with_opp(AUDIO_CMD_START_PLAYBACK, usb_recv_seq, 0, AUDIO_CMD_STOP_PLAYBACK);
+        enqueue_unique_cmd_with_opp(AUDIO_CMD_START_PLAY, usb_recv_seq, 0, AUDIO_CMD_STOP_PLAY);
 #endif
     }
 }
@@ -3628,6 +3901,15 @@ static void usb_audio_vol_control(uint32_t percent)
 #else
     usb_audio_enqueue_cmd(AUDIO_CMD_SET_VOLUME);
 #endif
+
+#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
+    TRACE(0, "usb audio source new_playback_vol %d", new_playback_vol);
+    if (usb_audio_source_cb_list.playback_vol_change_cb != NULL)
+    {
+        usb_audio_source_cb_list.playback_vol_change_cb(new_playback_vol);
+    }
+#endif
+
 }
 
 static void usb_audio_cap_vol_control(uint32_t percent)
@@ -3759,18 +4041,6 @@ static void usb_audio_data_recv_handler(const struct USB_AUDIO_XFER_INFO_T *info
     if (new_wpos >= usb_recv_size) {
         new_wpos -= usb_recv_size;
     }
-
-#if defined(APP_USB_AUDIO_SOURCE_SUPPORT)
-    if (((usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_BLE_BIS) || (usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_WIFI) ||
-         (usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_BW)) && usb_audio_source_cb_list.data_recv_cb) {
-        if ((new_wpos == 0) || (new_wpos == usb_recv_size / 2)) {
-            usb_audio_source_cb_list.data_recv_cb((uint8_t *)usb_recv_buf + usb_recv_size / 2 - new_wpos, usb_recv_size / 2);
-        }
-        usb_recv_wpos = new_wpos;
-        if ((usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_BLE_BIS) || (usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_WIFI))
-            return;
-    }
-#endif
 
     if (recv_state == AUDIO_ITF_STATE_STOPPED ||
             size == 0 || // rx paused
@@ -4044,16 +4314,6 @@ static void usb_audio_data_send_handler(const struct USB_AUDIO_XFER_INFO_T *info
         new_rpos -= usb_send_size;
     }
 
-#if defined(APP_USB_AUDIO_SOURCE_SUPPORT)
-    if ((usb_audio_source_cb_list.src_type == USB_AUDIO_SOURCE_WIFI) && usb_audio_source_cb_list.data_send_cb) {
-        if ((new_rpos == 0) || (new_rpos == usb_send_size / 2)) {
-            usb_audio_source_cb_list.data_send_cb((uint8_t *)usb_send_buf + usb_send_size / 2 - new_rpos, usb_send_size / 2);
-        }
-        usb_send_rpos = new_rpos;
-        return;
-    }
-#endif
-
     if (send_state == AUDIO_ITF_STATE_STOPPED ||
             size == 0 || // tx paused
             0) {
@@ -4253,7 +4513,7 @@ static void usb_audio_playback2_start(enum USB_AUDIO_ITF_CMD_T cmd)
             return;
         }
 
-        enqueue_unique_cmd_with_opp(AUDIO_CMD_STOP_PLAYBACK, usb_recv_seq, 0, AUDIO_CMD_START_PLAYBACK);
+        enqueue_unique_cmd_with_opp(AUDIO_CMD_STOP_PLAY, usb_recv_seq, 0, AUDIO_CMD_START_PLAY);
     } else {
         if (recv2_state == AUDIO_ITF_STATE_STOPPED) {
             int ret;
@@ -4671,7 +4931,7 @@ static void usb_audio_set_recv_rate(enum AUD_SAMPRATE_T rate)
 #ifdef USB_AUDIO_UAC2
     enqueue_unique_cmd_arg(AUDIO_CMD_SET_RECV_RATE, usb_recv_seq, 0);
 #else
-    enqueue_unique_cmd_with_opp(AUDIO_CMD_SET_RECV_RATE, usb_recv_seq, 0, AUDIO_CMD_STOP_PLAYBACK);
+    enqueue_unique_cmd_with_opp(AUDIO_CMD_SET_RECV_RATE, usb_recv_seq, 0, AUDIO_CMD_STOP_PLAY);
 #endif
 }
 
@@ -4811,7 +5071,7 @@ static void usb_audio_acquire_freq(void)
         freq = speech_freq;
     }
 #endif
-
+    freq=HAL_CMU_FREQ_208M;
     hal_sysfreq_req(HAL_SYSFREQ_USER_APP_2, freq);
     //ANC_USB_TRACE(2,"[%s] app_sysfreq_req %d", __FUNCTION__, freq);
     //ANC_USB_TRACE(2,"[%s] sys freq calc : %d\n", __FUNCTION__, hal_sys_timer_calc_cpu_freq(5, 0));
@@ -5486,14 +5746,9 @@ _done_rate_size_check:;
     }
 }
 
-static void usb_audio_start_codec_playback(void)
+static void start_play(uint8_t seq)
 {
     if (playback_state == AUDIO_ITF_STATE_STOPPED) {
-#if defined(USB_AUDIO_DYN_CFG) && defined(USB_AUDIO_UAC2)
-        // Update codec for the possible change of recv sample size
-        usb_audio_update_codec_stream(AUD_STREAM_PLAYBACK);
-#endif
-
 #ifdef FREQ_RESP_EQ
         freq_resp_eq_init();
 #endif
@@ -5502,60 +5757,50 @@ static void usb_audio_start_codec_playback(void)
         usb_audio_open_codec_stream(AUD_STREAM_PLAYBACK, AUDIO_STREAM_REQ_USB);
 #endif
 
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-        TRACE(0, "usb audio source START");
-        if (usb_audio_source_cb_list.playback_start_cb != NULL) {
-            usb_audio_source_cb_list.playback_start_cb();
-        }
-#endif
-
 #ifdef NOISE_GATING
         last_high_signal_time = hal_sys_timer_get();
 #ifdef NOISE_REDUCTION
         last_nr_restore_time = hal_sys_timer_get();
 #endif
 #endif
-
+#ifndef USB_BLE_AUDIO_HW_TIMER_TRIGGER
         usb_audio_start_codec_stream(AUD_STREAM_PLAYBACK, AUDIO_STREAM_REQ_USB);
-
+#endif
         playback_state = AUDIO_ITF_STATE_STARTED;
     }
+
+    codec_play_seq = seq;
+    playback_paused = 0;
 
     usb_audio_update_freq();
 }
 
-static void usb_audio_cmd_start_playback(uint8_t seq)
+static void usb_audio_cmd_start_play(uint8_t seq)
 {
-    codec_play_seq = seq;
-    playback_paused = 0;
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-    playback_usb_started = 1;
-    if (playback_allowed)
+#if defined(USB_AUDIO_DYN_CFG) && defined(USB_AUDIO_UAC2)
+    usb_audio_update_codec_stream(AUD_STREAM_PLAYBACK);
 #endif
+
+#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
+    TRACE(0, "usb audio source START");
+    if (usb_audio_source_cb_list.playback_start_cb != NULL)
     {
-        usb_audio_start_codec_playback();
+        usb_audio_source_cb_list.playback_start_cb();
     }
-}
-
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-static void usb_audio_cmd_allow_playback(void)
-{
-    playback_allowed = 1;
-    if (playback_usb_started) {
-        usb_audio_start_codec_playback();
-    }
-}
 #endif
+    start_play(seq);
+}
 
-static void usb_audio_stop_codec_playback(void)
+static void usb_audio_cmd_stop_play(void)
 {
     if (playback_state == AUDIO_ITF_STATE_STARTED) {
         usb_audio_stop_codec_stream(AUD_STREAM_PLAYBACK, AUDIO_STREAM_REQ_USB);
-
 #ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-        if (usb_audio_source_cb_list.playback_stop_cb != NULL) {
-            usb_audio_source_cb_list.playback_stop_cb();
-        }
+    TRACE(0, "usb audio source stop");
+    if (usb_audio_source_cb_list.playback_stop_cb != NULL)
+    {
+        usb_audio_source_cb_list.playback_stop_cb();
+    }
 #endif
 
 #ifdef PA_ON_OFF_KEY
@@ -5592,38 +5837,9 @@ static void usb_audio_stop_codec_playback(void)
     usb_audio_update_freq();
 }
 
-static void usb_audio_cmd_stop_playback(void)
-{
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-    playback_usb_started = 0;
-    if (playback_allowed)
-#endif
-    {
-        usb_audio_stop_codec_playback();
-    }
-}
-
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-static void usb_audio_cmd_disallow_playback(void)
-{
-    playback_allowed = 0;
-    if (playback_usb_started) {
-        usb_audio_stop_codec_playback();
-    }
-    if (disallow_play_cb) {
-        disallow_play_cb();
-    }
-}
-#endif
-
-static void usb_audio_start_codec_capture(void)
+static void start_capture(uint8_t seq)
 {
     if (capture_state == AUDIO_ITF_STATE_STOPPED) {
-#if defined(USB_AUDIO_DYN_CFG) && defined(USB_AUDIO_UAC2)
-        // Update codec for the possible change of send sample size
-        //usb_audio_update_codec_stream(AUD_STREAM_CAPTURE);
-#endif
-
 #ifdef SW_CAPTURE_RESAMPLE
         // Check whether to start capture resample
         capture_stream_resample_config();
@@ -5632,52 +5848,39 @@ static void usb_audio_start_codec_capture(void)
 #ifdef DELAY_STREAM_OPEN
         usb_audio_open_codec_stream(AUD_STREAM_CAPTURE, AUDIO_STREAM_REQ_USB);
 #endif
-
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-        if (usb_audio_source_cb_list.capture_start_cb != NULL) {
-            usb_audio_source_cb_list.capture_start_cb();
-        }
-#endif
-
+#ifndef USB_BLE_AUDIO_HW_TIMER_TRIGGER
         usb_audio_start_codec_stream(AUD_STREAM_CAPTURE, AUDIO_STREAM_REQ_USB);
-
+#endif
         capture_state = AUDIO_ITF_STATE_STARTED;
     }
+
+    codec_cap_seq = seq;
 
     usb_audio_update_freq();
 }
 
 static void usb_audio_cmd_start_capture(uint8_t seq)
 {
-    codec_cap_seq = seq;
 #ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-    capture_usb_started = 1;
-    if (capture_allowed)
-#endif
+    if (usb_audio_source_cb_list.capture_start_cb != NULL)
     {
-        usb_audio_start_codec_capture();
+        usb_audio_source_cb_list.capture_start_cb();
     }
-}
-
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-static void usb_audio_cmd_allow_capture(void)
-{
-    capture_allowed = 1;
-    if (capture_usb_started) {
-        usb_audio_start_codec_capture();
-    }
-}
 #endif
 
-static void usb_audio_stop_codec_capture(void)
+    start_capture(seq);
+}
+
+static void usb_audio_cmd_stop_capture(void)
 {
     if (capture_state == AUDIO_ITF_STATE_STARTED) {
         usb_audio_stop_codec_stream(AUD_STREAM_CAPTURE, AUDIO_STREAM_REQ_USB);
 
 #ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-        if (usb_audio_source_cb_list.capture_stop_cb != NULL) {
-            usb_audio_source_cb_list.capture_stop_cb();
-        }
+    if (usb_audio_source_cb_list.capture_stop_cb != NULL)
+    {
+        usb_audio_source_cb_list.capture_stop_cb();
+    }
 #endif
 
 #ifdef DELAY_STREAM_OPEN
@@ -5697,49 +5900,21 @@ static void usb_audio_stop_codec_capture(void)
     usb_audio_update_freq();
 }
 
-static void usb_audio_cmd_stop_capture(void)
-{
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-    capture_usb_started = 0;
-    if (capture_allowed)
-#endif
-    {
-        usb_audio_stop_codec_capture();
-    }
-}
-
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-static void usb_audio_cmd_disallow_capture(void)
-{
-    capture_allowed = 0;
-    if (capture_usb_started) {
-        usb_audio_stop_codec_capture();
-    }
-    if (disallow_cap_cb) {
-        disallow_cap_cb();
-    }
-}
-#endif
-
 static void usb_audio_cmd_set_volume(void)
 {
 #ifndef USB_AUDIO_MULTIFUNC
     playback_vol = new_playback_vol;
 #endif
 
+#ifdef USB_HID_COMMAND_ENABLE
+    playback_vol = (new_playback_vol * usb_hid_app_volume_max_get())/100;
+#endif
     usb_audio_set_codec_volume(AUD_STREAM_PLAYBACK, playback_vol);
 
 #ifdef UNMUTE_WHEN_SET_VOL
     // Unmute if muted before
     if (mute_user_map & (1 << CODEC_MUTE_USER_CMD)) {
         usb_audio_codec_unmute(CODEC_MUTE_USER_CMD);
-    }
-#endif
-
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-    TRACE(0, "usb audio source new_playback_vol %d", new_playback_vol);
-    if (usb_audio_source_cb_list.playback_vol_change_cb != NULL) {
-        usb_audio_source_cb_list.playback_vol_change_cb(new_playback_vol);
     }
 #endif
 }
@@ -5766,18 +5941,6 @@ static void usb_audio_cmd_mute_ctrl(void)
     } else {
         usb_audio_codec_unmute(CODEC_MUTE_USER_CMD);
     }
-
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-    if (usb_audio_source_cb_list.playback_vol_change_cb != NULL) {
-        if (mute) {
-            TRACE(1, "MUTE CTRL to set vol 0: %u", mute);
-            usb_audio_source_cb_list.playback_vol_change_cb(0);
-        } else {
-            TRACE(1, "MUTE CTRL to set vol %x", new_playback_vol);
-            usb_audio_source_cb_list.playback_vol_change_cb(new_playback_vol);
-        }
-    }
-#endif
 }
 
 static void usb_audio_cmd_cap_mute_ctrl(void)
@@ -5792,7 +5955,7 @@ static void usb_audio_cmd_cap_mute_ctrl(void)
 static void usb_audio_cmd_usb_state(enum AUDIO_CMD_T cmd)
 {
     usb_audio_cmd_stop_capture();
-    usb_audio_cmd_stop_playback();
+    usb_audio_cmd_stop_play();
 
     if (cmd == AUDIO_CMD_USB_RESET || cmd == AUDIO_CMD_USB_WAKEUP) {
         usb_audio_acquire_freq();
@@ -5805,11 +5968,17 @@ static void usb_audio_cmd_usb_state(enum AUDIO_CMD_T cmd)
         usb_audio_term_streams(AUDIO_STREAM_REQ_USB);
         usb_audio_reset_codec_stream_state(cmd == AUDIO_CMD_USB_DISCONNECT);
         if (cmd == AUDIO_CMD_USB_DISCONNECT || usb_configured) {
+#ifdef USB_HID_COMMAND_ENABLE
+            usb_hid_app_init_onoff(false);
+#endif
             usb_audio_release_freq();
         }
     } else if (cmd == AUDIO_CMD_USB_CONFIG) {
         usb_configured = 1;
         usb_audio_reset_codec_stream_state(true);
+#ifdef USB_HID_COMMAND_ENABLE
+        usb_hid_app_init_onoff(true);
+#endif
     }
 }
 
@@ -5818,7 +5987,7 @@ static void usb_audio_cmd_recv_pause(uint8_t seq)
     ANC_USB_TRACE(3,"%s: Recv pause: seq=%u usb_recv_seq=%u", __FUNCTION__, seq, usb_recv_seq);
 
     if (seq == usb_recv_seq) {
-        usb_audio_cmd_stop_playback();
+        usb_audio_cmd_stop_play();
         playback_paused = 1;
     }
 }
@@ -5828,7 +5997,7 @@ static void usb_audio_cmd_recv_continue(uint8_t seq)
     ANC_USB_TRACE(3,"%s: Recv continue: seq=%u usb_recv_seq=%u", __FUNCTION__, seq, usb_recv_seq);
 
     if (seq == usb_recv_seq && playback_paused) {
-        usb_audio_cmd_start_playback(seq);
+        start_play(seq);
         //playback_paused = 0;
     }
 }
@@ -5846,7 +6015,7 @@ static void usb_audio_cmd_set_playback_rate(uint8_t seq, uint8_t index)
     usb_audio_update_codec_stream(AUD_STREAM_PLAYBACK);
 
 #ifndef USB_AUDIO_UAC2
-    usb_audio_cmd_start_playback(seq);
+    start_play(seq);
 #endif
 }
 
@@ -5862,7 +6031,7 @@ static void usb_audio_cmd_set_capture_rate(uint8_t seq, uint8_t index)
     usb_audio_update_codec_stream(AUD_STREAM_CAPTURE);
 
 #ifndef USB_AUDIO_UAC2
-    usb_audio_cmd_start_capture(seq);
+    start_capture(seq);
 #endif
 }
 #endif
@@ -5870,11 +6039,23 @@ static void usb_audio_cmd_set_capture_rate(uint8_t seq, uint8_t index)
 static void usb_audio_cmd_reset_codec(void)
 {
     ANC_USB_TRACE(1,"%s: RESET CODEC", __FUNCTION__);
-
+#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
+    if (usb_audio_source_cb_list.reset_codec_feasibility_check_cb != NULL)
+    {
+        bool isFeasible = usb_audio_source_cb_list.reset_codec_feasibility_check_cb();
+        if (!isFeasible)
+        {
+            TRACE(0, "This reset codec operation is non-feasible.");
+            //return;
+        }
+    }
+#endif
     // Regarding PLL reconfiguration, stream stop and start are enough.
     // Complete DAC/ADC reset (including analog parts) can be achieved by
     // stream close and open, which need to invoke explicitly here if
     // DELAY_STREAM_OPEN is not defined.
+
+    uint32_t lock = int_lock();
 
     if (codec_stream_map[AUD_STREAM_CAPTURE][AUDIO_STREAM_STARTED]) {
         set_codec_config_status(CODEC_CONFIG_LOCK_RESTART_CAP, true);
@@ -5888,9 +6069,15 @@ static void usb_audio_cmd_reset_codec(void)
 
     rate_tune_ratio[AUD_STREAM_PLAYBACK] = 0;
     rate_tune_ratio[AUD_STREAM_CAPTURE] = 0;
-    af_stream_tune(USB_AUD_STREAM_ID, AUD_STREAM_PLAYBACK, rate_tune_ratio[AUD_STREAM_PLAYBACK]);
 #ifdef __AUDIO_RESAMPLE__
-    af_stream_tune(USB_AUD_STREAM_ID, AUD_STREAM_CAPTURE, rate_tune_ratio[AUD_STREAM_PLAYBACK]);
+#ifdef PLL_TUNE_SAMPLE_RATE
+    af_codec_tune_resample_rate(AUD_STREAM_PLAYBACK, rate_tune_ratio[AUD_STREAM_PLAYBACK]);
+    af_codec_tune_resample_rate(AUD_STREAM_CAPTURE, rate_tune_ratio[AUD_STREAM_CAPTURE]);
+#elif defined(PLL_TUNE_XTAL)
+    af_codec_tune_xtal(rate_tune_ratio[AUD_STREAM_PLAYBACK]);
+#endif
+#else
+    af_codec_tune_pll(rate_tune_ratio[AUD_STREAM_PLAYBACK]);
 #endif
 
     if (codec_stream_map[AUD_STREAM_PLAYBACK][AUDIO_STREAM_STARTED]) {
@@ -5902,6 +6089,17 @@ static void usb_audio_cmd_reset_codec(void)
         usb_audio_start_codec_stream(AUD_STREAM_CAPTURE, AUDIO_STREAM_REQ_USER_ALL);
         set_codec_config_status(CODEC_CONFIG_LOCK_RESTART_CAP, false);
     }
+
+    int_unlock(lock);
+}
+
+bool usb_audio_check_capture_need_start(void)
+{
+    if (codec_stream_map[AUD_STREAM_CAPTURE][AUDIO_STREAM_STARTED]){
+        //usb audio is started status, should not restart!
+        return false;
+    }
+    return true;
 }
 
 #ifdef NOISE_GATING
@@ -6066,28 +6264,42 @@ static void usb_audio_cmd_handler(void *param)
         arg = EXTRACT_ARG(data);
         ANC_USB_TRACE(4,"%s: cmd=%d seq=%d arg=%d", __FUNCTION__, cmd, seq, arg);
 
+#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
+        if (usb_audio_source_cb_list.cmd_received_cb != NULL)
+        {
+            usb_audio_source_cb_list.cmd_received_cb(cmd);
+        }
+#endif
+
         switch (cmd) {
-        case AUDIO_CMD_START_PLAYBACK:
-            usb_audio_cmd_start_playback(seq);
+        case AUDIO_CMD_START_PLAY:
+            usb_audio_cmd_start_play(seq);
             break;
-        case AUDIO_CMD_STOP_PLAYBACK:
-            usb_audio_cmd_stop_playback();
+
+        case AUDIO_CMD_STOP_PLAY:
+            usb_audio_cmd_stop_play();
             break;
+
         case AUDIO_CMD_START_CAPTURE:
             usb_audio_cmd_start_capture(seq);
             break;
+
         case AUDIO_CMD_STOP_CAPTURE:
             usb_audio_cmd_stop_capture();
             break;
+
         case AUDIO_CMD_SET_VOLUME:
             usb_audio_cmd_set_volume();
             break;
+
         case AUDIO_CMD_SET_CAP_VOLUME:
             usb_audio_cmd_set_cap_volume();
             break;
+
         case AUDIO_CMD_MUTE_CTRL:
             usb_audio_cmd_mute_ctrl();
             break;
+
         case AUDIO_CMD_CAP_MUTE_CTRL:
             usb_audio_cmd_cap_mute_ctrl();
             break;
@@ -6120,21 +6332,6 @@ static void usb_audio_cmd_handler(void *param)
             usb_audio_cmd_reset_codec();
             break;
 
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-        case AUDIO_CMD_ALLOW_PLAYBACK:
-            usb_audio_cmd_allow_playback();
-            break;
-        case AUDIO_CMD_DISALLOW_PLAYBACK:
-            usb_audio_cmd_disallow_playback();
-            break;
-        case AUDIO_CMD_ALLOW_CAPTURE:
-            usb_audio_cmd_allow_capture();
-            break;
-        case AUDIO_CMD_DISALLOW_CAPTURE:
-            usb_audio_cmd_disallow_capture();
-            break;
-#endif
-
 #ifdef NOISE_GATING
         case AUDIO_CMD_NOISE_GATING:
             usb_audio_cmd_noise_gating();
@@ -6156,6 +6353,20 @@ static void usb_audio_cmd_handler(void *param)
             usb_audio_cmd_set_dsd_cfg();
             break;
 #endif
+
+        case AUDIO_CMD_STOP_LEAK_DETECT:
+            // Close stream
+            af_stream_stop(AUD_STREAM_ID_0, AUD_STREAM_CAPTURE);
+            af_stream_close(AUD_STREAM_ID_0, AUD_STREAM_CAPTURE);
+
+            af_stream_stop(AUD_STREAM_ID_0, AUD_STREAM_PLAYBACK);
+            af_stream_close(AUD_STREAM_ID_0, AUD_STREAM_PLAYBACK);
+
+            usb_audio_app(true);
+
+            //anc_open_cmd();
+
+            break;
 
 #ifdef PERF_TEST_POWER_KEY
         case TEST_CMD_PERF_TEST_POWER:
@@ -6179,7 +6390,8 @@ static void usb_audio_cmd_handler(void *param)
 #ifdef USB_PLUGOUT_DET
 static void charger_det_handler(enum PMU_CHARGER_STATUS_T status)
 {
-    if (status == PMU_CHARGER_PLUGOUT) {
+    if(status == PMU_CHARGER_PLUGOUT)
+    {
         usb_audio_app(0);
         usb_audio_app(1);
     }
@@ -6188,6 +6400,9 @@ static void charger_det_handler(enum PMU_CHARGER_STATUS_T status)
 
 void usb_audio_app_init(const struct USB_AUDIO_BUF_CFG *cfg)
 {
+#ifdef USB_HID_COMMAND_ENABLE
+    usb_hid_app_init_onoff(true);
+#endif
 #ifdef USB_AUDIO_DYN_CFG
     ASSERT(cfg->play_size / MAX_FRAME_SIZE_PLAYBACK < cfg->recv_size / MAX_FRAME_SIZE_RECV,
         "%s: play frames %u should < recv frames %u", __FUNCTION__,
@@ -6226,6 +6441,63 @@ void usb_audio_app_init(const struct USB_AUDIO_BUF_CFG *cfg)
     ASSERT(cfg->resample_buf + cfg->resample_size > resample_input_buf,
         "%s: Resample size too small: %u", __FUNCTION__, cfg->resample_size);
     resample_input_size = cfg->resample_buf + cfg->resample_size - resample_input_buf;
+#endif
+
+#ifdef APP_BLE_USB_AUDIO_RESAMPLE_SYNC
+    enum AUD_CHANNEL_NUM_T chans;
+    enum AUD_BITS_T bits;
+    uint8_t phase_coef_num;
+    uint32_t resamp_calc_size;
+
+    // recv
+    chans = chan_num_to_enum(CHAN_NUM_PLAYBACK);
+    bits = AUD_BITS_16;
+    phase_coef_num = 100;
+
+    resamp_calc_size = audio_resample_ex_get_buffer_size(chans, bits, phase_coef_num);
+
+    uint8_t *buf = (uint8_t *)ALIGN((uint32_t)cfg->resample_buf, 4);
+
+    struct RESAMPLE_CFG_T resample_cfg;
+    enum RESAMPLE_STATUS_T ret;
+
+    resample_cfg.chans = (enum AUD_CHANNEL_NUM_T)chans;
+    resample_cfg.bits = bits;
+    resample_cfg.coef = &resample_coef_any_up256;
+    resample_cfg.buf = buf;
+    resample_cfg.size = resamp_calc_size;
+    resample_cfg.ratio_step = USB_AUDIO_RESAMPLE_NORMAL_RATIO;
+
+    ret = audio_resample_ex_open(&resample_cfg, &recv_resample_id);
+    ASSERT(ret == RESAMPLE_STATUS_OK, "%s: Failed to init resample: %d", __FUNCTION__, ret);
+
+    buf += resamp_calc_size;
+    recv_resample_input_buf = buf;
+    recv_resample_input_size = cfg->play_size / 2;
+
+    buf += recv_resample_input_size;
+
+    // send
+    chans = chan_num_to_enum(CHAN_NUM_CAPTURE);
+    resamp_calc_size = audio_resample_ex_get_buffer_size(chans, bits, phase_coef_num);
+
+    resample_cfg.chans = (enum AUD_CHANNEL_NUM_T)chans;
+    resample_cfg.bits = bits;
+    resample_cfg.coef = &resample_coef_any_up256;
+    resample_cfg.buf = buf;
+    resample_cfg.size = resamp_calc_size;
+    resample_cfg.ratio_step = USB_AUDIO_RESAMPLE_NORMAL_RATIO;
+
+    ret = audio_resample_ex_open(&resample_cfg, &send_resample_id);
+    ASSERT(ret == RESAMPLE_STATUS_OK, "%s: Failed to init resample: %d", __FUNCTION__, ret);
+
+    buf += resamp_calc_size;
+    send_resample_input_buf = buf;
+    send_resample_input_size = cfg->cap_size / 2;
+
+    buf += send_resample_input_size;
+    ASSERT(cfg->resample_buf + cfg->resample_size > buf,
+        "%s: Resample size too small: %u", __FUNCTION__, cfg->resample_size);
 #endif
 
     playback_buf = cfg->play_buf;
@@ -6284,8 +6556,8 @@ void usb_audio_app_init(const struct USB_AUDIO_BUF_CFG *cfg)
     hal_cmu_simu_set_val(0);
 #endif
 
-#ifdef USB_HID_COMMAND_ENABLE
-    usb_hid_app_init();
+#ifdef USB_BIS_AUDIO_STREAM
+    app_usb_bis_src_init();
 #endif
 }
 
@@ -6356,13 +6628,6 @@ void usb_audio_app(bool on)
         usb_audio_reset_usb_stream_state(true);
         usb_audio_reset_codec_stream_state(true);
 
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-        playback_allowed = 1;
-        playback_usb_started = 0;
-        capture_allowed = 1;
-        capture_usb_started = 0;
-#endif
-
 #ifdef USB_AUDIO_DYN_CFG
         sample_rate_recv = new_sample_rate_recv = usb_audio_cfg.recv_sample_rate;
         sample_rate_send = new_sample_rate_send = usb_audio_cfg.send_sample_rate;
@@ -6411,6 +6676,594 @@ void usb_audio_app(bool on)
 #endif
 }
 
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+#include "hwtimer_list.h"
+#include "hal_pwm.h"
+#define VOLTAGE_HIGH                    1
+#define VOLTAGE_LOW                     0
+#define MUTE_LED_PIN                    HAL_GPIO_PIN_P1_0
+#define HOOK_LED_PIN                    HAL_GPIO_PIN_P0_6
+#define TEAMS_LED_PIN                   HAL_IOMUX_PIN_LED1
+typedef struct{
+    uint32_t flash_cur_count;
+    uint32_t flash_cycle_ms;
+    uint8_t level;
+}USB_AUDIO_APP_LED_FLASH_T;
+typedef struct{
+    USB_AUDIO_APP_LED_FLASH_T teams_led_flash;
+    USB_AUDIO_APP_LED_FLASH_T hook_led_flash;
+}USB_AUDIO_APP_LED_PARAM_T;
+static HWTIMER_ID g_teams_flash_led_hwtimer_id;
+static HWTIMER_ID g_hook_flash_led_hwtimer_id;
+static USB_AUDIO_APP_LED_PARAM_T g_led_param;
+static void usb_hid_led_timer_start(HWTIMER_ID timer, uint32_t ms){
+    hwtimer_start(timer, ms*16);
+}
+static void usb_hid_led_timer_stop(HWTIMER_ID timer){
+    hwtimer_stop(timer);
+}
+static void usb_hid_teams_flash_led_timer_cb(void *param){
+    if(g_led_param.teams_led_flash.flash_cur_count > 0){
+        if(g_led_param.teams_led_flash.level == VOLTAGE_HIGH){
+            g_led_param.teams_led_flash.level = VOLTAGE_LOW;
+            hal_gpio_pin_set_dir(TEAMS_LED_PIN, HAL_GPIO_DIR_OUT, 0);
+        }else{
+            g_led_param.teams_led_flash.level = VOLTAGE_HIGH;
+            hal_gpio_pin_set_dir(TEAMS_LED_PIN, HAL_GPIO_DIR_OUT, 1);
+        }
+        g_led_param.teams_led_flash.flash_cur_count--;
+        usb_hid_led_timer_start(g_teams_flash_led_hwtimer_id, g_led_param.teams_led_flash.flash_cycle_ms);
+    }
+}
+static void usb_hid_hook_flash_led_timer_cb(void *param){
+    if(g_led_param.hook_led_flash.level == VOLTAGE_HIGH){
+        g_led_param.hook_led_flash.level = VOLTAGE_LOW;
+        hal_gpio_pin_set_dir(HOOK_LED_PIN, HAL_GPIO_DIR_OUT, 0);
+    }else{
+        g_led_param.hook_led_flash.level = VOLTAGE_HIGH;
+        hal_gpio_pin_set_dir(HOOK_LED_PIN, HAL_GPIO_DIR_OUT, 1);
+    }
+    usb_hid_led_timer_start(g_hook_flash_led_hwtimer_id, g_led_param.hook_led_flash.flash_cycle_ms);
+}
+void usb_audio_app_teams_led_pulsing_onoff(bool on){
+    static bool led_status = false;
+    if(on == led_status)return;
+    led_status = on;
+    if(on){
+        struct PMU_LED_BR_CFG_T pmu_led_breathing_cfg = {
+            .off_time_ms = 0,
+            .on_time_ms  = 0,
+            .fade_time_ms = 2000,
+        };
+        pmu_led_breathing_enable(TEAMS_LED_PIN, &pmu_led_breathing_cfg);
+    }else{
+        pmu_led_breathing_disable(TEAMS_LED_PIN);
+    }
+}
+void usb_audio_app_teams_led_flash_onoff(bool on, uint32_t flash_count, uint32_t flash_cycle_ms){
+    TRACE(2, "[%s]=========================> on = %d", __func__, on);
+    if(on){
+        g_led_param.teams_led_flash.flash_cycle_ms = flash_cycle_ms/2;
+        g_led_param.teams_led_flash.flash_cur_count = flash_count-1;
+        g_led_param.teams_led_flash.level = VOLTAGE_HIGH;
+        hal_gpio_pin_set_dir(TEAMS_LED_PIN, HAL_GPIO_DIR_OUT, 1);
+        usb_hid_led_timer_stop(g_teams_flash_led_hwtimer_id);
+        usb_hid_led_timer_start(g_teams_flash_led_hwtimer_id, g_led_param.teams_led_flash.flash_cycle_ms);
+    }else{
+        hal_gpio_pin_set_dir(TEAMS_LED_PIN, HAL_GPIO_DIR_OUT, 0);
+        if(g_led_param.teams_led_flash.flash_cur_count > 0){
+            usb_hid_led_timer_stop(g_teams_flash_led_hwtimer_id);
+        }
+        g_led_param.teams_led_flash.flash_cur_count = 0;
+    }
+}
+void usb_audio_app_teams_led_solid_onoff(bool on){
+    TRACE(2, "[%s]=========================> on = %d", __func__, on);
+    if(on){
+        pmu_led_set_direction((enum HAL_GPIO_PIN_T)TEAMS_LED_PIN, HAL_GPIO_DIR_OUT);
+        pmu_led_set_pull_select(TEAMS_LED_PIN, HAL_IOMUX_PIN_PULLUP_ENABLE);
+        pmu_led_set_voltage_domains(TEAMS_LED_PIN, HAL_IOMUX_PIN_VOLTAGE_VIO);
+        hal_gpio_pin_set_dir(TEAMS_LED_PIN, HAL_GPIO_DIR_OUT, 1);
+    }else{
+        hal_gpio_pin_set_dir(TEAMS_LED_PIN, HAL_GPIO_DIR_OUT, 0);
+    }
+}
+static void usb_audio_app_hook_led_flash_onoff(bool on, uint32_t flash_count, uint32_t flash_cycle_ms){
+    TRACE(2, "[%s]=========================> on = %d", __func__, on);
+    if(on){
+        g_led_param.hook_led_flash.flash_cycle_ms = flash_cycle_ms/2;
+        g_led_param.hook_led_flash.flash_cur_count = flash_count-1;
+        g_led_param.hook_led_flash.level = VOLTAGE_HIGH;
+        hal_gpio_pin_set_dir(HOOK_LED_PIN, HAL_GPIO_DIR_OUT, 1);
+        usb_hid_led_timer_stop(g_hook_flash_led_hwtimer_id);
+        usb_hid_led_timer_start(g_hook_flash_led_hwtimer_id, g_led_param.hook_led_flash.flash_cycle_ms);
+    }else{
+        hal_gpio_pin_set_dir(HOOK_LED_PIN, HAL_GPIO_DIR_OUT, 0);
+        usb_hid_led_timer_stop(g_hook_flash_led_hwtimer_id);
+        g_led_param.hook_led_flash.flash_cur_count = 0;
+    }
+}
+void usb_audio_app_hook_led_solid_onoff(bool on){
+    TRACE(2, "[%s]=========================> on = %d", __func__, on);
+    if(on){
+        hal_gpio_pin_set_dir(HOOK_LED_PIN, HAL_GPIO_DIR_OUT, 1);
+    }else{
+        hal_gpio_pin_set_dir(HOOK_LED_PIN, HAL_GPIO_DIR_OUT, 0);
+    }
+}
+void usb_audio_app_mute_led_solid_onoff(bool on){
+    TRACE(2, "[%s]=========================> on = %d", __func__, on);
+    if(on){
+        hal_gpio_pin_set_dir(MUTE_LED_PIN, HAL_GPIO_DIR_OUT, 1);
+    }else{
+        hal_gpio_pin_set_dir(MUTE_LED_PIN, HAL_GPIO_DIR_OUT, 0);
+    }
+}
+int usb_audio_app_led_init_onoff(bool onoff){
+    static bool isRun =  false;
+    TRACE(2,"%s onoff[%d] enter !!!", __func__, onoff);
+    if (isRun == onoff)
+        return 0;
+    if(onoff){
+        const struct HAL_IOMUX_PIN_FUNCTION_MAP cfg_hw_pinmux_led[3] = {
+            {HAL_IOMUX_PIN_P1_0, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_PULLUP_ENABLE},// mute led
+            {HAL_IOMUX_PIN_P0_6, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_PULLUP_ENABLE},// hook led
+            {HAL_IOMUX_PIN_LED1, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_PULLUP_ENABLE},// teams led
+        };
+        hal_iomux_init(cfg_hw_pinmux_led, ARRAY_SIZE(cfg_hw_pinmux_led));
+        hal_gpio_pin_set_dir(MUTE_LED_PIN, HAL_GPIO_DIR_OUT, 0);
+        hal_gpio_pin_set_dir(HOOK_LED_PIN, HAL_GPIO_DIR_OUT, 0);
+        g_teams_flash_led_hwtimer_id = hwtimer_alloc(usb_hid_teams_flash_led_timer_cb, NULL);
+        g_hook_flash_led_hwtimer_id = hwtimer_alloc(usb_hid_hook_flash_led_timer_cb, NULL);
+    }else{
+        usb_audio_app_teams_led_pulsing_onoff(false);
+        usb_audio_app_teams_led_flash_onoff(false, 0, 0);
+        usb_audio_app_teams_led_solid_onoff(false);
+        usb_audio_app_hook_led_flash_onoff(false, 0, 0);
+        usb_audio_app_hook_led_solid_onoff(false);
+        usb_audio_app_mute_led_solid_onoff(false);
+        usb_hid_led_timer_stop(g_teams_flash_led_hwtimer_id);
+        usb_hid_led_timer_stop(g_hook_flash_led_hwtimer_id);
+        hwtimer_free(g_teams_flash_led_hwtimer_id);
+        g_teams_flash_led_hwtimer_id = NULL;
+        hwtimer_free(g_hook_flash_led_hwtimer_id);
+        g_hook_flash_led_hwtimer_id = NULL;
+    }
+    isRun = onoff;
+    TRACE(1,"%s end !!!", __func__);
+    return 0;
+}
+#endif
+#ifdef USB_AUDIO_CUSTOM_USB_HID_KEY
+extern void ota_enter_usb_dld_mode(void);
+void vol_hid_test_down(void);
+#define USB_KEY_TRACE(n, str, ...)       //TRACE(n, str, ##__VA_ARGS__)
+extern int16_t volCur;
+USB_AUDIO_HID_CALL_EVENT_T global_call_event_param = {0, 0};
+int usb_audio_app_key(enum HAL_KEY_CODE_T code, enum HAL_KEY_EVENT_T event)
+{
+    static bool repeat_vol_max_flag = false, repeat_vol_min_flag = false, mute_record = false;
+    static uint8_t mute_old_state_record = 0;
+    uint8_t key_event = 0;
+    uint8_t report_id = 0;
+    uint16_t report_size = HID_REPORT_KEY_PACKET_SIZE;
+    TRACE(0, "[===> %s]code = %d, event = %d", __func__, code, event);
+    switch(event){
+        case HAL_KEY_EVENT_CLICK:{
+            USB_KEY_TRACE(0, "=== HAL_KEY_EVENT_CLICK ===");
+            if(code == HAL_KEY_CODE_FN1){
+#ifdef USB_AUDIO_CUSTOM_ASP
+                if(usb_hid_asp_device_conn_status_get()){
+                    uint8_t buf[3] = {0x00, 0x01, 0x01};
+                    if(usb_hid_asp_notification_event_get() == NT_MissIncomingCall){
+                        usb_hid_asp_notification_event_set(NT_MAX);
+                        usb_hid_asp_message_context_report(CT_TeamsButtonCallTab, buf, 3, true);
+                    }else if(usb_hid_asp_notification_event_get() == NT_UpcomingScheduledMeeting){
+                        usb_hid_asp_notification_event_set(NT_MAX);
+                        usb_hid_asp_message_context_report(CT_TeamsButtonScheduledMeeting, buf, 3, true);
+                    }else if(usb_hid_asp_notification_event_get() == NT_UncheckedVoiceMail){
+                        usb_hid_asp_notification_event_set(NT_MAX);
+                        usb_hid_asp_message_context_report(CT_TeamsButtonVoiceMail, buf, 3, true);
+                    }else{
+                        usb_hid_asp_message_context_report(CT_TeamsButtonInvoked, buf, 3, true);
+                    }
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+                    usb_audio_app_teams_led_pulsing_onoff(false);
+                    usb_audio_app_teams_led_solid_onoff(true);
+#endif
+                }else{
+                    key_event = USB_AUDIO_HID_KEY_MS_TEAM;
+                    report_id = HID_REPORT_ID_KEY_TEAMS;
+                    usb_audio_hid_set_event(key_event, report_id, report_size, 1);
+                    usb_audio_hid_set_event(key_event, report_id, report_size, 0);
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+                    usb_audio_app_teams_led_flash_onoff(true, FLASH_TEAMS_NO_CONN_COUNT, FLASH_BASIC_CYCLE_TIME);
+#endif
+                }
+#endif
+            }else if(code == HAL_KEY_CODE_FN2){
+                if(global_call_event_param.hook_hold_state){
+                    key_event = USB_AUDIO_HID_KEY_HOLD_RESUME;
+                }else{
+                    key_event = USB_AUDIO_HID_KEY_HOOK_SWITCH;
+                }
+                report_id = HID_REPORT_ID_KEY_MIC_MUTE;
+                usb_audio_hid_set_event(key_event, report_id, report_size, 1);
+                usb_audio_hid_set_event(key_event, report_id, report_size, 0);
+#ifdef USB_AUDIO_CUSTOM_ASP
+                uint8_t buf[5] = {0x00, 0x03, TM_ButtonPressInfo, 0x20, 0x00};
+                if(global_call_event_param.incoming_state){
+                    buf[4] = 0x00;
+                }
+                if(global_call_event_param.active_state){
+                    buf[4] = 0x01;
+                }
+                if(global_call_event_param.hook_hold_state){
+                    buf[3] = 0x21;
+                }
+                usb_hid_asp_message_context_report(CT_Telemetry, buf, 5, true);
+                usb_hid_asp_report_button_press_info(buf[4], 0xff);
+#endif
+            }else if(code == HAL_KEY_CODE_FN3){
+                if(!global_call_event_param.hook_hold_state){
+                    mute_record = false;
+                    mute_old_state_record = 0;
+                }
+            }
+            break;
+        }
+        case HAL_KEY_EVENT_LONGPRESS:{
+            USB_KEY_TRACE(0, "=== HAL_KEY_EVENT_LONGPRESS ===");
+            if(code == HAL_KEY_CODE_FN1){
+#ifdef USB_AUDIO_CUSTOM_ASP
+                uint8_t buf[3] = {0x00, 0x01, 0x02};
+                usb_hid_asp_message_context_report(CT_TeamsButtonInvoked, buf, 3, true);
+#endif
+            }else if(code == HAL_KEY_CODE_FN2){
+                key_event = USB_AUDIO_HID_KEY_HOOK_REJECT;
+                report_id = HID_REPORT_ID_KEY_MIC_MUTE;
+                usb_audio_hid_set_event(key_event, report_id, report_size, 1);
+                usb_audio_hid_set_event(key_event, report_id, report_size, 0);
+#ifdef USB_AUDIO_CUSTOM_ASP
+                uint8_t buf[5] = {0x00, 0x03, TM_ButtonPressInfo, 0x20, 0x01};
+                usb_hid_asp_message_context_report(CT_Telemetry, buf, 5, true);
+#endif
+            }else if(code == HAL_KEY_CODE_FN3){
+                if(!global_call_event_param.hook_hold_state){
+                    if(mute_old_state_record == 1)mute_old_state_record = 2;
+                }
+            }else if(code == HAL_KEY_CODE_FN4){
+            }else if(code == HAL_KEY_CODE_FN5){
+            }
+            break;
+        }
+        case HAL_KEY_EVENT_REPEAT:{
+            if(code == HAL_KEY_CODE_FN4){
+                USB_KEY_TRACE(1, "===============> volCur = %d", volCur);
+                if (new_playback_vol >= MAX_VOLUME_VAL && volCur >= -128 && !repeat_vol_max_flag){
+                    USB_KEY_TRACE(0, "VOLUME MAX");
+                    repeat_vol_max_flag = true;
+#ifdef MEDIA_PLAYER_SUPPORT
+                    usb_audio_enqueue_cmd(AUDIO_MEDIA_PROMPT_WARNING);
+#endif
+                }
+            }else if(code == HAL_KEY_CODE_FN5){
+                USB_KEY_TRACE(1, "===============> volCur = %d", volCur);
+                if (new_playback_vol <= TGT_VOLUME_LEVEL_2 && volCur <= -10841 && !repeat_vol_min_flag){
+                    USB_KEY_TRACE(0, "VOLUME MIN");
+                    repeat_vol_min_flag = true;
+#ifdef MEDIA_PLAYER_SUPPORT
+                    hal_sys_timer_delay(MS_TO_TICKS(200));
+                    usb_audio_enqueue_cmd(AUDIO_MEDIA_PROMPT_WARNING);
+#endif
+                }
+            }
+            break;
+        }
+        case HAL_KEY_EVENT_UP:{
+            if(code == HAL_KEY_CODE_PWR){
+                // usb_hid_app_set_component_status(0, 0xff, 0xff, 0xff, 0xff);
+                // vol_hid_test_down();
+                // ota_enter_usb_dld_mode();
+
+            }else if(code == HAL_KEY_CODE_FN1){
+                // usb_hid_app_set_component_status(0, 0xff, 0xff, 0xff, 0xff);
+            }else if(code == HAL_KEY_CODE_FN2){
+                // usb_hid_app_set_component_status(0xff, 0, 0xff, 0xff, 0xff);
+            }else if(code == HAL_KEY_CODE_FN3){
+                // usb_hid_app_set_component_status(0xff, 0xff, 0, 0xff, 0xff);
+                if(!global_call_event_param.hook_hold_state){
+                    mute_record = false;
+                    if(mute_old_state_record == 2){
+                        mute_old_state_record = 0;
+                        key_event = USB_AUDIO_HID_KEY_MIC_MUTE;
+                        report_id = HID_REPORT_ID_KEY_MIC_MUTE;
+                        usb_audio_hid_set_event(key_event, report_id, report_size, 1);
+                        usb_audio_hid_set_event(key_event, report_id, report_size, 0);
+#ifdef USB_AUDIO_CUSTOM_ASP
+                        uint8_t __unused buf[5] = {0x00, 0x03, TM_ButtonPressInfo, 0x2F, 0x00};
+                        if(mic_mute_state_get()){
+                            buf[4] = 0x00;
+                            mic_mute_state_set(0);
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+                            usb_audio_app_mute_led_solid_onoff(false);
+#endif
+                        }else{
+                            buf[4] = 0x01;
+                            mic_mute_state_set(1);
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+                            usb_audio_app_mute_led_solid_onoff(true);
+#endif
+                        }
+                        usb_hid_asp_message_context_report(CT_Telemetry, buf, 5, true);
+                        usb_hid_asp_report_button_press_info(0xff, buf[4]);
+#endif
+#ifdef MEDIA_PLAYER_SUPPORT
+                        usb_audio_enqueue_cmd(AUDIO_MEDIA_PROMPT_WARNING);
+#endif
+                    }
+                }
+            }else if(code == HAL_KEY_CODE_FN4){
+                // usb_hid_app_set_component_status(0xff, 0xff, 0xff, 0, 0xff);
+                repeat_vol_max_flag = false;
+                key_event = USB_AUDIO_HID_KEY_VOL_UP;
+                report_id = HID_REPORT_ID_KEY_VOL;
+                usb_audio_hid_set_event(key_event, report_id, report_size, 0);
+            }else if(code == HAL_KEY_CODE_FN5){
+                // usb_hid_app_set_component_status(0xff, 0xff, 0xff, 0xff, 0);
+                repeat_vol_min_flag = false;
+                key_event = USB_AUDIO_HID_KEY_VOL_DOWN;
+                report_id = HID_REPORT_ID_KEY_VOL;
+                usb_audio_hid_set_event(key_event, report_id, report_size, 0);
+            }
+            break;
+        }
+        case HAL_KEY_EVENT_DOWN:{
+            if(code == HAL_KEY_CODE_FN1){
+                // usb_hid_app_set_component_status(1, 0xff, 0xff, 0xff, 0xff);
+            }else if(code == HAL_KEY_CODE_FN2){
+                // usb_hid_app_set_component_status(0xff, 1, 0xff, 0xff, 0xff);
+            }else if(code == HAL_KEY_CODE_FN3){
+                // usb_hid_app_set_component_status(0xff, 0xff, 1, 0xff, 0xff);
+                if(!global_call_event_param.hook_hold_state && !mute_record){
+                    mute_record = true;
+                    key_event = USB_AUDIO_HID_KEY_MIC_MUTE;
+                    report_id = HID_REPORT_ID_KEY_MIC_MUTE;
+                    usb_audio_hid_set_event(key_event, report_id, report_size, 1);
+                    usb_audio_hid_set_event(key_event, report_id, report_size, 0);
+#ifdef USB_AUDIO_CUSTOM_ASP
+                    uint8_t __unused buf[5] = {0x00, 0x03, TM_ButtonPressInfo, 0x2F, 0x00};
+                    mute_old_state_record = 0;
+                    if(usb_hid_app_get_ptt_mode() == 1)mute_old_state_record = 1;
+                    if(mic_mute_state_get()){
+                        buf[4] = 0x00;
+                        mic_mute_state_set(0);
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+                        usb_audio_app_mute_led_solid_onoff(false);
+#endif
+                    }else{
+                        buf[4] = 0x01;
+                        mic_mute_state_set(1);
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+                        usb_audio_app_mute_led_solid_onoff(true);
+#endif
+                    }
+                    usb_hid_asp_message_context_report(CT_Telemetry, buf, 5, true);
+                    usb_hid_asp_report_button_press_info(0xff, buf[4]);
+#endif
+#ifdef MEDIA_PLAYER_SUPPORT
+                    usb_audio_enqueue_cmd(AUDIO_MEDIA_PROMPT_WARNING);
+#endif
+                }
+            }else if(code == HAL_KEY_CODE_FN4){
+                // usb_hid_app_set_component_status(0xff, 0xff, 0xff, 1, 0xff);
+                key_event = USB_AUDIO_HID_KEY_VOL_UP;
+                report_id = HID_REPORT_ID_KEY_VOL;
+                usb_audio_hid_set_event(key_event, report_id, report_size, 1);
+                USB_KEY_TRACE(1, "===============> volCur = %d", volCur);
+                if (new_playback_vol >= MAX_VOLUME_VAL && volCur >= -128 && !repeat_vol_max_flag){
+                    USB_KEY_TRACE(0, "VOLUME MAX");
+                    repeat_vol_max_flag = true;
+#ifdef MEDIA_PLAYER_SUPPORT
+                    usb_audio_enqueue_cmd(AUDIO_MEDIA_PROMPT_WARNING);
+#endif
+                }
+            }else if(code == HAL_KEY_CODE_FN5){
+                // usb_hid_app_set_component_status(0xff, 0xff, 0xff, 0xff, 1);
+                key_event = USB_AUDIO_HID_KEY_VOL_DOWN;
+                report_id = HID_REPORT_ID_KEY_VOL;
+                usb_audio_hid_set_event(key_event, report_id, report_size, 1);
+                USB_KEY_TRACE(1, "===============> volCur = %d", volCur);
+                if (new_playback_vol <= TGT_VOLUME_LEVEL_2 && volCur <= -10841 && !repeat_vol_min_flag){
+                    USB_KEY_TRACE(0, "VOLUME MIN");
+                    repeat_vol_min_flag = true;
+#ifdef MEDIA_PLAYER_SUPPORT
+                    hal_sys_timer_delay(MS_TO_TICKS(200));
+                    usb_audio_enqueue_cmd(AUDIO_MEDIA_PROMPT_WARNING);
+#endif
+                }
+            }
+            break;
+        }
+        default:return 1;
+    }
+    return 0;
+}
+
+#ifdef USB_AUDIO_CUSTOM_USB_HID_KEY
+void vol_hid_test_down(void){
+    TRACE(0,"# vol_hid_test_down");
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_VOL_DOWN, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 1);
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_VOL_DOWN, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 0);
+}
+
+void vol_hid_test_up(void){
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_VOL_UP, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 1);
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_VOL_UP, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 0);
+}
+
+void vol_hid_test_vol_mute(void){
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_VOL_MUTE, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 1);
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_VOL_MUTE, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 0);
+}
+
+void vol_hid_test_play_swich(void){
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_PLAY, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 1);
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_PLAY, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 0);
+}
+
+void vol_hid_test_pause_swich(void){
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_PAUSE, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 1);
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_PAUSE, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 0);
+}
+
+void vol_hid_test_next_track(void){
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_NEXT_TRACK, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 1);
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_NEXT_TRACK, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 0);
+}
+
+void vol_hid_test_previou_track(void){
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_PREVIOUS_TRACK, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 1);
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_PREVIOUS_TRACK, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 0);
+}
+
+void vol_hid_test_mic_mute(void){
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_MIC_MUTE, HID_REPORT_ID_KEY_MIC_MUTE, HID_REPORT_KEY_PACKET_SIZE, 1);
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_MIC_MUTE, HID_REPORT_ID_KEY_MIC_MUTE, HID_REPORT_KEY_PACKET_SIZE, 0);
+}
+
+void vol_hid_test_hood_swich(void){
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_HOOK_SWITCH, HID_REPORT_ID_KEY_MIC_MUTE, HID_REPORT_KEY_PACKET_SIZE, 1);
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_HOOK_SWITCH, HID_REPORT_ID_KEY_MIC_MUTE, HID_REPORT_KEY_PACKET_SIZE, 0);
+}
+
+void vol_hid_test_play_pause(void){
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_PLAY_PAUSE, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 1);
+    usb_audio_hid_set_event(USB_AUDIO_HID_KEY_PLAY_PAUSE, HID_REPORT_ID_KEY_VOL, HID_REPORT_KEY_PACKET_SIZE, 0);
+}
+
+typedef enum
+{
+    USB_AUDIO_HID_CMD_MIN = 0,
+    USB_AUDIO_HID_CMD_VOL_UP = USB_AUDIO_HID_CMD_MIN,
+    USB_AUDIO_HID_CMD_VOL_DOWN,
+    USB_AUDIO_HID_CMD_VOL_MUTE,
+    USB_AUDIO_HID_CMD_PLAY,
+    USB_AUDIO_HID_CMD_PAUSE,
+    USB_AUDIO_HID_CMD_NEXT_TRACK,//5
+    USB_AUDIO_HID_CMD_PREVIOUS_TRACK,
+    USB_AUDIO_HID_CMD_MIC_MUTE,
+    USB_AUDIO_HID_CMD_HOOK_SWITCH,
+    USB_AUDIO_HID_CMD_PLAY_PAUSE,
+    USB_AUDIO_HID_CMD_MAX,
+} USB_AUDIO_HID_CMD_E;
+
+// static void BLE_receive_hid_cmd_handler(uint32_t funcCode, uint8_t* ptrParam, uint32_t paramLen);
+
+// BLE_CUSTOM_COMMAND_TO_ADD(OP_SEND_HID_COMMAND_TO_DONGLE,
+//                         BLE_receive_hid_cmd_handler,
+//                         false,
+//                         0,
+//                         NULL);
+
+// static void BLE_receive_hid_cmd_handler(uint32_t funcCode, uint8_t* ptrParam, uint32_t paramLen)
+// {
+//     TRACE(0,"%s hid data: ",__func__);
+//     DUMP8("%02x ", ptrParam, paramLen);
+//     USB_AUDIO_HID_CMD_E hid_cmd = (USB_AUDIO_HID_CMD_E)*ptrParam;
+//     TRACE(0,"%s hid_cmd:%d ",__func__,hid_cmd);
+//     switch (hid_cmd)
+//     {
+//         case USB_AUDIO_HID_CMD_VOL_UP:
+//             vol_hid_test_up();
+//             break;
+//         case USB_AUDIO_HID_CMD_VOL_DOWN:
+//             vol_hid_test_down();
+//             break;
+//         case USB_AUDIO_HID_CMD_VOL_MUTE:
+//             vol_hid_test_vol_mute();
+//             break;
+//         case USB_AUDIO_HID_CMD_PLAY:
+//             vol_hid_test_play_swich();
+//             break;
+//         case USB_AUDIO_HID_CMD_PAUSE:
+//             vol_hid_test_pause_swich();
+//             break;
+//         case USB_AUDIO_HID_CMD_NEXT_TRACK:
+//             vol_hid_test_next_track();
+//             break;
+//         case USB_AUDIO_HID_CMD_PREVIOUS_TRACK:
+//             vol_hid_test_previou_track();
+//             break;
+//         case USB_AUDIO_HID_CMD_MIC_MUTE:
+//             vol_hid_test_mic_mute();
+//             break;
+//         case USB_AUDIO_HID_CMD_HOOK_SWITCH:
+//             vol_hid_test_hood_swich();
+//             break;
+//         case USB_AUDIO_HID_CMD_PLAY_PAUSE:
+//             vol_hid_test_play_pause();
+//             break;
+//         default:
+//             break;
+//     }
+// }
+#endif
+
+void usb_audio_app_hid_key_set_report_data_parse(USB_AUDIO_HID_KEY_T *pPayload){
+    USB_AUDIO_HID_LED_T *led_status = (USB_AUDIO_HID_LED_T *)&pPayload->cmd;
+    TRACE(0, "report_id = %x cmd = %x", pPayload->report_id, pPayload->cmd);
+    mic_mute_state_set((uint8_t)led_status->mic_mute_led);
+    if(led_status->mic_mute_led){
+        USB_KEY_TRACE(1, "===> mic mute led bright !!!");
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+        usb_audio_app_mute_led_solid_onoff(true);
+#endif
+    }else{
+        USB_KEY_TRACE(1, "===> mic mute led dark !!!");
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+        usb_audio_app_mute_led_solid_onoff(false);
+#endif
+    }
+#ifdef USB_AUDIO_CUSTOM_ASP
+    usb_hid_asp_report_button_press_info(led_status->off_hook_led, led_status->mic_mute_led);
+#endif
+    if(led_status->ring_incoming_led){
+        USB_KEY_TRACE(1, "===> hook switch answering >>> led flash!!!");
+        global_call_event_param.incoming_state = true;
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+        usb_audio_app_hook_led_flash_onoff(true, 0, FLASH_BASIC_CYCLE_TIME);
+#endif
+    }else{
+        USB_KEY_TRACE(1, "===> hook switch answer/hangup !!!");
+        if(led_status->off_hook_led){
+            USB_KEY_TRACE(1, "===> hook switch led bright !!!");
+            global_call_event_param.active_state = true;
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+            if(usb_hid_asp_device_conn_status_get()){
+                usb_audio_app_hook_led_flash_onoff(false, 0, 0);
+                usb_audio_app_hook_led_solid_onoff(true);
+            }
+#endif
+        }else{
+            USB_KEY_TRACE(1, "===> hook switch led dark !!!");
+            global_call_event_param.active_state = false;
+#ifdef USB_AUDIO_CUSTOM_USB_HID_LED
+            usb_audio_app_hook_led_flash_onoff(false, 0, 0);
+            usb_audio_app_hook_led_solid_onoff(false);
+#endif
+        }
+        global_call_event_param.incoming_state = false;
+        if(led_status->hold_led){
+            USB_KEY_TRACE(1, "===> hook switch hold on !!!");
+            global_call_event_param.hook_hold_state = true;
+        }else{
+            USB_KEY_TRACE(1, "===> hook switch recovery !!!");
+            global_call_event_param.hook_hold_state = false;
+        }
+    }
+}
+#else
 static void app_key_trace(uint32_t line, enum HAL_KEY_CODE_T code,
                           enum HAL_KEY_EVENT_T event, enum USB_AUDIO_HID_EVENT_T uevt, int state)
 {
@@ -6491,6 +7344,7 @@ int usb_audio_app_key(enum HAL_KEY_CODE_T code, enum HAL_KEY_EVENT_T event)
     // Let other applications check the key event
     return 1;
 }
+#endif
 
 #ifdef ANC_APP
 extern bool anc_usb_app_get_status();
@@ -6541,30 +7395,6 @@ uint32_t usb_audio_get_capture_sample_rate(void)
     return sample_rate_cap;
 }
 
-#ifdef APP_USB_AUDIO_SOURCE_SUPPORT
-void usb_audio_allow_codec_playback(void)
-{
-    usb_audio_enqueue_cmd(AUDIO_CMD_ALLOW_PLAYBACK);
-}
-
-void usb_audio_disallow_codec_playback(USB_AUDIO_DISALLOW_PLAYBACK_CALLBACK cb)
-{
-    disallow_play_cb = cb;
-    usb_audio_enqueue_cmd(AUDIO_CMD_DISALLOW_PLAYBACK);
-}
-
-void usb_audio_allow_codec_capture(void)
-{
-    usb_audio_enqueue_cmd(AUDIO_CMD_ALLOW_CAPTURE);
-}
-
-void usb_audio_disallow_codec_capture(USB_AUDIO_DISALLOW_CAPTURE_CALLBACK cb)
-{
-    disallow_cap_cb = cb;
-    usb_audio_enqueue_cmd(AUDIO_CMD_DISALLOW_CAPTURE);
-}
-#endif
-
 #ifdef DONGLE_SUPPORT
 void usb_dongle_callback(DONGLE_NOTIFY_EVENT_E event, DONGLE_INFORM_PARAM_T* p)
 {
@@ -6608,5 +7438,3 @@ void usb_dongle_callback(DONGLE_NOTIFY_EVENT_E event, DONGLE_INFORM_PARAM_T* p)
 
 }
 #endif
-
-

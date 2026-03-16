@@ -28,8 +28,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_BAP_H_
-#define APP_BAP_H_
+#ifndef __APP_BAP_H__
+#define __APP_BAP_H__
 
 #if BLE_AUDIO_ENABLED
 #include "bluetooth.h"

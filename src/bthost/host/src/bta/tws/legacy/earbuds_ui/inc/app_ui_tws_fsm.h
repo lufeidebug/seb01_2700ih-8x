@@ -30,5 +30,5 @@ void app_ui_tws_sm_handle_event(app_ui_evt_t evt, uint8_t reasonCode = 0);
 void app_ui_tws_sm_reset_timers();
 bool app_ui_tws_need_delay_mob_reconn();
 void app_ui_clear_reconnect_timer(void);
-
+bool app_ui_set_tws_page_max_times(uint16_t tws_reconnect_max_times);
 #endif /*__APP_UI_TWS_FSM_H__ */

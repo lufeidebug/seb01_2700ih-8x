@@ -4,6 +4,7 @@
 #define ANC_SPP_TOOL_TRACE_ENABLE
 #define ANC_TRACE_ENABLE
 #define ANC_USB_TRACE_ENABLE
+#define USB_HID_TRACE_ENABLE
 #define API_TRACE_ENABLE
 #define APP_AI_TRACE_ENABLE
 #define APP_RPC_TRACE_ENABLE
@@ -237,6 +238,11 @@
 #define ANC_USB_DUMP32(str, buf, cnt)
 #endif
 
+#ifdef USB_HID_TRACE_ENABLE
+#define USB_HID_TRACE(attr, str, ...)   TR_INFO(attr, str, ##__VA_ARGS__)
+#else
+#define USB_HID_TRACE(n, str, ...)
+#endif
 
 #ifdef API_TRACE_ENABLE
 #define API_TRACE(attr, str, ...)   TR_INFO(attr, str, ##__VA_ARGS__)

@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef _APP_HAP_HAC_MSG_H_
-#define _APP_HAP_HAC_MSG_H_
+#ifndef __APP_HAP_HAC_MSG_H__
+#define __APP_HAP_HAC_MSG_H__
 #include "bluetooth.h"
 #ifdef __cplusplus
 extern "C" {

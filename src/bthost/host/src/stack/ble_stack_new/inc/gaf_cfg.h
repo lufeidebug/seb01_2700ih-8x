@@ -17,8 +17,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __GAF_CFG_INC__
-#define __GAF_CFG_INC__
+#ifndef __GAF_CFG_H__
+#define __GAF_CFG_H__
 
 #include "bt_common_define.h"
 #include "bt_stack_status.h"
@@ -41,88 +41,43 @@
 
 #define GAF_SUPP_MAX_BIG_NUM            (BAP_TOTAL_BIG_COUNT)
 
-#if (DEBUG)
-#define GAF_MODULE_GEN_AUD              "GEN_AUD"
 
-#define GAF_MODULE_BAP_ISO_AL           "BAP_ISO_AL"
-
-#define GAF_MODULE_BAP_UC_CLI           "BAP_UC_CLI"
-#define GAF_MODULE_BAP_UC_SRV           "BAP_UC_SRV"
-
-#define GAF_MODULE_BAP_BC_SINK          "BAP_BC_SINK"
-#define GAF_MODULE_BAP_BC_SRC           "BAP_BC_SRC"
-
-#define GAF_MODULE_BAP_SCAN_DELEG       "BAP_SCAN_DELEG"
-#define GAF_MODULE_BAP_BC_ASSIST        "BAP_BC_ASSIST"
-
-#define GAF_MODULE_ASCC                 "ASCC"
-#define GAF_MODULE_ASCS                 "ASCS"
-#define GAF_MODULE_PACC                 "PACC"
-#define GAF_MODULE_PACS                 "PACS"
-#define GAF_MODULE_BASS                 "BASS"
-
-#define GAF_MODULE_MCC                  "MCC"
-#define GAF_MODULE_MCS                  "MCS"
-#define GAF_MODULE_TBC                  "TBC"
-#define GAF_MODULE_TBS                  "TBS"
-#define GAF_MODULE_VCC                  "VCC"
-#define GAF_MODULE_VCS                  "VCS"
-#define GAF_MODULE_MICC                 "MICC"
-#define GAF_MODULE_MICS                 "MICS"
-#define GAF_MODULE_AICC                 "AICC"
-#define GAF_MODULE_AICS                 "AICS"
-#define GAF_MODULE_VOCC                 "VOCC"
-#define GAF_MODULE_VOCS                 "VOCS"
-#define GAF_MODULE_CSI_CRYPTO           "CSI_CRYPTO"
-#define GAF_MODULE_CSI_COORD            "CSI_COORD"
-#define GAF_MODULE_CSI_MEMBER           "CSI_MEMBER"
-#define GAF_MODULE_CSIS                 "CSI_SRV"
-#define GAF_MODULE_CSISC                "CSI_CLI"
-#define GAF_MODULE_CAC                  "CAC"
-#define GAF_MODULE_CAS                  "CAS"
-#define GAF_MODULE_TMAC                 "TMAC"
-#define GAF_MODULE_TMAS                 "TMAS"
-#define GAF_MODULE_HAC                  "HAC"
-#define GAF_MODULE_HAS                  "HAS"
-#define GAF_MODULE_OTC                  "OTC"
-#define GAF_MODULE_OTS                  "OTS"
-#define GAF_MODULE_GMAS                 "GMAS"
-#define GAF_MODULE_GMAC                 "GMAC"
-#define GAF_MODULE_VAC                  "VAC"
-#define GAF_MODULE_VAS                  "VAS"
-#define GAF_MODULE_SHS                  "SHS"
+#if defined(BUILD_BTH_ROM)
+#define GAF_MOBILE_ROLE_EN              (0)
+#else
+#define GAF_MOBILE_ROLE_EN              (1)
 #endif
 
-#if (BLE_AUDIO_ENABLED) || defined(BUILD_BTH_ROM)
+#if (BLE_AUDIO_ENABLED)
 /// CAP
 #define CAP_CAS_ENABLE                  (1)
-#define CAP_CAC_ENABLE                  (1)
+#define CAP_CAC_ENABLE                  (GAF_MOBILE_ROLE_EN)
 /// ATC
 #define ATC_CSISM_ENABLE                (1)
-#define ATC_CSISC_ENABLE                (1)
+#define ATC_CSISC_ENABLE                (GAF_MOBILE_ROLE_EN)
 /// BAP
 #define BAP_ASCS_ENABLE                 (1)
-#define BAP_ASCC_ENABLE                 (1)
+#define BAP_ASCC_ENABLE                 (GAF_MOBILE_ROLE_EN)
 #define BAP_PACS_ENABLE                 (1)
-#define BAP_PACC_ENABLE                 (1)
+#define BAP_PACC_ENABLE                 (GAF_MOBILE_ROLE_EN)
 #define BAP_SCAN_DELEGATOR              (1)
 #define BAP_BROADCAST_SINK              (1)
 #define BAP_BROADCAST_SRC               (1)
-#define BAP_BROADCAST_ASSIST            (1)
+#define BAP_BROADCAST_ASSIST            (GAF_MOBILE_ROLE_EN)
 #define BAP_BASS_ENABLE                 (BAP_SCAN_DELEGATOR)
 #define BAP_BROADCAST_SCAN              (BAP_BROADCAST_SINK || BAP_SCAN_DELEGATOR || BAP_BROADCAST_ASSIST)
 /// MCP
 #define ACC_MCC_ENABLE                  (1)
-#define ACC_MCS_ENABLE                  (1)
+#define ACC_MCS_ENABLE                  (GAF_MOBILE_ROLE_EN)
 /// CCP
 #define ACC_TBC_ENABLE                  (1)
-#define ACC_TBS_ENABLE                  (1)
+#define ACC_TBS_ENABLE                  (GAF_MOBILE_ROLE_EN)
 /// VCP
 #define ARC_VCS_ENABLE                  (1)
-#define ARC_VCC_ENABLE                  (1)
+#define ARC_VCC_ENABLE                  (GAF_MOBILE_ROLE_EN)
 /// MICP
 #define ARC_MICS_ENABLE                 (1)
-#define ARC_MICC_ENABLE                 (1)
+#define ARC_MICC_ENABLE                 (GAF_MOBILE_ROLE_EN)
 /// AICP
 #define ARC_AICS_ENABLE                 (0)
 #define ARC_AICC_ENABLE                 (1)
@@ -134,7 +89,7 @@
 #define TMAP_TMAC_ENABLE                (1)
 /// HAP
 #define HAP_HAS_ENABLE                  (1)
-#define HAP_HAC_ENABLE                  (1)
+#define HAP_HAC_ENABLE                  (GAF_MOBILE_ROLE_EN)
 /// OTP
 #define ACC_OTS_ENABLE                  (0)
 #define ACC_OTC_ENABLE                  (0)

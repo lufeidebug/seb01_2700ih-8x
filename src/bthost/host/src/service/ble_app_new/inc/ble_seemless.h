@@ -22,7 +22,7 @@
 extern "C" {
 #endif
 
-int ble_seemless_init(uint8_t adv_hdl_shared, const bt_bdaddr_t *p_app_ia_shared, const uint8_t *p_irk_shared);
+int ble_seemless_init(const bt_bdaddr_t *p_app_ia_shared, const uint8_t *p_irk_shared);
 int ble_seemless_deinit(void);
 uint8_t ble_seemless_add_resolving_list_item(void);
 void ble_seemless_tws_sync_info(void);
@@ -31,7 +31,6 @@ uint32_t ble_seemless_role_switch_handler(uint8_t conidx, bool is_restore, uint8
 
 void ble_seemless_tws_role_switch_start(uint8_t curr_ui_role);
 void ble_seemless_tws_role_switch_cmp(uint8_t curr_ui_role);
-void ble_seemless_tws_role_update(uint8_t curr_ui_role);
 
 bool ble_seemless_is_connection_support_le_rs(uint16_t connhdl);
 

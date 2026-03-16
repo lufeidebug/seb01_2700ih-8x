@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __AICS_COMMON__
-#define __AICS_COMMON__
+#ifndef __AICS_COMMON_H__
+#define __AICS_COMMON_H__
 
 #include "gaf_cfg.h"
 

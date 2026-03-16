@@ -35,10 +35,12 @@
 #include "bt_drv_symbol_1503_t0.h"
 #include "bt_drv_symbol_1503_t1.h"
 #include "bt_drv_symbol_1503_t2.h"
+#include "bt_drv_symbol_1503_t3.h"
 #endif
 #include "bt_patch_1503_t0.h"
 #include "bt_patch_1503_t1.h"
 #include "bt_patch_1503_t2.h"
+#include "bt_patch_1503_t3.h"
 #include CHIP_SPECIFIC_HDR(bt_drv_modem_reg_map)
 
 /***************************************************************************
@@ -530,7 +532,7 @@ void bt_drv_reg_op_global_symbols_init(void)
         off_ah_in_lbe_lld_1_val = OFF_AH_IN_LBE_LLD_1_T1;
         off_ii_in_lbe_lld_val = OFF_II_IN_LBE_LLD_T1;
     }
-    else if (metal_id >= HAL_CHIP_METAL_ID_6)
+    else if (metal_id == HAL_CHIP_METAL_ID_6)
     {
 #ifdef __NEW_SWAGC_MODE__
         rf_rx_gain_ths_tbl_3m_addr = RF_RX_GAIN_THS_TBL_BT_3M_T2_ADDR;
@@ -615,6 +617,87 @@ void bt_drv_reg_op_global_symbols_init(void)
         off_ii_in_lbe_lld_val = OFF_II_IN_LBE_LLD_T2;
         off_tsdd_in_dbcst_dbg_t2_val = OFF_TSDD_IN_DBCST_DBG_T2;
         off_nsdi_in_dbcst_dbg_t2_val = OFF_NSDI_IN_DBCST_DBG_T2;
+        host_set_srand_seed_addr = HOST_SET_SRAND_SEED_1503_T2_ADDR;
+    }
+    else if (metal_id >= HAL_CHIP_METAL_ID_7)
+    {
+#ifdef __NEW_SWAGC_MODE__
+        rf_rx_gain_ths_tbl_3m_addr = RF_RX_GAIN_THS_TBL_BT_3M_T3_ADDR;
+        rx_monitor_3m_rxgain_addr = RX_MONITOR_3M_RXGAIN_T3_ADDR;
+        off_bsse_in_dbhfsc_dbg_val = OFF_BSSE_IN_DBHFSC_DBG_T3;
+#endif
+        //workmode_patch_version_addr = WORKMODE_PATCH_VERSION_1503_T3_ADDR;
+        rf_rx_gain_ths_tbl_ecc_addr = RF_RX_GAIN_THS_TBL_ECC_T3_ADDR;
+        hci_fc_env_addr = HCI_FC_ENV_T3_ADDR;
+        ld_acl_env_addr = LD_ACL_ENV_T3_ADDR;
+        bt_util_buf_env_addr = BT_UTIL_BUF_ENV_T3_ADDR;
+        ble_util_buf_env_addr = BLE_UTIL_BUF_ENV_T3_ADDR;
+        lc_state_addr = LC_STATE_T3_ADDR;
+        ld_sco_env_addr = LD_SCO_ENV_T3_ADDR;
+        rx_monitor_addr = RX_MONITOR_T3_ADDR;
+        lm_env_addr = LM_ENV_T3_ADDR;
+        lc_sco_env_addr = LC_SCO_ENV_T3_ADDR;
+        llm_env_addr = LLM_ENV_T3_ADDR;
+        rwip_env_addr = RWIP_ENV_T3_ADDR;
+        ble_rx_monitor_addr = BLE_RX_MONITOR_T3_ADDR;
+        ld_bes_bt_env_addr = LD_BES_BT_ENV_T3_ADDR;
+        #ifdef __DEBUG_FIX_RX_GAIN_CNTL__
+        rf_rx_gain_fixed_tbl_addr = RF_RX_GAIN_FIXED_TBL_T3_ADDR;
+        #endif
+        hci_dbg_ebq_test_mode_addr = HCI_DBG_EBQ_TEST_MODE_T3_ADDR;
+        dbg_bt_common_setting_addr = DBG_BT_COMMON_SETTING_T3_ADDR;
+        dbg_bt_sche_setting_addr = DBG_BT_SCHE_SETTING_T3_ADDR;
+        dbg_bt_ibrt_setting_addr = DBG_BT_IBRT_SETTING_T3_ADDR;
+        dbg_bt_hw_feat_setting_addr = DBG_BT_HW_FEAT_SETTING_T3_ADDR;
+        hci_dbg_set_sw_rssi_addr = HCI_DBG_SET_SW_RSSI_T3_ADDR;
+        sch_multi_ibrt_adjust_env_addr = SCH_MULTI_IBRT_ADJUST_ENV_T3_ADDR;
+        rf_rx_gain_ths_tbl_le_addr = RF_RX_GAIN_THS_TBL_LE_T3_ADDR;
+        llm_local_le_feats_addr = LLM_LOCAL_LE_FEATS_T3_ADDR;
+        rf_rx_gain_ths_tbl_le_2m_addr = RF_RX_GAIN_THS_TBL_LE_2M_T3_ADDR;
+        btdrv_txpwr_conv_tbl_addr = RF_RPL_TX_PW_CONV_TBL_T3_ADDR;
+        pcm_need_start_flag_addr = PCM_NEED_START_FLAG_T3_ADDR;
+        ecc_rx_monitor_addr = ECC_RX_MONITOR_T3_ADDR;
+        btc_stack_limited_addr = __STACKLIMIT_T3_ADDR;
+        lld_iso_env_addr = LLD_ISO_ENV_T3_ADDR;
+        dbg_bt_common_setting_t2_addr = DBG_BT_COMMON_SETTING_T2_T3_ADDR;
+        lld_bis_env_addr = LLD_BIS_ENV_T3_ADDR;
+        lld_big_env_addr = LLD_BIG_ENV_T3_ADDR;
+        lld_cis_env_addr = LLD_CIS_ENV_T3_ADDR;
+        lld_cig_env_addr = LLD_CIG_ENV_T3_ADDR;
+        //BT ROM T0 struct offset
+        off_rr_in_laet_ld_val = OFF_RR_IN_LAET_LD_T3;
+        off_lsbo_in_laet_ld_val = OFF_LSBO_IN_LAET_LD_T3;
+        off_tp_in_laet_ld_val = OFF_TP_IN_LAET_LD_T3;
+        off_lsco_in_laet_ld_val = OFF_LSCO_IN_LAET_LD_T3;
+        off_r1_in_laet_ld_val = OFF_R1_IN_LAET_LD_T3;
+        off_arf_in_bubet_bt_val = OFF_ARF_IN_BUBET_BT_T3;
+        off_atf_in_bubet_bt_val = OFF_ATF_IN_BUBET_BT_T3;
+        off_atf_in_bubet_ble_val = OFF_ATF_IN_BUBET_BLE_T3;
+        off_mpl_in_dbssc_dbg_val = OFF_MPL_IN_DBSSC_DBG_T3;
+        off_asiim_in_dbssc_dbg_val = OFF_ASIIM_IN_DBSSC_DBG_T3;
+        off_aiiinm_in_dbssc_dbg_val = OFF_AIIINM_IN_DBSSC_DBG_T3;
+        off_tl_in_dbcsc_dbg_val = OFF_TL_IN_DBCSC_DBG_T3;
+        off_li_in_lbbet_ld_val = OFF_LI_IN_LBBET_LD_T3;
+        off_ares_in_dbisc_dbg_val = OFF_ARES_IN_DBISC_DBG_T3;
+        off_issd_in_dbisc_dbg_val = OFF_ISSD_IN_DBISC_DBG_T3;
+        off_li_in_lset_lc_val = OFF_LI_IN_LSET_LC_T3;
+        off_mpt_in_lsnpt_lc_val = OFF_MPT_IN_LSNPT_LC_T3;
+        off_am_in_lsnpt_lc_val = OFF_AM_IN_LSNPT_LC_T3;
+        off_lc_in_ret_rwip_val = OFF_LC_IN_RET_RWIP_T3;
+        off_h_in_ret_rwip_0_val = OFF_H_IN_RET_RWIP_0_T3;
+        off_h_in_ret_rwip_1_val = OFF_H_IN_RET_RWIP_1_T3;
+        off_lust_in_ret_rwip_val = OFF_LUST_IN_RET_RWIP_T3;
+        off_gh_in_lce_lld_val = OFF_GH_IN_LCE_LLD_T3;
+        off_ah_in_lce_lld_0_val = OFF_H_IN_LCE_LLD_0_T3;
+        off_ah_in_lce_lld_1_val = OFF_H_IN_LCE_LLD_1_T3;
+        off_ii_in_lce_lld_val = OFF_II_IN_LCE_LLD_T3;
+        off_gh_in_lbe_lld_val = OFF_GH_IN_LBE_LLD_T3;
+        off_ah_in_lbe_lld_0_val = OFF_H_IN_LBE_LLD_0_T3;
+        off_ah_in_lbe_lld_1_val = OFF_H_IN_LBE_LLD_1_T3;
+        off_ii_in_lbe_lld_val = OFF_II_IN_LBE_LLD_T3;
+        off_tsdd_in_dbcst_dbg_t2_val = OFF_TSDD_IN_DBCST_DBG_T3;
+        off_nsdi_in_dbcst_dbg_t2_val = OFF_NSDI_IN_DBCST_DBG_T3;
+        host_set_srand_seed_addr = HOST_SET_SRAND_SEED_1503_T3_ADDR;
     }
 #else
 #ifdef __NEW_SWAGC_MODE__
@@ -2034,7 +2117,7 @@ void btdrv_regop_set_btc_srand_seed_initial(void)
     BT_DRV_REG_OP_ENTER();
     BT_DRV_REG_OP_CLK_ENB();
 
-    if(host_set_srand_seed_addr)
+    if( hal_get_chip_metal_id() >= HAL_CHIP_METAL_ID_6 && host_set_srand_seed_addr)
     {
         uint32_t seed = hal_sys_timer_get() * hal_fast_sys_timer_get();
         *(uint32_t *)(host_set_srand_seed_addr) = seed;
@@ -2369,22 +2452,49 @@ void bt_drv_reg_op_afh_assess_en(bool en)
 
     DRIVERS_TRACE(1,"BT_REG_OP:set afh assess=%d",en);
 
-    struct hci_dbg_set_afh_assess_params hci_afh_assess_init_config
+        enum HAL_CHIP_METAL_ID_T metal_id = hal_get_chip_metal_id();
+    if (metal_id < HAL_CHIP_METAL_ID_7)
     {
-        .enable  = 0,
-        .interval_factor = 1,
-        .afh_average_cnt = 7,
-        .afh_good_chl_thr = -90,
+        struct hci_dbg_set_afh_assess_params hci_afh_assess_init_config
+        {
+            .enable  = 0,
+            .interval_factor = 1,
+            .afh_average_cnt = 7,
+            .afh_good_chl_thr = -90,
 
-        .afh_sch_expect_assess_num = 40,
-    };
+            .afh_sch_expect_assess_num = 40,
+        };
 
-    if(en)
-    {
-        hci_afh_assess_init_config.enable = 1;
+        if(en)
+        {
+            hci_afh_assess_init_config.enable = 1;
+        }
+
+        btdrv_send_hci_cmd_bystack(HCI_DBG_AFH_ASSESS_CMD_OPCODE, (uint8_t *)&hci_afh_assess_init_config, sizeof(struct hci_dbg_set_afh_assess_params));
     }
+    else
+    {
+        struct hci_dbg_set_chas_params chas_config
+        {
+            .enable = 0,
+            .policy = CHAS_POLICY_GOOD,
+            .nb_channel = 0,
+            .sch_prio_dft = 40,
+            .nosync_timeout = 0,
+            .rssi_smooth_max = -100,
+            .rssi_diff_thd = 10,
+            .rssi_max_para = 45,
+            .gain_sw_thd = -50,
+            .monitor_interval = 800,
+        };
 
-    btdrv_send_hci_cmd_bystack(HCI_DBG_AFH_ASSESS_CMD_OPCODE, (uint8_t *)&hci_afh_assess_init_config, sizeof(struct hci_dbg_set_afh_assess_params));
+        if (en)
+        {
+            SETB(chas_config.enable, CHAS_ENABLE, 1);
+        }
+
+        btdrv_send_hci_cmd_bystack(HCI_DBG_AFH_ASSESS_CMD_OPCODE, (uint8_t *)&chas_config, sizeof(struct hci_dbg_set_chas_params));
+    }
 #endif
 }
 

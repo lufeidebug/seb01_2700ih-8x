@@ -17,8 +17,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __BAP_ASCS__
-#define __BAP_ASCS__
+#ifndef __BAP_ASCS_H__
+#define __BAP_ASCS_H__
 
 #include "gaf_prf.h"
 #include "gaf_cfg.h"

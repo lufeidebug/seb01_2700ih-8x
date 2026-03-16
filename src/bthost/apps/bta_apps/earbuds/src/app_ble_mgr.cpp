@@ -15,7 +15,6 @@
  ****************************************************************************/
 #ifdef BLE_HOST_SUPPORT
 
-#include "cmsis_os2.h"
 #include "bta_ble_api.h"
 
 #include "app_ble_mgr.h"
@@ -23,6 +22,12 @@
 #include "hal_trace.h"
 
 #define APP_BLE_MGR_SM_CFM_BY_UPPER         (0)
+
+static struct app_ble_mgr_environment
+{
+    app_ble_mgr_adv_report_cb adv_report_cb;
+
+} app_ble_mgr_env = {0};
 
 static void app_ble_mgr_global_handler_ind(bt_ble_conn_evt_t *event, void *p_ret_val)
 {
@@ -93,6 +98,16 @@ static void app_ble_mgr_global_handler_ind(bt_ble_conn_evt_t *event, void *p_ret
     {
 
     }
+    else if (BT_BLE_SCAN_DATA_REPORT_EVENT == event->evt_type)
+    {
+        bt_scan_data_report_handled_t *adv_report = &(event->p.scan_data_report_handled);
+
+        if (app_ble_mgr_env.adv_report_cb != NULL)
+        {
+            app_ble_mgr_env.adv_report_cb(&(adv_report->trans_addr), adv_report->rssi, adv_report->data,
+                                          adv_report->length >= 0xFF ? adv_report->length : 0xFF);
+        }
+    }
 }
 
 void app_ble_mgr_init(void)
@@ -112,6 +127,11 @@ void app_ble_mgr_init(void)
 void app_ble_mgr_deinit(void)
 {
     bta_ble_unregister_event_callback(app_ble_mgr_global_handler_ind);
+}
+
+void app_ble_mgr_scan_result_report_cb_register(app_ble_mgr_adv_report_cb adv_report_cb)
+{
+    app_ble_mgr_env.adv_report_cb = adv_report_cb;
 }
 
 #endif /* BLE_HOST_SUPPORT */

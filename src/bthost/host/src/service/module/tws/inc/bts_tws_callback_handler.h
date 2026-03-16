@@ -22,7 +22,7 @@ void tws_besaud_init(void);
 
 void bts_tws_global_callback(const btif_event_t *event);
 
-void bts_tws_besaud_callback(btif_besaud_event event);
+void bts_tws_besaud_callback(uint16_t event);
 
 void tws_besaud_extra_channel_send_data(const void* data, uint32_t len, void* context);
 

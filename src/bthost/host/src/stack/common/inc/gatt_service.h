@@ -97,8 +97,8 @@
 #define GATT_UUID_GMA_SERVICE                                       (0x1858) // Gaming Audio
 #define GATT_UUID_RAS_SERVICE                                       (0x185B) // Ranging Service
 #define GATT_UUID_SHP_SERVICE                                       (0x7FA0) // Spatial Headphone
-#define GATT_UUID_GVA_SERVICE                                       (0x7FA6) // Generic Voice Assistant
-#define GATT_UUID_VAP_SERVICE                                       (0x7F64) // Voice Assistant
+#define GATT_UUID_GVA_SERVICE                                       (0x185F) // Generic Voice Assistant
+#define GATT_UUID_VAP_SERVICE                                       (0x185E) // Voice Assistant
 #define GATT_UUID_APC_SERVICE                                       (0x7FA5) // Audio Processing Control
 
 /* CHARATERISTICS */
@@ -559,14 +559,14 @@
 #define GATT_CHAR_UUID_SOURCE_PAC_V2                                (0x7FA7)
 #define GATT_CHAR_UUID_SINK_ASE_V2                                  (0x7FA8)
 #define GATT_CHAR_UUID_SOURCE_ASE_V2                                (0x7FA9)
-#define GATT_CHAR_UUID_VA_NAME                                      (0x7F63)
-#define GATT_CHAR_UUID_VA_UUID                                      (0x7F62)
-#define GATT_CHAR_UUID_VA_CONTROL_POINT                             (0x7F61)
-#define GATT_CHAR_UUID_INSTALLED_LOCATION                           (0x7F60)
-#define GATT_CHAR_UUID_VA_SESSION_STATE                             (0x7F5F)
-#define GATT_CHAR_UUID_VA_SESSION_FLAG                              (0x7F5E)
-#define GATT_CHAR_UUID_VA_SUPPORTED_LANGUAGES                       (0x7F5D)
-#define GATT_CHAR_UUID_VA_SUPPORTED_FEATURES                        (0x7F5C)
+#define GATT_CHAR_UUID_VA_NAME                                      (0x2C31)
+#define GATT_CHAR_UUID_VA_UUID                                      (0x2C32)
+#define GATT_CHAR_UUID_VA_CONTROL_POINT                             (0x2C33)
+#define GATT_CHAR_UUID_INSTALLED_LOCATION                           (0x2C34)
+#define GATT_CHAR_UUID_VA_SESSION_STATE                             (0x2C35)
+#define GATT_CHAR_UUID_VA_SESSION_FLAG                              (0x2C36)
+#define GATT_CHAR_UUID_VA_SUPPORTED_LANGUAGES                       (0x2C37)
+#define GATT_CHAR_UUID_VA_SUPPORTED_FEATURES                        (0x2C38)
 #define GATT_CHAR_UUID_ECHO_CANCELLATION_SWITCH                     (0x7FB0)
 #define GATT_CHAR_UUID_NOISE_REDUCTION_SWITCH                       (0x7FB1)
 #define GATT_CHAR_UUID_NOISE_REDUCTION_SETTING                      (0x7FB2)
@@ -1353,15 +1353,6 @@ typedef enum
  */
 typedef struct
 {
-    uint8_t format;
-    uint8_t exponent;
-    uint16_t unit;
-    uint8_t name_space;
-    uint16_t description;
-} __attribute__((packed)) gatt_cpfd_data_t;
-
-typedef struct
-{
     uint8_t attr_flags;
     uint8_t attr_perm;
     uint8_t uuid_le_l;
@@ -1673,15 +1664,6 @@ typedef struct gatt_peer_service_t
     uint16_t attr_handle;
     uint16_t end_handle;
 } gatt_peer_service_t;
-
-typedef struct gatt_peer_char_node_t
-{
-    struct gatt_peer_char_node_t *next;
-    gatt_peer_service_t *service;
-    uint8_t count; // same uuid char count
-    uint16_t char_uuid; // set when 16-bit uuid
-    gatt_peer_character_t character[GATT_ARRAY_SIZE_1];
-} gatt_peer_char_node_t;
 
 typedef struct
 {

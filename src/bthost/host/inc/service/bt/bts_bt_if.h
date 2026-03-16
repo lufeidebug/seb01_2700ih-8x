@@ -208,6 +208,7 @@ uint8_t bts_bt_if_get_dev_connected_list(bt_bdaddr_t *addr_list);
  */
 uint8_t bts_bt_if_get_dev_acl_connected_count();
 
+uint8_t bts_bt_if_get_dev_acl_connecting_count();
 /**
  ****************************************************************************************
  * @brief Get mobile constate

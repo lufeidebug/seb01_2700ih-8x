@@ -20,7 +20,6 @@
 #include "app_bt.h"
 #include "app_hfp.h"
 #include "app_bt_func.h"
-#include "besaud_api.h"
 #include "app_ibrt_conn_evt.h"
 #include "app_bt_media_manager.h"
 #include "app_media_player.h"
@@ -35,6 +34,7 @@
 #include "bts_bt_if.h"
 #include "bts_bt_conn.h"
 #include "bts_core_conn.h"
+#include "bts_tws_channel.h"
 #include "fir_process.h"
 #include "iir_process.h"
 #include "audio_process.h"
@@ -481,7 +481,7 @@ bool sndp_is_master_mobile_link_connected(void)
 
 uint8_t sndp_is_besaud_connected(void)
 {
-    return btif_besaud_is_connected();
+    return bts_tws_channel_is_connected();
 }
 
 

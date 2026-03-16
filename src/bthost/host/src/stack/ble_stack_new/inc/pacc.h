@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __BAP_PACC__
-#define __BAP_PACC__
+#ifndef __BAP_PACC_H__
+#define __BAP_PACC_H__
 
 #include "generic_audio.h"
 #include "gaf_prf.h"

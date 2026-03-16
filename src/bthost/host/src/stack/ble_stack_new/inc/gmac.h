@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __GMAP_GMAC_INC__
-#define __GMAP_GMAC_INC__
+#ifndef __GMAP_GMAC_H__
+#define __GMAP_GMAC_H__
 
 #include "generic_audio.h"
 #include "gaf_prf.h"

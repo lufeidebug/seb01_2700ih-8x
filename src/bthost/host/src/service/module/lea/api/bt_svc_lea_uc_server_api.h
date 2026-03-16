@@ -367,12 +367,6 @@ void bt_svc_lea_uc_server_set_bis_src_ble_addr(const uint8_t *addr);
 
 uint8_t *bt_svc_lea_uc_server_get_bis_src_ble_addr(void);
 
-bool bt_svc_lea_uc_server_adv_enable(void);
-
-bool bt_svc_lea_uc_server_adv_disable(void);
-
-void bt_svc_lea_uc_server_dump_adv_state(void);
-
 uint8_t bt_svc_lea_uc_server_get_tws_conidx(void);
 
 bool bt_svc_lea_uc_server_info_connected_set(uint8_t conidx, ble_bdaddr_t *mobile_addr);
@@ -593,7 +587,6 @@ bool bt_svc_lea_uc_server_info_get_acc_bond_status(uint8_t conidx, uint8_t type)
 
 void bt_svc_lea_uc_server_info_set_acc_bond_status(uint8_t conidx, uint8_t type, bool status);
 
-void bt_svc_lea_uc_server_info_set_target_announcement_en(bool enable);
 /**
  * @brief Set bap audio configuration selection
  *

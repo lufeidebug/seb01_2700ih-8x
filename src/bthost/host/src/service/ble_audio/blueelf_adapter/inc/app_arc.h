@@ -20,8 +20,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_VCC_H_
-#define APP_VCC_H_
+#ifndef __APP_VCC_H__
+#define __APP_VCC_H__
 #if BLE_AUDIO_ENABLED
 #include "bluetooth.h"
 

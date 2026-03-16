@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __PRF_CSISC__
-#define __PRF_CSISC__
+#ifndef __PRF_CSISC_H__
+#define __PRF_CSISC_H__
 
 #include "gaf_prf.h"
 

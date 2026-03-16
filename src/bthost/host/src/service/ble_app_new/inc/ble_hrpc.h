@@ -14,8 +14,8 @@
  *
  ****************************************************************************/
 
-#ifndef _BLE_HRPC_H_
-#define _BLE_HRPC_H_
+#ifndef __BLE_HRPC_H__
+#define __BLE_HRPC_H__
 
 #include "ble_hrp_common.h"
 

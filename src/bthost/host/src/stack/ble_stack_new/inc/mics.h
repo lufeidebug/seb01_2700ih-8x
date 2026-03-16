@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __ARC_MICS__
-#define __ARC_MICS__
+#ifndef __ARC_MICS_H__
+#define __ARC_MICS_H__
 
 #include "gaf_cfg.h"
 #include "generic_audio.h"

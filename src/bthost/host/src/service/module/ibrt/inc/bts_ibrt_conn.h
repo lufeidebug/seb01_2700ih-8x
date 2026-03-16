@@ -354,7 +354,7 @@ void bts_ibrt_conn_disconnect_all_ibrt(void);
 
 bool app_tws_ibrt_set_env_needed(const bt_bdaddr_t *mobile_addr);
 
-void  app_tws_ibrt_set_env(ibrt_mobile_info_t* mobile_info);
+void  app_tws_ibrt_set_env(const bt_bdaddr_t *mobile_addr);
 
 bool bts_ibrt_conn_is_ibrt_link_connected(const bt_bdaddr_t *p_dev_addr);
 

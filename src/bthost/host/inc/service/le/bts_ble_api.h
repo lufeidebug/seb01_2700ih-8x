@@ -47,7 +47,7 @@ uint16_t bts_ble_gap_get_conhdl_by_conidx(uint8_t conidx);
 uint8_t bts_ble_gap_get_conidx_by_conhdl(uint16_t connhdl);
 
 void bts_ble_gap_update_conn_param(uint8_t conidx, uint32_t min_intv_ms, uint32_t max_intv_ms,
-                                   uint32_t superv_timeout_ms, uint8_t max_peripheral_latency);
+                                   uint32_t superv_timeout_ms, uint16_t max_peripheral_latency);
 
 uint16_t bts_ble_gap_get_conn_interval(uint8_t conidx);
 
@@ -104,13 +104,13 @@ void bts_ble_gap_custom_adv_stop(bt_ble_gap_adv_activity_t actv_user);
 
 bool bts_ble_gap_custom_adv_is_enabled(bt_ble_gap_adv_activity_t actv_user);
 
+void bts_ble_gap_custom_adv_evt_cb_register(bt_ble_custom_adv_event_func cb);
+
 void bts_ble_gap_register_data_fill_handle(bt_ble_gap_adv_user_t user, bts_ble_gap_adv_data_fill_func func, bool enable);
 
 void bts_ble_gap_data_fill_enable(bt_ble_gap_adv_user_t user, bool enable);
 
 void bts_ble_gap_set_adv_param(bts_ble_gap_adv_param_p_t *param);
-
-bts_ble_gap_adv_actv_t *bts_ble_gap_get_adv_param(bt_ble_gap_adv_user_t user);
 
 void bts_ble_gap_adv_data_set_flags(bts_ble_gap_adv_param_t *adv_param, bool simu_bredr_support);
 

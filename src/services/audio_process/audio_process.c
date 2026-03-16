@@ -1684,9 +1684,7 @@ void audio_process_reset_audio_buffer(void)
 #endif
 #endif
 
-#if AUDIO_MEMORY_SIZE > 0
     audio_process.audio_heap = NULL;
-#endif
 
 #if SPEECH_MEMORY_SIZE > 0
     audio_process.speech_heap = NULL;

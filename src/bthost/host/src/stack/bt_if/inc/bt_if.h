@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __BT_IF_H_
-#define __BT_IF_H_
+#ifndef __BT_IF_H__
+#define __BT_IF_H__
 #include <stdint.h>
 #include "bluetooth.h"
 #include "hci_api.h"
@@ -74,6 +74,7 @@ typedef bool (*btif_bt_sniff_params_callback_t)(btif_sniff_info_t *sniff_info);
 
 void btif_pairing_register_callback(btif_pairing_callback_t callback);
 void btif_confirmation_register_callback(btif_confirmation_req_callback_t callback);
+void btif_register_sec_conn_callback(btif_sec_conn_callback_t callback);
 
 int bt_stack_init(bt_stack_init_t* param);
 int bt_stack_deinit();
@@ -93,6 +94,8 @@ void btif_confirmation_resp(struct bdaddr_t *bdaddr, bool accept);
 void btif_input_user_passkey(struct bdaddr_t *bdaddr, uint32_t passkey);
 uint32_t btif_get_class_of_device(void);
 uint32_t btif_set_class_of_device(uint8 *cod);
+int8 btif_set_secure_connections_host_support(bool support);
+int8 btif_set_ble_host_support(bool support);
 void btif_osapi_lock_stack(void);
 void btif_osapi_unlock_stack(void);
 int btif_osapi_lock_is_exist(void);
@@ -115,7 +118,6 @@ int btif_hci_count_free_bt_tx_buff(void);
 void* btif_avdtp_create_media_channel(uint8_t device_id);
 void btif_avdtp_send_cmd(void* stream, uint8_t cmd, uint8_t* data, uint32_t datalen);
 
-void btif_pts_av_create_channel(bt_bdaddr_t *btaddr);
 void btif_pts_av_set_sink_delay(void);
 void btif_pts_rfc_register_channel(void);
 void btif_pts_rfc_close(void);

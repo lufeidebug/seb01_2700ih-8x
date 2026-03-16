@@ -21,8 +21,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_GMAP_GMAS_MSG_H_
-#define APP_GMAP_GMAS_MSG_H_
+#ifndef __APP_GMAP_GMAS_MSG_H__
+#define __APP_GMAP_GMAS_MSG_H__
 #if BLE_AUDIO_ENABLED
 
 #endif

@@ -144,10 +144,10 @@ enum btm_name_event
 
 enum btm_check_hfp_codec_enable_type
 {
-    BTM_CHECK_MSBC_ENABLE,
     BTM_CHECK_CVSD_ENABLE,
-    BTM_CHECK_VENDER_ENABLE,
+    BTM_CHECK_MSBC_ENABLE,
     BTM_CHECK_LC3_ENABLE,
+    BTM_CHECK_VENDER_ENABLE,
 };
 
 typedef void (*btm_pairing_callback_t)(enum btm_pairing_event event,void *pdata);
@@ -817,6 +817,7 @@ struct btm_ctrl_t {
     uint32 pairing_timeout;
     void (*btm_pairing_notify_callback)(enum btm_pairing_event event,void *pdata);
     void (*btm_confirmation_req_callback)(struct bdaddr_t *bdaddr, uint32 numeric_value);
+    void (*btm_sec_conn_callback)(bool enable);
     uint8 security_waitfor_linkkey_reply;
     struct bdaddr_t security_waitfor_linkkey_reply_bdaddr;
 
@@ -970,6 +971,7 @@ void btm_unpair_reomte(struct bdaddr_t remote_addr, btm_pairing_callback_t callb
 void btm_pairing_register_callback(btm_pairing_callback_t callback);
 void btm_confirmation_register_callback(void (*cb)(struct bdaddr_t *bdaddr, uint32 numeric_value));
 int8 btm_confirmation_resp(struct bdaddr_t *bdaddr, bool accept);
+void btm_register_sec_conn_callback(void (*cb)(bool enable));
 
 void btm_pairing_exit(void);
 

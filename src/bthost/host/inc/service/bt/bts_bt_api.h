@@ -84,6 +84,8 @@ bts_status_t bts_bt_write_extended_inquiry_response(const bts_extended_inquiry_r
 
 bts_status_t bts_bt_write_access_mode(bt_access_mode_t mode);
 
+bt_access_mode_t bts_bt_read_access_mode();
+
 bts_status_t bts_bt_acl_connect_with_page_timeout(const bt_bdaddr_t *address, uint32_t page_timeout, uint32_t time_to_next_page);
 
 bts_status_t bts_bt_acl_connect(const bt_bdaddr_t *address);

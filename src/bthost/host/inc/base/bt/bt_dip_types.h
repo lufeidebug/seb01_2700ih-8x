@@ -25,3 +25,5 @@ typedef struct
     uint8_t  prim_rec;          // PrimaryRecord
     uint16_t vend_id_source;    // VendorIDSource
 } bt_dip_pnp_info_t;
+
+typedef void (*bt_dip_info_queried_callback)(uint8_t *bdaddr, bt_dip_pnp_info_t *pnp_info);

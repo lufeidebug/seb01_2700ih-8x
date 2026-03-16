@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef _A2DP_API_H
-#define _A2DP_API_H
+#ifndef _A2DP_API_H__
+#define _A2DP_API_H__
 #include "bluetooth.h"
 #include "avrcp_api.h"
 #include "conmgr_api.h"
@@ -446,6 +446,7 @@ struct btif_get_codec_cap_t;
 
 typedef struct btif_a2dp_callback_parms_t {
     uint8_t event;
+    uint8_t role;
     uint16_t len;
     int8_t status;
     uint8_t error;
@@ -896,7 +897,7 @@ typedef union {
     bt_a2dp_custom_cmd_rsp_param_t *custom_cmd_rsp;
 } bt_a2dp_callback_param_t;
 
-void btif_a2dp_init(btif_a2dp_callback cb, btif_a2dp_callback source_cb);
+void btif_a2dp_init(btif_a2dp_callback cb);
 
 bt_status_t btif_a2dp_close_stream_for_PTS(a2dp_stream_t *Stream);
 
@@ -1085,6 +1086,9 @@ void btif_a2dp_update_media_chan_state_to_crtl(const bt_bdaddr_t *remote, bool c
 uint8_t a2dp_stream_confirm_stream_state(uint8_t index, uint8_t old_state, uint8_t new_state);
 uint8_t a2dp_stream_locate_the_connected_dev_id(a2dp_stream_t *Stream);
 void btif_a2dp_register_multi_link_close_req_allowed_callback(uint8 (*cb)(uint8_t device_id));
+
+typedef bool (*a2dp_req_cmd_delay_rsp_t)(const bt_bdaddr_t *remote, uint8_t *timeout);
+void btif_a2dp_register_req_delay_rsp_cb(a2dp_req_cmd_delay_rsp_t callback);
 
 /**
  ****************************************************************************************

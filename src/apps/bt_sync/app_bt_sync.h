@@ -46,6 +46,12 @@ typedef enum
     APP_BT_SYNC_OP_SWITCH                   = 0x00000003,
     APP_BT_SYNC_OP_BIS_SELFSCAN             = 0x00000004,
 
+    // delay abandon a2dp focus, after check hfp status
+    APP_BT_SYNC_OP_ABANDON_DELAY            = 0x00000005,
+    APP_BT_SYNC_OP_AVRCP_PAUSE_DELAY        = 0x00000006,
+    APP_BT_SYNC_OP_TEST                     = 0x00000007,
+    // END: delay abandon a2dp focus, after check hfp status
+
     APP_BT_SYNC_OP_MAX                       ,
 // TODO: add more operation codes
 } APP_BT_SYNC_OP_CODE_E;

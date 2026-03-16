@@ -252,7 +252,7 @@ enum data_element_size {
 
 // Helper macros to construct 16-bit feature masks
 #define AVRCP_CT_FEATURE_MASK \
-        (AVRCP_CT_CATEGORY2)
+        (AVRCP_CT_CATEGORY1)
 
 #define AVRCP_TG_FEATURE_MASK \
         (AVRCP_TG_CATEGORY2)

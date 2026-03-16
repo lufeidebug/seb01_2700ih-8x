@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __ARC_VC_COMMON__
-#define __ARC_VC_COMMON__
+#ifndef __ARC_VC_COMMON_H__
+#define __ARC_VC_COMMON_H__
 
 /// Minimum volume value
 #define VCS_VOLUME_MIN              (0)

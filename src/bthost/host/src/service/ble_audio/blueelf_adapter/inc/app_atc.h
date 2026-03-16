@@ -20,8 +20,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_ATC_H_
-#define APP_ATC_H_
+#ifndef __APP_ATC_H__
+#define __APP_ATC_H__
 #if BLE_AUDIO_ENABLED
 #include "bluetooth.h"
 

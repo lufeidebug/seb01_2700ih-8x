@@ -238,6 +238,9 @@ struct rfcomm_dlc {
     // start when (tx_credit is zero && There is data that needs to be sent)
     // stop when recv credit from remote
     uint8 wait_recv_credit_timer;
+    // start when (recv sabm req uplay to establish profile link such as hfp,spp)
+    // stop when uplay sent relay
+    uint8 wait_conn_req_reply_timer;
 };
 
 struct rfcomm_same_dlc_result_t {
@@ -267,6 +270,7 @@ bt_status_t rfcomm_connect(const bt_bdaddr_t *remote, uint16_t local_server_chan
 bt_status_t rfcomm_connect_server_channel(const bt_bdaddr_t *remote, uint16_t local_server_channel, uint16_t remote_server_channel, void *priv);
 bt_status_t rfcomm_write(uint32_t rfcomm_handle, struct pp_buff *ppb);
 bt_status_t rfcomm_disconnect(uint32_t rfcomm_handle, uint8_t reason);
+void rfcomm_connect_req_reply(const bt_bdaddr_t *remote, uint8_t dlci, bool accept);
 bool rfcomm_send_spp_data_allow(uint32_t rfcomm_handle);
 
 void rfcomm_pts_register_dlci2_channel1(void);

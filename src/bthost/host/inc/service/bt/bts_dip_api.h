@@ -99,6 +99,16 @@ bool bts_dip_check_is_ios_device(const bt_bdaddr_t *address);
  */
 bool bts_dip_check_is_ios_device_by_vend_id(uint16_t vend_id, uint16_t vend_id_source);
 
+/**
+ ****************************************************************************************
+ * @brief       Register dip info queried callback handler.
+ * @param[in]   func: see @bt_dip_info_queried_callback
+ * @return      None
+ ****************************************************************************************
+ */
+
+void bts_register_dip_info_queried_callback(bt_dip_info_queried_callback func);
+
 #ifdef __cplusplus
 }
 #endif

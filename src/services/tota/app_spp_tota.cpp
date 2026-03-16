@@ -246,7 +246,7 @@ static void app_spp_tota_send_data(uint8_t* ptrData, uint16_t length)
 
     if (tota_spp_dev)
     {
-        bta_spp_write(tota_spp_dev->rfcomm_handle, ptrData, length);
+        bta_spp_send_data(tota_spp_dev->rfcomm_handle, ptrData, length);
     }
     else
     {
@@ -303,7 +303,7 @@ static void app_spp_tota_client_send_data(const uint8_t* ptrData, uint16_t lengt
 
     if (_app_spp_tota_client_dev)
     {
-        bta_spp_write(_app_spp_tota_client_dev->rfcomm_handle, ptrData, length);
+        bta_spp_send_data(_app_spp_tota_client_dev->rfcomm_handle, ptrData, length);
     }
     else
     {

@@ -19,7 +19,7 @@ void iap2_ota_set_ea_session_protocol_id(uint8_t protocol_id)
 
 void iap2_ota_connect_handle(uint8_t *addr)
 {
-    BTAPP_TRACE(0, "[IAP2 LOG]%s", __func__);
+    BTAPP_TRACE(0, "[IAP2]%s", __func__);
 
     memcpy(&(iap2_ota_info.addr.addr), addr, sizeof(bt_bdaddr_t));
     iap2_ota_info.type = BT_IAP2_LINK_TYPE_BT;
@@ -35,7 +35,7 @@ void iap2_ota_connect_handle(uint8_t *addr)
 
 void iap2_ota_disconnect_handle(void)
 {
-    BTAPP_TRACE(0, "[IAP2 LOG]%s", __func__);
+    BTAPP_TRACE(0, "[IAP2]%s", __func__);
 
     memset(&(iap2_ota_info.addr.addr), 0, sizeof(bt_bdaddr_t));
     iap2_ota_info.type = BT_IAP2_LINK_TYPE_NONE;

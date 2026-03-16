@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __BTS_TWS_CONN_SM__
-#define __BTS_TWS_CONN_SM__
+#ifndef __BTS_TWS_CONN_SM_H__
+#define __BTS_TWS_CONN_SM_H__
 
 #include "stdint.h"
 #include "cmsis_os.h"

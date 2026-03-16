@@ -7,7 +7,7 @@ obj_s := $(patsubst $(cur_dir)%,%,$(wildcard $(cur_dir)*.S))
 obj-y := $(obj_c:.c=.o) $(obj_s:.S=.o) $(obj_cpp:.cpp=.o)
 
 ifeq ($(BT_FRAMEWORK),1)
-obj-y += apps/framework_apps/watch/
+obj-y += framework_apps/watch/
 endif
 
 ifneq (,$(findstring EARBUDS,$(BT_SVC_FW_PRODUCT)))
@@ -20,6 +20,10 @@ endif
 
 ifeq ($(CUSTOMER_ADAPTER_VV_SUPPORT),1)
 obj-y += bta_apps/adapter/earbuds/vv/
+endif
+
+ifeq ($(CUSTOMER_ADAPTER_HM_SUPPORT),1)
+obj-y += bta_apps/adapter/hm/earbuds/
 endif
 
 endif
@@ -49,10 +53,12 @@ ifneq (,$(findstring HEADSET,$(BT_SVC_FW_PRODUCT)))
 obj-y += bta_apps/config/
 ifneq ($(wildcard $(cur_dir)bta_apps/headset/Makefile),)
 obj-y += bta_apps/headset/
+obj-y += bta_apps/deprecated/
 endif
 endif
 
 ifneq (,$(findstring GLASSES,$(BT_SVC_FW_PRODUCT)))
+obj-y += bta_apps/config/
 ifneq ($(wildcard $(cur_dir)bta_apps/glasses/Makefile),)
 obj-y += bta_apps/glasses/
 obj-y += bta_apps/deprecated/
@@ -62,6 +68,14 @@ ifeq ($(CUSTOMER_ADAPTER_VV_SUPPORT),1)
 obj-y += bta_apps/adapter/earbuds/vv/
 endif
 
+endif
+
+ifneq (,$(findstring SPEAKER,$(BT_SVC_FW_PRODUCT)))
+obj-y += bta_apps/config/
+ifneq ($(wildcard $(cur_dir)bta_apps/speaker/Makefile),)
+obj-y += bta_apps/speaker/
+obj-y += bta_apps/deprecated/
+endif
 endif
 
 ifneq (,$(findstring BLE_ONLY,$(BT_SVC_FW_PRODUCT)))

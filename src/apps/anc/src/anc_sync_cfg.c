@@ -24,8 +24,8 @@
 #if defined(IBRT)
 #include "app_ibrt_customif_cmd.h"
 #include "bts_core_if.h"
-#include "besaud_api.h"
 #include "bts_tws_api.h"
+#include "bts_tws_channel.h"
 
 #define _TWS_SYNC_INFO_ENABLED
 #define _SYNC_ARBITRATION_MECHANISM_ENABLED
@@ -411,8 +411,8 @@ int32_t anc_assist_tws_sync_set_anc_curve(anc_assist_algo_id_t id, uint32_t inde
 {
     ANC_TRACE(3, "[%s] Switch curve: id = 0x%x, index = %d", __func__, id, index);
 
-#if defined(_TWS_SYNC_INFO_ENABLED)
-    if(bes_bt_tws_besaud_is_connected())
+#if defined(BT_SVC_MODULE_TWS_ENABLED)
+    if(bts_tws_channel_is_connected())
     {
         if (_get_tws_role() == _TWS_ROLE_SLAVE)
         {

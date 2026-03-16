@@ -1618,6 +1618,65 @@ void gfps_sass_event_handler(uint8_t devId, uint8_t evt, void *param)
 }
 #endif
 
+#if defined(GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED)
+struct gfps_sc_info
+{
+    uint8_t org : 1;        // origin secure connection host support flag
+    uint8_t cur : 1;        // current secure connection host support flag
+    uint8_t pending : 1;    // secure connection host support pending restore
+};
+struct gfps_sc_info g_gfps_sc_info = { 0 };
+
+// * This function will be registered to the BES BT thread.
+// *    So for multi-thread safety, the other two functions should also be called in the same thread (use bt_exec_sync_x or bt_exec_async_x).
+void gfps_recv_sec_conn_set_cmpl(bool enable)
+{
+    g_gfps_sc_info.org = enable;
+    g_gfps_sc_info.cur = g_gfps_sc_info.pending ? g_gfps_sc_info.cur : enable;
+    GFPS_TRACE(0, "%s: org(%d) cur(%d) pending(%d)", __func__, g_gfps_sc_info.org, g_gfps_sc_info.cur, g_gfps_sc_info.pending);
+}
+
+// * write sec conn host supp by calling driver api directly instead of sending hci cmd
+void gfps_write_sec_conn_host_supp(bool enable)
+{
+    GFPS_TRACE(0, "%s: cur %d=>%d", __func__, g_gfps_sc_info.cur, enable);
+    g_gfps_sc_info.pending = true;
+    bt_drv_reg_op_wr_sec_con_host_supp(enable);
+    g_gfps_sc_info.cur = enable;
+}
+
+void gfps_restore_sec_conn_host_supp(void)
+{
+    GFPS_TRACE(0, "%s: cur %d=>%d", __func__, g_gfps_sc_info.cur, g_gfps_sc_info.org);
+    g_gfps_sc_info.pending = false;
+    bt_drv_reg_op_wr_sec_con_host_supp(g_gfps_sc_info.org);
+    g_gfps_sc_info.cur = g_gfps_sc_info.org;
+}
+#else // GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED
+void gfps_set_le_con_allow_use_same_addr(uint8_t conidx, bool enable)
+{
+    static uint8_t conn_bf = 0;
+    static bool curr_en = false;
+
+    // * conidx masked by 0xF won't exceed 7 (BLE LINKS MAX NUM), so 8 bits is enough
+    uint8_t conn_mask = CO_BIT_MASK((conidx & 0x0F));
+    uint8_t new_bf = 0;
+
+    new_bf = enable ? (conn_bf | conn_mask) : (conn_bf & (~conn_mask));
+    GFPS_TRACE(0, "%s: conn_bf 0x%02x -> 0x%02x", __func__, conn_bf, new_bf);
+    conn_bf = new_bf;
+
+    // * conn_bf != 0 means that some conn(s) require(s) for allowing use the same addr
+    // * 1. if any conn requires enable & curr is disabled
+    // * 2. if none requires enable & curr is enabled
+    // *   curr_en should be reversed and updated to the controller
+    if ((conn_bf != 0) ^ curr_en)
+    {
+        curr_en = !curr_en;
+        bt_drv_reg_op_set_le_con_allow_use_same_addr(curr_en);
+    }
+}
+#endif // GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED
 
 #if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
 void app_ibrt_share_fastpair_info(uint8_t *p_buff, uint16_t length)
@@ -1957,6 +2016,18 @@ void gfps_link_disconnect_process(uint8_t devId, const bt_bdaddr_t *addr, uint8_
         }
     }
 
+#if defined(GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED)
+    // to be optimized
+    {
+        bool dev_count = bts_bt_if_get_dev_acl_connected_count();
+        GFPS_TRACE(0, "%s: count=%d", __func__, dev_count);
+        if (dev_count == 0)
+        {
+            bt_exec_async_0(false, gfps_restore_sec_conn_host_supp);
+        }
+    }
+#endif  // GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED
+
 #ifdef SASS_ENABLED
     gfps_sass_disconnect_handler(devId, addr, errCode);
 #endif
@@ -2237,6 +2308,10 @@ void gfps_init(void)
 #endif
 #if defined(BT_SVC_MODULE_TWS_ENABLED) && !defined(FREEMAN_ENABLED_STERO)
     bts_tws_if_add_cmd_table(APP_TWS_CMD_GFPS_USER, ARRAY_SIZE(g_gfps_cmd_handler_table), (const bt_tws_cmd_instance_t *)&g_gfps_cmd_handler_table);
+#endif
+
+#if defined(GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED)
+    bes_bt_me_register_sec_conn_callback(gfps_recv_sec_conn_set_cmpl);
 #endif
 }
 

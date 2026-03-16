@@ -1,6 +1,6 @@
 /***************************************************************************
  *
- * Copyright 2015-2022 BES.
+ * Copyright 2015-2024 BES.
  * All rights reserved. All unpublished rights reserved.
  *
  * No part of this work may be used or reproduced in any form or by any
@@ -12,18 +12,14 @@
  * BES. which is protected by copyright, trade secret,
  * trademark and other intellectual property rights.
  *
+ * @brief xxx.
+ *
  ****************************************************************************/
-/**
- ****************************************************************************************
- * @addtogroup APP
- * @{
- ****************************************************************************************
- */
-/*
- * INCLUDE FILES
- ****************************************************************************************
- */
 #if BLE_AUDIO_ENABLED
+
+/****************************** header include ******************************/
+#include <stdint.h>
+
 #include "bluetooth_bt_api.h"
 #include "app_bt_func.h"
 #include "app_utils.h"
@@ -41,9 +37,13 @@
 
 #include "bes_aob_api.h"
 
+/***************************** external declaration *************************/
+
+/***************************** macro defination *****************************/
 #define GAF_BIS_EXTERNAL_STREAM_MAX         3
 #define BIS_SEND_DATA_WINDOW                2000    //BIS Send Data Window
 
+/***************************** type defination ******************************/
 typedef struct{
     bool       started;
     int        btc_buf_num_max;
@@ -59,9 +59,10 @@ typedef struct
     gaf_bis_external_stream_info_t stream_info[GAF_BIS_EXTERNAL_STREAM_MAX];
 } gaf_bis_external_stream_env_t;
 
+/***************************** variable defination **************************/
 static gaf_bis_external_stream_env_t bis_env = {0};
 
-
+/***************************** function declaration *************************/
 static uint32_t gaf_bis_external_stream_calculate_trigger(gaf_bis_external_stream_info_t *stream_info)
 {
     uint32_t time_delay = 0;
@@ -212,5 +213,7 @@ void gaf_bis_external_stream_stop(uint8_t stream_idx)
         app_sysfreq_req(APP_SYSFREQ_USER_AOB_CAPTURE, APP_SYSFREQ_32K);
     }
 }
+
+
 #endif
 /// @} APP

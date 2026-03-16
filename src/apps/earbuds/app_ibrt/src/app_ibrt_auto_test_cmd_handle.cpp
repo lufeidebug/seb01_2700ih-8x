@@ -22,7 +22,6 @@
 #include "app_key.h"
 #include "app_tws_ibrt_ui_test.h"
 #include "app_ibrt_auto_test_cmd_handle.h"
-#include "app_bt_cmd.h"
 #include "a2dp_decoder.h"
 #include "app_ibrt_keyboard.h"
 #include "nvrecord_env.h"

@@ -1383,6 +1383,10 @@ struct hid_control_t* _hid_get_control_from_id(uint8_t device_id);
 
 struct hid_control_t *btif_hid_channel_alloc_and_init(uint8_t dev_id, bool is_device_role, btif_hid_callback_t cb);
 
+void btif_hid_callback_init(btif_hid_callback_t cb);
+
+void btif_hid_callback_deinit(void);
+
 bt_status_t btif_hid_connect(bt_bdaddr_t *addr);
 
 void btif_hid_disconnect(struct hid_control_t *hid_ctl);

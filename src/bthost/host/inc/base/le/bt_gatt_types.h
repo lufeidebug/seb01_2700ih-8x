@@ -561,10 +561,12 @@ typedef struct
 
 typedef struct
 {
-    uint16_t prf_size;
+    /// Preferred mtu size
     uint16_t preferred_mtu;
+    /// EATT preferred
     bool eatt_preferred;
-    bool enc_required; // encrypt required to read/write peer service
+    /// Encryption required when LE Central role
+    bool enc_required;
 } bt_gattc_cfg_t;
 
 typedef union
@@ -591,8 +593,6 @@ typedef union
 
 typedef struct
 {
-    /// Reserved memery size pre-allocated when open
-    uint16_t svc_size;
     /// Preferred mtu size
     uint16_t preferred_mtu;
     /// EATT preferred

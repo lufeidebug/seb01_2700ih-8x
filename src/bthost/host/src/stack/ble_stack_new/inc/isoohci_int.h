@@ -171,7 +171,7 @@ void isoohci_in_defer_handler(void);
 void isoohci_data_come_callback_register(void *callback);
 void isoohci_data_comed_callback_deregister(void);
 bool isoohci_data_comed_callback_already_flag(void);
-void isoohci_data_rx_callback(uint16_t connhdl, int ps_flag);
+void isoohci_data_rx_callback(uint16_t connhdl);
 
 void isoohci_out_defer_handler(void);
 void isoohci_out_buf_release(uint8_t* iso_sdu_ptr);

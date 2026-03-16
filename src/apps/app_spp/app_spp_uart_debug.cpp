@@ -22,7 +22,7 @@
 #include "btapp.h"
 #include "bts_bt_if.h"
 #include "app_tws_ibrt.h"
-
+#include "bta_bt_api.h"
 #define APP_SPP_SERVICE_ENABLE
 
 #ifdef APP_SPP_SERVICE_ENABLE
@@ -255,26 +255,14 @@ void app_spp_server_init(app_spp_server_callback_t *cb)
 
 bool app_spp_server_send_data(uint8_t* ptrData, uint16_t length)
 {
-    bt_status_t ret = BT_STS_SUCCESS;
-
     if (!bth_spp_ctl.isConnected)
     {
         return false;
     }
 
-    // APP_SPP_TRACE(1, "app spp tx:%d", length);
-    ret = bta_spp_write(bth_spp_ctl.pSppDevice->rfcomm_handle, ptrData, length);
+    bool ret = bta_spp_send_data(bth_spp_ctl.pSppDevice->rfcomm_handle, ptrData, length);
 
-    if (BT_STS_SUCCESS != ret)
-    {
-        // APP_SPP_TRACE(1, "BT_STS fail");
-        return false;
-    }
-    else
-    {
-        // APP_SPP_TRACE(1, "BT_STS success");
-        return true;
-    }
+    return ret;
 }
 
 bool app_spp_server_is_connected(void)

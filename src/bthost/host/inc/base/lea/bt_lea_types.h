@@ -59,6 +59,8 @@ typedef enum
     BT_LEA_EVT_VCP_VCS_CCCD_WRITTEN_IND            = 37,
     BT_LEA_EVT_TMAP_READ_ROLE_CMP_IND              = 38,
     BT_LEA_EVT_ASE_ENABLE_REQ_IND                  = 39,
+    BT_LEA_EVT_MCP_MCC_SVC_CHANGED_IND             = 40,
+    BT_LEA_EVT_CCP_TBC_SET_CFG_CMP_IND             = 41,
 
     BT_LEA_EVT_LAST                                = 0xFF,
 } bt_lea_evt_t;
@@ -69,6 +71,14 @@ typedef enum
     BT_LEA_ADV_FAILED        = 1,
     BT_LEA_ADV_STOP          = 2,
 } bt_lea_adv_state_t;
+
+typedef enum
+{
+    BT_LEA_ADV_IDLE         = 0,
+    BT_LEA_ADV_PAIRING      = 1,
+    BT_LEA_ADV_RECONNECT    = 2,
+    BT_LEA_ADV_UNKNOWN      = 3,
+} bt_lea_adv_type_t;
 
 typedef enum
 {
@@ -422,7 +432,8 @@ typedef struct
 typedef struct
 {
     bt_lea_evt_header_t                header;
-    bt_lea_adv_state_t                 adv_state;
+    bt_lea_adv_state_t                  adv_state;
+    bt_lea_adv_type_t                   adv_type;
     uint8_t                             err_code;
 } bt_lea_evt_adv_state_t;
 
@@ -442,7 +453,7 @@ typedef struct
     uint8_t                             volume;
     uint8_t                             mute;
     uint8_t                             change_counter;
-    uint8_t                             reason;
+    bool                                is_local; // volume change triggered by the local or the remote
 } bt_lea_evt_vol_changed_t;
 
 typedef struct
@@ -474,6 +485,12 @@ typedef struct
     bt_lea_ascs_ase_state_t            prev_state;
     bt_lea_ascs_ase_state_t            curr_state;
 } bt_lea_evt_stream_status_changed_t;
+
+typedef struct
+{
+    bt_lea_evt_header_t                header;
+    uint8_t                            con_lid;
+} bt_lea_evt_mcp_mcc_svc_changed_t;
 
 typedef struct
 {
@@ -561,6 +578,15 @@ typedef struct
     uint8_t                             con_lid;
     void                                *param;
 } bt_lea_evt_call_action_result_ind_t;
+
+typedef struct
+{
+    bt_lea_evt_header_t                header;
+    uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
+    uint8_t                             char_type;
+    uint8_t                             err_code;
+} bt_lea_evt_ccp_set_cfg_cmp_ind_t;
 
 typedef struct
 {
@@ -751,6 +777,8 @@ typedef union
     bt_lea_evt_vcp_vcs_cccd_written_t              lea_vcp_vcs_cccd_written_ind;
     bt_lea_evt_tmap_read_role_cmp_ind_t            lea_tmap_read_role_cmp_ind;
     bt_lea_evt_ase_enable_req_ind_t                lea_ase_enable_req_ind;
+    bt_lea_evt_mcp_mcc_svc_changed_t               lea_mcp_mcc_svc_changed_ind;
+    bt_lea_evt_ccp_set_cfg_cmp_ind_t               lea_ccp_tbc_set_cfg_cmp_ind;
 } bt_lea_evt_packet_t;
 
 typedef void (*bt_lea_evt_callback)(const bt_lea_evt_packet_t *evt_pkt);
@@ -759,3 +787,112 @@ typedef struct
 {
     uint8_t data[6];
 } __attribute__((__packed__)) bt_lea_rsi_t;
+
+/// BIG Info Report
+typedef struct
+{
+    /// Value of the SDU interval in microseconds (Range 0x0000FF-0x0FFFFF)
+    uint32_t  sdu_interval;
+    /// Value of the ISO Interval (1.25 ms unit)
+    uint16_t  iso_interval;
+    /// Value of the maximum PDU size (Range 0x0000-0x00FB)
+    uint16_t  max_pdu;
+    /// VValue of the maximum SDU size (Range 0x0000-0x0FFF)
+    uint16_t  max_sdu;
+    /// Number of BIS present in the group (Range 0x01-0x1F)
+    uint8_t   num_bis;
+    /// Number of sub-events (Range 0x01-0x1F)
+    uint8_t   nse;
+    /// Burst number (Range 0x01-0x07)
+    uint8_t   bn;
+    /// Pre-transmit offset (Range 0x00-0x0F)
+    uint8_t   pto;
+    /// Initial retransmission count (Range 0x01-0x0F)
+    uint8_t   irc;
+    /// PHY used for transmission (0x01: 1M, 0x02: 2M, 0x03: Coded, All other values: RFU)
+    uint8_t   phy;
+    /// Framing mode (0x00: Unframed, 0x01: Framed, All other values: RFU)
+    uint8_t   framing;
+    /// True if broadcast isochronous group is encrypted, False otherwise
+    bool      encrypted;
+} bt_ble_big_info_t;
+
+/**
+* @brief BIS Sink related event callbacks.
+*/
+typedef struct
+{
+    /**
+     * @brief BIS Sink scan state callback.
+     *
+     * This callback is triggered when the BIS Sink scan procedure starts
+     * or stops.
+     *
+     * @param scan_started  True if scanning has started, false if stopped.
+     * @param err_code      Error code indicating the result of the operation.
+     *                      Zero indicates success.
+     */
+    void (*bis_sink_scan_state_cb)(bool scan_started, uint16_t err_code);
+
+    /**
+     * @brief BIS Sink scan report callback.
+     *
+     * This callback is invoked when an Extended Advertising report related
+     * to a BIS broadcaster is received during scanning.
+     *
+     * @param p_addr        Pointer to the advertiser device address.
+     * @param ea_sid        Extended Advertising SID.
+     * @param bcast_id      Pointer to the Broadcast ID.
+     * @param ea_data       Pointer to the extended advertising data.
+     * @param ea_data_len   Length of the extended advertising data.
+     * @param ea_rssi       RSSI value of the received advertising packet.
+     *
+     * @return              True to continue scanning, false to stop scanning.
+     */
+    bool (*bis_sink_scan_report_cb)(const ble_bdaddr_t *p_addr, uint8_t ea_sid, const uint8_t *bcast_id,
+                                    const uint8_t *ea_data, uint8_t ea_data_len, int8_t ea_rssi);
+
+    /**
+     * @brief Periodic Advertising (PA) synchronization state callback.
+     *
+     * This callback is triggered when PA synchronization is established
+     * or lost for a BIS broadcaster.
+     *
+     * @param pa_synced     True if PA is successfully synchronized,
+     *                      false if synchronization is lost or failed.
+     * @param p_addr        Pointer to the broadcaster device address.
+     * @param ea_sid        Extended Advertising SID associated with the PA.
+     * @param sync_hdl      Local handle identifier of the associated PA synchronization.
+     * @param err_code      Error code indicating the result of the operation.
+     */
+    void (*bis_sink_pa_state_cb)(bool pa_synced, const ble_bdaddr_t *p_addr, uint8_t ea_sid,
+                                 uint16_t sync_hdl, uint16_t err_code);
+
+    /**
+     * @brief Periodic Advertising data report callback.
+     *
+     * This callback is invoked when Periodic Advertising data is received
+     * from the synchronized broadcaster.
+     *
+     * @param sync_hdl      Local handle identifier of the associated PA synchronization.
+     * @param pa_data       Pointer to the received PA data.
+     * @param pa_data_len   Length of the PA data.
+     * @param big_info      Pointer to the parsed BIG information, if present.
+     */
+    void (*bis_sink_pa_report_cb)(uint16_t sync_hdl, const uint8_t *pa_data, uint8_t pa_data_len,
+                                  const bt_ble_big_info_t *big_info);
+
+    /**
+     * @brief BIS BIG state callback.
+     *
+     * This callback is triggered when the BIS Sink starts or stops
+     * receiving a BIG (Broadcast Isochronous Group).
+     *
+     * @param sink_started  True if BIS Sink has started, false if stopped.
+     * @param sync_hdl      Local handle identifier of the associated PA synchronization.
+     * @param grp_lid       Local identifier of the BIG group.
+     * @param err_code      Error code indicating the result of the operation.
+     */
+    void (*bis_sink_big_state_cb)(bool sink_started, uint16_t sync_hdl, uint8_t grp_lid, uint16_t err_code);
+
+} bt_ble_bis_sink_evt_cbs_t;

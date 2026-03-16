@@ -21,8 +21,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_SHP_SHS_MSG_H_
-#define APP_SHP_SHS_MSG_H_
+#ifndef __APP_SHP_SHS_MSG_H__
+#define __APP_SHP_SHS_MSG_H__
 #include "bluetooth.h"
 
 #if BLE_AUDIO_ENABLED

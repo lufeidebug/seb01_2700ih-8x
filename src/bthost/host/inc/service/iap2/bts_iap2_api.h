@@ -34,6 +34,15 @@ void bts_iap2_service_enable_default_reconnect(bool enable);
 
 /**
  ****************************************************************************************
+ * @brief       Enable/disable default mfi i2c module for IAP2 service
+ * @param[in]   enable: True to enable default mfi i2c module, false to disable
+ * @return      None
+ ****************************************************************************************
+ */
+void bts_iap2_service_enable_default_i2c_module(bool enable);
+
+/**
+ ****************************************************************************************
  * @brief       Enable/disable receive flow control for IAP2 service[Not implemented, reserved interface]
  * @param[in]   enable: True to enable receive flow control, false to disable
  * @return      None
@@ -76,6 +85,15 @@ void bts_iap2_service_set_delay_detect_time(uint16_t delay_time);
  ****************************************************************************************
  */
 void bts_iap2_service_enable_print_info_when_initialed(bool enable);
+
+/**
+ ****************************************************************************************
+ * @brief       Enable/disable checking mfi chip for IAP2 service
+ * @param[in]   enable: True to enable checking mfi chip, false to disable
+ * @return      None
+ ****************************************************************************************
+ */
+void bts_iap2_service_enable_check_mfi_when_initialed(bool enable);
 
 /**
  ****************************************************************************************
@@ -155,6 +173,40 @@ uint8_t bts_iap2_service_spp_local_channel();
  ****************************************************************************************
  */
 void bts_iap2_service_set_mfi_i2c_gpio_config(bt_iap2_i2c_gpio_config_t* iap2_mfi_i2c_io_config);
+
+/**
+ ****************************************************************************************
+ * @brief       Register MFi I2C callback for IAP2 service
+ * @param[in]   read_cb: Pointer to I2C READ REG callback
+ * @param[in]   write_cb: Pointer to I2C WRTIE REG callback
+ * @return      None
+ ****************************************************************************************
+ */
+void bts_iap2_service_register_mfi_i2c_callback(bt_mfi_i2c_read_reg_data_cb read_cb, bt_mfi_i2c_write_reg_data_cb write_cb);
+
+/**
+ ****************************************************************************************
+ * @brief       Check MFi I2C state is idle
+ * @return      True if idle, false otherwise
+ ****************************************************************************************
+ */
+bool bts_iap2_service_check_mfi_i2c_is_idle();
+
+/**
+ ****************************************************************************************
+ * @brief       Read MFi Version information
+ * @return      None
+ ****************************************************************************************
+ */
+void bts_iap2_service_read_mfi_version();
+
+/**
+ ****************************************************************************************
+ * @brief       Read MFi Certificate information
+ * @return      >0 means certificate length, <=0 means read failed
+ ****************************************************************************************
+ */
+int bts_iap2_service_read_mfi_certificate(uint8_t* buf, uint16_t buf_len);
 
 #ifdef __cplusplus
 }

@@ -145,6 +145,17 @@ typedef struct
     struct gatt_peer_srvc_node_t *tail;
 } gatt_peer_srvc_list_t;
 
+typedef struct gatt_peer_char_node_t
+{
+    struct gatt_peer_char_node_t *next;
+    uint8_t count; // same uuid char count
+    uint16_t char_uuid; // set when 16-bit uuid
+    gatt_peer_character_t character[GATT_ARRAY_SIZE_1];
+    /// This member only exist in the first discovered char
+    /// of the total char node list, memery save usage
+    /// gatt_peer_service_t *service[GATT_ARRAY_EMPTY];
+} gatt_peer_char_node_t;
+
 typedef struct att_prep_write_t
 {
     struct att_prep_write_t *next;
@@ -287,6 +298,14 @@ extern "C" {
  *
  *
  */
+
+/**
+ * @brief Get gatt init configurations
+ *
+ * @param[in] cfg      GAP configurations to fill with
+ *
+ */
+void gatt_get_config(gap_config_t *cfg);
 
 /**
  * @brief Get characteristic declaration's 16 bits uuid

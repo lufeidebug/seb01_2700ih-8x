@@ -19,6 +19,9 @@
 /*****************************header include********************************/
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /*********************external declaration*************************/
 
 /**********************private function declaration*************************/
@@ -42,5 +45,9 @@ uint8_t* bt_svc_base_buf_syspool_malloc(uint32_t size);
 void bt_svc_base_buf_syspool_free(void* buf);
 
 #define bt_svc_base_buf_malloc(size) bt_svc_base_buf_malloc_impl(size, (void*)__builtin_return_address(0), __LINE__)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

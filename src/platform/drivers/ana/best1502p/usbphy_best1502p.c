@@ -19,8 +19,43 @@
 #include "hal_timer.h"
 #include "hal_trace.h"
 #include "pmu.h"
+#include "hal_location.h"
 #include CHIP_SPECIFIC_HDR(reg_usbphy)
 
+static uint8_t BOOT_BSS_LOC usb_clock_map;
+
+void BOOT_TEXT_FLASH_LOC usbphy_clock_enable(enum USB_CLOCK_USER_T user)
+{
+    uint32_t lock;
+
+    lock = int_lock();
+    if (usb_clock_map == 0) {
+        uint16_t val;
+
+        // Enable ckosc
+        usbphy_read(0x0D, &val);
+        val |= CFG_CKOSC_EN;
+        usbphy_write(0x0D, val);
+    }
+    usb_clock_map |= user;
+    int_unlock(lock);
+}
+
+void BOOT_TEXT_FLASH_LOC usbphy_clock_disable(enum USB_CLOCK_USER_T user)
+{
+    uint32_t lock;
+
+    lock = int_lock();
+    if (usb_clock_map == user) {
+        uint16_t val;
+
+        usbphy_read(0x0D, &val);
+        val &= ~CFG_CKOSC_EN;
+        usbphy_write(0x0D, val);
+    }
+    usb_clock_map &= ~user;
+    int_unlock(lock);
+}
 
 //#define USBPHY_SERIAL_ITF
 
@@ -38,16 +73,11 @@ void usbphy_ldo_config(int enable)
         hal_sys_timer_delay(MS_TO_TICKS(3));
 
 #ifdef USB_HIGH_SPEED
-        // Enable ckosc
-        usbphy_read(0x0D, &val);
-        val |= CFG_CKOSC_EN;
-        usbphy_write(0x0D, val);
+        usbphy_clock_enable(USB_CLOCK_USER_USB);
 #endif
     } else {
 #ifdef USB_HIGH_SPEED
-        usbphy_read(0x0D, &val);
-        val &= ~CFG_CKOSC_EN;
-        usbphy_write(0x0D, val);
+        usbphy_clock_disable(USB_CLOCK_USER_USB);
 #endif
 
         usbphy_read(0x11, &val);
@@ -104,6 +134,11 @@ void usbphy_open(void)
 
     usbphy_read(0x09, &val);
     usbphy_write(0x09, val);
+
+    // off fstxen
+    usbphy_read(0x0A, &val);
+    val |= (1 << 9);
+    usbphy_write(0x0A, val);
 
 #ifdef USBPHY_SERIAL_ITF
     usbphy_write(0x0D, 0x2B3E);
@@ -197,6 +232,10 @@ void usbphy_open(void)
     val = 0;
     usbphy_write(0x09, val);
 
+    usbphy_read(0x0A, &val);
+    val &= ~(1 << 9);
+    usbphy_write(0x0A, val);
+
     val_01 |= (1 << 0);
     usbphy_write(0x01, val_01);
 
@@ -271,9 +310,7 @@ void usbphy_sleep(void)
     usbphy_write(0x01, val);
 
 #ifdef USB_HIGH_SPEED
-    usbphy_read(0x0D, &val);
-    val &= ~(1 << 5);
-    usbphy_write(0x0D, val);
+    usbphy_clock_disable(USB_CLOCK_USER_USB);
 #endif
 
     usbphy_read(0x08, &val);
@@ -291,9 +328,7 @@ void usbphy_wakeup(void)
     uint16_t val;
 
 #ifdef USB_HIGH_SPEED
-    usbphy_read(0x0D, &val);
-    val |= (1 << 5);
-    usbphy_write(0x0D, val);
+    usbphy_clock_enable(USB_CLOCK_USER_USB);
 #endif
 
     usbphy_read(0x01, &val);

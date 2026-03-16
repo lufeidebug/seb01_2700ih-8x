@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __APP_TWS_IBRT__MOBILE_CONN_SM__
-#define __APP_TWS_IBRT__MOBILE_CONN_SM__
+#ifndef __APP_TWS_IBRT__MOBILE_CONN_SM_H__
+#define __APP_TWS_IBRT__MOBILE_CONN_SM_H__
 
 #if defined(IBRT) && defined(IBRT_UI)
 

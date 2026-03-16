@@ -35,13 +35,13 @@ BECO_C_DECLARATIONS_START
  * Title:        beco_nnfunctions.h
  * Description:  Public header file for BECO NN Library
  *
- * $Date:        28 Aug 2025
- * $Version:     v4.1.0
+ * $Date:        20 Jan 2026
+ * $Version:     v4.1.1
  * -------------------------------------------------------------------- */
 
 #define BECO_NN_VERSION_MAJOR 4
 #define BECO_NN_VERSION_MINOR 1
-#define BECO_NN_VERSION_BUILD 0
+#define BECO_NN_VERSION_BUILD 1
 
 
 void beco_fully_connected_q7(const int8_t *pV,

@@ -90,10 +90,10 @@ enum bap_direction
 
 enum bap_phy_rates_bf
 {
-    // Coded PHY S=2
-    BAP_PHY_RATES_BIT_CODED_S2 = 0x01,
     // Coded PHY S=8
-    BAP_PHY_RATES_BIT_CODED_S8 = 0x02,
+    BAP_PHY_RATES_BIT_CODED_S8 = 0x01,
+    // Coded PHY S=2
+    BAP_PHY_RATES_BIT_CODED_S2 = 0x02,
     // Coded PHY Rates bit mask
     BAP_PHY_RATES_BIT_CODED_MASK = 0x03,
     // LE HDT PHY HDT2
@@ -199,8 +199,8 @@ typedef struct {
     uint32_t sdu_interval_us_p2c; // Time between the start of consecutive SDUs sent by the Peripheral. Range: 0x0000FF to 0x0FFFFF
     uint8_t framing; // 0x00:Unframed PDUs, 0x01:Framed PDUs (Segmentable mode), Core Spec 6.0: 0x02 framed (Unsegmented mode)
     /// Below are HDT present parameters, other version may be invalid data
-    uint16_t rates_bf_c2p; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=2/HDT2, 1 - S=8/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
-    uint16_t rates_bf_p2c; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=2/HDT2, 1 - S=8/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
+    uint16_t rates_bf_c2p; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=8/HDT2, 1 - S=2/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
+    uint16_t rates_bf_p2c; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=8/HDT2, 1 - S=2/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
     uint8_t encryption_enabled; // Encryption is enabled or disabled on the CIS
     uint8_t mic_length; // MIC length, 0x00 - 32bits, 0x01 - 64bits, 0x02 - 128bits
 } bap_cis_timing_t;
@@ -214,6 +214,10 @@ typedef struct {
     uint8_t irc; // 0x01 to 0x0F, num of times a payload is transmitted in a BIS event
     uint16_t max_pdu_size; // 0x01 to 0xFB, max octets of the PDU payload, HDT max up to 0x1FEF
     uint16_t iso_interval_1_25ms; // 0x04 to 0x0C80, per 1.25ms, 5ms to 4s, BIG anchor points interval
+    /// Only valid when phy bit set Coded or/ and HDT
+    uint16_t rates_bf; // Multiple rates, specifies the set of contiguous rates, bit 0 - S=8/HDT2, 1 - S=2/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
+    uint8_t encryption_enabled; // Encryption is enabled or disabled on the BIG
+    uint8_t mic_length; // MIC length, 0x00 - 32bits, 0x01 - 64bits, 0x02 - 128bits
 } bap_bis_timing_t;
 
 typedef struct {
@@ -388,6 +392,8 @@ typedef struct {
     uint8_t test_ft_c2p; // 0x01 to 0xFF, flush timeout in multiples of ISO_Interval for each payload sent from C to P
     uint8_t test_ft_p2c; // 0x01 to 0xFF, flush timeout in multiples of ISO_Interval for each payload sent from P to C
     uint16_t test_iso_interval_1_25ms; // 0x04 to 0x0C80, per 1.25ms, 5ms to 4s, CIS anchor points interval
+    /// Only valid when IPU
+    uint16_t anchor_upd_buffer_time; // Additional buffer time ms inc when calc the CIG_Sync_Delay to handle any CIS anchor point updates
 } bap_cig_param_t;
 
 typedef struct {
@@ -403,13 +409,15 @@ typedef struct {
     uint8_t test_bn_c2p; // 0x00 no ISO data from C to P, 0x01 to 0x0F BN for C to P transmission
     uint8_t test_bn_p2c; // 0x00 no ISO data from P to C, 0x01 to 0x0F BN for P to C transmission
     uint8_t cis_id; // only valid when update cis configure
-    // Only valid when phy bit set Coded or/ and HDT
-    uint16_t coded_rates_bf_c2p; // bit 0 - S=2, 1 - S=8
-    uint16_t coded_rates_bf_p2c; // bit 0 - S=2, 1 - S=8
+    /// Only valid when phy bit set Coded or/ and HDT
+    uint16_t coded_rates_bf_c2p; // bit 0 - S=8, 1 - S=2
+    uint16_t coded_rates_bf_p2c; // bit 0 - S=8, 1 - S=2
     uint16_t hdt_rates_bf_c2p; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
     uint16_t hdt_rates_bf_p2c; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
     uint8_t hdt_mic_length; // MIC length, 0x01 - 64bits, 0x02 - 128bits
     uint8_t hdt_pkt_fmt; // 0x00: Any format pref, 0x01: Format 0, 0x02: Format 1
+    uint8_t hdt_pld_window_size_c2p; // 1 to 4 Size of the transmit payload window size c 2 p
+    uint8_t hdt_pld_window_size_p2c; // 1 to 4 Size of the transmit payload window size p 2 c
 } bap_cis_param_t;
 
 typedef struct {
@@ -480,7 +488,7 @@ typedef struct {
     /// retx number of every CIS Data PDU before ack or flushed, just recommendation, ignore for test
     uint8_t rtn_c2p;
     uint8_t rtn_p2c;
-    /// bit 0 - S=2/HDT2, 1 - S=8/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
+    /// bit 0 - S=8/HDT2, 1 - S=2/HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
     uint8_t rates_bf_c2p;
     uint8_t rates_bf_p2c;
 } bap_cis_update_cfg_t;
@@ -523,10 +531,12 @@ typedef struct {
     uint8_t test_bn; // 0x01 to 0x07, number of new payloads in each interval for each BIS
     uint8_t test_irc; // 0x01 to 0x0F, number of times the scheduled payloads are transmitted in a given event
     uint8_t test_pto; // 0x00 to 0x0F, offset used for pre-transmissions
-    uint16_t coded_rates_bf; // bit 0 - S=2, 1 - S=8
+    /// Only valid when phy bit set Coded or/ and HDT
+    uint16_t coded_rates_bf; // bit 0 - S=8, 1 - S=2
     uint16_t hdt_rates_bf; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
-    uint8_t mic_length; // 0x00 - 32bits, 0x01 - 64bits, 0x02 - 128bits
-    uint8_t max_plds_per_pkt; // Max number of payloads per packet, range 1 to 4
+    uint8_t hdt_mic_length; // 0x00 - 32bits, 0x01 - 64bits, 0x02 - 128bits
+    uint8_t hdt_pkt_fmt; // 0x00: Any format pref, 0x01: Format 0, 0x02: Format 1
+    uint8_t hdt_blocks_per_pld; // 0 to 16, Number of blocks per payload to be used on the BIS over LE HDT PHY by the local Controller
 } bap_big_param_t;
 
 typedef struct {

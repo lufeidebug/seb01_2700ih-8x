@@ -1,0 +1,10 @@
+release from bes origin/cust/ep_comm_sdk_v2.0:
+                   mcu-commit: b1a1a46fd86b81e08b94b7df382502b1b3fd55bb
+                bthost-commit: af73b0deb5ff87855bcb164ec679e878cac3d790
+            multimedia-commit: b3bd626976df513214ab3dcb7fc262a82b8e8d0c
+ multimedia/algorithms-commit: 40d2289101781f49322b8c1cad56a38771262c3f
+multimedia/libs/mm-lib-commit: 4a05e79872306f46ee7847e5b673469bceabdb89
+
+release from bes origin/cust/ep_comm_sdk_v2.0_1307p:
+                bthost-commit: eacb65bf1e0cf534e28990cea73be3e00d6dbd73
+ multimedia/algorithms-commit: 4d2f96aba6fd3ca52da7e56a4940e0c0279c27b2

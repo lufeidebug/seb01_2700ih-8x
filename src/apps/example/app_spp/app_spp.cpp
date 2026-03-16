@@ -161,7 +161,7 @@ void app_spp_init(void)
 
 bool app_spp_serial_port_send_data(bt_bdaddr_t *remote, const uint8_t* ptrData, uint16_t length)
 {
-    bt_status_t ret = BT_STS_SUCCESS;
+    bool ret = false;
     struct BT_ADAPTER_DEVICE_T *curr_device = NULL;
     uint32_t rfcomm_handle = 0;
     curr_device = bt_adapter_get_connected_device_byaddr(remote);
@@ -181,17 +181,10 @@ bool app_spp_serial_port_send_data(bt_bdaddr_t *remote, const uint8_t* ptrData, 
 
     if (rfcomm_handle)
     {
-        ret = bta_spp_write(rfcomm_handle, ptrData, length);
+        ret = bta_spp_send_data(rfcomm_handle, ptrData, length);
     }
 
-    if ((BT_STS_SUCCESS != ret) && (BT_STS_PENDING != ret))
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
+    return ret;
 }
 
 /**********************************************************************************************

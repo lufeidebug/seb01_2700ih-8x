@@ -115,9 +115,7 @@
 #include "noise_tracker_callback.h"
 #endif
 
-#if defined(BT_SVC_MODULE_BT_ENABLED)
 #include "bts_bt_if.h"
-#endif
 
 #if defined(BT_SVC_MODULE_IBRT_ENABLED)
 #include "bts_core_if.h"
@@ -9532,9 +9530,38 @@ static void app_ibrt_tws_sync_retrigger_a2dp_status_notify(uint32_t opCode,
 APP_BT_SYNC_COMMAND_TO_ADD(APP_BT_SYNC_OP_RETRIGGER, app_ibrt_tws_sync_retrigger_a2dp_handler,
     app_ibrt_tws_sync_retrigger_a2dp_status_notify);
 
+AUD_ID_ENUM retrigger_prompt_id = AUD_ID_INVALID;
+static bool app_tws_ibrt_audio_retrigger(void)
+{
+    bool ret = true;
+    audio_focus_req_info_t* top_focus_info = app_audio_focus_ctrl_stack_top();
+
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    app_tws_ibrt_audio_analysis_stop();
+#endif
+    a2dp_audio_retrigger_set_on_process(true);
+    app_bt_stream_trigger_checker_stop();
+    a2dp_audio_detect_next_packet_callback_register(NULL);
+    a2dp_audio_detect_store_packet_callback_register(NULL);
+#ifndef MEDIA_PLAYER_SUPPORT
+    return true;
+#endif
+
+#ifndef PROMPT_SELF_MANAGEMENT
+    media_PlayAudio_standalone(retrigger_prompt_id, 0);
+#else
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    ret = app_bt_sync_enable(APP_BT_SYNC_OP_RETRIGGER, sizeof(bt_bdaddr_t),
+                                    top_focus_info->device_info.device_addr.address,
+                                    APP_BT_SYNC_POLICY_MULTIPLEX);
+#endif
+#endif
+    return ret;
+}
+
 int app_ibrt_if_force_audio_retrigger(uint8_t retriggerType)
 {
-    if (AUDIO_RETRIGGER_RET_TYPE_FAIL == app_tws_ibrt_audio_retrigger()) {
+    if (false == app_tws_ibrt_audio_retrigger()) {
         app_ibrt_tws_sync_retrigger_a2dp_handler();
     }
     return 0;

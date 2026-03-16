@@ -309,6 +309,8 @@ bt_status_t bes_bt_get_remote_addr_by_conn_handle( uint16_t conn_hdl, uint8_t* b
 
 void bes_bt_me_confirmation_register_callback(btif_confirmation_req_callback_t callback);
 
+void bes_bt_me_register_sec_conn_callback(btif_sec_conn_callback_t callback);
+
 void bes_bt_me_confirmation_resp(struct bdaddr_t *bdaddr, bool accept);
 
 #ifdef __IAG_BLE_INCLUDE__
@@ -334,6 +336,20 @@ void bt_app_buf_free(unsigned char *buf, uint32 ca, uint32 line);
 #define bes_bt_buf_malloc(size) bt_app_buf_malloc((size), (uint32_t)(uintptr_t)__builtin_return_address(0), __LINE__)
 
 #define bes_bt_buf_free(buf) bt_app_buf_free((unsigned char *)buf, (uint32_t)(uintptr_t)__builtin_return_address(0), __LINE__)
+
+/**
+ * @brief Retrieve the flag which indicate LE Audio feature enabled or disabled.
+ *
+ * @return true         LE Audio feature Enabled
+ * @return false        LE Audio feature disabled
+ */
+bool bes_bt_is_le_audio_enabled(void);
+
+/**
+ * @brief Disable local le feature (shall be called before initialization of LE Audio modules).
+ *
+ */
+void bt_export_disable_le_audio_feature_support(void);
 
 #ifdef __cplusplus
 }

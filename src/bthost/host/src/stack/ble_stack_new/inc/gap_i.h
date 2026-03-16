@@ -56,7 +56,7 @@ typedef struct
     uint8_t activity_priority;
     uint8_t adv_stop_timer;
     bool pa_is_enabled;
-    uint32_t duration_ms;
+    uint16_t duration_10ms;
     gap_dt_buf_t adv_data;
     gap_dt_buf_t scan_rsp_data;
     // Keep it until remove adv set
@@ -76,7 +76,7 @@ typedef struct
     uint8_t scan_handle;
     uint8_t scan_stop_timer;
     uint16_t period_1_28s;
-    uint32_t duration_ms;
+    uint16_t duration_10ms;
     uint16_t scan_interval_slots;
     uint16_t scan_interval_coded;
     uint16_t scan_window_slots;
@@ -109,7 +109,7 @@ typedef struct
     uint16_t max_conn_interval_1_25ms;  // 0x06 to 0x0C80 * 1.25ms, 7.5ms to 4s
     uint16_t min_conn_interval_coded;   // 0x06 to 0x0C80 * 1.25ms, 7.5ms to 4s
     uint16_t max_conn_interval_coded;   // 0x06 to 0x0C80 * 1.25ms, 7.5ms to 4s
-    uint16_t superv_timeout_ms;         // 100ms to 32s
+    uint16_t superv_timeout_10ms;       // 100ms to 32s
     uint16_t min_ce_length_slots;       // min len of connection event, 0x00 to 0xFFFF * 0.625ms
     uint16_t max_ce_length_slots;       // max len of connection event, 0x00 to 0xFFFF * 0.625ms
     gap_init_callback_t init_callback;

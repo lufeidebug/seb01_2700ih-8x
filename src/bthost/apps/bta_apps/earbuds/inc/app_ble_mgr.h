@@ -18,6 +18,10 @@
 
 #include "cmsis_os2.h"
 
+#include "bt_le_types.h"
+
+typedef void (*app_ble_mgr_adv_report_cb)(const ble_bdaddr_t *peer_addr, int8_t rssi, const uint8_t *adv_buf, uint8_t len);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,6 +41,8 @@ void app_ble_mgr_init(void);
  *       when the service needs to be temporarily disabled.
  */
 void app_ble_mgr_deinit(void);
+
+void app_ble_mgr_scan_result_report_cb_register(app_ble_mgr_adv_report_cb adv_report_cb);
 
 #ifdef __cplusplus
 }

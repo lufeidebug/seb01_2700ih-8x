@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __BAP_UC_CLI_INC__
-#define __BAP_UC_CLI_INC__
+#ifndef __BAP_UC_CLI_H__
+#define __BAP_UC_CLI_H__
 
 #include "gaf_cfg.h"
 #include "generic_audio.h"

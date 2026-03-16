@@ -25,6 +25,7 @@
 #include "hal_trace.h"
 #include "hal_aud.h"
 #include "hal_codec.h"
+#include "analog.h"
 #include "audioflinger.h"
 #include "pmu.h"
 #if defined(CODEC_DAC_DC_NV_DATA) || defined(CODEC_ADC_DC_NV_DATA)
@@ -322,8 +323,15 @@ static int codec_dac_dc_do_calib(uint32_t *status)
         uint8_t gain_offs = cfg->gain_offset;
 
         af_codec_calib_param_setup(DAC_PARAM_ANA_GAIN, ana_gain, ini_gain, gain_offs);
+#ifdef AUDIO_OUTPUT_DC_CALIB_ANA
+#define DAC_CALIB_LARGE_DIG_DC 0x2fe0
+        af_codec_calib_param_setup(DAC_PARAM_DIG_DC, DAC_CALIB_LARGE_DIG_DC, DAC_CALIB_LARGE_DIG_DC, 0);
+        af_codec_calib_param_setup(DAC_PARAM_ANA_DC, 0, 0, 0);
+        ret = af_codec_calib_dac_dc(CODEC_CALIB_CMD_ANA_DC, afcfg);
+#else
         af_codec_calib_param_setup(DAC_PARAM_ANA_DC, ana_dc_l, ana_dc_r, 0);
         ret = af_codec_calib_dac_dc(CODEC_CALIB_CMD_DIG_DC, afcfg);
+#endif
         if (ret) {
             CODEC_CALIB_TRACE(1, "%s: error2 %d", __func__, ret);
             ret = -3;
@@ -336,18 +344,29 @@ static int codec_dac_dc_do_calib(uint32_t *status)
             goto _exit1;
         }
 #endif
+#ifdef AUDIO_OUTPUT_DC_CALIB_ANA
+        ana_dc_l = afcfg->ana_dc_l;
+        ana_dc_r = afcfg->ana_dc_r;
+        cfg->dc_l = DAC_CALIB_LARGE_DIG_DC;
+        cfg->dc_r = DAC_CALIB_LARGE_DIG_DC;
+        cfg->ana_dc_l = ana_dc_l;
+        cfg->ana_dc_r = ana_dc_r;
+        CODEC_CALIB_TRACE(1, "AUTO CALIB DAC DC ANA: ana_gain=%d, L=0x%08X R=0x%08X, ret=%d",
+            cfg->ana_gain, ana_dc_l, ana_dc_r, ret);
+#else
         dc_l = afcfg->dig_dc_l;
         dc_r = afcfg->dig_dc_r;
         cfg->dc_l = dc_l;
         cfg->dc_r = dc_r;
+        CODEC_CALIB_TRACE(1, "AUTO CALIB DAC DIG DC: ana_gain=%d, L=0x%08X R=0x%08X, ret=%d",
+            cfg->ana_gain, dc_l, dc_r, ret);
+#endif
         if (calib_ch_l) {
             cfg->valid |= DAC_DC_SET_VALID_CH(1<<0);
         }
         if (calib_ch_r) {
             cfg->valid |= DAC_DC_SET_VALID_CH(1<<1);
         }
-        CODEC_CALIB_TRACE(1, "AUTO CALIB DAC DC: ana_gain=%d, L=0x%08X R=0x%08X, ret=%d",
-            cfg->ana_gain, dc_l, dc_r, ret);
     }
     int32_t first_dc_l, first_dc_r;
     for (i = 0, cfg = calib_cfg; i < num; i++, cfg++) {
@@ -743,6 +762,7 @@ int codec_dac_dc_auto_load(bool open_af, bool reboot, bool init_nv)
             r = codec_dac_dc_do_calib(NULL);
         }
 #endif
+
         if (!r) {
             codec_dac_dc_save_calib_value();
             codec_dac_dc_load_calib_value();
@@ -1406,6 +1426,7 @@ static int codec_adc_dig_dc_do_calib(bool on)
         for (uint32_t ch_index = 0; ch_index < num; ch_index++, cfg++) {
             if (calib_ch_map & (AUD_CHANNEL_MAP_CH0 << ch_index)) {
                 cfg->rsvd0 = adc_dc_offset[ch_index];
+                cfg->valid = ADC_DC_SET_VALID_CH(1<<ch_index);
             }
         }
 
@@ -1430,9 +1451,9 @@ static int codec_adc_dig_dc_do_calib(bool on)
 }
 #endif
 
-static int codec_adc_dc_do_calib(bool on)
+int codec_adc_dc_do_calib(bool on)
 {
-    uint16_t dc_reg_step = 0x8;
+    uint16_t dc_reg_step = 0xf;
     uint16_t dc_reg_offset = 0;
     uint16_t reg_bit = 0;
     enum AUD_CHANNEL_MAP_T calib_ch_map = APP_AUTO_CALIB_ADC_DC_CH_MAP;
@@ -1460,6 +1481,12 @@ static int codec_adc_dc_do_calib(bool on)
         hal_codec_set_adc_calib_status(true);
         start_adc_dc_calib_capture_stream(true, APP_SYSFREQ_104M);
 
+        calib_cfg = hal_codec_adc_get_calib_cfg(&num);
+
+        if (hal_codec_adc_ana_dc_auto_calib_check()) {
+            goto _adc_exit0;
+        }
+
         hal_codec_adc_dc_auto_calib_enable(calib_ch_map);
         osDelay(ADC_DC_CALIB_GET_BIT_OFFSET_DELAY_MS);
 
@@ -1467,7 +1494,6 @@ dc_calib_recheck:
         dc_calib_cnt++;
         //CODEC_CALIB_TRACE(2, "dc calib test_times=%d dc_calib_cnt=%d", dc_calib_test_times, dc_calib_cnt);
 
-        calib_cfg = hal_codec_adc_get_calib_cfg(&num);
         //get the original dc value
         CODEC_CALIB_TRACE(0, "===========Get the original adc dc value===========");
         for (uint32_t ch_index = 0; ch_index < num; ch_index++)
@@ -1616,6 +1642,8 @@ dc_calib_recheck:
         // close audio stream before operate NV record
         dc_calib_cnt = 0;
         hal_codec_adc_dc_auto_calib_disable(calib_ch_map);
+
+_adc_exit0:
         start_adc_dc_calib_capture_stream(false, APP_SYSFREQ_32K);
         hal_codec_set_adc_calib_status(false);
 #ifdef RTOS
@@ -1651,6 +1679,7 @@ int codec_adc_dc_auto_load(bool open_af, bool reboot, bool init_nv)
     int ret = 0;
     uint32_t time = hal_sys_timer_get();
 
+    done = hal_codec_adc_dc_auto_calib_check();
     if (done) {
         CODEC_CALIB_TRACE(1, "%s: already done", __func__);
         return 0;
@@ -1666,7 +1695,9 @@ int codec_adc_dc_auto_load(bool open_af, bool reboot, bool init_nv)
 #endif
 
     if (!codec_adc_dc_load_calib_value()) {
-        ret = codec_adc_dc_do_calib(true);
+#ifdef AUDIO_ADC_ANA_DC_CALIB
+        ret |= codec_adc_dc_do_calib(true);
+#endif
 #ifdef AUDIO_ADC_DIG_DC_CALIB
         ret |= codec_adc_dig_dc_do_calib(true);
         if (ret) {

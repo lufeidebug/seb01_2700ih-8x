@@ -223,8 +223,6 @@ struct data_link {
     } data;
 };
 
-#define BLUETOOTH_20 1
-
 /* Packet Type Flags     HCI:4.5.14                                                     */
 #define PACKET_TYPE_DM1_FLAG    0x0008
 #define PACKET_TYPE_DH1_FLAG    0x0010
@@ -241,7 +239,7 @@ struct data_link {
 #define PACKET_TYPE_HV2_FLAG    0x0040
 #define PACKET_TYPE_HV3_FLAG    0x0080
 
-#ifdef BLUETOOTH_20//used in change packet type
+
 #define PACKET_TYPE_2_DH1_FLAG    0x0002
 #define PACKET_TYPE_3_DH1_FLAG    0x0004
 #define PACKET_TYPE_2_DH3_FLAG    0x0100
@@ -281,7 +279,7 @@ struct data_link {
 #define PACKET_TYPE_3_EV3_FLAG    0x0080
 #define PACKET_TYPE_2_EV5_FLAG    0x0100
 #define PACKET_TYPE_3_EV5_FLAG    0x0200
-#endif
+
 /* add for spec 1.2  HCI 7.1.26 */
 #define PACKET_TYPE_HV1			0x0001
 #define PACKET_TYPE_HV2			0x0002
@@ -294,12 +292,10 @@ struct data_link {
 #define PACKET_TYPE_NO_2_EV5    0x0100
 #define PACKET_TYPE_NO_3_EV5    0x0200
 
-#ifdef BLUETOOTH_20//used in set up synchronous link
 #define PACKET_TYPE_2_EV3			0x0040
 #define PACKET_TYPE_3_EV3			0x0080
 #define PACKET_TYPE_2_EV5			0x0100
 #define PACKET_TYPE_3_EV5			0x0200
-#endif
 
 /* Packet Boundary Flag   HCI:4.4.3                                                     */
 #define CONT_HL_FRAG            0x01
@@ -367,16 +363,10 @@ struct data_link {
 #define PAUSE_ENCRYPTION_FEATURE    0x04
 #define AFHCAPMS_FEATURE		0x08
 #define AFHCLASSMS_FEATURE		0x10
-#ifdef BLUETOOTH_20
+
 #define ESCO_2M_FEATURE         0x20
 #define ESCO_3M_FEATURE         0x40
 #define ESCO_3SLOTS_FEATURE     0x80
-#else
-#define ESCO_2M_FEATURE         0x00
-#define ESCO_3M_FEATURE         0x00
-#define ESCO_3SLOTS_FEATURE     0x00
-#endif
-
 
 /* Packet and buffer sizes. These sizes do not include payload header (except for FHS   */
 /* packet where there is no payload header) since payload header is written or read by  */
@@ -400,7 +390,6 @@ struct data_link {
 #define EV4_PACKET_SIZE         120
 #define EV5_PACKET_SIZE         180
 
-#ifdef BLUETOOTH_20
 #define DH1_2_PACKET_SIZE	  54
 #define DH1_3_PACKET_SIZE	  83
 #define DH3_2_PACKET_SIZE	  367
@@ -412,8 +401,6 @@ struct data_link {
 #define EV3_3_PACKET_SIZE         90
 #define EV5_2_PACKET_SIZE         360
 #define EV5_3_PACKET_SIZE         540
-#endif
-
 
 /* SCO Packet coding LMP:5.1                                                            */
 #define SCO_PACKET_HV1          0x00
@@ -428,22 +415,19 @@ struct data_link {
 #define ESCO_PACKET_2EV5          0x2C
 #define ESCO_PACKET_3EV5          0x3D
 
-#ifdef BLUETOOTH_20
 #define ESCO_PACKET_2_EV3          0x26
 #define ESCO_PACKET_3_EV3          0x37
 #define ESCO_PACKET_2_EV5          0x2C
 #define ESCO_PACKET_3_EV5          0x3D
-#endif
 
 #define MAX_EV3_LENGTH    0x001E
 #define MAX_EV4_LENGTH    0x0078
 #define MAX_EV5_LENGTH    0x00B4
-#ifdef BLUETOOTH_20
+
 #define MAX_2_EV3_LENGTH    0x003C
 #define MAX_2_EV5_LENGTH    0x0168
 #define MAX_3_EV3_LENGTH    0x005A
 #define MAX_3_EV5_LENGTH    0x021C
-#endif
 
 /* Tsco (ScoInterval) BaseBand:4.4.2.1                                                 */
 #define TSCO_HV1                2

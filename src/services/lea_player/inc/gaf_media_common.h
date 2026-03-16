@@ -370,9 +370,11 @@ typedef struct
 {
     uint8_t codec_type;
     uint8_t con_lid;
+    uint8_t audio_path;
     bool is_mobile;
     bool is_bis;
     void* gaf_playback_status_mutex[GAF_AUDIO_ASE_TOTAL_COUNT];
+    bool timer_send;
 
     uint16_t bap_contextType;
     GAF_AUDIO_STREAM_CONTEXT_TYPE_E contextType;

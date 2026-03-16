@@ -118,6 +118,7 @@ typedef struct
     uint8_t device_idx;
     uint8_t audio_type;
     uint8_t focus_request_type;
+    uint8_t disallow_abandon;
     AUDIO_USAGE_TYPE_E stream_type; 
     AUDIO_STATUS_DEVICE_EVNET stream_event;
     bool delayed_focus_allow;
@@ -136,6 +137,10 @@ typedef struct
 }audio_focus_req_info_t; // 20 bytes
 
 typedef bool (*custom_allow_focus_switch)(bt_bdaddr_t* addr);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  ****************************************************************************************
@@ -246,4 +251,9 @@ void app_audio_call_preempt_mode_set(bool preempt);
 void app_audio_allow_switch_focus_request_callback(custom_allow_focus_switch function);
 
 bool app_audio_update_focus(bt_bdaddr_t *addr);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __AUDIO_FOCUS_CONTROL_H__ */

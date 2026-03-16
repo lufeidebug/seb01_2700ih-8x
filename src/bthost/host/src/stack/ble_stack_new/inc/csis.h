@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __PRF_CSIS__
-#define __PRF_CSIS__
+#ifndef __PRF_CSIS_H__
+#define __PRF_CSIS_H__
 
 #include "csi_common.h"
 

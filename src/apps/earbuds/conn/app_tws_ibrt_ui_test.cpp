@@ -21,7 +21,6 @@
 #include "app_key.h"
 #include "app_anc.h"
 #include "bluetooth_bt_api.h"
-#include "app_bt_cmd.h"
 #include "btapp.h"
 #include "factory_section.h"
 #include "nvrecord_bt.h"
@@ -80,9 +79,6 @@
 #include "app_audio_active_device_manager.h"
 #include "app_audio_control.h"
 #include "ble_audio_core_api.h"
-#if BT_SERVICE_ENABLE
-#include "ble_audio_adv.h"
-#endif
 #endif
 
 #include "app_audio_control.h"
@@ -1204,7 +1200,7 @@ static void app_ibrt_tota_v2_send_data_test(const char* param, uint32_t len)
         return;
     }
     struct BT_DEVICE_T *curr_device = NULL;
-    curr_device = app_bt_get_connected_device_byaddr(app_bt_get_pts_address());
+    curr_device = app_bt_get_connected_device_byaddr(bta_get_pts_address());
     if (curr_device == NULL)
     {
         EARBUDS_TRACE(0, "tota_send_data: device not connected");
@@ -1222,7 +1218,7 @@ static void app_ibrt_tota_v2_more_data(const char* param, uint32_t len)
         return;
     }
     struct BT_DEVICE_T *curr_device = NULL;
-    curr_device = app_bt_get_connected_device_byaddr(app_bt_get_pts_address());
+    curr_device = app_bt_get_connected_device_byaddr(bta_get_pts_address());
     if (curr_device == NULL)
     {
         EARBUDS_TRACE(0, "tota_v2_more_data: device not connected");
@@ -1399,26 +1395,6 @@ static void app_ibrt_mgr_shutdown_test(const char* param, uint32_t len)
 {
     bta_tws_shutdown();
 }
-
-#if BLE_AUDIO_ENABLED
-static void app_ibrt_mgr_user_start_lea_adv(const char* param, uint32_t len)
-{
-#if BT_SERVICE_ENABLE
-    ble_audio_user_start_lea_adv(60000, NULL, true);
-#else
-    app_ui_user_start_lea_adv(60000, NULL, true);
-#endif
-}
-
-static void app_ibrt_mgr_user_stop_lea_adv(const char* param, uint32_t len)
-{
-#if BT_SERVICE_ENABLE
-    ble_audio_user_stop_lea_adv(true);
-#else
-    app_ui_user_stop_lea_adv(true);
-#endif
-}
-#endif
 
 static void app_prompt_PlayAudio(const char* param, uint32_t len)
 {
@@ -1904,15 +1880,6 @@ static void app_ibrt_ui_dump_adm_active_info(const char* param, uint32_t len)
     }
 
 }
-
-void app_test_bleaud_adv_test(const char* param, uint32_t len)
-{
-#if BT_SERVICE_ENABLE
-    ble_audio_start_ble_connecteable_adv(BLE_AUDIO_ADV_DURATION,NULL);
-#else
-    app_ui_start_ble_connecteable_adv(BLE_AUDIO_ADV_DURATION,NULL);
-#endif
-}
 #endif
 
 #ifdef CFG_LE_PWR_CTRL
@@ -2263,10 +2230,6 @@ const static app_ibrt_test_cmd_table_t app_ibrt_test_cmd_table[]=
     {"enable_page",                 app_ibrt_mgr_enable_page_test},
     {"disable_page",                app_ibrt_mgr_disable_page_test},
     {"shutdown",                    app_ibrt_mgr_shutdown_test},
-#if BLE_AUDIO_ENABLED
-    {"user_start_lea_adv",          app_ibrt_mgr_user_start_lea_adv},
-    {"user_stop_lea_adv",           app_ibrt_mgr_user_stop_lea_adv},
-#endif
 #endif
     {"iic_switch", app_ibrt_ui_iic_uart_switch_test},
     {"enable_access_mode_test",app_ibrt_enable_access_mode_test},
@@ -2361,7 +2324,6 @@ const static app_ibrt_test_cmd_table_t app_ibrt_test_cmd_table[]=
 #if BLE_AUDIO_ENABLED
     {"dump_ble_cnn_state",app_ibrt_tws_dump_ble_conn_state},
     {"adm_print",app_ibrt_ui_dump_adm_active_info},
-    {"bleaud_adv_test", app_test_bleaud_adv_test},
 #endif
 
 #ifdef AUDIO_MANAGER_TEST_ENABLE

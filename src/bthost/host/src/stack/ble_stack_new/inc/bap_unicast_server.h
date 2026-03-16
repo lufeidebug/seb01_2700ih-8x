@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __BAP_UC_SRV_INC__
-#define __BAP_UC_SRV_INC__
+#ifndef __BAP_UC_SRV_H__
+#define __BAP_UC_SRV_H__
 
 #include "pacs.h"
 #include "ascs_internal.h"

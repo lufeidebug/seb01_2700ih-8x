@@ -22,22 +22,6 @@
 extern "C" {
 #endif
 
-void bes_bt_tws_besaud_client_create(uint16_t conn_handle);
-
-void bes_bt_tws_besaud_server_create(void (*cb)(uint16_t besaud_event));
-
-uint8_t bes_bt_tws_besaud_is_connected(void);
-
-void bes_bt_tws_besaud_data_recv_register(void (*cb)(uint8_t *data, uint16_t len));
-
-void bes_bt_tws_besaud_clear_cmd_sending(void);
-
-bt_status_t bes_bt_tws_besaud_send_cmd_no_wait(uint8_t* cmd, uint16_t len);
-
-void bes_bt_tws_besaud_send_cmd(uint8_t* cmd, uint16_t len);
-
-uint8_t bes_bt_tws_besaud_is_cmd_sending(void);
-
 bt_ibrt_state_t bes_bt_tws_ibrt_get_state(int device_id);
 
 void bes_bt_tws_ibrt_set_field(int device_id, BT_IBRT_FIELD_ENUM_T field, uint32_t value);

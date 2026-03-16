@@ -71,7 +71,7 @@ export SNDP_COMMUNICATION_MGR                   := 1
 export SNDP_PRODUCT_TEST                        := 1
 export SNDP_ALGO_MGR                            := 0
 export SNDP_MIC_GAIN_SETTING                    := 0
-export SNDP_REBOOT_FORCE_PAIRING                := 0
+export SNDP_REBOOT_FORCE_PAIRING                := 1
 export SNDP_AUDIO_TEST                          := 0
 export SNDP_BT_NAME                             := 0
 export SNDP_TEST_TWS_PAIRING                    := 0
@@ -381,7 +381,7 @@ ifeq ($(SNDP_HEART_RATE_MGR),1)
     #KBUILD_CPPFLAGS += -D__SNDP_HEART_RATE_DUMP__
     
     export SNDP_HRSENSOR_SUPPORT                := 1
-    export SNDP_HR_ALGO                         := 1
+    export SNDP_HR_ALGO                         := 0
 
 endif
 

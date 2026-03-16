@@ -14,8 +14,8 @@
  *
  ****************************************************************************/
 
-#ifndef _BLE_HRP_COMMON_H_
-#define _BLE_HRP_COMMON_H_
+#ifndef __BLE_HRP_COMMON_H__
+#define __BLE_HRP_COMMON_H__
 
 #include "prf_types.h"
 #include "co_math.h"

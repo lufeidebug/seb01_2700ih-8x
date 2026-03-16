@@ -14,8 +14,8 @@ obj_cpp := $(obj_tmp_aob)
 obj_cpp += $(obj_tmp_gaf)
 endif
 
-ifeq ($(BLE_USB_AUDIO_SUPPORT),1)
-obj_cpp += $(patsubst $(cur_dir)%,%,$(wildcard $(cur_dir)usb_audio/*.cpp))
+ifeq ($(AOB_MOBILE_ENABLED),1)
+obj_cpp += $(patsubst $(cur_dir)%,%,$(wildcard $(cur_dir)gaf_audio_path/*.cpp))
 endif
 
 obj_cpp += $(patsubst $(cur_dir)%,%,$(wildcard $(cur_dir)gaf_codec/*.cpp))
@@ -48,7 +48,6 @@ subdir-ccflags-y += \
     -Iservices/lea_player/inc \
     $(AUDIO_ALGORITHMS_INCLUDES) \
     $(CODEC_DSP_INCLUDES) \
-    $(BT_SERVICE_UX_INCLUDES) \
     -Imultimedia/inc/audio/process/resample/include \
     -Imultimedia/inc/audio/process/filters/include \
     -Iservices/nv_section/factory_section \

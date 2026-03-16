@@ -31,8 +31,8 @@
  * NOTE: This header file defines the common used module for upper layer
  */
 
-#ifndef APP_GAF_DEFINE_H_
-#define APP_GAF_DEFINE_H_
+#ifndef __APP_GAF_DEFINE_H__
+#define __APP_GAF_DEFINE_H__
 
 #if BLE_AUDIO_ENABLED
 /*****************************header include********************************/
@@ -649,9 +649,9 @@ enum app_le_phy_mask
 enum app_gaf_phy_rates_bf
 {
     // Coded PHY S=2
-    APP_GAF_PHY_RATES_BIT_CODED_S2 = 0x01,
+    APP_GAF_PHY_RATES_BIT_CODED_S8 = 0x01,
     // Coded PHY S=8
-    APP_GAF_PHY_RATES_BIT_CODED_S8 = 0x02,
+    APP_GAF_PHY_RATES_BIT_CODED_S2 = 0x02,
     // Coded PHY Rates bit mask
     APP_GAF_PHY_RATES_BIT_CODED_MASK = 0x03,
     // LE HDT PHY HDT2
@@ -1687,12 +1687,14 @@ typedef struct
     uint8_t test_bn_p2c; // 0x00 no ISO data from P to C, 0x01 to 0x0F BN for P to C transmission
     uint8_t cis_id; // only valid when update cis configure
     // Only valid when phy bit set Coded or/ and HDT
-    uint16_t coded_rates_bf_c2p; // bit 0 - S=2, 1 - S=8
-    uint16_t coded_rates_bf_p2c; // bit 0 - S=2, 1 - S=8
+    uint16_t coded_rates_bf_c2p; // bit 0 - S=8, 1 - S=2
+    uint16_t coded_rates_bf_p2c; // bit 0 - S=8, 1 - S=2
     uint16_t hdt_rates_bf_c2p; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
     uint16_t hdt_rates_bf_p2c; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
     uint8_t hdt_mic_length; // MIC length, 0x01 - 64bits, 0x02 - 128bits
     uint8_t hdt_pkt_fmt; // 0x00: Any format pref, 0x01: Format 0, 0x02: Format 1
+    uint8_t hdt_pld_window_size_c2p; // 1 to 4 Size of the transmit payload window size c 2 p
+    uint8_t hdt_pld_window_size_p2c; // 1 to 4 Size of the transmit payload window size p 2 c
 } app_gaf_cis_config_t;
 
 /// Structure for BAP_UC_SRV_CIS_STATE indication message
@@ -3054,47 +3056,6 @@ enum app_gaf_acc_mc_char_type
     APP_GAF_MC_CHAR_TYPE_MAX,
 };
 
-/// Descriptor type values
-enum app_gaf_acc_mc_desc_type
-{
-    /// Client Characteristic Configuration descriptor for Media Player Name characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_PLAYER_NAME = 0,
-    /// Client Characteristic Configuration descriptor for Track Changed characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_TRACK_CHANGED,
-    /// Client Characteristic Configuration descriptor for Track Title characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_TRACK_TITLE,
-    /// Client Characteristic Configuration descriptor for Track Duration characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_TRACK_DURATION,
-    /// Client Characteristic Configuration descriptor for Track Position characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_TRACK_POSITION,
-    /// Client Characteristic Configuration descriptor for Playback Speed characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_PLAYBACK_SPEED,
-    /// Client Characteristic Configuration descriptor for Seeking Speed characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_SEEKING_SPEED,
-    /// Client Characteristic Configuration descriptor for Current Track Object ID characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_CUR_TRACK_OBJ_ID,
-    /// Client Characteristic Configuration descriptor for Next Track Object ID characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_NEXT_TRACK_OBJ_ID,
-    /// Client Characteristic Configuration descriptor for Current Group Object ID characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_CUR_GROUP_OBJ_ID,
-    /// Client Characteristic Configuration descriptor for Parent Group Object ID characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_PARENT_GROUP_OBJ_ID,
-    /// Client Characteristic Configuration descriptor for Playing Order characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_PLAYING_ORDER,
-    /// Client Characteristic Configuration descriptor for Media State characteristic
-    APP_GAF_MC_DESC_TYPE_CCC_MEDIA_STATE,
-    /// Client Characteristic Configuration descriptor for Media Control Point
-    APP_GAF_MC_DESC_TYPE_CCC_MEDIA_CP,
-    /// Client Characteristic Configuration descriptor for Media Control Point Opcodes Supported
-    APP_GAF_MC_DESC_TYPE_CCC_MEDIA_CP_OPCODES_SUPP,
-    /// Client Characteristic Configuration descriptor for Search Results Object ID
-    APP_GAF_MC_DESC_TYPE_CCC_SEARCH_RESULTS_OBJ_ID,
-    /// Client Characteristic Configuration descriptor for Search Control Point
-    APP_GAF_MC_DESC_TYPE_CCC_SEARCH_CP,
-
-    APP_GAF_MC_DESC_TYPE_MAX,
-};
-
 /// Content description structure for Media Control Service
 typedef struct app_gaf_acc_mcc_mcs_info
 {
@@ -3104,8 +3065,6 @@ typedef struct app_gaf_acc_mcc_mcs_info
     uint16_t uuid;
     /// Characteristics description
     app_gaf_prf_char_t char_info[APP_GAF_MC_CHAR_TYPE_MAX];
-    /// Descriptors description
-    app_gaf_prf_desc_t desc_info[APP_GAF_MC_DESC_TYPE_MAX];
 } app_gaf_acc_mcc_mcs_info_t;
 
 /// Structure for ACC_MCC_BOND_DATA indication message
@@ -3311,39 +3270,6 @@ enum
     APP_GAF_TB_CHAR_TYPE_MAX,
 };
 
-/// Descriptor type values
-enum
-{
-    /// Client Characteristic Configuration descriptor for Bearer Provider Name characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_PROV_NAME = 0,
-    /// Client Characteristic Configuration descriptor for Bearer Technology characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_TECHNO,
-    /// Client Characteristic Configuration descriptor for Bearer Signal Strength characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_SIGN_STRENGTH,
-    /// Client Characteristic Configuration descriptor for Bearer List Current Calls characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_CURR_CALLS_LIST,
-    /// Client Characteristic Configuration descriptor for Status Flags characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_STATUS_FLAGS,
-    /// Client Characteristic Configuration descriptor for Incoming Call Target Bearer
-    /// URI characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_IN_TGT_CALLER_ID,
-    /// Client Characteristic Configuration descriptor for Call State characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_CALL_STATE,
-    /// Client Characteristic Configuration descriptor for Call Control Point characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_CALL_CTL_PT,
-    /// Client Characteristic Configuration descriptor for Termination Reason characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_TERM_REASON,
-    /// Client Characteristic Configuration descriptor for Incoming Call characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_INCOMING_CALL,
-    /// Client Characteristic Configuration descriptor for Call Friendly Name characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_CALL_FRIENDLY_NAME,
-    /// Client Characteristic Configuration descriptor for Bearer URI Schemes Supported
-    /// List characteristic
-    APP_GAF_TB_DESC_TYPE_CCC_URI_SCHEMES_LIST,
-
-    APP_GAF_TB_DESC_TYPE_MAX,
-};
-
 /// Content description structure for Telephone Bearer Service
 typedef struct app_gaf_acc_tbc_tbs_info
 {
@@ -3353,8 +3279,6 @@ typedef struct app_gaf_acc_tbc_tbs_info
     uint16_t uuid;
     /// Characteristics description
     app_gaf_prf_char_t char_info[APP_GAF_TB_CHAR_TYPE_MAX];
-    /// Descriptors description
-    app_gaf_prf_desc_t desc_info[APP_GAF_TB_DESC_TYPE_MAX];
 } app_gaf_acc_tbc_tbs_info_t;
 
 /// Structure for APP_GAF_TBC_SVC_BOND_DATA indication message
@@ -3640,8 +3564,8 @@ typedef struct
     uint8_t mute;
     /// Change counter
     uint8_t change_cnt;
-    /// Reason
-    uint8_t reason;
+    /// volume change triggered by the local or the remote
+    bool is_local;
 } app_gaf_arc_vcs_volume_ind_t;
 
 /// Structure for ARC_VCS_FLAGS indication message
@@ -3870,19 +3794,6 @@ enum app_gaf_csis_char_type
     APP_GAF_CSIS_CHAR_TYPE_MAX,
 };
 
-/// Descriptor type values for Coordinated Set Identification Service
-enum app_gaf_csis_desc_type
-{
-    /// Client Characteristic Configuration descriptor for Set Identity Resolving Key characteristic
-    APP_GAF_CSIS_DESC_TYPE_CCC_SIRK = 0,
-    /// Client Characteristic Configuration descriptor for Coordinated Set Size characteristic
-    APP_GAF_CSIS_DESC_TYPE_CCC_SIZE,
-    /// Client Characteristic Configuration descriptor for Set Member Lock characteristic
-    APP_GAF_CSIS_DESC_TYPE_CCC_LOCK,
-
-    APP_GAF_CSIS_DESC_TYPE_MAX,
-};
-
 /// Content description structure for Coordinated Set Identification Service
 typedef struct app_gaf_csisc_csis_info
 {
@@ -3890,8 +3801,6 @@ typedef struct app_gaf_csisc_csis_info
     app_gaf_prf_svc_t svc_info;
     /// Characteristics description
     app_gaf_prf_char_t char_info[APP_GAF_CSIS_CHAR_TYPE_MAX];
-    /// Descriptors description
-    app_gaf_prf_desc_t desc_info[APP_GAF_CSIS_DESC_TYPE_MAX];
 } app_gaf_csisc_csis_info_t;
 
 /// Structure for CSISC_BOND_DATA indication message
@@ -4596,6 +4505,7 @@ typedef enum
     APP_GAF_TBC_SVC_CHANGED_IND             = GAF_BUILD_ID(APP_GAF_TBC_MODULE, 0x5),
     APP_GAF_TBC_CALL_ACTION_RESULT_IND      = GAF_BUILD_ID(APP_GAF_TBC_MODULE, 0x6),
     APP_GAF_TBC_BOND_DATA_IND               = GAF_BUILD_ID(APP_GAF_TBC_MODULE, 0x7),
+    APP_GAF_TBC_SET_CFG_CMP_IND             = GAF_BUILD_ID(APP_GAF_TBC_MODULE, 0x8),
 
     // AICS Event
     APP_GAF_AICS_STATE_IND                  = GAF_BUILD_ID(APP_GAF_AICS_MODULE, 0x0),

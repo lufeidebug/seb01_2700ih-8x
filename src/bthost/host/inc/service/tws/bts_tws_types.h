@@ -35,20 +35,11 @@
 // TODO:
 #define  IBRT_UI_LONG_POLL_INTERVAL                         (0xD0)
 #define  IBRT_UI_DEFAULT_POLL_INTERVAL                      (0x68)
-
-#ifdef DUAL_MIC_RECORDING
-#define  IBRT_UI_SHORT_POLL_INTERVAL                        (0x18)
-#else
 #define  IBRT_UI_SHORT_POLL_INTERVAL                        (0x34)
-#endif
 #define  IBRT_UI_EXTREMELY_SHORT_POLL_INTERVAL              (0x1A)
 
 #define  IBRT_UI_DEFAULT_POLL_INTERVAL_IN_SCO               (0x9c)
-#ifdef DUAL_MIC_RECORDING
-#define  IBRT_UI_SHORT_POLL_INTERVAL_IN_SCO                 (0x27)
-#else
 #define  IBRT_UI_SHORT_POLL_INTERVAL_IN_SCO                 (0x4E)
-#endif
 
 #define  IBRT_TWS_BT_TPOLL_DEFAULT                          (80)
 
@@ -411,6 +402,7 @@ typedef enum
 typedef enum
 {
     APP_TWS_CMD_PROFILE_DATA_EXCHANGE               = 0x8001,
+    APP_TWS_CMD_PROFILE_DATA_EXCHANGE_DONE          = 0x8002,
     APP_TWS_CMD_RSP                                 = 0x8003,
     APP_TWS_CMD_SWITCH_ROLE                         = 0x8004,
     APP_TWS_CMD_SEND_PLAYBACK_INFO                  = 0x8005,
@@ -485,11 +477,8 @@ typedef enum
     APP_TWS_CMD_SYNC_BIXBY_STATE                    = (0x8057|APP_INTERNAL_CMD_PREFIX),
     APP_TWS_CMD_SHARE_LINK_INFO                     = 0x8058,
     APP_TWS_CMD_ROLE_SWITCH_MONITOR                 = 0x8059,
-    APP_TWS_CMD_SYNC_TOTA_FACTORY_RESET             = (0x805A|APP_INTERNAL_CMD_PREFIX),
-    APP_TWS_CMD_SYNC_TOTA_LEAK_DETECT               = 0x805B,
-    APP_TWS_CMD_TOTA_SEND_LEAK_DETECT_STATUS        = 0x805C,
-    APP_TWS_CMD_SYNC_TOTA_AUDIO_EQ                  = (0x805D|APP_INTERNAL_CMD_PREFIX),
-    APP_TWS_CMD_SYNC_TOTA_BUTTON_SETTINGS_CONTROL   = (0x805E|APP_INTERNAL_CMD_PREFIX),
+    APP_TWS_CMD_SYNC_TOTA_FACTORY_RESET             = 0x805A,
+    APP_TWS_CMD_SYNC_TOTA_BUTTON_SETTINGS_CONTROL   = 0x805E,
     APP_TWS_CMD_RECORD_INFO                         = (0x8060|APP_INTERNAL_CMD_PREFIX),
     APP_TWS_CMD_OTA_UPDATE_NOW                      = (0x8062|APP_OTA_INTERACTION_CMD_PREFIX),
     APP_TWS_CMD_UPDATE_SECTION                      = (0x8063|APP_OTA_INTERACTION_CMD_PREFIX),
@@ -516,6 +505,7 @@ typedef enum
     APP_TWS_CMD_NOTIFY_RUN_COMPLETE_INFO            = 0x807A,
     APP_TWS_CMD_SYNC_IAP2_INFO                      = 0x807B,
     APP_TWS_CMD_AVRCP_STATUS_SYNC                   = 0x807C,
+    APP_TWS_CMD_SEND_NV_APP_MODE                    = 0x807D,
     APP_TWS_CMD_PREVIEW_UI_CONSENSUS_JUMBO          = 0x80fe,
     APP_TWS_CMD_PREVIEW_UI_CONSENSUS                = 0x80ff,
 

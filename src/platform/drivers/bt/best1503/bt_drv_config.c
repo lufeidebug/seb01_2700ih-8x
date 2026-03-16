@@ -634,6 +634,45 @@ const uint8_t bt_common_setting_1503[38] =
     0x14, //page_gap_slot_in_a2dp
 };
 
+const uint8_t bt_common_setting_1503_t3[42] =
+{
+    0x00,0x00, //tports_level
+    0xb0,0x02, //comp_id
+    0x00,0x08, //max_hdc_adv_dur in slots
+    0x40,0x05,//sniff_interval_max
+    0x03, //trace_level
+    0x01, //trace_output
+    0x06, //wesco_nego
+    0x01, //esco_retx_after_establish
+    0x00, //sco_start_delay
+    0x01, //msbc_pcmdout_zero_flag
+    0x01, //master_2_poll
+    0x01, //pca_disable_in_nosync
+    BT54_VERSION, //version_major
+    0x03, //version_minor
+    0x15, //version_build chip=1503
+    0x00, //address_reset
+    0x02, //ibrt_relay_traffic
+    0x05, //lmp_to_before_complete
+    0x08, //fastpcm_interval
+    0x01, //lm_env_reset_local_name
+    0xc8, //seq_error_num
+    0x0a, //delay_process_lmp_to 10*100 halt slot
+    0x01, //ignore_pwr_ctrl_sm_state
+    0x01, //iso_host_to_controller_flow
+    0x03, //enable_assert
+    0x00, //ble_aux_adv_ind_update
+    0x10, //page_max_duration_in_a2dp
+    0x06, //ble_cis_conn_event_cnt_distance (in connect interval)
+    0x0c, //ble_ci_alarm_init_distance (in half slots)
+    0x00, //btc_send_name_req
+    0x00, //read_name_from_peer
+    0x01, //ble_adv_buf_malloc
+    0x20, //pscan_gap_slot_in_a2dp
+    0x14, //page_gap_slot_in_a2dp
+    0x00, 0x00, 0x00, 0x00, // @off_tport_bit_mask
+};
+
 const uint8_t bt_common_setting_t2_1503[54] =
 {
     0x64,0x00, //mhdt_instant;
@@ -887,7 +926,7 @@ static BTDRV_CFG_TBL_STRUCT  btdrv_cfg_tbl[] = {
     {BTDRV_CONFIG_ACTIVE,HCI_DBG_SET_SLEEP_SETTING_CMD_OPCODE,sizeof(sleep_param),sleep_param},
     {BTDRV_CONFIG_ACTIVE,HCI_RD_LOCAL_VER_INFO_CMD_OPCODE, 0, NULL},
     {BTDRV_CONFIG_ACTIVE,HCI_DBG_SET_LOCAL_FEATURE_CMD_OPCODE,sizeof(local_feature),local_feature},
-    {BTDRV_CONFIG_ACTIVE,HCI_DBG_SET_BT_SETTING_CMD_OPCODE,sizeof(bt_common_setting_1503),bt_common_setting_1503},
+    //{BTDRV_CONFIG_ACTIVE,HCI_DBG_SET_BT_SETTING_CMD_OPCODE,sizeof(bt_common_setting_1503),bt_common_setting_1503},
     {BTDRV_CONFIG_ACTIVE,HCI_DBG_SET_BT_SCHE_SETTING_CMD_OPCODE,sizeof(bt_sche_setting_1503),bt_sche_setting_1503},
     {BTDRV_CONFIG_ACTIVE,HCI_DBG_SET_BT_IBRT_SETTING_CMD_OPCODE,sizeof(bt_ibrt_setting_1503),bt_ibrt_setting_1503},
     {BTDRV_CONFIG_ACTIVE,HCI_DBG_SET_BT_HW_FEAT_SETTING_CMD_OPCODE,sizeof(bt_hw_feat_setting_1503),bt_hw_feat_setting_1503},
@@ -1933,7 +1972,7 @@ const uint32_t reg_and_val_array[] ={
     //e.g 0x6d040c70,0xFE000000
 };
 
-const uint32_t reg_array[] ={
+const uint32_t reg_array_t1[] ={
     //format:reg_address
     //e.g 0x6d040c70,
     BESMDM_AHI_HTX_TRACKING_1_ADDR,
@@ -1986,9 +2025,15 @@ const uint32_t reg_array[] ={
     BESMDM_INT_DIG_GAIN1_ADDR,
     BT_CAP_SEL_ADDR,
     BT_BES_TOG_CNTL_ADDR,
+    BLE_MTK_MHDT_0_ADDR,
+    EM_BASE_ADDR,
+    BT_REG_17_ADDR,
+    BESMDM_DPSK_K3_EDR3M_ADDR,
+    BESMDM_SYNC_PARAMETER_9_ADDR,
+    BESMDM_BT_PSD_FILTER_ON_3_ADDR,
 };
 
-const uint32_t reg_array_new_metal[] ={
+const uint32_t reg_array_t3[] ={
     //format:reg_address
     //e.g 0x6d040c70,
     BESMDM_AHI_HTX_TRACKING_1_ADDR,
@@ -2039,6 +2084,14 @@ const uint32_t reg_array_new_metal[] ={
     BESMDM_VALID_POSITION_ADDR,
     BESMDM_INT_DIG_GAIN0_ADDR,
     BESMDM_INT_DIG_GAIN1_ADDR,
+    BT_CAP_SEL_ADDR,
+    BT_BES_TOG_CNTL_ADDR,
+    BLE_MTK_MHDT_0_ADDR,
+    EM_BASE_ADDR,
+    BT_REG_17_ADDR,
+    BESMDM_DPSK_K3_EDR3M_ADDR,
+    BESMDM_SYNC_PARAMETER_9_ADDR,
+    BESMDM_BT_PSD_FILTER_ON_3_ADDR,
     CMU_CLKREG_ADDR,
     BT_BES_CNTL0_ADDR,
     BT_CMU_IRQ_STATE_ADDR,
@@ -2069,9 +2122,6 @@ const uint32_t reg_array_new_metal[] ={
     BT_TRIGREG_ADDR,
     BT_BES_CNTL15_ADDR,
     BESMDM_OLD_DEMODULATE_ADDR,
-    EM_BASE_ADDR,
-    BT_CAP_SEL_ADDR,
-    BT_BES_TOG_CNTL_ADDR,
 };
 
 const uint32_t data_backup_tbl[] =
@@ -2133,12 +2183,11 @@ void btdrv_hci_set_poweron_reg(void)
 {
     enum HAL_CHIP_METAL_ID_T metal_id;
     metal_id = hal_get_chip_metal_id();
-    uint32_t buff_length = 0;
 
     if ((metal_id >= HAL_CHIP_METAL_ID_3) && (metal_id < HAL_CHIP_METAL_ID_6))
     {
         uint8_t buff[251];
-
+        uint8_t buff_length = 0;
         buff[0] = ((set_poweron_reg_param.mode << 1) & 0xff) | set_poweron_reg_param.poweroff_flag;
         buff[1] = set_poweron_reg_param.reg_num;
 
@@ -2165,14 +2214,14 @@ void btdrv_hci_set_poweron_reg(void)
             }
             else if(set_poweron_reg_param.mode == BACKUP_MODE)
             {
-                set_poweron_reg_param.reg_and_val = reg_array;
-                set_poweron_reg_param.reg_num = sizeof(reg_array)/4;
+                set_poweron_reg_param.reg_and_val = reg_array_t1;
+                set_poweron_reg_param.reg_num = sizeof(reg_array_t1)/4;
                 buff[1] = set_poweron_reg_param.reg_num;
-                buff_length = sizeof(reg_array);
+                buff_length = sizeof(reg_array_t1);
 
                 if(buff_length>249)
                 {
-                    ASSERT(0, "BT_DRV:ERROR reg_array number exceed, expected to smaller than 63 reg");
+                    ASSERT(0, "BT_DRV:ERROR reg_array_t1 number exceed, expected to smaller than 63 reg");
                 }
             }
             else
@@ -2188,6 +2237,7 @@ void btdrv_hci_set_poweron_reg(void)
     else if(metal_id >= HAL_CHIP_METAL_ID_6)
     {
         uint8_t buff[251];
+        uint32_t buff_length = 0;
         uint8_t hci_send_loop = 0;
         uint8_t reg_num_per_page = set_poweron_reg_param_v2.reg_num_per_page;
         uint8_t reg_page_total_num = 0;
@@ -2239,8 +2289,8 @@ void btdrv_hci_set_poweron_reg(void)
         }
         else if(set_poweron_reg_param_v2.mode == BACKUP_MODE)
         {
-            set_poweron_reg_param_v2.reg_and_val = reg_array_new_metal;
-            set_poweron_reg_param_v2.reg_total_num = sizeof(reg_array_new_metal)/4;
+            set_poweron_reg_param_v2.reg_and_val = reg_array_t3;
+            set_poweron_reg_param_v2.reg_total_num = sizeof(reg_array_t3)/4;
 
             if((set_poweron_reg_param_v2.reg_total_num<=BKP_MAX_REG_NUM_PER_BLK) && (reg_num_per_page>set_poweron_reg_param_v2.reg_total_num))
             {
@@ -2322,8 +2372,13 @@ void btdrv_hci_set_poweron_reg(void)
 void btdrv_config_end(void)
 {
 #ifdef BT_LOG_POWEROFF
-    bt_drv_reg_op_data_bakeup_init();
-    bt_drv_reg_op_data_backup_write(&data_backup_tbl[0],sizeof(data_backup_tbl)/sizeof(data_backup_tbl[0]));
+    enum HAL_CHIP_METAL_ID_T metal_id;
+    metal_id = hal_get_chip_metal_id();
+
+    if ((metal_id >= HAL_CHIP_METAL_ID_3) && (metal_id < HAL_CHIP_METAL_ID_6)) {
+        bt_drv_reg_op_data_bakeup_init();
+        bt_drv_reg_op_data_backup_write(&data_backup_tbl[0],sizeof(data_backup_tbl)/sizeof(data_backup_tbl[0]));
+    }
 #endif
 #ifdef BT_ACTIVE_OUTPUT
     hal_iomux_set_bt_active_out();
@@ -2345,7 +2400,15 @@ void btdrv_hciprocess(void)
 #endif
         }
     }
-
+    enum HAL_CHIP_METAL_ID_T metal_id = hal_get_chip_metal_id();
+    if (metal_id < HAL_CHIP_METAL_ID_7)
+    {
+        btdrv_send_cmd(HCI_DBG_SET_BT_SETTING_CMD_OPCODE,sizeof(bt_common_setting_1503),bt_common_setting_1503);
+    }
+    else
+    {
+        btdrv_send_cmd(HCI_DBG_SET_BT_SETTING_CMD_OPCODE,sizeof(bt_common_setting_1503_t3),bt_common_setting_1503_t3);
+    }
     btdrv_hci_init_sleep_wakeup_param();
     btdrv_hci_set_ble_rpl_tx_pwr_conv_tbl();
 #ifdef __BESTRX_SUPPORT__

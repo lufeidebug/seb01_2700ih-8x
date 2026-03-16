@@ -535,19 +535,6 @@ typedef enum {
 
 typedef void (*hfp_vol_sync_done_cb)(void);
 
-#ifdef IBRT
-typedef struct ibrt_hfp_status_t
-{
-    uint8_t audio_state;
-    uint8_t localVolume;
-    uint8_t sync_ctx;
-    bt_bdaddr_t mobile_addr;
-    uint8_t callsetup_state;
-    uint8_t call_state;
-    uint8_t callhold_state;
-} __attribute__((packed)) ibrt_hfp_status_t;
-#endif
-
 // Maintain consistency with MAX_NUMBER_LEN
 #define MAX_CARD_NUMBER_LEN               (33)
 struct hfp_sim_card_number {
@@ -690,6 +677,7 @@ void btif_register_tws_current_ibrt_slave_role_callback(bool (*cb)(void* addr));
 void btif_hf_set_sco_path_status(hfp_set_sco_state_param_t *param);
 
 int btif_hfp_initialize(void);
+int btif_hfp_deinit(void);
 int btif_hf_register_callback(hf_event_cb_t callback);
 int btif_ag_register_callback(hf_event_cb_t callback);
 enum HFP_ROLE btif_hfp_get_role(uint8_t device_id);
@@ -732,7 +720,7 @@ int btif_hf_init_channel(btif_hf_channel_t* chan_h);
 bt_status_t btif_hf_disconnect_service_link(btif_hf_channel_t* chan_h);
 bt_status_t btif_hf_create_service_link(bt_bdaddr_t * bt_addr);
 void btif_hf_query_remote_sdp(bt_bdaddr_t *addr);
-bool btif_hfp_profile_is_connecting(uint8_t device_id);
+bool btif_hfp_profile_is_connecting(const bt_bdaddr_t *bdaddr_p);
 bool btif_hf_get_remote_bdaddr(btif_hf_channel_t* chan_h, bt_bdaddr_t *bdaddr_p);
 void btif_hfp_register_peer_sco_codec_receive_handler(void (*cb)(uint8_t device_id,void * chan,uint8_t codec));
 void btif_hf_receive_peer_sco_codec_info(const void* remote, uint8_t codec);
@@ -746,7 +734,6 @@ uint8 btif_hfp_get_rfcomm_dlci(const bt_bdaddr_t *remote);
 bt_status_t btif_hf_send_audio_data(btif_hf_channel_t* chan_h, btif_bt_packet_t *packet);
 bt_status_t btif_hf_is_inbandring_enabled(btif_hf_channel_t* chan_h);
 bool btif_hfp_is_profile_initiator(const bt_bdaddr_t* remote);
-bool btif_hfp_profile_connecting(const bt_bdaddr_t *bdaddr_p);
 bool btif_hf_is_virtual_call_enabled(btif_hf_channel_t* chan_h);
 void btif_hf_set_virtual_call_enable(btif_hf_channel_t* chan_h);
 void btif_hf_set_virtual_call_disable(btif_hf_channel_t* chan_h);

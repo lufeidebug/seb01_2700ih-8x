@@ -49,6 +49,8 @@
 #include "bt_drv_interface.h"
 #endif
 
+#include "bta_bt_api.h"
+
 static osMutexId app_rfcomm_fifo_mutex_id = NULL;
 osMutexDef(app_rfcomm_fifo_mutex);
 
@@ -141,14 +143,8 @@ bool app_fp_rfcomm_send(uint8_t device_id, uint8_t *ptrData, uint32_t length)
            FP_RFCOMM_TX_BUF_CHUNK_SIZE,
            length);
 
-    if (BT_STS_FAILED == bta_spp_write(env->spp_chan->rfcomm_handle, ptrData, (uint16_t)length))
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
+    bool ret = bta_spp_send_data(env->spp_chan->rfcomm_handle, ptrData, (uint16_t)length);
+    return ret;
 }
 
 static int app_fp_rfcomm_accept_channel_request(const bt_bdaddr_t *remote, uint16_t local_server_channel)

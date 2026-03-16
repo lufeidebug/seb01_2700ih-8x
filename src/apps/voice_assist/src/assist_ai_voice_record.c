@@ -72,6 +72,7 @@ static uint32_t g_ext_buf_used_size = 0;
 static uint32_t g_frame_len = 0;
 static uint32_t g_sample_rate = 0;
 static uint32_t g_capture_ch_num = 0;
+static uint32_t g_ai_capture_ch_num = 0;
 #if defined(ANC_ASSIST_ENABLED)
 static uint8_t *g_anc_assist_interval_buf = NULL;
 #endif
@@ -390,7 +391,7 @@ static uint32_t ai_voice_record_callback(uint8_t *buf, uint32_t len)
     app_anc_assist_parser_app_mic_buf(buf, &len);
 
     int32_t *pcm_buf_s32 = (int32_t *)buf;
-    for (uint32_t i=0; i<g_frame_len; i++) {
+    for (uint32_t i=0; i<g_frame_len * g_ai_capture_ch_num; i++) {
         // 0: CH0 --> MIC1
         // 4: Add 24dB(8-->4)
         g_ai_buf[i] = speech_ssat_int16(pcm_buf_s32[i] >> 4);
@@ -425,15 +426,16 @@ int32_t assist_ai_voice_record_open(struct AF_STREAM_CONFIG_T *stream_cfg, mempo
 {
     g_stream_cfg = *stream_cfg;
     g_mempool_get_buff = mempool_get_buff;
+    g_ai_capture_ch_num = g_stream_cfg.channel_num;
 
     _ext_buf_usage_start();
 
     ASSERT(g_stream_cfg.bits == AUD_BITS_16, "[%s] bits(%d) is invalid", __func__, g_stream_cfg.bits);
     ASSERT((g_stream_cfg.sample_rate == AUD_SAMPRATE_48000 || g_stream_cfg.sample_rate == AUD_SAMPRATE_32000 || g_stream_cfg.sample_rate == AUD_SAMPRATE_16000),
           "[%s] sample rate must be one of 48k,32k,16k, sample rate(%d) is invalid", __func__, g_stream_cfg.sample_rate);
-    ASSERT(g_stream_cfg.channel_num == AUD_CHANNEL_NUM_1, "[%s] channel number(%d) is invalid", __func__, g_stream_cfg.channel_num);
+   // ASSERT(g_stream_cfg.channel_num == AUD_CHANNEL_NUM_1, "[%s] channel number(%d) is invalid", __func__, g_stream_cfg.channel_num);
   //  ASSERT(g_stream_cfg.data_size == FRAME_LEN_16K_15MS * sizeof(int16_t) * 2 * (g_stream_cfg.sample_rate / AUD_SAMPRATE_16000), "[%s] data_size(%d) is invalid", __func__, g_stream_cfg.data_size);
-    g_frame_len = g_stream_cfg.data_size / 2 / sizeof(int16_t);
+    g_frame_len = g_stream_cfg.data_size / 2 / sizeof(int16_t) / g_ai_capture_ch_num;
     g_sample_rate = g_stream_cfg.sample_rate;
     g_extern_data_size  = g_stream_cfg.data_size;
     g_extern_data_ptr   = g_stream_cfg.data_ptr;
@@ -448,7 +450,7 @@ int32_t assist_ai_voice_record_open(struct AF_STREAM_CONFIG_T *stream_cfg, mempo
 #endif
 
     g_capture_ch_num = g_stream_cfg.channel_num;
-    g_stream_cfg.data_size   = g_stream_cfg.data_size * g_stream_cfg.channel_num;
+    g_stream_cfg.data_size   = (g_stream_cfg.data_size / g_ai_capture_ch_num) * g_stream_cfg.channel_num;
 
 #if _RESAMPLE_ENABLE
     if (g_stream_cfg.sample_rate == DST_SAMPLE_RATE) {
@@ -475,10 +477,10 @@ int32_t assist_ai_voice_record_open(struct AF_STREAM_CONFIG_T *stream_cfg, mempo
     g_stream_cfg.handler   = ai_voice_record_callback;
 
 #if defined(ANC_ASSIST_ENABLED)
-    if (g_frame_len * sizeof(int16_t) <= g_extern_data_size) {
+    if (g_frame_len * sizeof(int16_t) * g_ai_capture_ch_num <= g_extern_data_size) {
         g_ai_buf = (int16_t *)g_extern_data_ptr;
     } else {
-        g_ai_buf = (int16_t *)_get_ext_buf(g_frame_len * sizeof(int16_t), AI_CAPTURE_MEMPOOL_USER_ANC_ASSIST);
+        g_ai_buf = (int16_t *)_get_ext_buf(g_frame_len * sizeof(int16_t) * g_ai_capture_ch_num, AI_CAPTURE_MEMPOOL_USER_ANC_ASSIST);
     }
 #endif
 

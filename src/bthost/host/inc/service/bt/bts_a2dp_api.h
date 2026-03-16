@@ -55,6 +55,14 @@ void bts_a2dp_sink_deregister_callbacks(bt_a2dp_sink_callback_user_t user);
 
 /**
  ****************************************************************************************
+ * @brief       Register the a2dp revied cmd request delay send response callback.
+ * @param[in]   req_delay_cb: Pointer to callbacks for handling a2dp sink events.
+ ****************************************************************************************
+ */
+void bts_a2dp_register_req_delay_rsp_callback(bt_a2dp_cmd_req_delay_rsp_cb req_delay_cb);
+
+/**
+ ****************************************************************************************
  * @brief       Initiate a connection to a2dp source.
  * @param[in]   address: Pointer to the Bluetooth address of peer device.
  * @return      status of the operation

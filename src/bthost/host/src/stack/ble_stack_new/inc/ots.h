@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __ACC_OTS__
-#define __ACC_OTS__
+#ifndef __ACC_OTS_H__
+#define __ACC_OTS_H__
 
 #include "gaf_cfg.h"
 #include "gaf_prf.h"

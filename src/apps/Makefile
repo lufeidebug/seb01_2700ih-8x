@@ -89,14 +89,6 @@ ifeq ($(BT_SVC_FW_PRODUCT),BT_SVC_FW_PRODUCT_EARBUDS)
 obj-y += earbuds/
 endif
 
-ifeq ($(BT_SVC_FW_PRODUCT),BT_SVC_FW_PRODUCT_DONGLE)
-#obj-y += dongle/
-endif
-
-ifeq ($(BT_SVC_FW_PRODUCT),BT_SVC_FW_PRODUCT_HEADSET)
-obj-y += headset/
-endif
-
 export APP_SPP_DEMO ?= 0
 ifeq ($(APP_SPP_DEMO),1)
 obj-y += example/app_spp/
@@ -128,7 +120,8 @@ subdir-ccflags-y += -Iapps/app_test/apptester \
 					-Iutils/heap \
 					-Iservices/audio_manager/inc \
 					$(CODEC_DSP_INCLUDES) \
-					-I$(BLE_APP_DIR_PATH)/inc
+					-I$(BLE_APP_DIR_PATH)/inc \
+					$(BTA_LEGACY_INCLUDES)
 
 ifeq ($(BT_USB_AUDIO_DUAL_MODE),1)
 subdir-ccflags-y += -Iapps/btusbaudio

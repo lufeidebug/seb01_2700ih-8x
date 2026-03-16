@@ -391,6 +391,12 @@ typedef struct bes_ble_scan_param
     uint16_t scanIntervalMs;
     // Scan Duration
     uint16_t scanDurationMs;
+    // Scan coded phy enabled
+    bool scanCodedPhy;
+    // Scan Interval Coded
+    uint16_t scanIntervalMsCoded;
+    // Scan Duration Coded
+    uint16_t scanWindowMsCoded;
 } bes_ble_scan_param_t;
 
 /// Connection parameters
@@ -498,10 +504,6 @@ typedef void (*bes_ble_adv_data_report_cb_t)(bes_ble_bdaddr_t *bleAddr, int8_t r
 
 typedef void (*bes_ble_link_event_report_cb_t)(ble_event_handled_t param, ble_event_type_e type);
 
-typedef void (*bes_ble_link_connect_cb_t)(uint8_t con_lid, bes_ble_bdaddr_t *bleAddr);
-
-typedef void (*bes_ble_link_mtu_exch_cb_t)(uint8_t con_lid, uint32_t mtu_size);
-
 /**
  *@brief Register adv scan report callback
  *
@@ -529,50 +531,6 @@ void bes_ble_customif_link_event_callback_register(bes_ble_link_event_report_cb_
  *
  */
 void bes_ble_customif_link_event_callback_deregister(void);
-
-/**
- *@brief Register ble acl connect req callback
- *
- *@param[in] req_cb  @bes_ble_link_connect_cb_t
- *@param[in] done_cb @bes_ble_link_connect_cb_t
- */
-void bes_ble_connect_req_callback_register(bes_ble_link_connect_cb_t req_cb, bes_ble_link_connect_cb_t done_cb);
-
-/**
- *@brief Dregister ble acl connect req callback
- *
- */
-void bes_ble_connect_req_callback_deregister(void);
-
-/**
- *@brief Register mtu exchange ind callback
- *
- *@param[in] mtu_exec_cb @bes_ble_link_mtu_exch_cb_t
- */
-void bes_ble_mtu_exec_ind_callback_register(bes_ble_link_mtu_exch_cb_t mtu_exec_cb);
-
-/**
- *@brief Dregister mtu exchange ind callback
- *
- */
-void bes_ble_mtu_exec_ind_callback_deregister(void);
-
-/**
- *@brief Set scan coded phy and param
- *
- *@param[in] enable                    If enable
- *@param[in] start_scan_coded_scan_wd  Scan param @bes_ble_scan_wd_t
- */
-void bes_ble_set_scan_coded_phy_en_and_param_before_start_scan(bool enable, bes_ble_scan_wd_t *start_scan_coded_scan_wd);
-
-/**
- *@brief Set init conn param
- *
- *@param[in] init_param_universal  Init param@bes_ble_conn_param_t
- *@param[in] init_coded_scan_wd    Scan param@bes_ble_scan_wd_t
- */
-void bes_ble_set_init_conn_all_phy_param_before_start_connect(bes_ble_conn_param_t *init_param_universal,
-                                                              bes_ble_scan_wd_t *init_coded_scan_wd);
 
 /**
  *@brief Set force adv enable or not
@@ -661,6 +619,14 @@ void bes_ble_gap_set_rpa_timeout(uint16_t rpa_timeout);
 void bes_ble_gap_set_adv_param(BLE_ADV_PARAM_T *param);
 
 /**
+ *@brief Check adv is in advertising state by adv handle
+ *
+ *@param[in] adv_hdl Adv handle
+ *@return true is in advertising state
+ */
+bool bes_ble_gap_is_adv_in_advertising(uint8_t adv_hdl);
+
+/**
  *@brief Test api:start three adv
  *
  *@param[in] BufPtr May ignore
@@ -676,7 +642,7 @@ void bes_ble_gap_start_three_adv(uint32_t BufPtr, uint32_t BufLen);
 void bes_ble_gap_custom_adv_start(BLE_ADV_ACTIVITY_USER_E actv_user);
 
 /**
- *@brief Get actv user from adv user
+ *@brief Get customer actv user from adv user
  *
  *@param[in] user    @BLE_ADV_USER_E
  *@return BLE_ADV_ACTIVITY_USER_E
@@ -772,9 +738,10 @@ int bes_ble_gap_start_connect(bes_ble_bdaddr_t *addr, BES_GAP_OWN_ADDR_E own_typ
 *
 *@param[in]  addr      Peer ble device addr
 *@param[in]  own_type  Owner type
+*@param[in]  phys      Initiating phys
 *@return int @bt_status_t
  */
-int bes_ble_gap_connect_ble_audio_device(bes_ble_bdaddr_t *addr, BES_GAP_OWN_ADDR_E own_type);
+int bes_ble_gap_connect_ble_audio_device(bes_ble_bdaddr_t *addr, BES_GAP_OWN_ADDR_E own_type, uint8_t phys);
 
 /**
  *@brief Cancel connecting proc
@@ -970,20 +937,6 @@ int bes_ble_gap_enable_link_encryption(uint8_t conidx, const uint8_t *ediv, cons
 void bes_ble_gap_set_local_irk(const uint8_t *p_irk);
 
 /**
- *@brief Register dist LTK bit set callback
- *
- *@param[in] callback @set_rsp_dist_lk_bit_field_func
- */
-void bes_ble_gap_sec_reg_dist_lk_bit_set_callback(set_rsp_dist_lk_bit_field_func callback);
-
-/**
- *@brief Get dist LTK bit set callback
- *
- *@return set_rsp_dist_lk_bit_field_func
- */
-set_rsp_dist_lk_bit_field_func bes_ble_gap_sec_reg_dist_lk_bit_get_callback();
-
-/**
  *@brief Register resolving list fill callback
  *
  *@param[in] user  @custom_resol_fill_user
@@ -1038,13 +991,6 @@ void bes_ble_roleswitch_start(uint8_t curr_ui_role);
  */
 void bes_ble_roleswitch_complete(uint8_t newRole);
 
-/**
- *@brief Update ble role
- *
- *@param[in] newRole @bt_ui_role_t
- */
-void bes_ble_role_update(uint8_t newRole);
-
 #ifdef BT_SVC_MODULE_TWS_ENABLED
 
 /**
@@ -1063,12 +1009,19 @@ void bes_ble_gap_reg_sync_info(void (*sync_info)(void));
 #endif
 
 /**
- *@brief Demo app recv tws sync info handler
+ *@brief BLE App recv tws sync info handler
  *
  *@param[in] p_info  Info data
  *@param[in] len     Len of data
  */
 void bes_ble_demo_app_tws_sync_info_recv_handler(uint8_t *p_info, uint16_t len);
+
+/**
+ *@brief BLE App recv enter freeman mode handler
+ *
+ *@param[in] enter   Enter freeman or exit freeman
+ */
+void bes_ble_recv_enter_freeman_mode(bool enter);
 
 /**
  *@brief If curr acl support le role switch
@@ -1142,13 +1095,6 @@ ble_bdaddr_t bes_ble_gap_get_local_identity_addr(uint8_t conidx);
  *@return const uint8_t*
  */
 const uint8_t *bes_ble_gap_get_local_rpa_addr(uint8_t conidx);
-
-/**
- *@brief Read local rpa addr by adv hdl--HCI cmd
- *
- *@param[in] adv_hdl  Adv hdl
- */
-void bes_ble_gap_read_local_rpa_by_adv_hdl(uint8_t adv_hdl);
 
 /**
  *@brief Get local rpa by adv hdl saved in ble activity@ble_adv_activity_t

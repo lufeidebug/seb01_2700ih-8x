@@ -45,6 +45,8 @@
 #include "bts_tws_api.h"
 #endif
 
+#include "af_stream_sw_gain.h"
+
 #if defined(SPEECH_TX_24BIT)
 typedef int     TX_PCM_T;
 #else
@@ -257,6 +259,13 @@ int process_downlink_bt_voice_frames(uint8_t *in_buf, uint32_t in_len, uint8_t *
 
 #if defined(SPEECH_RX_24BIT)
     arm_q15_to_q23((int16_t *)pcm_buf, (int32_t *)out_buf, pcm_len);
+#if defined(AUDIO_OUTPUT_SW_GAIN) && defined(SPEECH_OUTPUT_SW_GAIN_BEFORE_ALGO)
+    af_stream_sw_gain_playback_process(AUD_STREAM_ID_0, AUD_STREAM_PLAYBACK, (uint8_t *)pcm_buf, pcm_len * sizeof(int32_t));
+#endif
+#else
+#if defined(AUDIO_OUTPUT_SW_GAIN) && defined(SPEECH_OUTPUT_SW_GAIN_BEFORE_ALGO)
+    af_stream_sw_gain_playback_process(AUD_STREAM_ID_0, AUD_STREAM_PLAYBACK, (uint8_t *)pcm_buf, pcm_len * sizeof(int16_t));
+#endif
 #endif
 
     speech_rx_process(pcm_buf, &pcm_len);
@@ -465,6 +474,10 @@ int voicebtpcm_pcm_audio_init(int _sco_sample_rate,
     int tx_frame_ms = SPEECH_PROCESS_FRAME_MS;
     int rx_frame_ms = SPEECH_SCO_FRAME_MS;
     speech_init(tx_vqe_sample_rate, rx_vqe_sample_rate, tx_frame_ms, rx_frame_ms, SPEECH_SCO_FRAME_MS, speech_buf, speech_len);
+
+#if defined(AUDIO_OUTPUT_SW_GAIN) && defined(SPEECH_OUTPUT_SW_GAIN_BEFORE_ALGO)
+    af_stream_sw_gain_set_position(AUD_STREAM_ID_0, AUD_STREAM_PLAYBACK, AF_STREAM_SW_GAIN_POS_ALT);
+#endif
 
     // NOTE: Some modules must be created after speech init if they use speech heap
 

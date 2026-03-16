@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __BAP_BC_DELEG_INC__
-#define __BAP_BC_DELEG_INC__
+#ifndef __BAP_BC_DELEG_H__
+#define __BAP_BC_DELEG_H__
 
 #include "gaf_cfg.h"
 

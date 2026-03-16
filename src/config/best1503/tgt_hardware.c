@@ -25,6 +25,7 @@
 #include "bass_enhancer.h"
 #include "stereo_process.h"
 #include "dynamic_eq.h"
+#include "adj_eq_rev.h"
 #include "adaptive_volume.h"
 #if defined(BES_TWSPRO_EN)
 #include "besui_param/param_twspro.h"

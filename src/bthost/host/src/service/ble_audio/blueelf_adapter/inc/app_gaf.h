@@ -28,8 +28,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_GAF_H_
-#define APP_GAF_H_
+#ifndef __APP_GAF_H__
+#define __APP_GAF_H__
 
 #if BLE_AUDIO_ENABLED
 

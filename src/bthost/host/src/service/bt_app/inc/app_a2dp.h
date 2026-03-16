@@ -154,10 +154,6 @@ bool app_bt_is_a2dp_disconnected(uint8_t device_id);
 
 void app_a2dp_force_disconnect(uint8_t device_id,uint8_t reason);
 
-void app_pts_av_disc_channel(void);
-
-void app_pts_av_close_channel(void);
-
 bool app_a2dp_curr_data_need_receive(uint8_t device_id);
 #ifdef A2DP_STREAM_DETECT_NO_DECODE
 typedef enum {
@@ -170,16 +166,6 @@ void app_a2dp_stream_detect_time_init(uint8_t dev_id);
 // time: ms
 void app_a2dp_stream_set_detect_time(uint8_t dev_id, codec_type_t codec, time_flag_t time_type, uint16_t time);
 #endif // A2DP_STREAM_DETECT_NO_DECODE
-
-
-#if !defined(A2DP_LDAC_ON)
-
-const unsigned char a2dp_codec_ldac_elements[1] =
-{
-    0x0
-};
-#endif /* A2DP_LDAC_ON */
-
 
 #ifdef __cplusplus
 }

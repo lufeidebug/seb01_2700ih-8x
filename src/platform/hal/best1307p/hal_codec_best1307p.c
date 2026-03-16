@@ -401,7 +401,7 @@ static enum AUD_CHANNEL_MAP_T anc_adc_gain_offset_map;
 static bool codec_nr_enabled;
 static int8_t digdac_gain_offset_nr;
 #endif
-#ifdef AUDIO_OUTPUT_DC_CALIB
+#if defined(AUDIO_OUTPUT_DC_CALIB) || defined(AUDIO_OUTPUT_DC_CALIB_ANA)
 static int32_t dac_dc_l;
 static float dac_dc_gain_attn;
 #endif
@@ -510,7 +510,7 @@ static struct CODEC_DAC_DRE_CFG_T dac_dre_cfg = {
 };
 #endif
 
-#if defined(DAC_DRE_ENABLE) || (defined(AUDIO_OUTPUT_DC_CALIB) && defined(AUDIO_OUTPUT_DC_AUTO_CALIB))
+#if defined(DAC_DRE_ENABLE) || (defined(AUDIO_OUTPUT_DC_AUTO_CALIB))
 /* ana_gain = ((~ini_ana_gain)&0xF) + gain_offset; */
 static struct HAL_CODEC_DAC_DRE_CALIB_CFG_T dac_dre_calib_cfg[] = {
     {
@@ -576,7 +576,7 @@ static float get_capture_resample_phase(void);
 static uint32_t resample_phase_float_to_value(float phase);
 static float resample_phase_value_to_float(uint32_t value);
 #endif
-#if defined(AUDIO_OUTPUT_DC_CALIB) && defined(AUDIO_OUTPUT_DC_AUTO_CALIB)
+#ifdef AUDIO_OUTPUT_DC_AUTO_CALIB
 static bool hal_codec_get_dig_dc_calib_value(int32_t *dc_l, int32_t *dc_r);
 static bool hal_codec_set_ana_dc_calib_value(void);
 #endif
@@ -1281,7 +1281,7 @@ int hal_codec_open(enum HAL_CODEC_ID_T id)
 #endif
 #endif
 
-#ifdef AUDIO_OUTPUT_DC_CALIB
+#if defined(AUDIO_OUTPUT_DC_CALIB) || defined(AUDIO_OUTPUT_DC_CALIB_ANA)
 #ifdef AUDIO_OUTPUT_DC_AUTO_CALIB
         if (hal_codec_set_ana_dc_calib_value()) {
             hal_codec_get_dig_dc_calib_value(&dac_dc_l, NULL);
@@ -1316,13 +1316,7 @@ int hal_codec_open(enum HAL_CODEC_ID_T id)
         // FIXME: Complete hardware tuning voulme
 #endif
 
-#ifdef AUDIO_OUTPUT_DC_CALIB_ANA
-        // Reset SDM
-        hal_codec_set_dac_gain_value(VALID_DAC_MAP, 0);
-        codec->REG_0BC |= CODEC_CODEC_DAC_SDM_CLOSE;
-#endif
-
-        codec->REG_0B0 = SET_BITFIELD(codec->REG_0B0, CODEC_CODEC_DAC_SDM_GAIN, 4);
+        codec->REG_0B0 = SET_BITFIELD(codec->REG_0B0, CODEC_CODEC_DAC_SDM_GAIN, 3);
 #ifdef SDM_MUTE_NOISE_SUPPRESSION
         codec->REG_0B0 = SET_BITFIELD(codec->REG_0B0, CODEC_CODEC_DAC_DITHER_GAIN, 0x10);
 #endif
@@ -1431,9 +1425,19 @@ void hal_codec_adc_dc_offset_enable(void)
         }
     }
 }
+
+bool hal_codec_adc_dc_auto_calib_check(void)
+{
+    return false;
+}
+
+bool hal_codec_adc_ana_dc_auto_calib_check(void)
+{
+    return true;
+}
 #endif
 
-#if defined(AUDIO_OUTPUT_DC_CALIB) && defined(AUDIO_OUTPUT_DC_AUTO_CALIB)
+#ifdef AUDIO_OUTPUT_DC_AUTO_CALIB
 static bool dac_dc_calib_status = false;
 
 void hal_codec_set_dac_calib_status(bool status)
@@ -1612,14 +1616,27 @@ static bool hal_codec_set_ana_dc_calib_value(void)
 {
     bool success = false;
     uint16_t ana_dc_l = 0, ana_dc_r = 0;
-    uint32_t i, ini_ana, gain_offs, ana_gain;
+    uint32_t ini_ana, gain_offs, ana_gain;
     struct HAL_CODEC_DAC_DRE_CALIB_CFG_T *cfg = dac_dre_calib_cfg;
 
     ini_ana   = GET_BITFIELD(codec->REG_350, CODEC_CODEC_DRE_INI_ANA_GAIN_CH0);
     gain_offs = GET_BITFIELD(codec->REG_354, CODEC_CODEC_DRE_GAIN_OFFSET_CH0);
     ana_gain  = ((~ini_ana)&0xF)+ gain_offs;
 
-    for (i = 0; i < ARRAY_SIZE(dac_dre_calib_cfg); i++, cfg++) {
+#ifdef AUDIO_OUTPUT_DC_CALIB_ANA
+    for (uint32_t i = 0; i < ARRAY_SIZE(dac_dre_calib_cfg); i++, cfg++) {
+        if (cfg->valid & (1<<0)) {
+            ana_dc_l = cfg->ana_dc_l;
+        }
+        if (cfg->valid & (1<<1)) {
+            ana_dc_r = cfg->ana_dc_r;
+        }
+        analog_aud_dc_calib_set_dre_ana_dc(i, ana_dc_l, ana_dc_r);
+        HAL_TRACE(3, "CALIB_ANA_DC: L=0x%x, R=0x%x, gain=0x%x",ana_dc_l, ana_dc_r, ana_gain);
+        success = true;
+    }
+#else
+    for (uint32_t i = 0; i < ARRAY_SIZE(dac_dre_calib_cfg); i++, cfg++) {
         if (ana_gain == cfg->ana_gain) {
             if (cfg->valid & (1<<0)) {
                 ana_dc_l = cfg->ana_dc_l;
@@ -1632,9 +1649,10 @@ static bool hal_codec_set_ana_dc_calib_value(void)
         }
     }
     analog_aud_dc_calib_set_value(ana_dc_l, ana_dc_r);
+    HAL_TRACE(3, "CALIB_ANA_DC: L=0x%x, R=0x%x, gain=0x%x",ana_dc_l, ana_dc_r, ana_gain);
+#endif
     analog_aud_dc_calib_enable(true);
-    HAL_TRACE(3, "CALIB_ANA_DC: L=0x%x, R=0x%x, gain=0x%x", ana_dc_l, \
-                                                            ana_dc_r, ana_gain);
+
     return success;
 }
 #endif
@@ -1642,14 +1660,14 @@ static bool hal_codec_set_ana_dc_calib_value(void)
 #ifdef DAC_DRE_ENABLE
 static bool hal_codec_dac_dre_setup_calib_param(struct CODEC_DAC_DRE_CFG_T *cfg)
 {
-#ifdef AUDIO_OUTPUT_DC_CALIB
+#if defined(AUDIO_OUTPUT_DC_CALIB) || defined(AUDIO_OUTPUT_DC_CALIB_ANA)
     struct HAL_CODEC_DAC_DRE_CALIB_CFG_T *cal = dac_dre_calib_cfg;
     uint32_t i;
 
-    cfg->step_mode    = cal[1].step_mode;
-    cfg->ini_ana_gain = cal[1].ini_ana_gain;
-    cfg->gain_offset  = cal[1].gain_offset;
-    cfg->top_gain     = cal[1].top_gain;
+    cfg->step_mode    = cal[0].step_mode;
+    cfg->ini_ana_gain = cal[0].ini_ana_gain;
+    cfg->gain_offset  = cal[0].gain_offset;
+    cfg->top_gain     = cal[0].top_gain;
 
     for (i = 0; i < ARRAY_SIZE(dac_dre_calib_cfg); i++, cal++) {
         if (cal->valid & 0x1) {
@@ -3500,7 +3518,7 @@ int hal_codec_setup_stream(enum HAL_CODEC_ID_T id, enum AUD_STREAM_T stream, con
 #endif
 
         if ( 0
-#if defined(AUDIO_OUTPUT_DC_CALIB) && defined(AUDIO_OUTPUT_DC_AUTO_CALIB)
+#if defined(AUDIO_OUTPUT_DC_AUTO_CALIB)
             || dac_dc_calib_status
 #endif
 #if defined(AUDIO_ADC_DC_AUTO_CALIB)
@@ -4204,7 +4222,7 @@ void hal_codec_apply_anc_adc_gain_offset(enum ANC_TYPE_T type, int8_t offset_l, 
 }
 #endif
 
-#ifdef AUDIO_OUTPUT_DC_CALIB
+#if defined(AUDIO_OUTPUT_DC_CALIB) || defined(AUDIO_OUTPUT_DC_CALIB_ANA)
 void hal_codec_set_dac_dc_gain_attn(float attn)
 {
     dac_dc_gain_attn = attn;

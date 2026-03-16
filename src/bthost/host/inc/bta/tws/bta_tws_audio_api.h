@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bt_base_types.h"
-
+#include "bt_base_attributes.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -119,28 +119,18 @@ bool bta_tws_is_music_active(void);
 /**
  ****************************************************************************************
  * @brief       Get current playing sco device id.
- * @return      device id
+ * @return      addr
  ****************************************************************************************
  */
-uint8_t bta_tws_get_curr_playing_sco(void);
+bt_bdaddr_t* bta_tws_get_curr_playing_sco(void);
 
 /**
  ****************************************************************************************
  * @brief       Get current playing a2dp device id.
- * @return      device id
+ * @return      addr
  ****************************************************************************************
  */
-uint8_t bta_tws_get_curr_playing_a2dp(void);
-
-/**
- ****************************************************************************************
- * @brief       Get current a2dp device id.
- * @note        Unlike bta_tws_get_curr_playing_a2dp, when no a2dp is playing, this
- *              function will return a non-0xff default value.
- * @return      device id
- ****************************************************************************************
- */
-uint8_t bta_tws_get_curr_a2dp_device(void);
+bt_bdaddr_t* bta_tws_get_curr_playing_a2dp(void);
 
 /**
  ****************************************************************************************
@@ -157,7 +147,7 @@ void bta_tws_update_focus(bt_bdaddr_t *addr);
  * @return      none
  ****************************************************************************************
  */
-void bta_tws_audio_callback_init(int(*app_bt_audio_event_cb)(uint8_t device_id, uint8_t event, uint32_t data));
+void bta_tws_audio_callback_init(int(*app_bt_audio_event_cb)(bt_bdaddr_t *addr, enum app_bt_base_event_t event, uint32_t data));
 
 /**
  ****************************************************************************************

@@ -28,8 +28,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_BAP_BC_SACN_MSG_H_
-#define APP_BAP_BC_SACN_MSG_H_
+#ifndef __APP_BAP_BC_SACN_MSG_H__
+#define __APP_BAP_BC_SACN_MSG_H__
 
 #if BLE_AUDIO_ENABLED
 #include "app_gaf_define.h"
@@ -77,6 +77,8 @@ extern "C" {
 #endif
 
 app_bap_bc_scan_env_t *app_bap_bc_scan_get_scan_env(void);
+
+int app_bap_bc_scan_past_info_send(uint16_t sync_hdl);
 
 uint8_t app_bap_bc_scan_get_scan_state(void);
 uint8_t app_bap_bc_scan_get_sync_state(void);

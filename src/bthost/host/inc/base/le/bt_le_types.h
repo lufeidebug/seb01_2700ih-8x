@@ -50,6 +50,19 @@ typedef enum
 
 typedef enum
 {
+    BT_BLE_GAP_ADV_USAGE_DEFAULT        = 0x00,
+    /// Only one ear will advertise with special params
+    BT_BLE_GAP_ADV_USAGE_LE_APP         = BT_BLE_GAP_ADV_USAGE_DEFAULT,
+    /// TWO ear will advertise using public addr
+    BT_BLE_GAP_ADV_USAGE_LE_AUDIO       = 0x01,
+    /// Host does not do any modify on this advertising
+    BT_BLE_GAP_ADV_USAGE_LE_TRANSPARENT = 0x02,
+
+    BT_BLE_GAP_ADV_USAGE_MAX,
+} bt_ble_gap_adv_usage_e;
+
+typedef enum
+{
     BT_BLE_GAP_ADV_ACTIVITY_USER_0 = 0,
     BT_BLE_GAP_ADV_ACTIVITY_USER_1,
     BT_BLE_GAP_ADV_ACTIVITY_USER_2,
@@ -220,6 +233,13 @@ typedef enum
     BT_BLE_SMP_KDIST_LINK_KEY = 0x08, // le gen Link Key from LTK
 } bt_ble_smp_key_dist_t;
 
+typedef enum
+{
+    BT_BLE_CUSTOM_ADV_STATE_STARTED    = 0x00,
+    BT_BLE_CUSTOM_ADV_STATE_STOPPED    = 0x01,
+    BT_BLE_CUSTOM_ADV_STATE_REFRESH    = 0x02,
+} bt_ble_custom_adv_evt_e;
+
 typedef struct
 {
     uint8_t conidx;
@@ -314,18 +334,18 @@ typedef struct
 
 typedef struct
 {
-    uint8_t actv_user;
+    uint8_t adv_user;
 } bt_adv_started_handled_t;
 
 typedef struct
 {
-    uint8_t actv_user;
+    uint8_t adv_user;
     uint8_t err_code;
 } bt_adv_starting_failed_handled_t;
 
 typedef struct
 {
-    uint8_t actv_user;
+    uint8_t adv_user;
 } bt_adv_stopped_handled_t;
 
 typedef struct
@@ -497,12 +517,12 @@ typedef struct
 typedef struct
 {
     ble_bdaddr_t identity_address;
-    uint8_t irk[16];
+    uint8_t irk[BT_BLE_GAP_KEY_LEN];
     uint8_t ediv[2];
     uint8_t rand[8];
-    uint8_t ltk[16];
+    uint8_t ltk[BT_BLE_GAP_KEY_LEN];
     uint8_t ltk_len;
-    uint8_t signing_key[16];
+    uint8_t signing_key[BT_BLE_GAP_KEY_LEN];
 } bt_security_info_t;
 
 typedef struct
@@ -580,7 +600,7 @@ typedef struct
     /// Key size
     uint8_t enc_key_size;
     /// Key
-    uint8_t enc_key[16];
+    uint8_t enc_key[BT_BLE_GAP_KEY_LEN];
 } bt_smp_ctkd_key_derived_t;
 
 typedef struct
@@ -653,6 +673,8 @@ typedef union
 
 typedef struct
 {
+    /// Advertising usage for the advertising instance
+    bt_ble_gap_adv_usage_e adv_usage;
     /// Activity identifier for the advertising instance
     bt_ble_gap_adv_activity_t actv_user;
     /// Logical advertising user index or leave it zero by default
@@ -692,20 +714,20 @@ typedef union
     /// Passkey
     uint32_t passkey_6_digit;
     // OOB Term Key
-    uint8_t oob_term_key[16];
+    uint8_t oob_term_key[BT_BLE_GAP_KEY_LEN];
     /// OOB Auth data peer/local
     struct
     {
         uint8_t pkx[32];
         uint8_t pky[32];
-        uint8_t rand[16];
-        uint8_t confirm[16];
+        uint8_t rand[BT_BLE_GAP_KEY_LEN];
+        uint8_t confirm[BT_BLE_GAP_KEY_LEN];
     } oob_auth_data;
     /// LongTerm key
     struct
     {
         bool ltk_exist;
-        uint8_t ltk[16];
+        uint8_t ltk[BT_BLE_GAP_KEY_LEN];
     } ltk_cfm_value;
 } bt_ble_smp_input_t;
 
@@ -730,4 +752,40 @@ typedef struct
     bt_ble_evt_handled_t p;
 } bt_ble_conn_evt_t;
 
+typedef struct
+{
+    bt_ble_gap_adv_user_t adv_user;
+    bt_ble_gap_adv_activity_t actv_user;
+    uint8_t err_code;
+} bt_ble_custom_adv_started_t;
+
+typedef struct
+{
+    bt_ble_gap_adv_user_t adv_user;
+    bt_ble_gap_adv_activity_t actv_user;
+    uint8_t err_code;
+} bt_ble_custom_adv_stopped_t;
+
+typedef struct
+{
+    bt_ble_gap_adv_user_t adv_user;
+    bt_ble_gap_adv_activity_t actv_user;
+    const bt_bdaddr_t *peer_addr;
+} bt_ble_custom_adv_refresh_t;
+
+typedef struct
+{
+    /// Event type
+    bt_ble_custom_adv_evt_e evt;
+    /// Event info
+    union
+    {
+        bt_ble_custom_adv_started_t started;
+        bt_ble_custom_adv_stopped_t stopped;
+        bt_ble_custom_adv_refresh_t refresh;
+    };
+} bt_ble_custom_adv_evt_t;
+
 typedef void (*bt_ble_core_evt_handler_func)(bt_ble_conn_evt_t *evt, void *);
+
+typedef void (*bt_ble_custom_adv_event_func)(const bt_ble_custom_adv_evt_t *evt);

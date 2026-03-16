@@ -92,6 +92,7 @@ bool app_audio_adm_music_stream_is_active(uint8_t device_id, uint8_t device_type
 
 bool app_audio_adm_call_stream_is_active(uint8_t device_id);
 
+BT_AUDIO_DEVICE_T* app_audio_auto_select_other_active_device(BT_AUDIO_DEVICE_T *device);
 #if BLE_AUDIO_ENABLED
 bool app_audio_adm_is_this_device_cis_setup(bt_bdaddr_t *remote_addr);
 #endif

@@ -71,12 +71,6 @@ typedef enum {
     AUDIO_ANALYSIS_STATUS_DATA_VALID
 }AUDIO_ANALYSIS_STATUS_E;
 
-typedef enum {
-    AUDIO_RETRIGGER_RET_TYPE_FAIL,
-    AUDIO_RETRIGGER_RET_TYPE_SUCESS,
-    AUDIO_RETRIGGER_RET_TYPE_IN_PROGRESS,
-}AUDIO_ANALYSIS_RETRIGGER_RET_TYPE_E;
-
 void  app_tws_ibrt_audio_mobile_clkcnt_get(uint8_t device_id, uint32_t btclk, uint16_t btcnt,
                                                      uint32_t *mobile_master_clk, uint16_t *mobile_master_cnt);
 APP_TWS_IBRT_AUDIO_ANALYSIS_RESULT_T *app_tws_ibrt_audio_analysis_result_get(void);
@@ -99,7 +93,5 @@ int app_tws_ibrt_audio_analysis(APP_TWS_IBRT_AUDIO_ANALYSIS_INFO_T *local_info ,
                                 APP_TWS_IBRT_AUDIO_ANALYSIS_INFO_T *remote_info);
 void app_tws_ibrt_audio_analysis_interrupt_tick(void);
 void app_tws_ibrt_audio_analysis_audiohandler_tick(uint8_t device_id);
-
-AUDIO_ANALYSIS_RETRIGGER_RET_TYPE_E app_tws_ibrt_audio_retrigger(void);
 
 #endif

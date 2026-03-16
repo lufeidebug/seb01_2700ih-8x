@@ -90,6 +90,15 @@ void bta_iap2_service_enable_print_info_when_initialed(bool enable);
 
 /**
  ****************************************************************************************
+ * @brief       Enable/disable checking mfi chip for IAP2 service
+ * @param[in]   enable: True to enable checking mfi chip, false to disable
+ * @return      None
+ ****************************************************************************************
+ */
+void bta_iap2_service_enable_check_mfi_when_initialed(bool enable);
+
+/**
+ ****************************************************************************************
  * @brief       Register IAP2 service with information and callback
  * @param[in]   info: Pointer to IAP2 information structure
  * @param[in]   cb: Pointer to IAP2 accessory callback structure
@@ -167,6 +176,39 @@ uint8_t bta_iap2_service_spp_local_channel();
  */
 void bta_iap2_service_set_mfi_i2c_gpio_config(bt_iap2_i2c_gpio_config_t* iap2_mfi_i2c_io_config);
 
+/**
+ ****************************************************************************************
+ * @brief       Register MFi I2C callback for IAP2 service
+ * @param[in]   read_cb: Pointer to I2C READ REG callback
+ * @param[in]   write_cb: Pointer to I2C WRTIE REG callback
+ * @return      None
+ ****************************************************************************************
+ */
+void bta_iap2_service_register_mfi_i2c_callback(bt_mfi_i2c_read_reg_data_cb read_cb, bt_mfi_i2c_write_reg_data_cb write_cb);
+
+/**
+ ****************************************************************************************
+ * @brief       Check MFi I2C state is idle
+ * @return      True if idle, false otherwise
+ ****************************************************************************************
+ */
+bool bta_iap2_service_check_mfi_i2c_is_idle();
+
+/**
+ ****************************************************************************************
+ * @brief       Read MFi Version information
+ * @return      None
+ ****************************************************************************************
+ */
+void bta_iap2_service_read_mfi_version();
+
+/**
+ ****************************************************************************************
+ * @brief       Read MFi Certificate information
+ * @return      >0 means certificate length, <=0 means read failed
+ ****************************************************************************************
+ */
+int bta_iap2_service_read_mfi_certificate(uint8_t* buf, uint16_t buf_len);
 
 #ifdef __cplusplus
 }

@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __ACC_TBC__
-#define __ACC_TBC__
+#ifndef __ACC_TBC_H__
+#define __ACC_TBC_H__
 
 #include "gaf_prf.h"
 #include "gaf_cfg.h"
@@ -89,12 +89,22 @@ typedef struct tbc_evt_cb
     tbc_cb_prf_status_evt cb_prf_status_event;
 } tbc_evt_cb_t;
 
+typedef struct tbc_char_info
+{
+    /// Characteristic value handle
+    uint16_t val_hdl;
+    /// Characteristic properties
+    uint8_t properties;
+} tbc_char_info_t;
+
 struct tbc_prf_svc_info
 {
     /// Service handler range
     gatt_prf_svc_range_t svc_range;
     /// Service UUID
     uint16_t uuid;
+    /// TBS Character info
+    tbc_char_info_t char_info[TBS_CHAR_TYPE_MAX];
 };
 
 typedef struct tbc_init_cfg

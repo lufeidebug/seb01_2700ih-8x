@@ -12,8 +12,8 @@
  ****************************************************************************************
  */
 
-#ifndef CO_BT_DEFINES_H_
-#define CO_BT_DEFINES_H_
+#ifndef __CO_BT_DEFINES_H__
+#define __CO_BT_DEFINES_H__
 
 #include "plat_types.h"
 

@@ -76,7 +76,9 @@
 #define GAP_MAX_PAYLOAD_NUM_PER_PACKET              (4)
 #define GAP_MAX_PER_ADV_DATA_LEN                    (252)
 #define GAP_MAX_ADV_INTERVAL_LIMIT                  (0x1900) // 0x1900*0.625ms = 6400*0.625ms = 4s
+#define GAP_MIN_CONN_INTVL_DEFAULT_125US            (0x0A)
 
+#define GAP_FEAT_PAGE_MAX_SIZE_U8                   (248)
 #define GAP_FEAT_PAGE_0_NUM_U32                     (2)
 #define GAP_FEAT_PAGE_1_NUM_U32                     (1)
 #define GAP_FEAT_LE_ENCRYPTION                      (0x00000001) /* send to peer (Y) host controlled (N) */
@@ -131,10 +133,14 @@
 #define GAP_HIGH_FEAT_LL_EXT_FEAT_SET               (0x80000000) /* (Y) (N) */
 #define GAP_LL_EXT_FEAT_MONITORING_ADVTISER         (0x00000001) /* (N) (N) */
 #define GAP_LL_EXT_FEAT_FRAME_SPACE_UPDATE          (0x00000002) /* (Y) (N) */
+#define GAP_LL_EXT_FEAT_CONNECTION_RATE             (0x00000100) /* (Y) (N) */
+#define GAP_LL_EXT_FEAT_CONN_RATE_HOST_SUPP         (0x00000200) /* (Y) (Y) */
+
 #define GAP_HOST_FEAT_BIT_CIS_HOST_SUPPORT          (32)
 #define GAP_HOST_FEAT_BIT_CONN_SUBRAT_HOST_SUPP     (38)
 #define GAP_HOST_FEAT_BIT_ADV_CODSEL_HOST_SUPP      (41)
 #define GAP_HOST_FEAT_BIT_CS_HOST_SUPPORT           (47)
+#define GAP_HOST_FEAT_BIT_CONN_RATE_HOST_SUPP       (73)
 
 #define GAP_DT_FLAGS                                (0x01) // all numerical multi-byte entities and values shall use little-endian byte order
 #define GAP_DT_SRVC_UUID_16_INCP_LIST               (0x02)
@@ -296,17 +302,46 @@ typedef enum
 
 typedef enum
 {
+    /// Below are prefer rate enumerations
     GAP_CODED_PHY_NO_PREFER_CODING = 0x00,
     GAP_CODED_PHY_PREFER_S2_CODING = 0x01,
     GAP_CODED_PHY_PREFER_S8_CODING = 0x02,
     GAP_CODED_PHY_REQUIR_S2_CODING = 0x03,
     GAP_CODED_PHY_REQUIR_S8_CODING = 0x04,
-    GAP_HDT_PHY_PREFER_HDT_2 = 0x03,
-    GAP_HDT_PHY_PREFER_HDT_3 = 0x04,
-    GAP_HDT_PHY_PREFER_HDT_4 = 0x5,
-    GAP_HDT_PHY_PREFER_HDT_6 = 0x6,
-    GAP_HDT_PHY_PREFER_HDT_7_5 = 0x7,
+    /// Below are prefer rate bits
+    GAP_HDT_PHY_PREFER_BIT_HDT_2    = 0x04,
+    GAP_HDT_PHY_PREFER_BIT_HDT_3    = 0x08,
+    GAP_HDT_PHY_PREFER_BIT_HDT_4    = 0x10,
+    GAP_HDT_PHY_PREFER_BIT_HDT_6    = 0x20,
+    GAP_HDT_PHY_PREFER_BIT_HDT_7_5  = 0x40,
+    GAP_HDT_PHY_PREFER_BIT_MIC_64   = 0x80,
+
+    GAP_PHY_OPT_PREFER_MASK         = 0xFF,
 } gap_phy_opt_prefer_t;
+
+typedef enum
+{
+    // Coded PHY S=8
+    GAP_PHY_RATES_BIT_CODED_S8 = 0x01,
+    // Coded PHY S=2
+    GAP_PHY_RATES_BIT_CODED_S2 = 0x02,
+    // Coded PHY Rates bit mask
+    GAP_PHY_RATES_BIT_CODED_MASK = 0x03,
+    // LE HDT PHY HDT2
+    GAP_PHY_RATES_BIT_LE_HDT_2 = 0x01,
+    // LE HDT PHY HDT3
+    GAP_PHY_RATES_BIT_LE_HDT_3 = 0x02,
+    // LE HDT PHY HDT4
+    GAP_PHY_RATES_BIT_LE_HDT_4 = 0x04,
+    // LE HDT PHY HDT5
+    GAP_PHY_RATES_BIT_LE_HDT_5 = 0x08,
+    // LE HDT PHY HDT7.5
+    GAP_PHY_RATES_BIT_LE_HDT_7_5 = 0x10,
+    // LE HDT PHY Rates bit mask
+    GAP_PHY_RATES_BIT_LE_HDT_MASK = 0x1F,
+
+    GAP_PHY_RATES_BIT_ALL_MASK = 0x1F,
+} gap_phy_rates_bf;
 
 typedef enum
 {
@@ -556,6 +591,9 @@ typedef enum
     GAP_CONN_EVENT_RECV_MTU_EXC_REQ,
     GAP_CONN_EVENT_RECV_BOND_DATA,
     GAP_CONN_EVENT_REMOTE_VERSION,
+    GAP_CONN_EVENT_CONN_RATE_CHANGE,
+    GAP_CONN_EVENT_REMOTE_FEATURES,
+    GAP_CONN_EVENT_DATA_LEN_UPDATE,
     GAP_CONN_EVENT_MAX = BT_EVENT_GAP_CONN_EVENT_END,
 } gap_conn_event_t;
 
@@ -571,6 +609,7 @@ typedef enum
     GAP_EVENT_GATT_OVER_BREDR_STATE,
     GAP_EVENT_BREDR_SEC_INFO_REQ,
     GAP_EVENT_SMP_KEY_DISTRIBUTE_REQ,
+    GAP_EVENT_LOC_CONTROLER_FEATURES,
     GAP_EVENT_MAX = BT_EVENT_GAP_GLOBAL_EVENT_END,
 } gap_global_event_t;
 
@@ -818,6 +857,20 @@ typedef enum gap_pairing_pdu_type
     GAP_PAIRING_PDU_RESPONSE = 0x01,
 } gap_pairing_pdu_e;
 
+typedef enum gap_features_type
+{
+    /// Local supported features page 0
+    GAP_FEAT_TYPE_LOCAL_FEAT_PAGE_0,
+    /// Local supported all features page
+    GAP_FEAT_TYPE_LOCAL_ALL_FEAT_PAGES,
+    /// Min supported connection interval
+    GAP_FEAT_TYPE_MIN_SUPP_CONN_INTVL,
+    /// Max supported rx payload count
+    GAP_FEAT_TYPE_MAX_RX_PAYLOAD_CNT,
+
+    GAP_FEAT_TYPE_MAX,
+} gap_feat_type_e;
+
 /**
  * TYPEDEFINES
  *
@@ -844,7 +897,7 @@ typedef struct gap_conn_prefer_params_t
     uint16_t conn_interval_min_1_25ms; // connection interal = interval * 1.25ms
     uint16_t conn_interval_max_1_25ms; // connection interal = interval * 1.25ms
     uint16_t max_peripheral_latency; // 0x00 to 0x01F3, max peripheral latency in units of subrated conn intervals
-    uint16_t superv_timeout_ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
+    uint16_t superv_timeout_10ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
 } gap_conn_prefer_params_t;
 
 typedef struct
@@ -852,7 +905,7 @@ typedef struct
     uint16_t conn_interval_min_1_25ms; // 0x06 to 0x0C80 * 1.25ms, 7.5ms to 4000ms
     uint16_t conn_interval_max_1_25ms; // 0x06 to 0x0C80 * 1.25ms, 7.5ms to 4000ms
     uint16_t max_peripheral_latency; // 0x00 to 0x01F3, max peripheral latency in units of subrated conn intervals
-    uint16_t superv_timeout_ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
+    uint16_t superv_timeout_10ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
     uint16_t min_ce_length_slots; // min len of connection event, 0x00 to 0xFFFF * 0.625ms
     uint16_t max_ce_length_slots; // max len of connection event, 0x00 to 0xFFFF * 0.625ms
 } gap_update_params_t;
@@ -869,7 +922,7 @@ typedef struct
             uint16_t conn_interval_min_1_25ms; // 0x06 to 0x0C80 * 1.25ms, 7.5ms to 4000ms
             uint16_t conn_interval_max_1_25ms; // 0x06 to 0x0C80 * 1.25ms, 7.5ms to 4000ms
             uint16_t max_peripheral_latency; // 0x00 to 0x01F3, max peripheral latency in units of subrated conn intervals
-            uint16_t superv_timeout_ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
+            uint16_t superv_timeout_10ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
             uint16_t min_ce_length_slots; // min len of connection event, 0x00 to 0xFFFF * 0.625ms
             uint16_t max_ce_length_slots; // max len of connection event, 0x00 to 0xFFFF * 0.625ms
         };
@@ -886,8 +939,21 @@ typedef struct
     uint16_t subrate_factor_max; // max subrate factor to be applied to the underlying conn interval, 0x01 to 0x01F4
     uint16_t max_peripheral_latency; // 0x00 to 0x01F3, max peripheral latency in units of subrated conn intervals
     uint16_t conn_continuation_number; // 0x00 to 0x01F3, default 0x00, num of underlying conn events to remain active after a packet contain a LL PDU with non-zero length is sent or received
-    uint16_t superv_timeout_ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
+    uint16_t superv_timeout_10ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
 } gap_subrate_params_t;
+
+typedef struct
+{
+    uint16_t conn_interval_min_125us; // 0x03 to 0x7D00 * 125us, 375us to 4s
+    uint16_t conn_interval_max_125us; // 0x03 to 0x7D00 * 125us, 375us to 4s
+    uint16_t subrate_factor_min; // min subrate factor to be applied to the underlying conn interval, 0x01 to 0x01F4
+    uint16_t subrate_factor_max; // max subrate factor to be applied to the underlying conn interval, 0x01 to 0x01F4
+    uint16_t max_peripheral_latency; // 0x00 to 0x01F3, max peripheral latency in units of subrated conn intervals
+    uint16_t conn_continuation_number; // 0x00 to 0x01F3, default 0x00, num of underlying conn events to remain active after a packet contain a LL PDU with non-zero length is sent or received
+    uint16_t superv_timeout_10ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
+    uint16_t min_ce_length_125us; // min len of connection event, 0x00 to 0xFFFF * 125us
+    uint16_t max_ce_length_125us; // max len of connection event, 0x00 to 0xFFFF * 125us
+} gap_conn_rate_params_t;
 
 typedef struct
 {
@@ -1117,7 +1183,7 @@ typedef struct
 {
     uint16_t conn_interval_1_25ms; // 0x06 to 0x0C80 * 1.25ms, 7.5ms to 4000ms
     uint16_t peripheral_latency; // num of subrated conn events, 0x00 to 0x1F3 (499)
-    uint16_t superv_timeout_ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
+    uint16_t superv_timeout_10ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
     uint16_t central_clock_accuracy; // only valid on Peripheral, on Central shall be set to 0x00
     uint16_t subrate_factor; // 0x01 to 0x01F4, subrate factor applied to the specified underlying conn interval
     uint16_t conn_continuation_number; // 0x00 to 0x01F3, num of underlying conn events to remain active after a packet contain a LL PDU with non-zero length is sent or received
@@ -1125,10 +1191,15 @@ typedef struct
 
 typedef struct
 {
+    uint16_t conn_interval_125us; // 0x03 to 0x7D00 * 125us, 375us to 4s
+} gap_conn_rate_t;
+
+typedef struct
+{
     uint16_t conn_interval_min_1_25ms;  // 0x06 to 0x0C80 * 1.25ms, 7.5ms to 4000ms
     uint16_t conn_interval_max_1_25ms;  // 0x06 to 0x0C80 * 1.25ms, 7.5ms to 4000ms
     uint16_t max_peripheral_latency;    // 0x00 to 0x01F3, max peripheral latency in units of subrated conn intervals
-    uint16_t superv_timeout_ms;         // default 5s, 0x0A to 0x0C80 * 10ms, 100ms to 32s
+    uint16_t superv_timeout_10ms;       // default 5s, 0x0A to 0x0C80 * 10ms, 100ms to 32s
     uint16_t min_ce_length_slots;       // default 0, min len of connection event, 0x00 to 0xFFFF * 0.625ms
     uint16_t max_ce_length_slots;       // default 8, max len of connection event, 0x00 to 0xFFFF * 0.625ms
 } gap_conn_timing_config_t;
@@ -1159,6 +1230,10 @@ typedef struct
 } gap_conn_mtu_exchanged_t;
 
 typedef gap_conn_mtu_exchanged_t gap_conn_mtu_exc_req_t;
+
+typedef gap_conn_param_t gap_conn_opened_t;
+
+typedef gap_conn_param_t gap_conn_closed_t;
 
 typedef struct
 {
@@ -1233,6 +1308,10 @@ typedef struct
     struct gap_conn_item_t *conn;
     gap_request_params_t params_req;
 } gap_conn_update_req_t;
+
+typedef gap_conn_param_t gap_conn_param_update_t;
+
+typedef gap_conn_param_t gap_conn_subrate_change_t;
 
 typedef struct
 {
@@ -1625,6 +1704,59 @@ typedef struct
     const gap_le_version_t *version_info;
 } gap_le_remote_version_t;
 
+typedef gap_conn_param_t gap_conn_rate_change_t;
+
+typedef struct
+{
+    // Bit Mask List of the supported LE features page 0
+    uint32_t le_features[GAP_FEAT_PAGE_0_NUM_U32];
+} gap_le_feat_page_0_t;
+
+typedef struct
+{
+    // The number of the highest-numbered page of the supported LE features that
+    // contains at least one bit set to 1. Ranges 0x00 to 0x0A
+    uint8_t max_valid_pages;
+    // Bit Mask List of the supported LE features, GAP_FEAT_PAGE_MAX_SIZE_U8 octets.
+    uint8_t le_features[GAP_FEAT_PAGE_MAX_SIZE_U8];
+} gap_le_all_feat_pages_t;
+
+typedef struct
+{
+    uint8_t error_code;
+    uint8_t con_idx;
+    uint16_t connhdl;
+    bt_addr_type_t own_addr_type;
+    bt_addr_type_t peer_type;
+    bt_bdaddr_t peer_addr;
+    struct gap_conn_item_t *conn;
+    const gap_le_feat_page_0_t *feat_page_0;
+    bool feat_page_all_received;
+    const gap_le_all_feat_pages_t *feat_page_all;
+} gap_le_remote_features_t;
+
+typedef struct
+{
+    // Data length info
+    uint16_t max_tx_octets;
+    uint16_t max_tx_time;
+    uint16_t max_rx_octets;
+    uint16_t max_rx_time;
+} gap_le_data_length_t;
+
+typedef struct
+{
+    uint8_t error_code;
+    uint8_t con_idx;
+    uint16_t connhdl;
+    bt_addr_type_t own_addr_type;
+    bt_addr_type_t peer_type;
+    bt_bdaddr_t peer_addr;
+    struct gap_conn_item_t *conn;
+    // Data length info
+    const gap_le_data_length_t *info;
+} gap_le_data_len_udpate_t;
+
 typedef union
 {
     void *param_ptr;
@@ -1646,8 +1778,8 @@ typedef union
     gap_init_started_t *init_started;
     gap_init_stopped_t *init_stopped;
     /// GAP Connection Event report params
-    gap_conn_param_t *conn_opened;
-    gap_conn_param_t *conn_closed;
+    gap_conn_opened_t *conn_opened;
+    gap_conn_closed_t *conn_closed;
     gap_conn_failed_t *conn_failed;
     gap_conn_cache_ind_t *conn_cache;
     gap_conn_mtu_exchanged_t *mtu_exchanged;
@@ -1655,8 +1787,8 @@ typedef union
     gap_conn_encrypted_t *encrypted;
     gap_recv_key_dist_t *recv_key_dist;
     gap_conn_update_req_t *update_req;
-    gap_conn_param_t *params_update;
-    gap_conn_param_t *subrate_change;
+    gap_conn_param_update_t *params_update;
+    gap_conn_subrate_change_t *subrate_change;
     gap_conn_phy_update_t *phy_update;
     gap_le_tx_power_report_t *tx_power;
     gap_recv_key_material_t *recv_key_material;
@@ -1667,6 +1799,9 @@ typedef union
     gap_conn_mtu_exc_req_t *mtu_exchange_req;
     gap_conn_le_bond_data_t *recv_bond_data;
     gap_le_remote_version_t *le_remote_version;
+    gap_conn_rate_change_t *conn_rate_change;
+    gap_le_remote_features_t *le_remote_features;
+    gap_le_data_len_udpate_t *le_data_len_update;
 } gap_conn_callback_param_t;
 
 typedef int (*gap_conn_callback_t)(uintptr_t connhdl, gap_conn_event_t event, gap_conn_callback_param_t param);
@@ -1695,6 +1830,7 @@ typedef struct gap_conn_item_t
     void *smp_conn;
     void *bap_callback;
     uint8_t *tmp_key;
+    gap_conn_rate_t rate;
 } gap_conn_item_t;
 
 typedef struct
@@ -1761,6 +1897,42 @@ typedef struct
     smp_key_dist_t key_dist_req;
 } gap_smp_key_dist_req_t;
 
+typedef struct
+{
+    /// 0x03 to 0x3C * 125us, 375 µs to 7.5 ms
+    uint8_t min_conn_intv_125us_supp; // 0x03 to 0x3C * 125us, 375 µs to 7.5 ms
+    /// Number of Group Interval supp
+    uint8_t num_supp_groups;
+    /// Group Interval supp groups, can be zero
+    struct
+    {
+        uint16_t group_125us_min; // Minimum supported connection interval in this group, 0x0003 to 0x7D00
+        uint16_t group_125us_max; // Minimum supported connection interval in this group, 0x0003 to 0x7D00
+        uint16_t group_125us_stride; // The Connection Interval resolution of this group, 0x0001 to 0x7D00
+    } grp[1];
+} gap_min_supp_conn_intvl_t;
+
+typedef union
+{
+    /// Local features pages number 0
+    gap_le_feat_page_0_t le_feat_page_0;
+    /// All local features pages
+    gap_le_all_feat_pages_t le_all_feat_pages;
+    /// Min supported connection interval
+    gap_min_supp_conn_intvl_t min_supp_conn_intvl;
+    /// Max rx payload count
+    uint8_t max_rx_pld_per_pkt;
+} gap_features_u;
+
+typedef struct
+{
+    uint8_t err_code;
+    /// Features type
+    gap_feat_type_e type;
+    /// Features, may be NULL when error occured
+    const gap_features_u *feats;
+} gap_controller_feats_t;
+
 typedef union
 {
     void *param_ptr;
@@ -1772,6 +1944,7 @@ typedef union
     gap_btgatt_prf_state_t *btgatt_prf_state;
     gap_bt_sec_info_req_t *bt_sec_info_req;
     gap_smp_key_dist_req_t *smp_key_dist_req;
+    gap_controller_feats_t *controller_feats;
 } gap_global_event_param_t;
 
 typedef int (*gap_global_callback_t)(uintptr_t priv, gap_global_event_t event, gap_global_event_param_t param);
@@ -1790,15 +1963,14 @@ typedef struct
     uint8_t use_random_identity_address: 1;
     /// Disable GATT Cache collecation for connection
     uint8_t disable_gatt_collect_cache: 1;
+    /// Limit of max adv interval, default is 4 seconds.
+    /// Unit: 0.625ms, 4s=4000ms=6400(0x1900)*0.625ms
+    uint32_t max_adv_interval_limit;
     /// GATT configurations @see gatt_config_t
     /// Max length of ATT Read blob rsp recv value
     uint16_t read_blob_value_len_max;
     /// Max size of ATT prep write req recv queue
     uint16_t recv_prep_wr_q_size_max;
-    /// Limit of maximum adv interval, exceeding which will cause controller crash, will be set to 4 seconds now.
-    ///
-    /// unit: 0.625ms, 4s=4000ms=6400(0x1900)*0.625ms
-    uint32_t max_adv_interval_limit;
 } gap_config_t;
 
 typedef struct
@@ -1860,10 +2032,10 @@ typedef struct
      *      general discoverable and connectable undirected mode
      *      connectable directed low duty cycle mode
      */
-    uint32_t min_adv_fast_interval_ms; // LE 1M PHY
-    uint32_t max_adv_fast_interval_ms; // LE 1M PHY
-    uint32_t min_adv_fast_interval_coded_ms; // LE Coded PHY
-    uint32_t max_adv_fast_interval_coded_ms; // LE Coded PHY
+    uint32_t min_adv_fast_interval_slot; // LE 1M PHY
+    uint32_t max_adv_fast_interval_slot; // LE 1M PHY
+    uint32_t min_adv_fast_interval_coded_slot; // LE Coded PHY
+    uint32_t max_adv_fast_interval_coded_slot; // LE Coded PHY
     /**
      * Recommended advertising interval for user initiated non-connectable modes:
      *      non-discoverable mode
@@ -1877,17 +2049,17 @@ typedef struct
      * might be alternately enabled for only a few seconds and disabled for
      * several minutes.
      */
-    uint32_t min_adv_slow_interval_ms; // LE 1M PHY
-    uint32_t max_adv_slow_interval_ms; // LE 1M PHY
-    uint32_t min_adv_slow_interval_coded_ms; // LE Coded PHY
-    uint32_t max_adv_slow_interval_coded_ms; // LE Coded PHY
+    uint32_t min_adv_slow_interval_slot; // LE 1M PHY
+    uint32_t max_adv_slow_interval_slot; // LE 1M PHY
+    uint32_t min_adv_slow_interval_coded_slot; // LE Coded PHY
+    uint32_t max_adv_slow_interval_coded_slot; // LE Coded PHY
     /**
      * Recommended advertising interval for background advertising other then Directed Connectable High Duty Mode:
      */
-    uint32_t min_adv_bg_interval_ms; // LE 1M PHY
-    uint32_t max_adv_bg_interval_ms; // LE 1M PHY
-    uint32_t min_adv_bg_interval_coded_ms; // LE Coded PHY
-    uint32_t max_adv_bg_interval_coded_ms; // LE Coded PHY
+    uint32_t min_adv_bg_interval_slot; // LE 1M PHY
+    uint32_t max_adv_bg_interval_slot; // LE 1M PHY
+    uint32_t min_adv_bg_interval_coded_slot; // LE Coded PHY
+    uint32_t max_adv_bg_interval_coded_slot; // LE Coded PHY
 } gap_adv_timing_t;
 
 typedef struct
@@ -1930,7 +2102,7 @@ typedef struct
     gap_dt_buf_t adv_data;
     gap_dt_buf_t scan_rsp_data;
     gap_decision_t decision_data;
-    uint32_t duration_ms;
+    uint16_t duration_10ms;
     uint8_t max_ext_adv_evts;
 } gap_adv_param_t;
 
@@ -1951,25 +2123,25 @@ typedef int (*gap_scan_callback_t)(uintptr_t scan, gap_scan_event_t event, gap_s
 typedef struct
 {
     // user initiated discovery or connection establishment
-    uint16_t fg_scan_interval_ms;               // default 30ms~60ms    LE 1M PHY
-    uint16_t fg_scan_window_ms;                 // default 30ms         LE 1M PHY
-    uint16_t fg_scan_interval_coded_ms;         // default 90ms~180ms   LE Coded PHY
-    uint16_t fg_scan_window_coded_ms;           // default 90ms         LE Coded PHY
-    uint16_t fg_slow_scan_interval_ms;          // default 30ms~60ms    LE 1M PHY
-    uint16_t fg_slow_scan_window_ms;            // default 30ms         LE 1M PHY
-    uint16_t fg_slow_scan_interval_coded_ms;    // default 90ms~180ms   LE Coded PHY
-    uint16_t fg_slow_scan_window_coded_ms;      // default 90ms         LE Coded PHY
-    uint32_t fg_scan_time_ms;                   // default 30.72s
+    uint16_t fg_scan_interval_slot;             // default 30ms~60ms    LE 1M PHY
+    uint16_t fg_scan_window_slot;               // default 30ms         LE 1M PHY
+    uint16_t fg_scan_interval_coded_slot;       // default 90ms~180ms   LE Coded PHY
+    uint16_t fg_scan_window_coded_slot;         // default 90ms         LE Coded PHY
+    uint16_t fg_slow_scan_interval_slot;        // default 30ms~60ms    LE 1M PHY
+    uint16_t fg_slow_scan_window_slot;          // default 30ms         LE 1M PHY
+    uint16_t fg_slow_scan_interval_coded_slot;  // default 90ms~180ms   LE Coded PHY
+    uint16_t fg_slow_scan_window_coded_slot;    // default 90ms         LE Coded PHY
+    uint32_t fg_scan_proc_timeout_ms;           // default 30.72s
     // background discovery or connection establishment
-    uint16_t bg_scan_interval_ms;               // default 1.28s        LE 1M PHY
-    uint16_t bg_scan_window_ms;                 // default 11.25ms      LE 1M PHY
-    uint16_t bg_scan_interval_coded_ms;         // default 3.84s        LE Coded PHY
-    uint16_t bg_scan_window_coded_ms;           // default 33.75ms      LE Coded PHY
+    uint16_t bg_scan_interval_slot;             // default 1.28s        LE 1M PHY
+    uint16_t bg_scan_window_slot;               // default 11.25ms      LE 1M PHY
+    uint16_t bg_scan_interval_coded_slot;       // default 3.84s        LE Coded PHY
+    uint16_t bg_scan_window_coded_slot;         // default 33.75ms      LE Coded PHY
     // slow discovery or connection establishment
-    uint16_t bg_slow_scan_interval_ms;          // default 2.56s        LE 1M PHY
-    uint16_t bg_slow_scan_window_ms;            // default 22.5ms       LE 1M PHY
-    uint16_t bg_slow_scan_interval_coded_ms;    // default 7.68s        LE Coded PHY
-    uint16_t bg_slow_scan_window_coded_ms;      // default 67.5ms       LE Coded PHY
+    uint16_t bg_slow_scan_interval_slot;        // default 2.56s        LE 1M PHY
+    uint16_t bg_slow_scan_window_slot;          // default 22.5ms       LE 1M PHY
+    uint16_t bg_slow_scan_interval_coded_slot;  // default 7.68s        LE Coded PHY
+    uint16_t bg_slow_scan_window_coded_slot;    // default 67.5ms       LE Coded PHY
 } gap_scan_timing_t;
 
 typedef struct
@@ -1986,7 +2158,7 @@ typedef struct
     bool legacy;
     uint8_t phys;
     gap_scan_timing_t scan_timing;
-    uint32_t duration_ms; // 0x01 to 0xFFFF * 10ms, 10ms to 655.35s (655350ms)
+    uint16_t duration_10ms; // 0x01 to 0xFFFF * 10ms, 10ms to 655.35s (655350ms)
 } gap_scan_param_t;
 
 typedef gap_conn_callback_param_t gap_init_callback_param_t;
@@ -1999,7 +2171,7 @@ typedef struct
     uint16_t max_initial_conn_interval_1_25ms;  // default 30~50ms  LE 1M PHY
     uint16_t min_initial_conn_interval_coded;   // default 90~150ms LE Coded PHY
     uint16_t max_initial_conn_interval_coded;   // default 90~150ms LE Coded PHY
-    uint16_t initial_superv_timeout_ms;         // 100ms to 32s
+    uint16_t initial_superv_timeout_10ms;       // 100ms to 32s
     uint16_t initial_min_ce_length_slots;       // min len of connection event, 0x00 to 0xFFFF * 0.625ms
     uint16_t initial_max_ce_length_slots;       // max len of connection event, 0x00 to 0xFFFF * 0.625ms
     uint32_t init_proc_timeout_ms;              // default 30.72s, bap 30s
@@ -2233,6 +2405,15 @@ uint32_t gap_conn_bf(uint8_t con_idx);
  * @return uint16_t    Connection handle
  */
 uint16_t gap_get_conn_hdl(uint8_t con_idx);
+
+/**
+ * @brief Check gap connectiong state
+ *
+ * @param[in] uint16_t connhdl Connection handle
+ *
+ * @return bool    if connectiong exist
+ */
+bool gap_check_conn_exist_by_hdl(uint16_t connhdl);
 
 /**
  * @brief gap module init api
@@ -2572,6 +2753,25 @@ bt_status_t gap_update_subrate_parameters(uint16_t connhdl, const gap_subrate_pa
 bt_status_t gap_update_frame_space_parameters(uint16_t connhdl, const gap_frame_space_param_t *frame_space);
 
 /**
+ * @brief Set default connection rate parameters
+ *
+ * @param[in] params   Connection rate parameters
+ *
+ * @return bt_status_t Set default parameters successfully or not for some reason
+ */
+bt_status_t gap_set_default_rate_parameters(const gap_conn_rate_params_t *params);
+
+/**
+ * @brief Update connection rate parameters
+ *
+ * @param[in] connhdl  Connection handle
+ * @param[in] params   Connection rate parameters
+ *
+ * @return bt_status_t Set connection rate parameters successfully or not for some reason
+ */
+bt_status_t gap_update_conn_rate_parameters(uint16_t connhdl, const gap_conn_rate_params_t *params);
+
+/**
  * @brief Write le suggested default data length
  *
  * @param[in] max_tx_octets
@@ -2591,10 +2791,12 @@ bt_status_t gap_write_le_suggested_default_data_length(uint16_t max_tx_octets, u
  *                     Max tx data length in octets host set when controller start transmission
  * @param[in] max_tx_time_us
  *                     Max tx data time in us host set when controller start transmission
+ * @param[in] phys     0x00 ALL GFSK PHYS, 0x01 LE HDT PHY
  *
  * @return bt_status_t Write le tx data length successfully or not for some reason
  */
-bt_status_t gap_set_le_data_length(uint16_t connhdl, uint16_t max_tx_octets, uint16_t max_tx_time_us);
+bt_status_t gap_set_le_data_length(uint16_t connhdl, uint16_t max_tx_octets,
+                                   uint16_t max_tx_time_us, uint8_t phys);
 
 /**
  * @brief Read current connection used phy value
@@ -2626,38 +2828,43 @@ bt_status_t gap_set_le_default_phy(uint8_t tx_phy_bits, uint8_t rx_phy_bits);
  * @param[in] rx_phy_bits
  *                     RX phy bits
  * @param[in] coded_prefer
- *                     Coded phy prefer
+ *                     Phy Rates prefer @see gap_phy_opt_prefer_t
  *
  * @return bt_status_t Set le connection phy successfully or not for some reason
  */
 bt_status_t gap_set_le_conn_phy(uint16_t connhdl, uint8_t tx_phy_bits, uint8_t rx_phy_bits,
-                                gap_phy_opt_prefer_t coded_prefer);
+                                uint16_t phy_rate_prefer);
 
 /**
  * @brief Set HDT parameters for specific connection
  *
  * @param[in] connhdl  Connection handle
  * @param[in] mic_len  MIC length preferred, valid 0x01 and 0x02
- * @param[in] max_tx_plds_per_pkt
- *                     Max tx payload number per packet, @see GAP_MAX_PAYLOAD_NUM_PER_PACKET
- * @param[in] max_rx_plds_per_pkt
- *                     Max rx payload number per packet, @see GAP_MAX_PAYLOAD_NUM_PER_PACKET
+ * @param[in] pref_pkt_fmt
+ *                     Preferred packet format, @see gap_hdt_pkt_fmt_t
+ * @param[in] prf_acl_rates
+ *                     Preferred ACL rates bitfield @see gap_phy_rates_bf
  *
  * @return bt_status_t Set HDT connection parameters successfully or not for some reason
  */
-bt_status_t gap_set_hdt_parameters(uint16_t connhdl, gap_mic_len_t pref_mic_len,
-                                   uint8_t max_tx_plds_per_pkt, uint8_t max_rx_plds_per_pkt);
+bt_status_t gap_set_hdt_default_parameters(gap_mic_len_t mic_len, uint8_t pref_pkt_fmt, uint16_t prf_acl_rates);
 
 /**
  * @brief Set HDT parameters test for specific connection
  *
  * @param[in] connhdl  Connection handle
- * @param[in] pkt_fmt_supp
- *                     Packet format supported @see gap_hdt_pkt_fmt_t
+ * @param[in] mic_length
+ *                    MIC length preferred, valid 0x01 and 0x02
+ * @param[in] pkt_fmt Packet format supported @see gap_hdt_pkt_fmt_t
+ * @param[in] blocks_per_pld
+ *                    Blocks per payload, 0 to 16
+ * @param[in] tx_rate_bf
+ *                    Transsmision rate bit @see gap_phy_rates_bf
  *
  * @return bt_status_t Set HDT connection parameters test successfully or not for some reason
  */
-bt_status_t gap_set_hdt_parameters_test(uint16_t connhdl, gap_hdt_pkt_fmt_t pkt_fmt_supp);
+bt_status_t gap_set_hdt_parameters_test(uint16_t connhdl, uint8_t mic_length, gap_hdt_pkt_fmt_t pkt_fmt,
+                                        uint8_t blocks_per_pld, uint16_t tx_rate_bf);
 
 /**
  * @brief Set HDT link security params for specific connection
@@ -3819,14 +4026,14 @@ bt_status_t gap_set_ext_scan_rsp_data(uint8_t adv_handle, gap_adv_data_op_t op, 
  *
  * @param[in] adv_handle
  *                     Adv hdl specified which adv set to operate
- * @param[in] duration_ms
- *                     Adv last duration in ms
+ * @param[in] duration_10ms
+ *                     Adv last duration in 10 ms
  * @param[in] max_ext_adv_events
  *                     Max advertising event number to sent out before duration is expired
  *
  * @return bt_status_t Enable adv successfully or not for some reason
  */
-bt_status_t gap_set_ext_adv_enable(uint8_t adv_handle, uint32_t duration_ms, uint8_t max_ext_adv_events);
+bt_status_t gap_set_ext_adv_enable(uint8_t adv_handle, uint16_t duration_10ms, uint8_t max_ext_adv_events);
 
 /**
  * @brief Set ext adv decision data in decision PDU
@@ -3850,14 +4057,14 @@ bt_status_t gap_set_ext_adv_decision_data(uint8_t adv_handle, bool resolvable_ta
  *
  * @param[in] adv_handle
  *                     Adv hdl specified which adv set to operate
- * @param[in] duration_ms
- *                     Adv last duration in ms
+ * @param[in] duration_10ms
+ *                     Adv last duration in 10 ms
  * @param[in] max_ext_adv_evts
  *                     Max advertising event number to sent out before duration is expired
  *
  * @return bt_status_t Enable adv successfully or not for some reason
  */
-bt_status_t gap_enable_advertising(uint8_t adv_handle, uint32_t duration_ms, uint8_t max_ext_adv_evts);
+bt_status_t gap_enable_advertising(uint8_t adv_handle, uint16_t duration_10ms, uint8_t max_ext_adv_evts);
 
 /**
  * @brief Disable advertising and remove adv set is needed
@@ -3925,28 +4132,28 @@ bt_status_t gap_start_background_scanning(const gap_scan_param_t *param, gap_sca
  *
  * @param[in] filter_duplicates
  *                     Filter duplicated advertising pdu
- * @param[in] duration_ms
+ * @param[in] duration_10ms
  *                     Scanning last duration in every period in ms
- *                     If duration_ms == 0, adv is last until upper disable it
- * @param[in] period_ms
- *                     Scanning period in ms, should be period_ms >= duration_ms
- *                     Ignored when duration_ms == 0
+ *                     If duration_10ms == 0, scan is last until upper disable it
+ * @param[in] period_1_28s
+ *                     Scanning period in ms, should be period_1_28s * 1280 >= duration_10ms * 10
+ *                     Ignored when duration_10ms == 0
  *
  * @return bt_status_t Set scanning enable successfully or not for some reason
  */
-bt_status_t gap_set_ext_scan_enable(gap_dup_filter_op_t filter_duplicates, uint32_t duration_ms, uint32_t period_ms);
+bt_status_t gap_set_ext_scan_enable(gap_dup_filter_op_t filter_duplicates, uint16_t duration_10ms, uint16_t period_1_28s);
 
 /**
  * @brief Enable scanning with filter policy, duration in ms
  *
  * @param[in] filter_duplicates
  *                       Filter duplicated advertising pdu
- * @param[in] duration_ms
- *                       Scanning is expired when duration in ms is arrived
+ * @param[in] duration_10ms
+ *                       Scanning is expired when duration in 10 ms is arrived
  *
- * @return bt_status_t Enable an durations_ms scanning last successfully or not for some reason
+ * @return bt_status_t Enable an durations_10ms scanning last successfully or not for some reason
  */
-bt_status_t gap_enable_scanning(bool filter_duplicates, uint32_t duration_ms);
+bt_status_t gap_enable_scanning(bool filter_duplicates, uint16_t duration_10ms);
 
 /**
  * @brief Disable scanning

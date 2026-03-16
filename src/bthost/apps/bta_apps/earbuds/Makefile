@@ -66,6 +66,7 @@ subdir-ccflags-y += \
     -Iapps/psap/inc \
     -Iapps/ble_audio_central_app/ble_audio_usb \
     -Iservices/audio_manager/audio_policy/bredr_policy/inc \
+    -Iservices/audio_manager/inc \
     -Iservices/fs/fat \
     -Iservices/fs/sd \
     -Iservices/fs/fat/ChaN \
@@ -102,11 +103,11 @@ subdir-ccflags-y += \
     -Iservices/app_debug_info_system/inc \
     -I$(BT_SERVICE_MODULE_DIR_PATH)/module/config \
     -Iservices/bt_app \
-    -Iservices/osif \
     -Iservices/bt_sync \
-    -Iservices/osif \
     -Iservices/gfps/inc \
-    -Ibthost/apps/bta_apps/deprecated/inc
+    -Ibthost/apps/bta_apps/deprecated/inc \
+    -Iservices/app_custom/ble_custom \
+    -Iservices/app_custom
 
 ifeq ($(SNDP_PROJ),1)
 subdir-ccflags-y += \

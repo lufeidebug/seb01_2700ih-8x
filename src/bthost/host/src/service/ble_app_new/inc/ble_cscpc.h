@@ -14,8 +14,8 @@
  *
  ****************************************************************************/
 
-#ifndef _BLE_CSCPC_H_
-#define _BLE_CSCPC_H_
+#ifndef __BLE_CSCPC_H__
+#define __BLE_CSCPC_H__
 
 #include "ble_cscp_common.h"
 

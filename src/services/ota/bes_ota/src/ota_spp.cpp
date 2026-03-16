@@ -24,7 +24,7 @@
 #include "bluetooth_bt_api.h"
 #include "cqueue.h"
 #include "ota_dbg.h"
-
+#include "bta_bt_api.h"
 OtaContext ota;
 
 /****************************************************************************
@@ -188,7 +188,7 @@ void app_ota_spp_send_data(uint8_t *ptrData, uint16_t length)
         return;
     }
 
-    bta_spp_write(ota.ota_spp_dev->rfcomm_handle, ptrData, length);
+    bta_spp_send_data(ota.ota_spp_dev->rfcomm_handle, ptrData, length);
 }
 
 void ota_disconnect(void)

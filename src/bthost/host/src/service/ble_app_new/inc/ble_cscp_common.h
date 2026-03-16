@@ -14,8 +14,8 @@
  *
  ****************************************************************************/
 
-#ifndef _BLE_CSCP_COMMON_H_
-#define _BLE_CSCP_COMMON_H_
+#ifndef __BLE_CSCP_COMMON_H__
+#define __BLE_CSCP_COMMON_H__
 
 #include "co_math.h"
 #include "prf_types.h"

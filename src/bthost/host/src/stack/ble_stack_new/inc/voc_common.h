@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __VOCS_COMMON__
-#define __VOCS_COMMON__
+#ifndef __VOCS_COMMON_H__
+#define __VOCS_COMMON_H__
 
 #include "gaf_cfg.h"
 

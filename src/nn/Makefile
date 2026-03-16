@@ -12,9 +12,18 @@ obj-y += cmsis-nn/
 endif
 
 ifeq ($(ETHOSU_ARCH), u55)
-obj-y += core-driver/ core-platform/ core-software/ tflite-micro/
-subdir-ccflags-y += -Wno-double-promotion -Wno-unused-variable -Wno-unused-function -Wno-shadow -Wno-float-conversion
+obj-y += core-driver/ core-platform/
 subdir-ccflags-y += -DETHOSU -DETHOSU55 -DETHOSU_ARCH=$(ETHOSU_ARCH)
+
+ifneq ($(ETHOSU_DRIVER_TEST),1)
+obj-y += core-software/
+export TFLITE_MICRO_ENABLE ?= 1
+endif
+endif
+
+ifeq ($(TFLITE_MICRO_ENABLE),1)
+obj-y += tflite-micro/
+subdir-ccflags-y += -Wno-double-promotion -Wno-unused-variable -Wno-unused-function -Wno-shadow -Wno-float-conversion
 endif
 
 ifneq ($(ETHOSU_LOG_ENABLE),)

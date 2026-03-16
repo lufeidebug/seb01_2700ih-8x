@@ -21,6 +21,7 @@
 #include "hal_iomux.h"
 #include "hal_key.h"
 #include "hal_norflash.h"
+// #include "norflash_api.h"
 #include "hal_sleep.h"
 #include "hal_sysfreq.h"
 #include "hal_timer.h"
@@ -56,13 +57,7 @@
 #include "i2s_audio_app.h"
 #endif
 
-#ifdef USB_AUDIO_SPEECH
-#define CODEC_BUFF_FRAME_NUM            (2 * 16)
-#define USB_BUFF_FRAME_NUM              (CODEC_BUFF_FRAME_NUM * 2)
-#else
-#define CODEC_BUFF_FRAME_NUM            4
-#define USB_BUFF_FRAME_NUM              10
-#endif
+
 
 #if (CODEC_BUFF_FRAME_NUM >= USB_BUFF_FRAME_NUM)
 #error "Codec buffer frame num should be less than usb buffer frame num (on the requirement of conflict ctrl)"
@@ -191,6 +186,16 @@ static void uart_i2c_switch(void)
     }
 }
 
+void ota_enter_usb_dld_mode(void)
+{
+    ANC_USB_TRACE(1,"%s",__func__);
+    hal_sw_bootmode_clear(0xffffffff);
+    hal_sw_bootmode_set(HAL_SW_BOOTMODE_FORCE_USB_DLD | HAL_SW_BOOTMODE_SKIP_FLASH_BOOT);
+    pmu_usb_config(PMU_USB_CONFIG_TYPE_DEVICE);
+    hal_cmu_reset_set(HAL_CMU_MOD_GLOBAL);
+    while(1);
+}
+
 static int key_event_process(uint32_t key_code, uint8_t key_event)
 {
     ANC_USB_TRACE(3,"%s: code=0x%X, event=%u", __FUNCTION__, key_code, key_event);
@@ -217,12 +222,6 @@ static int key_event_process(uint32_t key_code, uint8_t key_event)
 
 #ifdef ADDA_LOOP_APP
     if (adda_loop_app_key(key_code, key_event) == 0) {
-        return 0;
-    }
-#endif
-
-#ifdef I2S_AUDIO_APP
-    if (i2s_audio_app_key(key_code, key_event) == 0) {
         return 0;
     }
 #endif
@@ -434,7 +433,9 @@ int MAIN_ENTRY(void)
     ANC_USB_TRACE(3,"FLASH_ID: %02X-%02X-%02X", flash_id[0], flash_id[1], flash_id[2]);
     hal_norflash_show_calib_result(HAL_FLASH_ID_0);
 #endif
-
+#ifndef RAM_NV_RECORD
+    // norflash_api_init();
+#endif
     pmu_open();
     analog_open();
 #ifdef AUDIO_OUTPUT_DC_AUTO_CALIB
@@ -447,11 +448,11 @@ int MAIN_ENTRY(void)
      * to save these data into user data section at NV record if
      * CODEC_DAC_DC_NV_DATA defined;
      */
-    codec_dac_dc_auto_load(true, false, false);
+    codec_dac_dc_auto_load(true, false, true);
 #endif
 
 #ifdef AUDIO_ADC_DC_AUTO_CALIB
-    codec_adc_dc_auto_load(true, false, false);
+    codec_adc_dc_auto_load(true, false, true);
 #endif
 
     af_open();

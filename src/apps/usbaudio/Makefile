@@ -10,6 +10,10 @@ ifeq ($(USB_AUDIO_SPEECH),1)
 obj-y += ../../tests/anc_usb/speech_process.c
 endif
 
+ifeq ($(USB_AUDIO_CUSTOM_USB_HID),1)
+obj-y += ../../tests/anc_usb/usb_hid_app.c
+endif
+
 ifeq ($(ANC_APP),1)
 obj-y += ../../tests/anc_usb/anc_usb_app.c
 endif

@@ -115,11 +115,9 @@ struct CHARGER_1620_CTX_T {
     enum CHARGER_CHARGE_CONSTANT_CURRENT_E cc_current;
     enum CHARGER_CHARGE_STOP_CURRENT_E stop_curent;
     enum CHARGER_CHARGE_CONSTANT_VOLTAGE_E cv_volt;
-    enum CHARGER_CHARGE_FORWARD_DELTA_VOLTAGE_E fr_volt;
     enum CHARGER_ACIN2VSYS_LIMIT_CURRENT_E limit_current;
     enum CHARGER_ACIN2VSYS_VSYS_VOLTAGE_E vsys_volt;
     enum CHARGER_ACIN2VSYS_VSYS_MIN_VOLTAGE_E vsys_min_volt;
-    enum CHARGER_ACIN2VSYS_ACIN_MIN_VOLTAGE_E acin_min_volt;
 };
 
 static const struct CHARGER_1620_CTX_T chg_1620_ctx = {
@@ -128,11 +126,9 @@ static const struct CHARGER_1620_CTX_T chg_1620_ctx = {
     CHARGER_CHARGE_CONSTANT_CURRENT_50MA,
     CHARGER_CHARGE_STOP_CURRENT_5MA,
     CHARGER_CHARGE_CONSTANT_VOLTAGE_4440MV,
-    CHARGER_CHARGE_FORWARD_DELTA_VOLTAGE_175MV,
     CHARGER_ACIN2VSYS_LIMIT_CURRENT_500MA,
     CHARGER_ACIN2VSYS_VSYS_VOLTAGE_4600MV,
-    CHARGER_ACIN2VSYS_VSYS_MIN_VOLTAGE_4600MV,
-    CHARGER_ACIN2VSYS_ACIN_MIN_VOLTAGE_3600MV,
+    CHARGER_ACIN2VSYS_VSYS_MIN_VOLTAGE_3800MV,
 };
 
 static bool charger_opened = false;
@@ -989,80 +985,6 @@ enum CHARGER_ACIN2VSYS_VSYS_MIN_VOLTAGE_E charger_acin2vsys_vsys_min_volt_get(vo
     return (enum CHARGER_ACIN2VSYS_VSYS_MIN_VOLTAGE_E)val;
 }
 
-int charger_acin2vsys_acin_min_volt_set(enum CHARGER_ACIN2VSYS_ACIN_MIN_VOLTAGE_E acin_min_volt)
-{
-    uint16_t val;
-
-    if (chg_type == CHARGER_CHIP_TYPE_NONE) {
-        return CHARGER_RET_INVALID_CHIP;
-    }
-
-    if (chg_type == CHARGER_CHIP_TYPE_1620 || acin_min_volt >= CHARGER_ACIN2VSYS_ACIN_MIN_VOLTAGE_QTY) {
-        return CHARGER_RET_INVALID_OPTION;
-    }
-
-    i2cif_reg_read(CHG_REG_08, &val);
-    val = SET_BITFIELD(val, PP_VIN_DPM_VBIT, acin_min_volt);
-    i2cif_reg_write(CHG_REG_08, val);
-
-    return CHARGER_RET_OK;
-}
-
-enum CHARGER_ACIN2VSYS_ACIN_MIN_VOLTAGE_E charger_acin2vsys_acin_min_volt_get(void)
-{
-    uint16_t val;
-
-    if (chg_type == CHARGER_CHIP_TYPE_NONE) {
-        return CHARGER_CHARGE_CONSTANT_VOLTAGE_QTY;
-    }
-
-    if (chg_type == CHARGER_CHIP_TYPE_1622) {
-        i2cif_reg_read(CHG_REG_08, &val);
-        val = GET_BITFIELD(val, PP_VIN_DPM_VBIT);
-    } else {
-        val = chg_1620_ctx.acin_min_volt;
-    }
-
-    return (enum CHARGER_ACIN2VSYS_ACIN_MIN_VOLTAGE_E)val;
-}
-
-int charger_charge_forward_delta_volt_set(enum CHARGER_CHARGE_FORWARD_DELTA_VOLTAGE_E fr_volt)
-{
-    uint16_t val;
-
-    if (chg_type == CHARGER_CHIP_TYPE_NONE) {
-        return CHARGER_RET_INVALID_CHIP;
-    }
-
-    if (chg_type == CHARGER_CHIP_TYPE_1620 || fr_volt >= CHARGER_CHARGE_FORWARD_DELTA_VOLTAGE_QTY) {
-        return CHARGER_RET_INVALID_OPTION;
-    }
-
-    i2cif_reg_read(CHG_REG_09, &val);
-    val = SET_BITFIELD(val, PP_FR_DELTA_VBIT, fr_volt);
-    i2cif_reg_write(CHG_REG_09, val);
-
-    return CHARGER_RET_OK;
-}
-
-enum CHARGER_CHARGE_FORWARD_DELTA_VOLTAGE_E charger_charge_forward_delta_volt_get(void)
-{
-    uint16_t val;
-
-    if (chg_type == CHARGER_CHIP_TYPE_NONE) {
-        return CHARGER_CHARGE_CONSTANT_VOLTAGE_QTY;
-    }
-
-    if (chg_type == CHARGER_CHIP_TYPE_1622) {
-        i2cif_reg_read(CHG_REG_09, &val);
-        val = GET_BITFIELD(val, PP_FR_DELTA_VBIT);
-    } else {
-        val = chg_1620_ctx.fr_volt;
-    }
-
-    return (enum CHARGER_CHARGE_FORWARD_DELTA_VOLTAGE_E)val;
-}
-
 int charger_charge_forward_enable(void)
 {
     uint16_t val;
@@ -1255,6 +1177,9 @@ int charger_charge_open(void)
 #endif
             i2cif_reg_write(CHG_REG_31, val);
 
+            // Disable ldo soft start by default
+            charger_acin2vsys_ldo_soft_start_enable(false);
+
             i2cif_reg_write(CHG_REG_28, REG_CHARGE_DONE_INTR_CLR);
             i2cif_reg_write(CHG_REG_26, (REG_VIN_OV_INTR_CLR | REG_VIN_OC_INTR_CLR));
 
@@ -1275,10 +1200,6 @@ int charger_charge_open(void)
             val |= (REG_EN_TRAN_ENHANCE_DR | REG_EN_TRAN_ENHANCE);
             i2cif_reg_write(CHG_REG_01, val);
 
-            if (charger_startup_is_stable() == false) {
-                charger_acin2vsys_ldo_soft_start_enable(false);
-            }
-
             charger_load_efuse_calib();
             if (chg_metal_id > HAL_CHIP_METAL_ID_0) {
 #ifndef NO_VBAT_OCP
@@ -1290,6 +1211,7 @@ int charger_charge_open(void)
                 }
 #endif
                 charger_acin2vsys_limit_current_set(CHARGER_ACIN2VSYS_LIMIT_CURRENT_300MA);
+                charger_acin2vsys_ldo_soft_start_enable(true);
                 charger_charge_irq_handler_set(NULL);
             }
         }

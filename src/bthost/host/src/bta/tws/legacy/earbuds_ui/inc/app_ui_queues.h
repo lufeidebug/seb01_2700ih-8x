@@ -25,7 +25,7 @@ typedef enum _ret {
 } result_t;
 
 typedef result_t (*data_visit_func)(void *ctx, void *data);
-
+typedef result_t (*data_visit_func_by_link)(void *ctx, void *data,uint8_t link_id);
 typedef struct {
     app_ui_evt_t event;
     bt_bdaddr_t addr;
@@ -46,11 +46,14 @@ result_t app_ui_queue_init(app_ui_evt_queue_t *queue);
 uint8_t app_ui_queue_size(const app_ui_evt_queue_t *queue);
 result_t app_ui_queue_push(app_ui_evt_queue_t *queue, const app_ui_event_t *event);
 result_t app_ui_queue_pop(app_ui_evt_queue_t *queue);
+result_t app_ui_queue_pop_target_event(app_ui_evt_queue_t *queue,app_ui_evt_t target_evt);
 result_t app_ui_queue_front(const app_ui_evt_queue_t *queue, app_ui_event_t *event);
 result_t app_ui_queue_back(const app_ui_evt_queue_t *queue, app_ui_event_t *event);
 result_t app_ui_queue_foreach(const app_ui_evt_queue_t *queue, data_visit_func visit, void *ctx);
 bool app_ui_queue_find_data(const app_ui_evt_queue_t *queue, app_ui_event_t *event);
 bool app_ui_queue_find_data_ext(const app_ui_evt_queue_t *queue, data_visit_func visit, void *ctx);
+bool app_ui_queue_find_data_ext_by_link(const app_ui_evt_queue_t *queue,
+                                data_visit_func_by_link visit, void *ctx,uint8_t link_id);
 bool app_ui_queue_empty(const app_ui_evt_queue_t *queue);
 bool app_ui_queue_full(const app_ui_evt_queue_t *queue);
 uint8_t app_ui_queue_find_data_count(const app_ui_evt_queue_t *queue, app_ui_evt_t event);

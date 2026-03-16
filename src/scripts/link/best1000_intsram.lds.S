@@ -185,6 +185,16 @@ SECTIONS
 		. = ALIGN(4);
 	} > FLASH
 
+	.rodata (.) :
+	{
+#ifdef USB_HID_COMMAND_ENABLE
+		__usb_hid_handler_table_start = .;
+		KEEP(*(.usb_hid_handler_table))
+		__usb_hid_handler_table_end = .;
+		. = ALIGN(4);
+#endif
+		. = ALIGN(4);
+	} > FLASH
 	.vector_table (ORIGIN(REGION_VECTOR)) (NOLOAD) :
 	{
 		__vector_table_start = .;

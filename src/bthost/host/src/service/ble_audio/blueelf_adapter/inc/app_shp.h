@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef APP_SHP_H_
-#define APP_SHP_H_
+#ifndef __APP_SHP_H__
+#define __APP_SHP_H__
 
 #if BLE_AUDIO_ENABLED
 

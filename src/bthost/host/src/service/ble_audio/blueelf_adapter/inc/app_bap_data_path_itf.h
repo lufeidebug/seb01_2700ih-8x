@@ -20,8 +20,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_BAP_DATA_PATH_ITF_H_
-#define APP_BAP_DATA_PATH_ITF_H_
+#ifndef __APP_BAP_DATA_PATH_ITF_H__
+#define __APP_BAP_DATA_PATH_ITF_H__
 #ifdef BLE_AUDIO_ENABLED
 
 /*****************************header include********************************/

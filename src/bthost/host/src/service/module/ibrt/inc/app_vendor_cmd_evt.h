@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __APP_VENDOR_EVT__
-#define __APP_VENDOR_EVT__
+#ifndef __APP_VENDOR_EVT_H__
+#define __APP_VENDOR_EVT_H__
 
 #ifdef __cplusplus
 extern "C" {

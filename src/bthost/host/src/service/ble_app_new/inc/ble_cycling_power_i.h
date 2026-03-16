@@ -14,8 +14,8 @@
  *
  ****************************************************************************/
 
-#ifndef _CPS_COMMON_I_H_
-#define _CPS_COMMON_I_H_
+#ifndef __CPS_COMMON_I_H__
+#define __CPS_COMMON_I_H__
 
 #include "prf_types.h"
 #include "co_math.h"

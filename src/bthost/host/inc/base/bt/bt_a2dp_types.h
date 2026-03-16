@@ -195,6 +195,18 @@ typedef void (*bt_a2dp_audio_state_cb)(const bt_bdaddr_t *address, bt_a2dp_audio
 typedef void (*bt_a2dp_audio_config_cb)(const bt_bdaddr_t *address, const bt_a2dp_audio_config_t *config);
 
 typedef void (*bt_a2dp_unkown_cmd_cb)(const bt_bdaddr_t *address, const bt_a2dp_unknown_cmd_t *param);
+
+/**
+ ****************************************************************************************
+ * @brief       Callback function type for handling changes in audio configuration.
+ * @param[in]   address: Remote addr.
+ * @param[out]  timeout: Change timeout time.
+ * @return      true:allow dalay send rsp
+ *              false:disallow dalay send rsp
+ ****************************************************************************************
+ */
+typedef bool (*bt_a2dp_cmd_req_delay_rsp_cb)(const bt_bdaddr_t *address, uint8_t *timeout);
+
 typedef struct
 {
     bt_a2dp_connection_state_cb    connection_state_cb;

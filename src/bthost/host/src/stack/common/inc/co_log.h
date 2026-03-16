@@ -15,8 +15,8 @@
  * @brief xxx.
  *
  ****************************************************************************/
-#ifndef CO_LOG_H_
-#define CO_LOG_H_
+#ifndef __CO_LOG_H__
+#define __CO_LOG_H__
 
 /****************************** header include ********************************/
 #include <stdint.h>
@@ -33,14 +33,13 @@
 /***************************** variable defination *****************************/
 
 /***************************** function declaration ****************************/
-#ifdef STACK_LEVEL
-#undef STACK_LEVEL
+#if defined(BTH_ROM_VERSION)
+#define STACK_LEVEL LOGGER_LEVEL_INFO
 #endif
 
 #if defined(BT_STACK_LOG_DISABLE) || defined(BT_LOG_SIMPLIFY)
-#define STACK_LEVEL     LOGGER_LEVEL_FATAL
-#else
-#define STACK_LEVEL      LOGGER_LEVEL_INFO
+#undef STACK_LEVEL
+#define STACK_LEVEL LOGGER_LEVEL_FATAL
 #endif
 
 #define TEST_MODULE     0
@@ -54,7 +53,7 @@
 #define CS_MODULE       6
 #define GAP_MODULE      7
 #define GATT_MODULE     8
-#define BAP_MODULE      9
+#define GAF_MODULE      9
 #define SMP_MODULE      10
 
 #define NAPP_MODULE     11
@@ -75,14 +74,33 @@
 #define BTH_ROM_MODULE  24
 #define BTH_MID_MODULE  25
 
+#ifndef L2CAP_LEVEL
 #define L2CAP_LEVEL STACK_LEVEL
-#define HCI_LEVEL   STACK_LEVEL
+#endif
 
+#ifndef HCI_LEVEL
+#define HCI_LEVEL   STACK_LEVEL
+#endif
+
+#ifndef CS_LEVEL
 #define CS_LEVEL    STACK_LEVEL
+#endif
+
+#ifndef GAP_LEVEL
 #define GAP_LEVEL   STACK_LEVEL
+#endif
+
+#ifndef GATT_LEVEL
 #define GATT_LEVEL  STACK_LEVEL
-#define BAP_LEVEL   STACK_LEVEL
+#endif
+
+#ifndef GAF_LEVEL
+#define GAF_LEVEL   STACK_LEVEL
+#endif
+
+#ifndef SMP_LEVEL
 #define SMP_LEVEL   STACK_LEVEL
+#endif
 
 #define DTCP_LEVEL  STACK_LEVEL
 #define NHCI_LEVEL  STACK_LEVEL
@@ -129,8 +147,11 @@
 
 #define FLUSH_BIT           (1 << 24)
 
-#define MAKE_ATTR(module, level) (MODULE2ATTR(module) | LEVEL2ATTR(level) | LINE2ATTR(__LINE__))
+// 7-bits 127
+#define COUNT2ATTR(count)   ((count & 0x7f) << 25)
+#define ATTR2COUNT(attr)    ((attr >> 25) & 0x7f)
 
+#define MAKE_ATTR(level, count) (MODULE2ATTR(MODULE_ID) | LEVEL2ATTR(level) | LINE2ATTR(__LINE__) | COUNT2ATTR(count))
 
 void bthost_dump(uint32_t attr, uint8_t size, const void *data, size_t count);
 void bthost_log(uint32_t attr, const char *format, ...) __attribute__((format(printf, 2, 3)));
@@ -185,10 +206,10 @@ void bthost_vlog(uint32_t attr, const char *format, va_list args);
 #undef DUMP8_T
 #undef DUMP16_T
 #undef DUMP32_T
-#define RAW_PRINT_T(format, ...)     bthost_log(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_TRACE), format, ##__VA_ARGS__)
-#define DUMP8_T(data, count)    bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_TRACE), sizeof(uint8_t), data, count)
-#define DUMP16_T(data, count)   bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_TRACE), sizeof(uint16_t), data, count)
-#define DUMP32_T(data, count)   bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_TRACE), sizeof(uint32_t), data, count)
+#define RAW_PRINT_T(format, ...)     bthost_log(MAKE_ATTR(LOGGER_LEVEL_TRACE, COUNT_VA_ARGS(__VA_ARGS__)), format, ##__VA_ARGS__)
+#define DUMP8_T(data, count)    bthost_dump(MAKE_ATTR(LOGGER_LEVEL_TRACE, 0), sizeof(uint8_t), data, count)
+#define DUMP16_T(data, count)   bthost_dump(MAKE_ATTR(LOGGER_LEVEL_TRACE, 0), sizeof(uint16_t), data, count)
+#define DUMP32_T(data, count)   bthost_dump(MAKE_ATTR(LOGGER_LEVEL_TRACE, 0), sizeof(uint32_t), data, count)
 #endif
 
 #if (MODULE_LEVEL <= LOGGER_LEVEL_DEBUG)
@@ -196,10 +217,10 @@ void bthost_vlog(uint32_t attr, const char *format, va_list args);
 #undef DUMP8_D
 #undef DUMP16_D
 #undef DUMP32_D
-#define RAW_PRINT_D(format, ...)     bthost_log(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_DEBUG), format, ##__VA_ARGS__)
-#define DUMP8_D(data, count)    bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_DEBUG), sizeof(uint8_t), data, count)
-#define DUMP16_D(data, count)   bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_DEBUG), sizeof(uint16_t), data, count)
-#define DUMP32_D(data, count)   bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_DEBUG), sizeof(uint32_t), data, count)
+#define RAW_PRINT_D(format, ...)     bthost_log(MAKE_ATTR(LOGGER_LEVEL_DEBUG, COUNT_VA_ARGS(__VA_ARGS__)), format, ##__VA_ARGS__)
+#define DUMP8_D(data, count)    bthost_dump(MAKE_ATTR(LOGGER_LEVEL_DEBUG, 0), sizeof(uint8_t), data, count)
+#define DUMP16_D(data, count)   bthost_dump(MAKE_ATTR(LOGGER_LEVEL_DEBUG, 0), sizeof(uint16_t), data, count)
+#define DUMP32_D(data, count)   bthost_dump(MAKE_ATTR(LOGGER_LEVEL_DEBUG, 0), sizeof(uint32_t), data, count)
 #endif
 
 #if (MODULE_LEVEL <= LOGGER_LEVEL_INFO)
@@ -207,10 +228,10 @@ void bthost_vlog(uint32_t attr, const char *format, va_list args);
 #undef DUMP8_I
 #undef DUMP16_I
 #undef DUMP32_I
-#define RAW_PRINT_I(format, ...)      bthost_log(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_INFO), format, ##__VA_ARGS__)
-#define DUMP8_I(data, count)     bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_INFO), sizeof(uint8_t), data, count)
-#define DUMP16_I(data, count)    bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_INFO), sizeof(uint16_t), data, count)
-#define DUMP32_I(data, count)    bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_INFO), sizeof(uint32_t), data, count)
+#define RAW_PRINT_I(format, ...)      bthost_log(MAKE_ATTR(LOGGER_LEVEL_INFO, COUNT_VA_ARGS(__VA_ARGS__)), format, ##__VA_ARGS__)
+#define DUMP8_I(data, count)     bthost_dump(MAKE_ATTR(LOGGER_LEVEL_INFO, 0), sizeof(uint8_t), data, count)
+#define DUMP16_I(data, count)    bthost_dump(MAKE_ATTR(LOGGER_LEVEL_INFO, 0), sizeof(uint16_t), data, count)
+#define DUMP32_I(data, count)    bthost_dump(MAKE_ATTR(LOGGER_LEVEL_INFO, 0), sizeof(uint32_t), data, count)
 #endif
 
 #if (MODULE_LEVEL <= LOGGER_LEVEL_WARN)
@@ -218,10 +239,10 @@ void bthost_vlog(uint32_t attr, const char *format, va_list args);
 #undef DUMP8_W
 #undef DUMP16_W
 #undef DUMP32_W
-#define RAW_PRINT_W(format, ...)      bthost_log(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_WARN), format, ##__VA_ARGS__)
-#define DUMP8_W(data, count)     bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_WARN), sizeof(uint8_t), data, count)
-#define DUMP16_W(data, count)    bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_WARN), sizeof(uint16_t), data, count)
-#define DUMP32_W(data, count)    bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_WARN), sizeof(uint32_t), data, count)
+#define RAW_PRINT_W(format, ...)      bthost_log(MAKE_ATTR(LOGGER_LEVEL_WARN, COUNT_VA_ARGS(__VA_ARGS__)), format, ##__VA_ARGS__)
+#define DUMP8_W(data, count)     bthost_dump(MAKE_ATTR(LOGGER_LEVEL_WARN, 0), sizeof(uint8_t), data, count)
+#define DUMP16_W(data, count)    bthost_dump(MAKE_ATTR(LOGGER_LEVEL_WARN, 0), sizeof(uint16_t), data, count)
+#define DUMP32_W(data, count)    bthost_dump(MAKE_ATTR(LOGGER_LEVEL_WARN, 0), sizeof(uint32_t), data, count)
 #endif
 
 #if (MODULE_LEVEL <= LOGGER_LEVEL_ERROR)
@@ -229,10 +250,10 @@ void bthost_vlog(uint32_t attr, const char *format, va_list args);
 #undef DUMP8_E
 #undef DUMP16_E
 #undef DUMP32_E
-#define RAW_PRINT_E(format, ...)     bthost_log(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_ERROR), format, ##__VA_ARGS__)
-#define DUMP8_E(data, count)    bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_ERROR), sizeof(uint8_t), data, count)
-#define DUMP16_E(data, count)   bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_ERROR), sizeof(uint16_t), data, count)
-#define DUMP32_E(data, count)   bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_ERROR), sizeof(uint32_t), data, count)
+#define RAW_PRINT_E(format, ...)     bthost_log(MAKE_ATTR(LOGGER_LEVEL_ERROR, COUNT_VA_ARGS(__VA_ARGS__)), format, ##__VA_ARGS__)
+#define DUMP8_E(data, count)    bthost_dump(MAKE_ATTR(LOGGER_LEVEL_ERROR, 0), sizeof(uint8_t), data, count)
+#define DUMP16_E(data, count)   bthost_dump(MAKE_ATTR(LOGGER_LEVEL_ERROR, 0), sizeof(uint16_t), data, count)
+#define DUMP32_E(data, count)   bthost_dump(MAKE_ATTR(LOGGER_LEVEL_ERROR, 0), sizeof(uint32_t), data, count)
 #endif
 
 #if (MODULE_LEVEL <= LOGGER_LEVEL_FATAL)
@@ -240,13 +261,13 @@ void bthost_vlog(uint32_t attr, const char *format, va_list args);
 #undef DUMP8_F
 #undef DUMP16_F
 #undef DUMP32_F
-#define RAW_PRINT_F(format, ...)     bthost_log(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_FATAL) | FLUSH_BIT, format, ##__VA_ARGS__)
-#define DUMP8_F(data, count)    bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_FATAL) | FLUSH_BIT, sizeof(uint8_t), data, count)
-#define DUMP16_F(data, count)   bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_FATAL) | FLUSH_BIT, sizeof(uint16_t), data, count)
-#define DUMP32_F(data, count)   bthost_dump(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_FATAL) | FLUSH_BIT, sizeof(uint32_t), data, count)
+#define RAW_PRINT_F(format, ...)     bthost_log(MAKE_ATTR(LOGGER_LEVEL_FATAL, COUNT_VA_ARGS(__VA_ARGS__)) | FLUSH_BIT, format, ##__VA_ARGS__)
+#define DUMP8_F(data, count)    bthost_dump(MAKE_ATTR(LOGGER_LEVEL_FATAL, 0) | FLUSH_BIT, sizeof(uint8_t), data, count)
+#define DUMP16_F(data, count)   bthost_dump(MAKE_ATTR(LOGGER_LEVEL_FATAL, 0) | FLUSH_BIT, sizeof(uint16_t), data, count)
+#define DUMP32_F(data, count)   bthost_dump(MAKE_ATTR(LOGGER_LEVEL_FATAL, 0) | FLUSH_BIT, sizeof(uint32_t), data, count)
 #endif
 
-#define RAW_RUNTIME_ASSERT(cond, format, ...) if (!(cond)) { bthost_crash(MAKE_ATTR(MODULE_ID, LOGGER_LEVEL_FATAL) | FLUSH_BIT, format, ##__VA_ARGS__); }
+#define RAW_RUNTIME_ASSERT(cond, format, ...) if (!(cond)) { bthost_crash(MAKE_ATTR(LOGGER_LEVEL_FATAL, COUNT_VA_ARGS(__VA_ARGS__)) | FLUSH_BIT, format, ##__VA_ARGS__); }
 #define RUNTIME_ASSERT(cond, format, ...) RAW_RUNTIME_ASSERT(cond, LOGGER_SECTION(format), ##__VA_ARGS__)
 
 
@@ -395,4 +416,3 @@ extern const char bthost_tag_placeholder[];
 #define LOG_IMM(format, ...) PRINT_F(format, ##__VA_ARGS__)
 
 #endif // CO_LOG_H_
-

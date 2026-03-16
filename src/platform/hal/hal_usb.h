@@ -23,17 +23,28 @@ extern "C" {
 #include "stdint.h"
 #include "stdbool.h"
 
-#define USB_MAX_PACKET_SIZE_CTRL                64
+#define USB_MAX_PACKET_SIZE_CTRL                (64)
+
+#define USB_MAX_PACKET_SIZE_BULK_HS             (512)
+#define USB_MAX_PACKET_SIZE_INT_HS              (1024)
+#define USB_MAX_PACKET_SIZE_ISO_HS              (1024)
+#define USB_FIFO_MPS_ISO_SEND_HS                (800)
+
+#define USB_MAX_PACKET_SIZE_BULK_FS             (64)
+#define USB_MAX_PACKET_SIZE_INT_FS              (64)
+#define USB_MAX_PACKET_SIZE_ISO_FS              (1023)
+#define USB_FIFO_MPS_ISO_SEND_FS                (768)
+
 #ifdef USB_HIGH_SPEED
-#define USB_MAX_PACKET_SIZE_BULK                512
-#define USB_MAX_PACKET_SIZE_INT                 1024
-#define USB_MAX_PACKET_SIZE_ISO                 1024
-#define USB_FIFO_MPS_ISO_SEND                   800
+#define USB_MAX_PACKET_SIZE_BULK                USB_MAX_PACKET_SIZE_BULK_HS
+#define USB_MAX_PACKET_SIZE_INT                 USB_MAX_PACKET_SIZE_INT_HS
+#define USB_MAX_PACKET_SIZE_ISO                 USB_MAX_PACKET_SIZE_ISO_HS
+#define USB_FIFO_MPS_ISO_SEND                   USB_FIFO_MPS_ISO_SEND_HS
 #else
-#define USB_MAX_PACKET_SIZE_BULK                64
-#define USB_MAX_PACKET_SIZE_INT                 64
-#define USB_MAX_PACKET_SIZE_ISO                 1023
-#define USB_FIFO_MPS_ISO_SEND                   768
+#define USB_MAX_PACKET_SIZE_BULK                USB_MAX_PACKET_SIZE_BULK_FS
+#define USB_MAX_PACKET_SIZE_INT                 USB_MAX_PACKET_SIZE_INT_FS
+#define USB_MAX_PACKET_SIZE_ISO                 USB_MAX_PACKET_SIZE_ISO_FS
+#define USB_FIFO_MPS_ISO_SEND                   USB_FIFO_MPS_ISO_SEND_FS
 #endif
 
 // H/w register bit field width limitation
@@ -49,6 +60,11 @@ extern "C" {
 enum HAL_USB_API_MODE {
     HAL_USB_API_NONBLOCKING,
     HAL_USB_API_BLOCKING,
+};
+
+enum HAL_USB_SPEED_MODE {
+    HAL_USB_FS_MODE,
+    HAL_USB_HS_MODE,
 };
 
 enum EP_DIR {
@@ -84,6 +100,7 @@ enum HAL_USB_STATE_EVENT {
     HAL_USB_EVENT_RESUME,
     HAL_USB_EVENT_STALL,
     HAL_USB_EVENT_UNSTALL,
+    HAL_USB_EVENT_SPEED,
 
     HAL_USB_EVENT_QTY
 };
@@ -192,26 +209,27 @@ struct HAL_USB_CALLBACKS {
 };
 
 int hal_usb_open(const struct HAL_USB_CALLBACKS *c, enum HAL_USB_API_MODE m);
+int hal_usb_update_callback(const struct HAL_USB_CALLBACKS *c);
+void hal_usb_register_ep0_send_compl(HAL_USB_SEND_COMPL_CALLBACK c);
 int hal_usb_reopen(const struct HAL_USB_CALLBACKS *c, uint8_t dcfg, uint8_t alt, uint16_t itf);
 void hal_usb_close(void);
 
 int hal_usb_remote_wakeup(int signal);
 void hal_usb_detect_disconn(void);
 
-void hal_usb_lpm_sleep_enable(void);
-void hal_usb_lpm_sleep_disable(void);
+int hal_usb_lpm_sleep_enable(void);
+int hal_usb_lpm_sleep_disable(void);
 
 int hal_usb_configured(void);
 int hal_usb_suspended(void);
 
 uint32_t hal_usb_calc_hshb_ep_mps(uint32_t pkt_size);
 
+int hal_usb_activate_epn_ex(enum EP_DIR dir, uint8_t ep, uint8_t type, uint16_t mps, uint16_t fifo_size);
 int hal_usb_activate_epn(enum EP_DIR dir, uint8_t ep, uint8_t type, uint16_t mps);
 int hal_usb_deactivate_epn(enum EP_DIR dir, uint8_t ep);
 int hal_usb_update_recv_epn_mps(uint8_t ep, uint16_t mps);
 int hal_usb_update_send_epn_mc(uint8_t ep, uint8_t mc);
-
-void hal_usb_disable_ep(enum EP_DIR dir, uint8_t ep);
 
 void hal_usb_stall_ep(enum EP_DIR dir, uint8_t ep);
 void hal_usb_unstall_ep(enum EP_DIR dir, uint8_t ep);
@@ -221,8 +239,11 @@ void hal_usb_stop_ep(enum EP_DIR dir, uint8_t ep);
 
 int hal_usb_recv_epn(uint8_t ep, uint8_t *buffer, uint32_t size);
 int hal_usb_send_epn(uint8_t ep, const uint8_t *buffer, uint32_t size, enum ZLP_STATE zlp);
+int hal_usb_send_ep0_xfer(uint8_t *data, uint16_t size);
 
 uint32_t hal_usb_get_soffn(void);
+
+int hal_usb_irq_run(void);
 
 #ifdef __cplusplus
 }

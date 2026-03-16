@@ -563,7 +563,7 @@ int anc_select_coef(enum AUD_SAMPRATE_T rate,enum ANC_INDEX index,enum ANC_TYPE_
     }
 #endif
 
-    ASSERT(list!=NULL&&list[index]!=NULL,"The coefs of Samprate %d is NULL",  rate);
+    ASSERT(list!=NULL&&list[index]!=NULL,"The coefs of Samprate %d %d is NULL",  rate, index);
 
     if(anc_opened(anc_type))
     {

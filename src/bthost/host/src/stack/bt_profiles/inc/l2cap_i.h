@@ -297,6 +297,9 @@ struct l2cap_sig_cfg_opt_mhdt
 }__attribute__ ((packed));
 #endif
 
+/// No GATT support l2cap conn for BT
+#define BLUETOOTH_BT_GAP 0xFE
+/// GATT support l2cap conn for BT/LE
 #define BLUETOOTH_BT_ATT 0xFF
 
 typedef enum {
@@ -513,7 +516,7 @@ struct l2cap_conn_upd_param_prefer {
     uint16_t conn_interval_min_1_25ms; // connection interal = interval * 1.25ms
     uint16_t conn_interval_max_1_25ms; // connection interal = interval * 1.25ms
     uint16_t max_peripheral_latency; // 0x00 to 0x01F3, max peripheral latency in units of subrated conn intervals
-    uint16_t superv_timeout_ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
+    uint16_t superv_timeout_10ms; // 0x0A to 0x0C80 * 10ms, 100ms to 32s
 };
 
 bt_status_t l2cap_accept_le_conn_parameters(uint16_t connhdl, uint8_t trans_id, bool accept, bool send_cmd_rej);
@@ -535,6 +538,7 @@ struct l2cap_global_t {
     uint8_t l2cap_conn_count;
     uint8_t ble_l2cap_conn_count;
     uint32_t l2cap_handle_seed;
+    l2cap_proto_conn_t gap_conn;
     l2cap_proto_conn_t att_conn;
     l2cap_proto_conn_t proto[BLUETOOTH_PROTO_MAX_NUM];
     struct single_link_head_t psm_reg_list;

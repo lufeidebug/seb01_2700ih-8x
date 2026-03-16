@@ -21,8 +21,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_ATC_CSISM_MSG_H_
-#define APP_ATC_CSISM_MSG_H_
+#ifndef __APP_ATC_CSISM_MSG_H__
+#define __APP_ATC_CSISM_MSG_H__
 #if BLE_AUDIO_ENABLED
 
 #define APP_ATC_CSIS_SETS_NUM           (1)            //group set number, it means one earbud can belongs to multi groups.
@@ -59,7 +59,7 @@ typedef struct app_atc_csism_info
 
 typedef bool (*csism_info_user_config_cb)(CSISM_SET_INFO_CONFIG_T *info);
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -67,7 +67,7 @@ int app_atc_csism_set_rank(uint8_t set_lid, uint8_t rank);
 int app_atc_csism_restore_bond_data_req(uint8_t con_lid, uint8_t set_lid, uint8_t is_locked,
                                         uint8_t cli_cfg_bf);
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 }
 #endif
 

@@ -126,20 +126,10 @@ struct single_link_head_t
 extern "C" {
 #endif
 
-static inline void ITERM_ASSERT(uintptr_t count)
-{
-    ASSERT(0, "list too much loop %d", count);
-}
-
-bool colist_node_valid_check(void *p_node, bool is_snode);
-
-static inline void NODE_ASSERT(void *node, bool is_snode, uintptr_t ca, uintptr_t ln)
-{
-    if (colist_node_valid_check(node, is_snode) == false)
-    {
-        ASSERT(0, "Invalid node %d %p %x %d", is_snode, node, ca, ln);
-    }
-}
+void colist_assert(uintptr_t count);
+void colist_node_assert(void *node, bool is_snode, uintptr_t ca, uintptr_t ln);
+#define ITERM_ASSERT(count) colist_assert(count)
+#define NODE_ASSERT(node, is_snode, ca, ln) colist_node_assert(node, is_snode, ca, ln)
 
 /**
  * @brief Double link list
@@ -154,7 +144,7 @@ int colist_is_node_on_list(struct list_node *head, struct list_node *node);
 int colist_item_count(struct list_node *head);
 struct list_node *colist_get_head(struct list_node *head);
 int colist_is_list_empty(struct list_node *head);
-
+bool colist_node_valid_check(void *p_node, bool is_snode);
 /**
  * @brief Single link list
  *

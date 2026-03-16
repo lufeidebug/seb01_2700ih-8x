@@ -526,7 +526,11 @@ void gaf_stream_common_update_playback_stream_state(GAF_AUDIO_STREAM_ENV_T* pStr
         pStreamEnv->stream_context.playback_stream_state = newState;
     }
 
-#ifndef USB_BLE_AUDIO_HW_TIMER_TRIGGER
+    if (pStreamEnv->stream_info.timer_send)
+    {
+        return;
+    }
+
     if (GAF_PLAYBACK_STREAM_START_TRIGGERING == pStreamEnv->stream_context.playback_stream_state)
     {
         if (pStreamEnv->stream_context.playback_trigger_supervisor_timer_id == NULL)
@@ -541,7 +545,7 @@ void gaf_stream_common_update_playback_stream_state(GAF_AUDIO_STREAM_ENV_T* pStr
     {
         gaf_stream_playback_trigger_checker_stop(pStreamEnv);
     }
-#endif
+
 }
 
 static const char * const gaf_capture_stream_str[] =
@@ -565,7 +569,11 @@ void gaf_stream_common_update_capture_stream_state(GAF_AUDIO_STREAM_ENV_T* pStre
         pStreamEnv->stream_context.capture_stream_state = newState;
     }
 
-#ifndef USB_BLE_AUDIO_HW_TIMER_TRIGGER
+    if (pStreamEnv->stream_info.timer_send)
+    {
+        return;
+    }
+
     if (GAF_CAPTURE_STREAM_INITIALIZED == pStreamEnv->stream_context.capture_stream_state)
     {
         if (pStreamEnv->stream_context.capture_trigger_supervisor_timer_id == NULL)
@@ -580,7 +588,6 @@ void gaf_stream_common_update_capture_stream_state(GAF_AUDIO_STREAM_ENV_T* pStre
     {
         gaf_stream_capture_trigger_checker_stop(pStreamEnv);
     }
-#endif
 }
 
 const char* gaf_stream_common_get_capture_stream_state(GAF_CAPTURE_STREAM_STATE_E capture_stream_state)
@@ -640,9 +647,12 @@ void gaf_stream_common_set_capture_trigger_info(
     {
         pStreamEnv->stream_context.capturedSeqNumToStartUpStreaming = 4;
     }
-#ifdef USB_BLE_AUDIO_HW_TIMER_TRIGGER
-    pStreamEnv->stream_context.capturedSeqNumToStartUpStreaming = 2;
-#endif
+
+    if (pStreamEnv->stream_info.timer_send)
+    {
+        pStreamEnv->stream_context.capturedSeqNumToStartUpStreaming = 2;
+    }
+
     pStreamEnv->stream_context.usStorePcmToFetchFrame =
         (pStreamEnv->stream_context.capturedSeqNumToStartUpStreaming - 1) * \
             pStreamEnv->stream_info.captureInfo.dma_info.dmaChunkIntervalUs;

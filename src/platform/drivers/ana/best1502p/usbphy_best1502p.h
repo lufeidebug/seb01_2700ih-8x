@@ -22,6 +22,11 @@ extern "C" {
 
 #define ISPI_USBPHY_REG(reg)                USBPHY_REG(reg)
 
+enum USB_CLOCK_USER_T {
+    USB_CLOCK_USER_USBPLL                    = (1 << 0),
+    USB_CLOCK_USER_USB                       = (1 << 1),
+};
+
 void usbphy_div_reset_set();
 
 void usbphy_div_reset_clear(uint32_t div);
@@ -29,6 +34,10 @@ void usbphy_div_reset_clear(uint32_t div);
 void usbphy_div_set(uint32_t div);
 
 void usbphy_ldo_config(int enable);
+
+void usbphy_clock_enable(enum USB_CLOCK_USER_T user);
+
+void usbphy_clock_disable(enum USB_CLOCK_USER_T user);
 
 #ifdef __cplusplus
 }

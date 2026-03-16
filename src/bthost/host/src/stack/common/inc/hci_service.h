@@ -391,10 +391,8 @@ void hci_enable_tx_flow_debug(bool enable);
 void hci_enable_tx_0c35_without_alloc(bool enable);
 void hci_register_controller_state_check(void (*cb)(void));
 void hci_register_pending_too_many_rx_acl_packets(void (*cb)(void));
-#ifdef IBRT
 void hci_set_start_ibrt_reserve_buff(bool reserve);
 void hci_register_acl_tx_buff_tss_process(void (*cb)(void));
-#endif
 
 uint8_t *hci_get_curr_pending_cmd(uint16_t cmd_opcode);
 uint16_t hci_get_curr_cmd_opcode(void);

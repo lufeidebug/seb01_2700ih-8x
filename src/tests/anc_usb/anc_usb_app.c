@@ -1061,13 +1061,11 @@ static void anc_full_close(void)
 
 void anc_usb_app_loop(void)
 {
-#if !(defined(PROGRAMMER) && defined(_VENDOR_MSG_SUPPT_))
 #if defined(ANC_SWITCH_GPIO_PIN) || defined(ANC_SWITCH_GPADC_CHAN)
     anc_key_check();
 #endif
     anc_key_process();
     anc_state_transition();
-#endif
 }
 
 void anc_usb_app_init(enum AUD_IO_PATH_T input_path, enum AUD_SAMPRATE_T playback_rate, enum AUD_SAMPRATE_T capture_rate)

@@ -1521,7 +1521,7 @@ float speech_tx_get_required_mips(void)
 #endif
 
 #if defined(SPEECH_TX_AGC)
-    mips += agc_get_required_mips(speech_tx_agc_st);
+//     mips += agc_get_required_mips(speech_tx_agc_st);
 #endif
 
 #if defined(SPEECH_TX_EQ)
@@ -1556,7 +1556,7 @@ float speech_rx_get_required_mips(void)
 #endif
 
 #if defined(SPEECH_RX_AGC)
-    mips += agc_get_required_mips(speech_rx_agc_st);
+    // mips += agc_get_required_mips(speech_rx_agc_st);
 #endif
 
 #if defined(SPEECH_RX_COMPEXP)

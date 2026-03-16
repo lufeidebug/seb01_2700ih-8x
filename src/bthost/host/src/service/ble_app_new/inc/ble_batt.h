@@ -20,53 +20,6 @@
 extern "C" {
 #endif
 
-/**
- * battery server
- */
-#define BLE_LOCAL_DEVICE_BATTERY 0x00
-#define BLE_PEER_TWS_BUD_BATTERY 0x01
-#define MANUFACTURER_NAME    "Bestechnic(Shanghai),Ltd"
-#define MODEL_NUMBER         "P_100"
-#define SERIAL_NUMBER        "XX-XXX-XXXX"
-
-#define BLE_BATTERY_INSTANCE_NUM (2)
-#define LEN_MFR_NAME                 50
-#define LEN_MODEL_NUM                30
-#define LEN_SERIAL_NUM               30
-
-typedef enum {
-    SEND_MODE_NOTIFY   = 0x01,
-    SEND_MODE_INDICATE = 0x02,
-} send_mode_mask_t;
-
-/// Three-state (Unknown / No / Yes) commonly used by BAS fields.
-typedef enum {
-    BAS_TRISTATE_UNKNOWN = 0,
-    BAS_TRISTATE_NO      = 1,
-    BAS_TRISTATE_YES     = 2,
-} bas_yesno_t;
-
-/// Three-state boolean (Unknown / False / True) used for status bits.
-typedef enum {
-    BAS_BOOL_UNKNOWN = 0,
-    BAS_BOOL_FALSE   = 1,
-    BAS_BOOL_TRUE    = 2,
-} bas_truefalse_t;
-
-typedef enum {
-    BAS_CHARGE_STATE_UNKNOWN = 0,
-    BAS_CHARGE_STATE_CHARGING,
-    BAS_CHARGE_STATE_DISCHARGING_ACTIVE,
-    BAS_CHARGE_STATE_DISCHARGING_INACTIVE,
-} bas_charge_state_t;
-
-typedef enum {
-    BAS_CHARGE_LEVEL_UNKNOWN = 0,
-    BAS_CHARGE_LEVEL_LOW,
-    BAS_CHARGE_LEVEL_CRITICAL,
-    BAS_CHARGE_LEVEL_GOOD,
-} bas_charge_level_t;
-
 typedef enum {
     BAS_CHARGE_TYPE_UNKNOWN_OR_NOT_CHARGING = 0,
     BAS_CHARGE_TYPE_CONSTANT_CURRENT,
@@ -74,15 +27,6 @@ typedef enum {
     BAS_CHARGE_TYPE_TRICKLE,
     BAS_CHARGE_TYPE_FLOAT,
 } bas_charge_type_t;
-
-typedef struct {
-    /// Charging malfunctions due to battery condition (e.g., under/over temperature).
-    bool battery_related;
-    /// Charging malfunctions due to external power source (e.g., insufficient power).
-    bool external_power_source;
-    /// Charging malfunctions due to other device issues.
-    bool other;
-} bas_charging_fault_reason_t;
 
 typedef struct {
     /// The bits of this field represent the presence of optional fields
@@ -202,8 +146,6 @@ typedef struct {
     uint16_t   aggregation_group;
 } __attribute__((packed))bas_batt_info_t;
 
-void ble_batt_init(void);
-void ble_batt_deinit(void);
 bt_status_t app_ble_report_battery_level(uint8_t instance, uint8_t battery_level);
 bt_status_t app_ble_report_batt_level_status(uint8_t instance, bas_batt_level_status_t level_status, uint8_t send_mode);
 bt_status_t app_ble_report_estimated_service_date(uint8_t instance, bas_estimated_service_date_t date, uint8_t send_mode);
@@ -216,22 +158,6 @@ bt_status_t app_ble_report_batt_info(uint8_t instance, bas_batt_info_t info);
 bt_status_t app_ble_report_mfr_name(uint8_t instance, uint8_t *name, uint8_t len);
 bt_status_t app_ble_report_model_number(uint8_t instance, uint8_t *model_number, uint8_t len);
 bt_status_t app_ble_report_serial_number(uint8_t instance, uint8_t *serial_number, uint8_t len);
-/**
- * battery client
- */
-typedef struct
-{
-    uint8_t instance;
-    uint8_t con_idx;
-    uint16_t connhdl;
-    uint8_t battery_level;
-    uint8_t name_space;
-    uint16_t description;
-} app_ble_battery_param_t;
-typedef void (*app_ble_recv_battery_callback_t)(const app_ble_battery_param_t *param);
-bt_status_t app_ble_discover_batt_service(uint16_t connhdl);
-bt_status_t app_ble_read_peer_battery_level(uint16_t connhdl, uint8_t instance);
-bt_status_t app_ble_register_battery_callback(app_ble_recv_battery_callback_t callback);
 
 #ifdef __cplusplus
     }

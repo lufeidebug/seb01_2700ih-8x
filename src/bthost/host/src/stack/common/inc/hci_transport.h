@@ -303,9 +303,9 @@ typedef struct hci_transport_global_t {
     osMessageQId rx_iso_q_id;
     osMessageQId tx_iso_q_id;
 #endif
-    uint16_t print_max_len;
-    int (*hci_rx_log_ind)(const uint8_t *buf, uint16_t len);
-    int (*hci_tx_log_ind)(const uint8_t *buf, uint16_t len);
+
+    bool (*hci_cmd_filter_cb)(uint8_t* pbuf, uint32_t length);
+    bool (*hci_report_cb)(uint8_t direction, const uint8_t *buf, uint16_t len);
 } hci_transport_global_t;
 
 hci_transport_global_t *hci_transport_global(void);
@@ -328,13 +328,6 @@ void hci_tx_flowctrl_info(void);
 void hci_tx_trace(uint8_t type, const unsigned char *data, unsigned int len);
 typedef bool (*hci_cmd_filter_handler_func)(uint8_t* pbuf, uint32_t length);
 void hci_register_cmd_filter_handler_callback(hci_cmd_filter_handler_func func);
-typedef void (*hci_log_report_func)(uint8_t* data);
-void hci_register_log_report_handler_callback(hci_log_report_func func);
-
-void hci_register_log_report_callback(uint16_t max_len,
-                int (*tx_cb)(const uint8_t *buf, uint16_t len),
-                int (*rx_cb)(const uint8_t *buf, uint16_t len));
-
 #ifdef __cplusplus
 }
 #endif

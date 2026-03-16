@@ -17,8 +17,8 @@
  *
  ****************************************************************************/
 
-#ifndef CO_BT_INC_
-#define CO_BT_INC_
+#ifndef __CO_BT_H__
+#define __CO_BT_H__
 
 #include <stdbool.h>       // standard boolean definitions
 #include <stddef.h>        // standard definitions

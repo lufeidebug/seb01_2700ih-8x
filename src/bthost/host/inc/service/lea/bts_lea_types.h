@@ -268,15 +268,7 @@ typedef struct
     uint32_t ch_bf;
     uint8_t *bc_id;
     uint8_t *bc_code;
-    struct
-    {
-        void (*bis_sink_scan_state_cb)(bool scan_or_pa_sync, bool started, uint32_t param);
-        bool (*bis_sink_select_source)(ble_bdaddr_t *addr, uint8_t adv_sid, uint8_t *bcast_id,
-                                       uint8_t *adv_data, uint8_t adv_data_len, int8_t rssi);
-        void (*bis_sink_started_callback)(uint8_t grp_lid);
-        void (*bis_sink_stoped_callback)(uint8_t grp_lid, uint16_t err_code);
-        void (*bis_sink_metadata_cb)(uint8_t subgrp_lid, uint8_t *buf, uint8_t buf_len);
-    } event_callback;
+    bt_ble_bis_sink_evt_cbs_t evt_cbs;
 } bts_lea_bis_sink_start_param_t;
 
 typedef struct

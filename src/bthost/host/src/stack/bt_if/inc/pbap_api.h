@@ -168,6 +168,8 @@ typedef void (*btif_pbap_callback_t)(uint8_t device_id, struct btif_pbap_channel
 
 struct btif_pbap_channel_t *btif_get_pbap_channel(uint8_t device_id);
 
+struct btif_pbap_channel_t *btif_get_pbap_channel_byaddr(uint8_t *addr);
+
 void btif_pbap_init(btif_pbap_callback_t btif_pbap_callback);
 
 bt_status_t btif_pbap_connect(bt_bdaddr_t *addr);
@@ -360,13 +362,20 @@ bool btif_pbap_pull_vcard_entry(struct btif_pbap_channel_t *pbap_chan,
         const char *vcard_entry_name,
         struct pbap_pull_vcard_entry_parameters *parameters);
 
+struct pbap_vcard_data_t {
+    const char* data;
+    uint16_t len;
+};
+
 struct pbap_callback_parm_t {
     pbap_event_t event;
+    bt_bdaddr_t *remote;
     uint8_t error_code;
     uint16_t phonebook_size;
     uint8_t new_missed_calls;
     const struct pbap_vcard_listing_item_t *listing_item;
     const struct pbap_vcard_entry_item_t *entry_item;
+    const struct pbap_vcard_data_t* vcard_data;
 };
 
 #ifdef __cplusplus

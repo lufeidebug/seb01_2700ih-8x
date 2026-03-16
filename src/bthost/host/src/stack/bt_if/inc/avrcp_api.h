@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef _AVRCP_API_H
-#define _AVRCP_API_H
+#ifndef _AVRCP_API_H__
+#define _AVRCP_API_H__
 #include "bluetooth.h"
 #ifdef __cplusplus
 extern "C" {
@@ -689,6 +689,8 @@ typedef struct
     bt_status_t status;
     uint8_t error_code;
     btif_avrcp_operation_t adv_op;
+    bt_bdaddr_t remote;
+
     union
     {
         avctp_cmd_frame_t *cmdFrame;
@@ -2059,7 +2061,7 @@ bool btif_avrcp_obex_channel_is_connected(const bt_bdaddr_t *remote);
 
 void btif_avrcp_record_cover_art_handle(uint8_t device_id, const char *string, uint16_t length);
 
-bt_status_t btif_avrcp_get_image_properties(const bt_bdaddr_t *remote, const char *image_handle);
+bt_status_t btif_avrcp_get_image_properties(const bt_bdaddr_t *remote, const char *image_handle);//avrcp
 
 bt_status_t btif_avrcp_send_obex_get_image_by_art_handle(const bt_bdaddr_t *remote, const char *image_handle, const char *descriptor, uint16_t descriptor_len);
 
@@ -2068,6 +2070,8 @@ bt_status_t btif_avrcp_send_obex_get_link_thumbnail_by_art_handle(const bt_bdadd
 bt_status_t btif_avrcp_send_obex_get_link_thumbnail(const bt_bdaddr_t *remote);
 
 void *btif_avrcp_get_rsp_buf(void *(*malloc_cb)(uint16 size), void (*free_cb)(void *), uint16_t size);
+
+void btif_avrcp_free_rsp_buf(void* buf);
 
 bt_status_t btif_avrcp_tg_send_general_adv_rsp(btif_avrcp_channel_t * channel, avrcp_gen_adv_rsp_params_t *params);
 

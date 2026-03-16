@@ -138,7 +138,7 @@ void bts_lea_bis_scan_pa_sync_cancel(void);
 
 void bts_lea_bis_scan_pa_sync_stop(void);
 
-void bts_lea_bis_scan_pa_report_ctrl(uint8_t pa_lid, bool enable);
+void bts_lea_bis_scan_past_info_send(uint16_t sync_hdl);
 
 const bt_lea_ascs_ase_t *bts_lea_get_ascs_ase_info(uint8_t ase_lid);
 
@@ -187,6 +187,13 @@ void bts_lea_bap_ascc_prepare_cig_param(const bts_lea_cig_param_t *cig_param);
 void bts_lea_bap_ascs_set_codec_config(uint8_t ase_lid, const bt_lea_codec_id_t *codec_id,
                                        const bt_lea_qos_req_t *ntf_qos_req,
                                        const bt_lea_codec_cfg_t *ntf_codec_cfg);
+
+/**
+ * @brief Enable or Disable LEA Feature.
+ *
+ * @param[in] enable    enable or disable
+ */
+void bts_lea_switch(bool enable);
 
 #ifdef __cplusplus
 }

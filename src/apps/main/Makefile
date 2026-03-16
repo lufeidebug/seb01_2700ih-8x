@@ -70,14 +70,16 @@ ccflags-y +=  \
     -Iservices/rpc/inc \
     -Ithirdparty/tile/tile_target \
     -Iinclude/ \
+    -Ibthost/apps/bta_apps/dongle/inc \
     -Iapps/btwatch \
     -Iapps/bt_apps \
     -Iapps/sensorhub \
     -Iapps/dsp_m55 \
+    -Iutils/hwtimer_list \
     -Iplatform/drivers/cp_accel \
     -Iservices/audio_manager/inc \
-	-I$(BLE_APP_DIR_PATH)/inc \
-	-Imultimedia/inc \
+    -I$(BLE_APP_DIR_PATH)/inc \
+    -Imultimedia/inc \
     $(AUDIO_ALGORITHMS_INCLUDES) \
     -Iapps/earbuds/conn \
     -Ibthost/apps/bta_apps/earbuds/inc

@@ -15,11 +15,6 @@
  ****************************************************************************/
 #pragma once
 
-#define TEST_LEVEL       LOGGER_LEVEL_INFO
-#define STACK_LEVEL      LOGGER_LEVEL_INFO
-#define SERVICE_LEVEL    LOGGER_LEVEL_INFO
-#define BTH_MID_LEVEL    LOGGER_LEVEL_DEBUG
-
 #if defined(BT_STACK_LOG_DISABLE) || defined(BT_LOG_SIMPLIFY)
 #undef STACK_LEVEL
 #define STACK_LEVEL     LOGGER_LEVEL_FATAL
@@ -36,7 +31,7 @@
 #define CS_MODULE       6
 #define GAP_MODULE      7
 #define GATT_MODULE     8
-#define BAP_MODULE      9
+#define GAF_MODULE      9
 #define SMP_MODULE      10
 
 #define NAPP_MODULE     11
@@ -58,12 +53,11 @@
 #define BTH_MID_MODULE  25
 
 #define L2CAP_LEVEL STACK_LEVEL
-#define HCI_LEVEL   STACK_LEVEL
 
 #define CS_LEVEL    STACK_LEVEL
 #define GAP_LEVEL   STACK_LEVEL
 #define GATT_LEVEL  STACK_LEVEL
-#define BAP_LEVEL   STACK_LEVEL
+#define GAF_LEVEL   STACK_LEVEL
 #define SMP_LEVEL   STACK_LEVEL
 
 #define DTCP_LEVEL  STACK_LEVEL

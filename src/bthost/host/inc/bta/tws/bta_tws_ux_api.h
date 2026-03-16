@@ -93,6 +93,7 @@ typedef struct {
     uint32_t             time_to_next_page;  // Should be assigned a value in callback. Idle time between this page and next page (unit is 1ms).
     bta_tws_reconn_type_t reconnect_type;
 } bta_tws_page_para_t;
+
 typedef struct
 {
     // Notifies events related to BT and IBRT link state changes
@@ -460,6 +461,14 @@ void bta_tws_clear_all_device_page();
 
 /**
  ****************************************************************************************
+ * @brief       Cancels paging tws and clears their remaining page attempts.
+ * @return      None
+ ****************************************************************************************
+ */
+void bta_tws_clear_tws_page();
+
+/**
+ ****************************************************************************************
  * @brief       Enables or disables blocking of all page activities.
  *              When blocking is enabled, ongoing page activity
  *              will be immediately cancelled, and no new page activity can proceed.
@@ -475,11 +484,28 @@ void bta_tws_block_page(bool block);
 /**
  ****************************************************************************************
  * @brief       Configures whether to block paging during streaming.
- * @param[in]   block: true to block page, false to unblock.
+ * @param[in]   block_tws: true to block page tws, false to unblock.
+ * @param[in]   block_device: true to block page device, false to unblock.
  * @return      None
  ****************************************************************************************
  */
-void bta_tws_block_page_when_streaming(bool block);
+void bta_tws_block_page_when_streaming(bool block_tws, bool block_device);
+
+/**
+ ****************************************************************************************
+ * @brief Configures whether a new incoming Bluetooth connection is allowed to preempt
+ *        an existing connection when the maximum connection limit is reached,
+ *        during HFP or A2DP streaming.
+ *
+ * Preemption refers to disconnecting an existing link to accept a new connection request.
+ * Disabling preemption during streaming helps avoid disrupting ongoing calls or music.
+ *
+ * @param[in] allow_preempt_during_hfp   Set to true to allow preemption while HFP streaming.
+ * @param[in] allow_preempt_during_a2dp  Set to true to allow preemption while A2DP streaming.
+ * @return    None
+ ****************************************************************************************
+ */
+void bta_tws_config_preempt_during_streaming(bool allow_preempt_during_hfp, bool allow_preempt_during_a2dp);
 
 /**
  ****************************************************************************************
@@ -536,6 +562,16 @@ bool bta_tws_is_ui_role_switching(void);
  */
 void bta_tws_request_ui_role_switch(bt_ui_role_t role_expected);
 
+/**
+ ****************************************************************************************
+ * @brief       Configures whether to block UI role-switch.
+ *              Note: UI role-switch triggered by case-close cannot be blocked.
+ * @param[in]   block: true to block UI role-switch, false to unblock.
+ * @return      None
+ ****************************************************************************************
+ */
+void bta_tws_block_ui_role_switch(bool block);
+
 void bta_tws_set_cmd_table(uint8_t cmd_number, const bt_tws_cmd_instance_t *cmd_table);
 void bta_tws_send_cmd(uint32_t opcode, uint8_t *buf, uint16_t len);
 bool bta_tws_send_cmd_without_rsp(uint16_t cmdcode, uint8_t *p_buff, uint16_t length);
@@ -563,7 +599,16 @@ void bta_tws_register_ui_secure_request_callback(bool (*cb)(void *bdaddr, uint8_
 
 bool bta_tws_is_tws_addr(const bt_bdaddr_t *addr);
 
+/**
+ ****************************************************************************************
+ * @note    This API is deprecated. A duplicate interface already exists and this function
+ *          may be removed in a future release. Use the alternative implementation instead.
+ *          \ref bta_tws_block_page_when_streaming
+ *          \ref bta_tws_config_preempt_during_streaming
+ ****************************************************************************************
+ */
 int bta_tws_reconfig_ux_attribute(bta_tws_ui_attribute_id_t attribute_id, uint32_t pragma);
+
 #ifdef __cplusplus
 }
 #endif

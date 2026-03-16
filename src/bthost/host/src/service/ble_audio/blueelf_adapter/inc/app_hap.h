@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef _APP_HAP_H_
-#define _APP_HAP_H_
+#ifndef __APP_HAP_H__
+#define __APP_HAP_H__
 #if BLE_AUDIO_ENABLED
 #include "bluetooth.h"
 

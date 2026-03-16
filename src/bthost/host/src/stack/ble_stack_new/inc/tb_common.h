@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __TBS_COMMON__
-#define __TBS_COMMON__
+#ifndef __TBS_COMMON_H__
+#define __TBS_COMMON_H__
 
 #include "gaf_cfg.h"
 

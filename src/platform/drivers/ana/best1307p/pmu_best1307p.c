@@ -190,13 +190,15 @@
 #define PMU_EFUSE_PAGE_BATTER_HV_OFFSET_MASK    (0xFFF << PMU_EFUSE_PAGE_BATTER_HV_OFFSET_SHIFT)
 #define PMU_EFUSE_PAGE_BATTER_HV_OFFSET(n)      BITFIELD_VAL(PMU_EFUSE_PAGE_BATTER_HV_OFFSET, n)
 #define PMU_EFUSE_PAGE_BATTER_HV_BASE           30400
-#define PMU_EFUSE_DCDC_IS_GAIN_CALIB            (1 << 15)
 
 // PMU_EFUSE_PAGE_EXT_GPADC_LV
 #define PMU_EFUSE_PAGE_EXT_GPADC_LV_OFFSET_SHIFT 0
 #define PMU_EFUSE_PAGE_EXT_GPADC_LV_OFFSET_MASK  (0xFFF << PMU_EFUSE_PAGE_EXT_GPADC_LV_OFFSET_SHIFT)
 #define PMU_EFUSE_PAGE_EXT_GPADC_LV_OFFSET(n)    BITFIELD_VAL(PMU_EFUSE_PAGE_EXT_GPADC_LV_OFFSET, n)
 #define PMU_EFUSE_PAGE_EXT_GPADC_LV_BASE         19900
+#define PMU_EFUSE_DCDC_CFG_TYPE_SHIFT            12
+#define PMU_EFUSE_DCDC_CFG_TYPE_MASK             (0x3 << PMU_EFUSE_DCDC_CFG_TYPE_SHIFT)
+#define PMU_EFUSE_DCDC_CFG_TYPE(n)               BITFIELD_VAL(PMU_EFUSE_DCDC_CFG_TYPE, n)
 
 // PMU_EFUSE_PAGE_EXT_GPADC_HV
 #define PMU_EFUSE_PAGE_EXT_GPADC_HV_OFFSET_SHIFT 0
@@ -2130,8 +2132,7 @@ int BOOT_TEXT_FLASH_LOC pmu_open(void)
 #endif
 
 #if defined(PMU_INIT) || (!defined(FPGA) && !defined(PROGRAMMER))
-
-    uint16_t val;
+    uint16_t val, val_efuse, val_cal;
 
     if (pmu_opened) {
         return 0;
@@ -2247,22 +2248,35 @@ int BOOT_TEXT_FLASH_LOC pmu_open(void)
     pmu_sleep_en(1);  //enable sleep
 #endif
 
-    uint16_t val_temp;
-
-    pmu_get_efuse(PMU_EFUSE_PAGE_BATTER_HV, &val_temp);
-    if (val_temp & PMU_EFUSE_DCDC_IS_GAIN_CALIB) {
-        val_temp = 0x7;
+    pmu_get_efuse(PMU_EFUSE_PAGE_EXT_GPADC_LV, &val_efuse);
+    val_efuse = GET_BITFIELD(val_efuse, PMU_EFUSE_DCDC_CFG_TYPE);
+    PMU_INFO_TRACE(0, "dcdc_cal_type=0x%x", val_efuse);
+    if (val_efuse == 1) {
+        val_cal = 0x7;
+        pmu_read(PMU_REG_BUCK_BUCK_CFG_13A, &val);
+        val = SET_BITFIELD(val, REG_BUCK_INTERNAL_FREQUENCY, 0x0);
+        pmu_write(PMU_REG_BUCK_BUCK_CFG_13A, val);
+    } else if (val_efuse == 2) {
+        val_cal = 0x7;
+        pmu_read(PMU_REG_BUCK_BUCK_CFG_13A, &val);
+        val |= REG_BUCK_SLOPE_DOUBLE;
+        pmu_write(PMU_REG_BUCK_BUCK_CFG_13A, val);
+    } else if (val_efuse == 3) {
+        val_cal = 0x7;
     } else {
-        val_temp = 0x4;
+        val_cal = 0x4;
     }
-    PMU_INFO_TRACE(1, "reg_buck_is_gain_normal:0x%x", val_temp);
 
     pmu_read(PMU_REG_BUCK_VCORE_CFG, &val);
-    val = SET_BITFIELD(val, REG_BUCK_IS_GAIN_NORMAL, val_temp);
+    val = SET_BITFIELD(val, REG_BUCK_IS_GAIN_NORMAL, val_cal);
     pmu_write(PMU_REG_BUCK_VCORE_CFG, val);
 
+    pmu_read(PMU_REG_BUCK_VCORE_RC_CFG, &val);
+    val = SET_BITFIELD(val, REG_BUCK_IS_GAIN_RC, val_cal);
+    pmu_write(PMU_REG_BUCK_VCORE_RC_CFG, val);
+
     pmu_read(PMU_REG_BUCK_VCORE_LP_CFG, &val);
-    val = SET_BITFIELD(val, REG_BUCK_IS_GAIN_DSLEEP, 0x4);
+    val = SET_BITFIELD(val, REG_BUCK_IS_GAIN_DSLEEP, val_cal);
     pmu_write(PMU_REG_BUCK_VCORE_LP_CFG, val);
 
     pmu_read(PMU_REG_BUCK_BUCK_CFG_138, &val);

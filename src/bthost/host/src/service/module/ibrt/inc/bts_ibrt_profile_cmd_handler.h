@@ -40,10 +40,11 @@ void app_ibrt_sync_hfp_send_status_handler(uint16_t rsp_seq, uint8_t *p_buff, ui
 void app_ibrt_sync_hfp_send_status_rsp_timeout_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
 void app_ibrt_sync_hfp_send_status_rsp_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
 
+void app_ibrt_data_exchange_done(uint8_t *p_buff, uint16_t length);
+void app_ibrt_data_exchange_done_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
+
 void app_tws_profile_data_sync(uint8_t *p_buff, uint16_t length);
 void app_ibrt_profile_data_exchange_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
-void app_ibrt_profile_data_exchange_rsp_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
-void app_ibrt_profile_data_exchange_rsp_timeout_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
 
 void app_ibrt_profile_data_req_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
 void app_ibrt_send_profile_data_req(uint8_t *p_buff, uint16_t length);

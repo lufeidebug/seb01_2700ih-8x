@@ -20,8 +20,8 @@
  * @{
  ****************************************************************************************
  */
-#ifndef APP_VAP_VAS_MSG_H_
-#define APP_VAP_VAS_MSG_H_
+#ifndef __APP_VAP_VAS_MSG_H__
+#define __APP_VAP_VAS_MSG_H__
 #if BLE_AUDIO_ENABLED
 #include "bluetooth.h"
 #ifdef __cplusplus

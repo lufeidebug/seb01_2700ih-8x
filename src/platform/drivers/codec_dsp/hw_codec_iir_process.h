@@ -63,7 +63,7 @@ extern "C" {
 #if defined(CHIP_BEST1402) || defined(CHIP_BEST2001) || defined(CHIP_BEST2300A) || defined(CHIP_BEST1305) || defined(CHIP_BEST1306)
 #define AUD_DAC_IIR_NUM_EQ                        (20)
 #elif defined(CHIP_BEST1501) || defined(CHIP_BEST1501P) || defined(CHIP_BEST1600) || defined(CHIP_BEST1502X) \
-|| defined(CHIP_BEST1502P) || defined(CHIP_BEST1503) || defined(CHIP_BEST1306P)
+|| defined(CHIP_BEST1502P) || defined(CHIP_BEST1503) || defined(CHIP_BEST1306P) || defined(CHIP_BEST1307P)
 #define AUD_DAC_IIR_NUM_EQ                        (40)
 #else
 #define AUD_DAC_IIR_NUM_EQ                        (8)

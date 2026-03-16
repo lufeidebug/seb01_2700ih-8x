@@ -57,6 +57,7 @@ extern "C" {
 
 
 
+void bthost_set_hci_level(uint8_t level);
 void bthost_set_test_level(uint8_t level);
 void bthost_set_stack_level(uint8_t level);
 void bthost_set_service_level(uint8_t level);

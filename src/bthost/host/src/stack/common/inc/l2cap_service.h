@@ -16,6 +16,7 @@
 #ifndef __BT_L2CAP_SERVICE_H__
 #define __BT_L2CAP_SERVICE_H__
 #include "hci_service.h"
+#include "bt_stack_event.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

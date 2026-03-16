@@ -16,6 +16,7 @@
 #ifndef __HCI_API__H__
 #define __HCI_API__H__
 #include "stdbool.h"
+#include "bt_stack_status.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -183,7 +184,6 @@ typedef uint16_t btif_hci_handle_t;
 #define BTIF_HCI_READ_BUFFER_SIZE                   0x1005
 #define BTIF_HCI_READ_BD_ADDR                       0x1009
 
-
 typedef void (*btif_tws_data_received_callback_func)(uint8_t * data, uint16_t dataLen);
 
 typedef void (*btif_bt_hci_dbg_ll_monitor_callback_func)(const unsigned char *buf,
@@ -198,6 +198,13 @@ typedef void (*btif_bt_addr_exchanged_callback_func) (uint8_t * newBtAddr);
 
 typedef void (*btif_hci_read_avg_rssi_callback_func)(uint8_t status, uint16_t conhdl, int8_t rssi);
 
+typedef enum
+{
+    BTIF_HCI_TX = 0,
+    BTIF_HCI_RX,
+    BTIF_HCI_UNKONW,
+} BTIF_HCI_DIRECTION_E;
+
 typedef struct
 {
     uint8_t hci_buff_trace_enable:1;
@@ -207,6 +214,8 @@ typedef struct
     uint8_t hci_acl_packet_trace_enable:1;
     uint8_t hci_iso_packet_trace_enable:1;
 } btif_hci_trace_param_t;
+
+void btif_hci_data_report_register(bool (*cb)(uint8_t direction, const uint8_t *buf, uint16_t len));
 
 int btif_send_hci_cmd(uint16_t opcode, uint8_t *param_data_ptr, uint8_t param_len);
 

@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __GAF_PRF__
-#define __GAF_PRF__
+#ifndef __GAF_PRF_H__
+#define __GAF_PRF_H__
 
 #include "gatt_service.h"
 

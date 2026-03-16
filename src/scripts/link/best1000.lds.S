@@ -4195,6 +4195,12 @@ guess 2 lib can put in first line in 'EXCLUDE_FILE'
 		__app_bt_sync_command_handler_table_end = .;
 		. = ALIGN(4);
 		. = ALIGN(4);
+#ifdef USB_HID_COMMAND_ENABLE
+		__usb_hid_handler_table_start = .;
+		KEEP(*(.usb_hid_handler_table))
+		__usb_hid_handler_table_end = .;
+		. = ALIGN(4);
+#endif
 	 	KEEP(*(.eh_frame*))
 		*(.note.gnu.build-id)
 

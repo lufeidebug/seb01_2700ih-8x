@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __ARC_VCS_INT__
-#define __ARC_VCS_INT__
+#ifndef __ARC_VCS_INT_H__
+#define __ARC_VCS_INT_H__
 
 #include "gaf_cfg.h"
 

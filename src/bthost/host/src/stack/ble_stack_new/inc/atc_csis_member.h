@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __ATC_CSISM__
-#define __ATC_CSISM__
+#ifndef __ATC_CSISM_H__
+#define __ATC_CSISM_H__
 #include "gaf_cfg.h"
 #include "csis.h"
 

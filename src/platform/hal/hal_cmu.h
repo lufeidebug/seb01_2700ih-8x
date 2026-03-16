@@ -42,6 +42,23 @@ extern "C" {
 #define CMU_SIMU_RES_PASSED                 (0x9A55)
 #define CMU_SIMU_RES_FAILED                 (0xFA11)
 
+#ifdef CPU_TO_DEV_ADDR_REMAP
+#ifdef __ICCARM__
+#define ADDR_CPU_TO_DEV(a)                  ((uint32_t)addr_remap_cpu_to_dev((uint32_t)(a)))
+#define ADDR_DEV_TO_CPU(a)                  ((uint32_t)addr_remap_dev_to_cpu((uint32_t)(a)))
+#else
+#define ADDR_CPU_TO_DEV(a)                  ((typeof(a))addr_remap_cpu_to_dev((uint32_t)(a)))
+#define ADDR_DEV_TO_CPU(a)                  ((typeof(a))addr_remap_dev_to_cpu((uint32_t)(a)))
+#endif
+#else
+#define ADDR_CPU_TO_DEV(a)                  (a)
+#define ADDR_DEV_TO_CPU(a)                  (a)
+#endif
+
+#ifndef HAL_CMU_DEFAULT_CRYSTAL_FREQ
+#define HAL_CMU_DEFAULT_CRYSTAL_FREQ        26000000
+#endif
+
 enum HAL_CMU_CLK_STATUS_T {
     HAL_CMU_CLK_DISABLED,
     HAL_CMU_CLK_ENABLED,

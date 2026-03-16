@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __CSI_COMMON__
-#define __CSI_COMMON__
+#ifndef __CSI_COMMON_H__
+#define __CSI_COMMON_H__
 
 #include "gaf_cfg.h"
 

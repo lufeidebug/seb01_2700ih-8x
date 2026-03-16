@@ -93,15 +93,6 @@ struct USB_AUDIO_VENDOR_MSG_T {
     uint16_t length;
 };
 
-#ifdef USB_HID_COMMAND_ENABLE
-enum USB_AUDIO_HID_EPINT_OUT_ID_T {
-    USB_AUDIO_HID_EPINT_OUT0_ID,
-    USB_AUDIO_HID_EPINT_OUT1_ID,
-    USB_AUDIO_HID_EPINT_OUT2_ID,
-    USB_AUDIO_HID_EPINT_ID_QTY
-};
-#endif
-
 typedef void (*USB_AUDIO_ITF_CALLBACK)(enum USB_AUDIO_ITF_ID_T id, enum USB_AUDIO_ITF_CMD_T cmd);
 typedef void (*USB_AUDIO_MUTE_CALLBACK)(enum USB_AUDIO_ITF_ID_T id, uint32_t mute);
 typedef void (*USB_AUDIO_SET_VOLUME)(enum USB_AUDIO_ITF_ID_T id, uint32_t percent);
@@ -110,9 +101,15 @@ typedef void (*USB_AUDIO_XFER_CALLBACK)(enum USB_AUDIO_ITF_ID_T id, const struct
 typedef void (*USB_AUDIO_STATE_CALLBACK)(enum USB_AUDIO_STATE_EVENT_T event, uint32_t param);
 typedef void (*HID_XFER_CALLBACK)(enum USB_AUDIO_HID_EVENT_T event, int error);
 typedef int (*USB_AUDIO_VENDOR_MSG_CALLBACK)(struct USB_AUDIO_VENDOR_MSG_T *msg);
-#ifdef USB_HID_COMMAND_ENABLE
-typedef bool (*USB_HID_EP0_RECV_CALLBACK)(struct EP0_TRANSFER *transfer);
-#endif
+typedef void (*USB_HID_EPINT_OUT_RECV_CALLBACK)(uint8_t* data,uint32_t length);
+typedef bool (*USB_HID_EPINT_OUT_CALLBACK)(struct EP0_TRANSFER *transfer);
+typedef void (*COMMAND_HID_XFER_CALLBACK)(int error);
+
+typedef struct{
+    USB_HID_EPINT_OUT_CALLBACK set_report_setup_callback;
+    USB_HID_EPINT_OUT_CALLBACK set_report_data_callback;
+    USB_HID_EPINT_OUT_CALLBACK get_report_setup_callback;
+}USB_HID_EPINT_OUT_CFG_T;
 
 struct USB_AUDIO_CFG_T {
     uint32_t recv_sample_rate;
@@ -127,6 +124,7 @@ struct USB_AUDIO_CFG_T {
     USB_AUDIO_XFER_CALLBACK xfer_callback;
     HID_XFER_CALLBACK hid_send_callback;
     USB_AUDIO_VENDOR_MSG_CALLBACK vendor_msg_callback;
+    COMMAND_HID_XFER_CALLBACK command_hid_send_callback;
 };
 
 int usb_audio_open(const struct USB_AUDIO_CFG_T *cfg);
@@ -153,21 +151,34 @@ int usb_audio_set_recv_pos(uint32_t pos);
 
 int usb_audio_set_send_pos(uint32_t pos);
 
+
+#ifdef USB_AUDIO_CUSTOM_USB_HID_KEY
+void usb_audio_hid_set_event(uint16_t event, uint32_t report_id, uint32_t report_size, int state);
+void mic_mute_state_set(uint8_t state);
+uint8_t mic_mute_state_get(void);
+#else
 void usb_audio_hid_set_event(enum USB_AUDIO_HID_EVENT_T event, int state);
+#endif
 
 const char *usb_audio_get_hid_event_name(enum USB_AUDIO_HID_EVENT_T event);
 
-#ifdef USB_HID_COMMAND_ENABLE
-void hid_epint_in_send_report(uint8_t * cmdParam, uint32_t cmdParam_len);
+void hid_epint_in_send_report(uint8_t* cmdParam, uint32_t cmdParam_len);
 
-void usb_hid_enint_out_callback_register(USB_HID_EP0_RECV_CALLBACK func, USB_HID_EP0_RECV_CALLBACK func1, USB_HID_EP0_RECV_CALLBACK func2);
-#endif
+void usb_hid_enint_out_callback_register(USB_HID_EPINT_OUT_RECV_CALLBACK func);
 
 int usb_audio_start_recv2(uint8_t *buf, uint32_t pos, uint32_t size);
 
 void usb_audio_stop_recv2(void);
 
 int usb_audio_set_recv2_pos(uint32_t pos);
+
+void usb_hid_epint_out_calbacks_register(USB_HID_EPINT_OUT_CFG_T *cb);
+
+#ifdef __HID_REPORT_DESCRIPTOR_CUSTOM__
+void set_hid_report_descriptor(uint8_t *desc, uint16_t len);
+
+uint8_t *get_hid_report_descriptor(void);
+#endif
 
 #ifdef __cplusplus
 }

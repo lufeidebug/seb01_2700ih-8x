@@ -110,6 +110,7 @@ typedef enum {
     APP_DEV_POLICY_OTHER_START   = 0x40,
     APP_DEV_POLICY_RELOAD_COMPLETE = APP_DEV_POLICY_OTHER_START,
     APP_DEV_POLICY_TWS_CONNECTED,
+    APP_DEV_POLICY_TWS_DISCONNECTED,
     APP_DEV_POLICY_OTHER_END
 } app_dev_mgr_policy_type_t;
 
@@ -136,6 +137,13 @@ typedef enum {
     APP_DEV_SET_PEER_BLE_STATE,
     APP_DEV_CLEAR_PEER_BLE_STATE,
 } app_dev_mgr_updta_peer_state_t;
+
+typedef enum {
+    APP_DEV_RELEASE_NONE = 0,
+    APP_DEV_RELEASE_LIMIT = 0x01,
+    APP_DEV_RELEASE_NOSUPPORT = 0x02,
+    APP_DEV_RELEASE_USER = 0x03,
+} app_dev_mgr_release_reason_t;
 
 typedef struct
 {
@@ -173,6 +181,7 @@ typedef struct
     bool                       master_req;
     bool                       bis_mode;
     app_dev_mgr_policy_type_t  evt_type;
+    uint8_t                    reason;
     bt_bdaddr_t                address;
     app_dev_mgr_send_dev_t     device[BT_DEVICE_NUM + 1];
 } dev_send_mgr_t;
@@ -219,9 +228,15 @@ bool app_dev_mgr_reconfig_lea_max_links(uint8_t lea_max_num, uint8_t dul_max_num
 
 app_dev_mgr_dev_ctx_t *app_dev_mgr_find_device(const bt_bdaddr_t *addr);
 
-bt_bdaddr_t *app_dev_mgr_find_low_prio_dev(const bt_bdaddr_t  *reserved_device,bool need_prio_bt,bool need_prio_lea);
+bt_bdaddr_t *app_dev_mgr_find_low_bt_prio_dev(const bt_bdaddr_t  *reserved_device);
 
 app_dev_sorted_result_t app_ui_dev_mgr_sort_device_by_priority(bool need_sort_bt, bool need_sort_lea);
+
+app_dev_mgr_link_state_t app_dev_mgr_get_dev_link_state(const bt_bdaddr_t  *addr);
+
+/*******************************bta adapter api****************************/
+void app_dev_mgr_register_adapter_devices_limite_callback(bool (*cb)(const bt_bdaddr_t *addr, const uint8_t *cod, bt_bdaddr_t *preempt));
+
 #ifdef __cplusplus
 }
 #endif

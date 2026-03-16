@@ -37,7 +37,13 @@ BT_SVC_MODULE_IBRT_ENABLED := 1
 endif
 
 ifeq ($(BT_SVC_FW_PRODUCT),BT_SVC_FW_PRODUCT_HEADSET)
-BT_SVC_MODULE_BT_ENABLED := 1
+BT_SVC_MODULE_BT_ENABLED := 0
+BT_SVC_MODULE_TWS_ENABLED := 0
+BT_SVC_MODULE_IBRT_ENABLED := 0
+endif
+
+ifeq ($(BT_SVC_FW_PRODUCT),BT_SVC_FW_PRODUCT_GLASSES)
+BT_SVC_MODULE_BT_ENABLED := 0
 BT_SVC_MODULE_TWS_ENABLED := 0
 BT_SVC_MODULE_IBRT_ENABLED := 0
 endif
@@ -178,11 +184,13 @@ export BT_SERVICE_API_INCLUDES := \
 ## audio policy includes header file path
 ## ------------------------------------------------------------------- ##
 export BLE_AUD_DIR_PATH := bthost/host/src/service/audio_policy/lea
-ifeq ($(BT_SVC_FW_PRODUCT),BT_SVC_FW_PRODUCT_HEADSET)
-export BT_AUD_DIR_PATH := bthost/host/src/service/audio_policy/normal
-else
+
+ifeq ($(BT_SVC_MODULE_IBRT_ENABLED),1)
 export BT_AUD_DIR_PATH := bthost/host/src/service/audio_policy/tws
+else
+export BT_AUD_DIR_PATH := bthost/host/src/service/audio_policy/normal
 endif
+
 export BT_AUD_FOCUS_DIR_PATH := bthost/host/src/service/audio_policy/bt_focus/inc
 
 export BT_BLE_AUDIO_POLICY_INCLUDES := \

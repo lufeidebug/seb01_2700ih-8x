@@ -38,6 +38,9 @@
 
 #define DAC_DC_ADJUST_STEP                  90
 
+#define ANA_DC_SIGN_BIT                     (13)
+#define ANA_DC_REG_MSB_POS                  (12)
+
 //adc dc calib
 //ana_76 reg_codec_adcB_ibsel_offset[3:0] | ana_77 reg_codec_adcB_offset_bit[0:12]
 //0x4                                     | {5,5,10,10,20,40,40,80,160,320,320,640,1280};
@@ -98,6 +101,8 @@
 #ifndef ANC_VMIC_CFG
 #define ANC_VMIC_CFG                        (AUD_VMIC_MAP_VMIC1)
 #endif
+
+#define AUDIO_ADC_SET_LARGE_ANA_DC
 
 #define CODEC_ADCA_EN_RADC_OFFSET           RESERVED_ANA_15_0(1 << 1)
 #define CODEC_ADCA_RDAC_OFFSET_BIT          RESERVED_ANA_15_0(1 << 2)
@@ -324,8 +329,6 @@ static void analog_aud_enable_dac_with_classab(uint32_t dac, bool switch_pa)
         analog_write(ANA_REG_95, val_95);
         val_92 |= REG_CODEC_TX_EN_DACLDO;
         analog_write(ANA_REG_92, val_92);
-        val_96 |= REG_CODEC_TX_EN_LPPA_L;
-        analog_write(ANA_REG_96, val_96);
         osDelay(1);
         val_95 |= REG_CODEC_TX_EN_S1PA_L;
         analog_write(ANA_REG_95, val_95);
@@ -351,10 +354,7 @@ static void analog_aud_enable_dac_with_classab(uint32_t dac, bool switch_pa)
         analog_write(ANA_REG_9E, val_9e);
         val_92 &= ~REG_CODEC_TX_EN_DACLDO;
         analog_write(ANA_REG_92, val_92);
-        val_96 &= ~REG_CODEC_TX_EN_LPPA_L;
-        analog_write(ANA_REG_96, val_96);
         osDelay(1);
-
         val_96 &= ~CFG_TX_TREE_EN;
         analog_write(ANA_REG_96, val_96);
         osDelay(1);
@@ -370,16 +370,28 @@ static void analog_aud_enable_dac_with_classab(uint32_t dac, bool switch_pa)
 
 static void analog_aud_enable_dac_pa_classab(uint32_t dac)
 {
-    uint16_t val_95;
+    uint16_t val_95, val_96;
 
     analog_read(ANA_REG_95, &val_95);
+    analog_read(ANA_REG_96, &val_96);
 
     if (dac & (AUD_CHANNEL_MAP_CH0 | AUD_CHANNEL_MAP_CH1)) {
+        val_96 |= REG_CODEC_TX_EN_LPPA_L;
+        analog_write(ANA_REG_96, val_96);
         val_95 |= REG_CODEC_TX_EN_S4PA_L;
+        analog_write(ANA_REG_95, val_95);
+        hal_sys_timer_delay_us(100);
+        val_96 &= ~REG_CODEC_TX_EN_LPPA_L;
+        analog_write(ANA_REG_96, val_96);
     } else {
+        val_96 |= REG_CODEC_TX_EN_LPPA_L;
+        analog_write(ANA_REG_96, val_96);
+        hal_sys_timer_delay_us(100);
         val_95 &= ~REG_CODEC_TX_EN_S4PA_L;
+        analog_write(ANA_REG_95, val_95);
+        val_96 &= ~REG_CODEC_TX_EN_LPPA_L;
+        analog_write(ANA_REG_96, val_96);
     }
-    analog_write(ANA_REG_95, val_95);
 }
 
 static void analog_aud_enable_dac(uint32_t dac)
@@ -396,15 +408,7 @@ static void analog_aud_enable_dac_pa(uint32_t dac)
 {
     if (dac & (AUD_CHANNEL_MAP_CH0 | AUD_CHANNEL_MAP_CH1)) {
         analog_aud_enable_dac_pa_internal(dac);
-
-#ifdef AUDIO_OUTPUT_DC_CALIB_ANA
-        hal_codec_dac_sdm_reset_clear();
-#endif
     } else {
-#ifdef AUDIO_OUTPUT_DC_CALIB_ANA
-        hal_codec_dac_sdm_reset_set();
-#endif
-
         analog_aud_enable_dac_pa_internal(dac);
     }
 }
@@ -521,6 +525,24 @@ static void analog_aud_enable_sar_adc(enum ANA_CODEC_USER_T user, bool en)
             analog_write(ANA_REG_266, val);
         }
         analog_aud_enable_codec_bias_lp(!!sar_adc_map);
+    }
+}
+#endif
+
+#ifdef AUDIO_ADC_SET_LARGE_ANA_DC
+static void analog_set_large_adc_dc(bool enable)
+{
+    uint16_t val;
+    if (enable) {
+        analog_read(ANA_REG_85, &val);
+        val |= CODEC_ADCA_EN_RADC_OFFSET | CODEC_ADCA_RDAC_OFFSET_BIT | CODEC_ADCB_EN_RADC_OFFSET |
+        CODEC_ADCB_RDAC_OFFSET_BIT | CODEC_ADCC_EN_RADC_OFFSET | CODEC_ADCC_RDAC_OFFSET_BIT;
+        analog_write(ANA_REG_85, val);
+    } else {
+        analog_read(ANA_REG_85, &val);
+        val &= ~(CODEC_ADCA_EN_RADC_OFFSET | CODEC_ADCA_RDAC_OFFSET_BIT | CODEC_ADCB_EN_RADC_OFFSET |
+        CODEC_ADCB_RDAC_OFFSET_BIT | CODEC_ADCC_EN_RADC_OFFSET | CODEC_ADCC_RDAC_OFFSET_BIT);
+        analog_write(ANA_REG_85, val);
     }
 }
 #endif
@@ -995,7 +1017,7 @@ uint16_t analog_aud_dac_dc_diff_to_val(int32_t diff)
     // BIT  3: x2
     // BIT  2: x2
     // BIT  1: x1
-    // BIT  1: x1
+    // BIT  0: x1
 
     val = 0;
     if (diff < 0) {
@@ -1033,6 +1055,27 @@ uint16_t analog_aud_dac_dc_diff_to_val(int32_t diff)
     return val;
 }
 
+uint16_t analog_aud_dc_diff_to_val(int32_t val, int32_t val_offset[])
+{
+    int32_t i = 0;
+    uint16_t reg_val = 0;
+    int32_t val_tgt = val;
+
+    if (val > 0) {
+        reg_val |= (1 << ANA_DC_SIGN_BIT);
+    }
+
+    for (i = ANA_DC_REG_MSB_POS; i >= 0; i--) {
+        if (ABS(val) >= ABS(val_offset[i])) {
+            val = val + val_offset[i];
+            reg_val |= (1 << i);
+        }
+    }
+    ANALOG_INFO_TRACE(0, "val_tgt=%d offset:0x%04x result:%d", val_tgt, reg_val, val);
+
+    return reg_val;
+}
+
 uint16_t analog_aud_dc_calib_val_to_efuse(uint16_t val)
 {
     int i;
@@ -1056,6 +1099,38 @@ int16_t analog_aud_dac_dc_get_step(void)
 
 void analog_aud_save_dc_calib(uint16_t val)
 {
+}
+
+void analog_aud_dre_dc_sel(bool en)
+{
+    uint16_t val;
+    analog_read(ANA_REG_A0, &val);
+    if (en) {
+        val |= ANADRE_DC_SEL;
+    } else {
+        val &= ~ANADRE_DC_SEL;
+    }
+    analog_write(ANA_REG_A0, val);
+}
+
+void analog_aud_dc_calib_set_dre_ana_dc(uint32_t offs, uint16_t dc_offs_l, uint16_t dc_offs_r)
+{
+    uint16_t val;
+
+    ANALOG_INFO_TRACE(3, "set_dre_ana_dc offs = %d, dc_offs_l = 0x%x, dc_offs_r = 0x%x", offs, dc_offs_l, dc_offs_r);
+
+    analog_read(ANA_REG_A0 + (uint16_t)offs, &val);
+    val = SET_BITFIELD(val, REG_CODEC_TX_EAR_OFF_BITL_1, dc_offs_l);
+    analog_write(ANA_REG_A0 + (uint16_t)offs, val);
+}
+
+void analog_aud_codec_set_dre_gain(uint16_t gain_val_l, uint16_t gain_val_r)
+{
+    uint16_t val;
+
+    analog_read(ANA_REG_8F, &val);
+    val = SET_BITFIELD(val, REG_CODEC_TX_EAR_DRE_GAIN_L, gain_val_l);
+    analog_write(ANA_REG_8F, val);
 }
 
 void analog_aud_dc_calib_set_value(uint16_t dc_l, uint16_t dc_r)
@@ -1183,6 +1258,9 @@ void analog_aud_dac_dc_auto_calib_enable(void)
     analog_aud_set_adc_gain_direct(AUD_CHANNEL_MAP_CH0, -3);
     analog_aud_enable_adc(ANA_CODEC_USER_ADC, AUD_CHANNEL_MAP_CH0, false);
     analog_aud_enable_adc(ANA_CODEC_USER_ADC, AUD_CHANNEL_MAP_CH0, true);
+#ifdef AUDIO_ADC_SET_LARGE_ANA_DC
+    analog_set_large_adc_dc(false);
+#endif
 
     // Force ADC precharge = 1
     analog_read(ANA_REG_01, &val);
@@ -1210,6 +1288,9 @@ void analog_aud_dac_dc_auto_calib_disable(void)
 {
     analog_aud_dac_dc_auto_calib_set_mode(ANA_DAC_DC_CALIB_MODE_NORMAL);
 
+#ifdef AUDIO_ADC_SET_LARGE_ANA_DC
+    analog_set_large_adc_dc(true);
+#endif
     analog_aud_enable_adc(ANA_CODEC_USER_ADC, AUD_CHANNEL_MAP_CH0, false);
     analog_aud_enable_dac_pa(0);
     analog_aud_enable_dac(0);
@@ -1473,10 +1554,12 @@ void analog_open(void)
     val = REG_PU_OSC | REG_EXTPLL_SEL;
     analog_write(ANA_REG_84, val);
 
+#ifdef AUDIO_ADC_SET_LARGE_ANA_DC
     analog_read(ANA_REG_85, &val);
     val |= CODEC_ADCA_EN_RADC_OFFSET | CODEC_ADCA_RDAC_OFFSET_BIT | CODEC_ADCB_EN_RADC_OFFSET |
     CODEC_ADCB_RDAC_OFFSET_BIT | CODEC_ADCC_EN_RADC_OFFSET | CODEC_ADCC_RDAC_OFFSET_BIT;
     analog_write(ANA_REG_85, val);
+#endif
 
     val = REG_CODEC_TX_REGULATOR_BIT_L(8);  //need check
     analog_write(ANA_REG_8E, val);
@@ -1504,19 +1587,20 @@ void analog_open(void)
     val = DRE_GAIN_SEL_L | REG_CODEC_TX_EAR_VCM_L(2);
     analog_write(ANA_REG_96, val);
 
-    val = REG_CODEC_TX_CASN_L(2) | REG_CODEC_TX_CASP_L(2) | REG_CODEC_TX_IB_SEL_ST2_L(2);
+    val = REG_CODEC_TX_CASN_L(2) | REG_CODEC_TX_CASP_L(2) | REG_CODEC_TX_IB_SEL_ST2_L(2) | REG_CODEC_TX_OC_PATH_L;
     analog_write(ANA_REG_9B, val);
 
     val = REG_CODEC_TX_VREFBUF_CAS_L(1) | REG_CODEC_TX_VREFBUF_LOWGAIN_L(3) |
         REG_CODEC_TX_VREFBUF_CSEL_L(3);
     analog_write(ANA_REG_9C, val);
 
-    val = REG_CODEC_TX_VCMO_SEL_L | REG_CLOSE_SPA;
+    val = REG_CLOSE_SPA;
     analog_write(ANA_REG_9D, val);
 
 #ifdef AUDIO_OUTPUT_DC_CALIB_ANA
     analog_aud_dc_calib_init();
     analog_aud_dc_calib_enable(true);
+    analog_aud_dre_dc_sel(true);
 #endif
 
 #ifdef VCM_ON

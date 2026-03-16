@@ -216,7 +216,7 @@ typedef struct smp_conn_item_t
     uint32_t user_confirm_value;
     uint32_t passkey;
     uint8_t passkey_entry_repeat;
-    uint16_t connhdl;
+    uint16_t conn_dummy;
     gap_conn_item_t *conn;
     struct hci_ev_le_ltk_request ltk_req;
     smp_rx_handle_t curr_rx_handle;
@@ -275,13 +275,13 @@ bt_status_t smp_check_enable_encryption(gap_conn_item_t *conn, const gap_ltk_enc
 bt_status_t smp_check_send_pairing_rsp(gap_conn_item_t *conn, const smp_requirements_t *p_require, smp_error_code_t err_code);
 bt_status_t smp_check_send_pairing_keys(gap_conn_item_t *conn, const ble_bdaddr_t *ia, const uint8_t *irk, const uint8_t *csrk);
 void smp_receive_enc_change(gap_conn_item_t *conn, uint8_t opcode, struct hci_ev_encryption_change_v3 *p);
-void smp_input_oob_legacy_tk(uint16_t peer_type_or_connhdl, const bt_bdaddr_t *peer_addr, const uint8_t *tk);
-void smp_input_6_digit_passkey(uint16_t peer_type_or_connhdl, const bt_bdaddr_t *peer_addr, uint32_t passkey);
-void smp_input_numeric_confirm(uint16_t peer_type_or_connhdl, const bt_bdaddr_t *peer_addr, bool user_confirmed);
-void smp_input_peer_oob_auth_data(uint16_t peer_type_or_connhdl, const bt_bdaddr_t *peer_addr,
-                                  const gap_smp_oob_auth_data_t *data);
-void smp_input_local_oob_auth_data(uint16_t peer_type_or_connhdl, const bt_bdaddr_t *peer_addr,
-                                   const gap_smp_oob_auth_data_t *data);
+bt_status_t smp_input_oob_legacy_tk(uint16_t peer_type_or_connhdl, const bt_bdaddr_t *peer_addr, const uint8_t *tk);
+bt_status_t smp_input_6_digit_passkey(uint16_t peer_type_or_connhdl, const bt_bdaddr_t *peer_addr, uint32_t passkey);
+bt_status_t smp_input_numeric_confirm(uint16_t peer_type_or_connhdl, const bt_bdaddr_t *peer_addr, bool user_confirmed);
+bt_status_t smp_input_peer_oob_auth_data(uint16_t peer_type_or_connhdl, const bt_bdaddr_t *peer_addr,
+                                         const gap_smp_oob_auth_data_t *data);
+bt_status_t smp_input_local_oob_auth_data(uint16_t peer_type_or_connhdl, const bt_bdaddr_t *peer_addr,
+                                          const gap_smp_oob_auth_data_t *data);
 
 #if defined(__cplusplus)
 }

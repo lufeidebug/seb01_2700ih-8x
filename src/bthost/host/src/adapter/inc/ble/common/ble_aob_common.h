@@ -131,6 +131,13 @@ typedef enum {
 } AOB_ADV_STATE_T;
 
 typedef enum {
+    AOB_ADV_IDLE        = 0,
+    AOB_ADV_PAIRING     = 1,
+    AOB_ADV_RECONNECT   = 2,
+    AOB_ADV_UNKNOWN     = 3,
+} AOB_ADV_TYPE_T;
+
+typedef enum {
     AOB_ACL_DISCONNECTED       = 0,
     AOB_ACL_CONNECTING         = 1,
     AOB_ACL_FAILED             = 3,
@@ -524,6 +531,8 @@ typedef struct
     uint16_t hdt_rates_bf_p2c; // bit 0 - HDT2, 1 - HDT3, 2 - HDT4, 3 - HDT 6, 4 - HDT 7.5
     uint8_t hdt_mic_length; // MIC length, 0x01 - 64bits, 0x02 - 128bits
     uint8_t hdt_pkt_fmt; // 0x00: Any format pref, 0x01: Format 0, 0x02: Format 1
+    uint8_t hdt_pld_window_size_c2p; // 1 to 4 Size of the transmit payload window size c 2 p
+    uint8_t hdt_pld_window_size_p2c; // 1 to 4 Size of the transmit payload window size p 2 c
 } AOB_BAP_CIS_CFG_T;
 
 typedef enum {
@@ -567,6 +576,8 @@ typedef enum {
     AOB_EVENT_VCP_VCS_CCCD_WRITTEN_IND            = 37,
     AOB_EVENT_TMAP_READ_ROLE_CMP_IND              = 38,
     AOB_EVENT_ASE_ENABLE_REQ_IND                  = 39,
+    AOB_EVENT_MCP_MCC_SVC_CHANGED_IND             = 40,
+    AOB_EVENT_CCP_TBC_SET_CFG_CMP_IND             = 41,
 
     AOB_EVENT_LAST                                = 0xFF,
 
@@ -580,6 +591,7 @@ typedef struct {
 typedef struct {
     AOB_EVENT_HEADER_T                  header;
     AOB_ADV_STATE_T                     adv_state;
+    AOB_ADV_TYPE_T                      adv_type;
     uint8_t                             err_code;
 } AOB_EVENT_ADV_STATE_T;
 
@@ -605,7 +617,7 @@ typedef struct {
     uint8_t                             volume;
     uint8_t                             mute;
     uint8_t                             change_counter;
-    uint8_t                             reason;
+    bool                                is_local;   // volume change triggered by the local or the remote
 } AOB_EVENT_VOL_CHANGED_T;
 
 typedef struct {
@@ -633,6 +645,11 @@ typedef struct {
     AOB_MGR_STREAM_STATE_E              prev_state;
     AOB_MGR_STREAM_STATE_E              curr_state;
 } AOB_EVENT_STREAM_STATUS_CHANGED_T;
+
+typedef struct {
+    AOB_EVENT_HEADER_T                  header;
+    uint8_t                             con_lid;
+} AOB_EVENT_MCP_MCC_SVC_CHANGED_T;
 
 typedef struct {
     AOB_EVENT_HEADER_T                  header;
@@ -708,6 +725,14 @@ typedef struct {
     uint8_t                             con_lid;
     void                                *param;
 } AOB_EVENT_CALL_ACTION_RESULT_IND_T;
+
+typedef struct {
+    AOB_EVENT_HEADER_T                  header;
+    uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
+    uint8_t                             char_type;
+    uint8_t                             err_code;
+} AOB_EVENT_CCP_SET_CFG_CMP_IND_T;
 
 typedef struct {
     AOB_EVENT_HEADER_T                  header;
@@ -927,11 +952,12 @@ typedef enum
 */
 typedef struct
 {
+    void (*ble_audio_raw_connected_cb)(uint8_t con_lid);    // BLE Link Connected
     void (*ble_tws_sirk_refreshed)();
-    void (*ble_audio_adv_state_changed)(AOB_ADV_STATE_T state, uint8_t err_code);
+    void (*ble_audio_adv_state_changed)(AOB_ADV_STATE_T state, AOB_ADV_TYPE_T type, uint8_t err_code);
     void (*ble_tws_acl_state_changed)(uint32_t evt_type, ble_event_handled_t *p);
     void (*ble_mob_acl_state_changed)(uint32_t evt_type, ble_bdaddr_t *peer_addr, uint8_t con_idx,uint8_t err_code);
-    void (*ble_vol_changed)(uint8_t con_lid, uint8_t volume, uint8_t mute, uint8_t change_counter, uint8_t reason);
+    void (*ble_vol_changed)(uint8_t con_lid, uint8_t volume, uint8_t mute, uint8_t change_counter, bool is_local);
     void (*ble_vcp_vcs_cccd_changed_cb)(uint8_t con_lid, uint8_t char_type, bool ntf_enable);
     void (*ble_vocs_offset_changed_cb)(int16_t offset, uint8_t output_lid);
     void (*ble_vocs_bond_data_changed_cb)(uint8_t output_lid, uint8_t cli_cfg_bf);
@@ -939,6 +965,7 @@ typedef struct
     void (*ble_media_stream_status_change_cb)(uint8_t con_lid, uint8_t ase_lid,
                                               AOB_MGR_STREAM_STATE_E prev_state, AOB_MGR_STREAM_STATE_E curr_state);
     void (*ble_media_mcc_svc_discovered_cb)(uint8_t con_lid, uint8_t err_code);
+    void (*ble_media_svc_changed_cb)(uint8_t con_lid);
     void (*ble_mcp_mcc_char_value_cb)(uint8_t con_lid, uint8_t media_lid, uint8_t char_type, uint16_t val_len, const uint8_t *val);
     void (*ble_media_mic_state_cb)(uint8_t mute);
     void (*ble_media_iso_link_quality_cb)(void *event);
@@ -978,6 +1005,7 @@ typedef struct
     void (*ble_audio_connected_cb)(uint8_t con_lid, uint8_t *peer_bdaddr);
     void (*ble_mcp_set_cccd_cmp_cb)(uint8_t con_lid, uint8_t media_lid, uint8_t char_type, uint8_t err_code);
     void (*ble_tmap_role_read_cmp_cb)(uint8_t con_lid, uint16_t status, uint16_t role_bf);
+    void (*ble_tbc_set_cccd_cmp_cb)(uint8_t con_lid, uint8_t bearer_lid, uint8_t char_type, uint8_t err_code);
 } BLE_AUD_CORE_EVT_CB_T;
 
 typedef struct

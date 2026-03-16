@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __ACC_MCC__
-#define __ACC_MCC__
+#ifndef __ACC_MCC_H__
+#define __ACC_MCC_H__
 
 #include "gaf_prf.h"
 #include "gaf_cfg.h"
@@ -99,12 +99,22 @@ typedef struct mcc_init_cfg
     uint16_t pref_mtu;
 } mcc_init_cfg_t;
 
+typedef struct mcc_char_info
+{
+    /// Characteristic value handle
+    uint16_t val_hdl;
+    /// Characteristic properties
+    uint8_t properties;
+} mcc_char_info_t;
+
 struct mcc_prf_svc_info
 {
     /// Service handler range
     gatt_prf_svc_range_t svc_range;
     /// Service UUID
     uint16_t uuid;
+    /// MCS Character info
+    mcc_char_info_t char_info[MCS_CHAR_TYPE_MAX];
 };
 
 typedef struct mcc_search_cp_operation

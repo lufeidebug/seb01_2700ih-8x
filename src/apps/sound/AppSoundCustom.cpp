@@ -681,7 +681,7 @@ static ibrt_ext_conn_policy_cb_t conn_policy_cbs = {
 };
 
 #if BLE_AUDIO_ENABLED
-static void soundLeaAdvStateChanged(AOB_ADV_STATE_T state, uint8_t err_code)
+static void soundLeaAdvStateChanged(AOB_ADV_STATE_T state, AOB_ADV_TYPE_T type, uint8_t err_code)
 {
     SOUND_TRACE(0,"Custom:LEA:adv state changed=%d", state);
     switch (state) {

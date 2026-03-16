@@ -18,7 +18,6 @@
 
 #include "bt_le_types.h"
 #include "bt_lea_types.h"
-#include "bt_gatt_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +33,16 @@ extern "C" {
  *
  ****************************************************************************************
  */
+
+typedef struct
+{
+    // Scan window
+    uint16_t scan_window_ms;
+    // Scan Interval
+    uint16_t scan_interval_ms;
+    // Scan Duration
+    uint16_t scan_duration_ms;
+} bta_ble_scan_param_t;
 
 /* --------------------------------------------------------------------------
  * BLE Core Event & Connection
@@ -58,13 +67,6 @@ void bta_ble_unregister_event_callback(bt_ble_core_evt_handler_func cb);
  * @return      true if address found, false otherwise
  */
 bool bta_ble_get_addr_by_conidx(uint8_t conidx, ble_bdaddr_t *addr);
-
-/**
- * @brief       Get connection index by BLE device address
- * @param[in]   addr  BLE device address
- * @return      Connection index if found, otherwise invalid index
- */
-uint8_t bta_ble_get_conidx_by_addr(const ble_bdaddr_t *addr);
 
 /**
  * @brief       Get connection handle by connection index
@@ -94,17 +96,16 @@ int bta_ble_disconnect(const ble_bdaddr_t *addr);
 int bta_ble_disconnect_all(void);
 
 /**
- * @brief       Update BLE connection parameters for a given device
- * @param[in]   addr                  BLE device address
+ * @brief       Set and update preferred BLE connection parameters for a given device or all connected devices
+ * @param[in]   addr                  BLE device address, if addr == NULL, means all connected devices
  * @param[in]   min_intv_ms           Minimum connection interval in milliseconds
  * @param[in]   max_intv_ms           Maximum connection interval in milliseconds
  * @param[in]   superv_timeout_ms     Supervision timeout in milliseconds
- * @param[in]   max_peripheral_latency
- *                                       Maximum peripheral latency
+ * @param[in]   max_latency           Maximum peripheral latency
  * @return      0 if successful, non-zero otherwise
  */
 int bta_ble_update_conn_param(const ble_bdaddr_t *addr, uint32_t min_intv_ms, uint32_t max_intv_ms,
-                              uint32_t superv_timeout_ms, uint8_t max_peripheral_latency);
+                              uint32_t superv_timeout_ms, uint16_t max_latency);
 
 /**
  * @brief       Get current connection interval for a device
@@ -257,6 +258,13 @@ int bta_ble_custom_adv_stop(bt_ble_gap_adv_activity_t actv_user);
 bool bta_ble_custom_adv_is_enabled(bt_ble_gap_adv_activity_t actv_user);
 
 /**
+ * @brief       Register a customer advertising event callback
+ * @param[in]   cb  Customer advertising event callback
+ * @return      0 if successful, non-zero otherwise
+ */
+int bta_ble_custom_adv_evt_cb_register(bt_ble_custom_adv_event_func cb);
+
+/**
  * @brief       Deregister BLE advertising for a specific user
  * @param[in]   user  Advertising user identifier
  * @return      0 if successful, non-zero otherwise
@@ -270,6 +278,24 @@ int bta_ble_deregister_adv(bt_ble_gap_adv_user_t user);
  * @return      0 if successful, non-zero otherwise
  */
 int bta_ble_force_switch_adv(bt_ble_adv_switch_user_t user, bool enable);
+
+/* --------------------------------------------------------------------------
+ * BLE Scan device API
+ * ------------------------------------------------------------------------*/
+/**
+ * @brief       Start to scan peripheral devices advertising
+ *
+ * @param[in]   param   Scan parameters
+ * @return      0 if successful, non-zero otherwise
+ *
+ */
+int bta_ble_gap_start_scan(bta_ble_scan_param_t *param);
+
+/**
+ * @brief       Stop to scan peripheral devices advertising
+ * @return      0 if successful, non-zero otherwise
+ */
+int bta_ble_gap_stop_scan(void);
 
 /**
  ****************************************************************************************
@@ -444,6 +470,64 @@ int bta_lea_gattc_delete_all_cache(void);
  * @return      true if the device supports LE Audio, false otherwise
  */
 bool bta_is_remote_support_lea(const ble_bdaddr_t *addr);
+
+/**
+ * @brief       Enable or Disable LEA Feature.
+ *
+ * @param[in] enable Enable or Disable
+ */
+void bta_lea_switch(bool enable);
+
+/**
+ * @brief Enable and choose to start BIS scan procedure, including scan
+ *        and select with location bf and broadcast code preset.
+ *
+ * @param[in]   select_loc_bf  Bitfield indicating the selected Broadcast Sink
+ *              locations (e.g. left, right, stereo).
+ * @param[in]   p_bcast_code  Pointer to the Broadcast Code used to decrypt
+ *              encrypted BIS streams.
+ * @param[in]   enable_scan  Enable broadcast source scan procedure.
+ * @param[in]   p_cbs  Event callback set used to notify BIS Sink related
+ *              scan, PA, and BIG state changes.
+ *
+ * @return      0 if successful, non-zero otherwise
+ */
+int bta_lea_bis_set_sink_param(uint32_t select_loc_bf, const uint8_t *p_bcast_code,
+                               bool enable_scan, bt_ble_bis_sink_evt_cbs_t *p_cbs);
+
+/**
+ * @brief Enable or disable BIS source scan for BIS sink procedure,
+ *        should set sink param first.
+ *
+ * @param[in]   enable  Enable or disable broadcast source scan procedure.
+ * @return      0 if successful, non-zero otherwise
+ */
+int bta_lea_bis_enable_sink_scan(bool enable);
+
+/**
+ * @brief Start BIS synchronization procedure. Initiates synchronization to a
+ *        Broadcast Isochronous Group (BIG) for a given broadcaster. Should set
+ *        sink param first.
+ *
+ * @param[in]   enable  Enable bis sync or stop (cancel optinal) sync.
+ * @param[in]   cancel  Cancel bis sync first before stop sync.
+ * @param[in]   p_src_addr  Pointer to the broadcaster device address.
+ * @param[in]   src_adv_sid  Extended Advertising SID associated with the broadcaster.
+ * @param[in]   sync_timeout_s  BIG synchronization timeout, in seconds.
+ *
+ * @return      0 on success, or a negative error code on failure.
+ */
+int bta_lea_bis_enable_bis_sync(bool enable, bool cancel, ble_bdaddr_t *p_src_addr,
+                                uint8_t src_adv_sid, uint16_t sync_timeout_s);
+
+/**
+ * @brief Send PA synchronization info to peer tws device procedure.
+ *
+ * @param[in]   sync_hdl  Periodic Advertising Train local handle
+ *
+ * @return      0 on success, or a negative error code on failure.
+ */
+int bta_lea_bis_scan_past_info_send(uint16_t sync_hdl);
 
 #ifdef __cplusplus
 }

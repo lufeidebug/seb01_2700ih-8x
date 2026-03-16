@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __APP_UI_BT_DEVICE__
-#define __APP_UI_BT_DEVICE__
+#ifndef __APP_UI_BT_DEVICE_H__
+#define __APP_UI_BT_DEVICE_H__
 
 
 #include "stdint.h"
@@ -65,7 +65,6 @@ typedef enum
 typedef enum
 {
     DESTROY_SENDING,
-    DESTROY_RECEIVING,
     DESTROY_PROCESSING,
     DESTROY_NONE,
 } app_ui_destroy_state_t;
@@ -113,6 +112,7 @@ typedef struct
     bool exchangeinfo_req;
     peer_event_state_t peer_event_state;
     uint16_t           continue_try_max_times;
+    uint16_t           retry_ibrt_times;
     link_evt_run_result_t evt_run_result;
 } app_ui_btmob_sm_t;
 
@@ -137,7 +137,8 @@ bool app_ui_btmob_sm_start_try_reconnect(app_ui_btmob_sm_t *me);
 void app_ui_btmob_sm_terminate_reconnect(app_ui_btmob_sm_t *me);
 const char* btmob_sm_state_to_string(btmob_sm_state_e state);
 bool app_ui_notify_switch_ui_role(bool switch2master);
-
+uint8_t app_ui_get_page_continue_times(app_ui_btmob_sm_t *device);
+bool app_ui_set_page_continue_times(app_ui_btmob_sm_t *device);
 #ifdef __cplusplus
 }
 #endif

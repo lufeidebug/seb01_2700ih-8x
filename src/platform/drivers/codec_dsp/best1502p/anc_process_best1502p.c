@@ -1240,6 +1240,8 @@ typedef struct _fir_parameter
 
 #define ANC_GAIN_RAMP_THRESHLD (40)
 
+#define ANC_GAIN_RAMP_GAIN_PRE (ANC_GAIN_RAMP_THRESHLD + 10)
+
 #define ANC_GAIN_RAMP_ZERO (10)
 
 #define ANC_GAIN_RAMP_BURST_THRESHLD (ANC_GAIN_RAMP_THRESHLD * 10000)
@@ -3527,6 +3529,13 @@ static int iir0_gaina_cfg_gain(void)
 
     //  LOG_I("%s:iir0_gaina_ch0:%d,iir0_gaina_ch1:%d",__func__,iir0_gaina_ch0,iir0_gaina_ch1);
 
+    if (iir0_gaina_ch0 < ANC_GAIN_RAMP_THRESHLD) {
+        iir0_gaina_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+    if (iir0_gaina_ch1 < ANC_GAIN_RAMP_THRESHLD) {
+        iir0_gaina_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+
     lock = int_lock();
     anc_iir_gain_update->codec_iir0_gain_ext_update = 0;
 
@@ -3559,6 +3568,13 @@ static int iir0_gainb_cfg_gain(void)
 
     //  LOG_I("%s:iir0_gainb_ch0:%d,iir0_gainb_ch1:%d",__func__,iir0_gainb_ch0,iir0_gainb_ch1);
 
+    if (iir0_gainb_ch0 < ANC_GAIN_RAMP_THRESHLD) {
+        iir0_gainb_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+    if (iir0_gainb_ch1 < ANC_GAIN_RAMP_THRESHLD) {
+        iir0_gainb_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+
     lock = int_lock();
     anc_iir_gain_update->codec_iir0_gain_ext_update = 0;
 
@@ -3587,6 +3603,13 @@ static int iir1_gaina_cfg_gain(void)
 
     LOG_I( "%s:iir1_gaina_ch0:%d,iir1_gaina_ch1:%d", __func__, iir1_gaina_ch0, iir1_gaina_ch1);
 
+    if (iir1_gaina_ch0 < ANC_GAIN_RAMP_THRESHLD) {
+        iir1_gaina_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+    if (iir1_gaina_ch1 < ANC_GAIN_RAMP_THRESHLD) {
+        iir1_gaina_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+
     lock = int_lock();
     anc_iir_gain_update->codec_iir1_gain_ext_update = 0;
     *codec_iir1_gaina_ext_ch0 = iir1_gaina_ch0;
@@ -3610,6 +3633,13 @@ static int iir1_gainb_cfg_gain(void)
     iir1_gainb_ch1 = (int32)((((float)dehowling_ramp_coef_l / 512.0f) * ((float)dehowling_ramp_gain_l / 512.0f)) * FIXED_GAIN_RAMP_Q);
 
     LOG_I( "%s:iir1_gainb_ch0:%d,iir1_gainb_ch1:%d", __func__, iir1_gainb_ch0, iir1_gainb_ch1);
+
+    if (iir1_gainb_ch0 < ANC_GAIN_RAMP_THRESHLD) {
+        iir1_gainb_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+    if (iir1_gainb_ch1 < ANC_GAIN_RAMP_THRESHLD) {
+        iir1_gainb_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
 
     lock = int_lock();
     anc_iir_gain_update->codec_iir1_gain_ext_update = 0;
@@ -3640,6 +3670,14 @@ static int iir2_gaina_cfg_gain(void)
 #endif
 
     //    LOG_I("%s:iir2_gaina_ch0:%d,iir2_gaina_ch1:%d",__func__,iir2_gaina_ch0,iir2_gaina_ch1);
+
+    if (iir2_gaina_ch0 < ANC_GAIN_RAMP_THRESHLD) {
+        iir2_gaina_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+    if (iir2_gaina_ch1 < ANC_GAIN_RAMP_THRESHLD) {
+        iir2_gaina_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+
     lock = int_lock();
     anc_iir_gain_update->codec_iir2_gain_ext_update = 0;
 
@@ -3671,6 +3709,14 @@ static int iir2_gainb_cfg_gain(void)
 #endif
 
     // LOG_I("%s:iir2_gainb_ch0:%d,iir2_gainb_ch1:%d",__func__,iir2_gainb_ch0,iir2_gainb_ch1);
+
+    if (iir2_gainb_ch0 < ANC_GAIN_RAMP_THRESHLD) {
+        iir2_gainb_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+    if (iir2_gainb_ch1 < ANC_GAIN_RAMP_THRESHLD) {
+        iir2_gainb_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+
     lock = int_lock();
     anc_iir_gain_update->codec_iir2_gain_ext_update = 0;
 
@@ -3832,6 +3878,14 @@ static int iir1_gaina_cfg_gain(void)
 #endif
 
     //  LOG_I("%s:iir1_gaina_ch0:%d,iir1_gaina_ch1:%d",__func__,iir1_gaina_ch0,iir1_gaina_ch1);
+
+    if (iir1_gaina_ch0 < ANC_GAIN_RAMP_THRESHLD) {
+        iir1_gaina_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+    if (iir1_gaina_ch1 < ANC_GAIN_RAMP_THRESHLD) {
+        iir1_gaina_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+
     lock = int_lock();
     anc_iir_gain_update->codec_iir1_gain_ext_update = 0;
 
@@ -3865,6 +3919,13 @@ static int iir1_gainb_cfg_gain(void)
 
     //  LOG_I("%s:iir1_gainb_ch0:%d,iir1_gainb_ch1:%d",__func__,iir1_gainb_ch0,iir1_gainb_ch1);
 
+    if (iir1_gainb_ch0 < ANC_GAIN_RAMP_THRESHLD) {
+        iir1_gainb_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+    if (iir1_gainb_ch1 < ANC_GAIN_RAMP_THRESHLD) {
+        iir1_gainb_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+
     lock = int_lock();
     anc_iir_gain_update->codec_iir1_gain_ext_update = 0;
 
@@ -3897,6 +3958,13 @@ static int iir3_gaina_cfg_gain(void)
 
     //    LOG_I("%s:iir3_gaina_ch0:%d,iir3_gaina_ch1:%d",__func__,iir3_gaina_ch0,iir3_gaina_ch1);
 
+    if (iir3_gaina_ch0 < ANC_GAIN_RAMP_THRESHLD) {
+        iir3_gaina_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+    if (iir3_gaina_ch1 < ANC_GAIN_RAMP_THRESHLD) {
+        iir3_gaina_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+
     lock = int_lock();
     anc_iir_gain_update->codec_iir3_gain_ext_update = 0;
 
@@ -3928,6 +3996,13 @@ static int iir3_gainb_cfg_gain(void)
 #endif
 
     // LOG_I("%s:iir3_gainb_ch0:%d,iir3_gainb_ch1:%d",__func__,iir3_gainb_ch0,iir3_gainb_ch1);
+
+    if (iir3_gainb_ch0 < ANC_GAIN_RAMP_THRESHLD) {
+        iir3_gainb_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
+    if (iir3_gainb_ch1 < ANC_GAIN_RAMP_THRESHLD) {
+        iir3_gainb_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
+    }
 
     lock = int_lock();
     anc_iir_gain_update->codec_iir3_gain_ext_update = 0;
@@ -5086,6 +5161,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_ff_iir_coefs1_l[0]), &ff_limiter_att_l_old);
                 iir_coef_copy(&(anc_limiter_ff_iir_coefs1_l[1]), &ff_limiter_rls_l_old);
 #endif
+                *codec_iir0_gainb_ext_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
 
 #if defined(AUDIO_ANC_TT_HW)
                 if (anc_type & ANC_TALKTHRU)
@@ -5106,6 +5182,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs1_l[0]), &tt_limiter_att_l_old);
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs1_l[1]), &tt_limiter_rls_l_old);
 #endif
+                *codec_iir0_gainb_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 #endif
                 anc_iir0_control->codec_iir0_iirb_enable = 1;
                 iir0_coef_using = 1;
@@ -5138,6 +5215,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_ff_iir_coefs0_l[0]), &ff_limiter_att_l_old);
                 iir_coef_copy(&(anc_limiter_ff_iir_coefs0_l[1]), &ff_limiter_rls_l_old);
 #endif
+                *codec_iir0_gaina_ext_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
 
 #if defined(AUDIO_ANC_TT_HW)
                 if (anc_type & ANC_TALKTHRU)
@@ -5158,6 +5236,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs0_l[0]), &tt_limiter_att_l_old);
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs0_l[1]), &tt_limiter_rls_l_old);
 #endif
+                *codec_iir0_gaina_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 #endif
 
                 anc_iir0_control->codec_iir0_iira_enable = 1;
@@ -5239,6 +5318,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_ff_iir_coefs1_r[0]), &ff_limiter_att_r_old);
                 iir_coef_copy(&(anc_limiter_ff_iir_coefs1_r[1]), &ff_limiter_rls_r_old);
 #endif
+                *codec_iir1_gainb_ext_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
 
 #if defined(AUDIO_ANC_TT_HW)
                 if (anc_type & ANC_TALKTHRU)
@@ -5259,6 +5339,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs1_r[0]), &tt_limiter_att_r_old);
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs1_r[1]), &tt_limiter_rls_r_old);
 #endif
+                *codec_iir1_gainb_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 #endif
                 anc_iir1_control->codec_iir1_iirb_enable = 1;
                 iir1_coef_using = 1;
@@ -5291,6 +5372,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_ff_iir_coefs0_r[0]), &ff_limiter_att_r_old);
                 iir_coef_copy(&(anc_limiter_ff_iir_coefs0_r[1]), &ff_limiter_rls_r_old);
 #endif
+                *codec_iir1_gaina_ext_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
 
 #if defined(AUDIO_ANC_TT_HW)
                 if (anc_type & ANC_TALKTHRU)
@@ -5311,6 +5393,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs0_r[0]), &tt_limiter_att_r_old);
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs0_r[1]), &tt_limiter_rls_r_old);
 #endif
+                *codec_iir1_gaina_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 #endif
 
                 anc_iir1_control->codec_iir1_iira_enable = 1;
@@ -5396,6 +5479,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs1_l[0]), &tt_limiter_att_l_old);
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs1_l[1]), &tt_limiter_rls_l_old);
 #endif
+                *codec_iir0_gainb_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 
                 anc_iir0_control->codec_iir0_iirb_enable = 1;
                 iir0_coef_using = 1;
@@ -5437,6 +5521,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs0_l[0]), &tt_limiter_att_l_old);
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs0_l[1]), &tt_limiter_rls_l_old);
 #endif
+                *codec_iir0_gaina_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 
                 anc_iir0_control->codec_iir0_iira_enable = 1;
                 iir0_coef_using = 0;
@@ -5507,6 +5592,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs1_r[0]), &tt_limiter_att_r_old);
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs1_r[1]), &tt_limiter_rls_r_old);
 #endif
+                *codec_iir1_gainb_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 
                 anc_iir1_control->codec_iir1_iirb_enable = 1;
                 iir1_coef_using = 1;
@@ -5548,6 +5634,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs0_r[0]), &tt_limiter_att_r_old);
                 iir_coef_copy(&(anc_limiter_tt_iir_coefs0_r[1]), &tt_limiter_rls_r_old);
 #endif
+                *codec_iir1_gaina_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 
                 anc_iir1_control->codec_iir1_iira_enable = 1;
                 iir1_coef_using = 0;
@@ -5634,6 +5721,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_fb_iir_coefs1_l[0]), &fb_limiter_att_l_old);
                 iir_coef_copy(&(anc_limiter_fb_iir_coefs1_l[1]), &fb_limiter_rls_l_old);
 #endif
+                *codec_iir2_gainb_ext_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
 
 #if defined(AUDIO_ANC_FB_MC_HW)
                 if (anc_type & ANC_MUSICCANCLE)
@@ -5655,6 +5743,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs1_l[0]), &mc_limiter_att_l_old);
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs1_l[1]), &mc_limiter_rls_l_old);
 #endif
+                *codec_iir2_gainb_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 #endif
 
                 anc_iir2_control->codec_iir2_iirb_enable = 1;
@@ -5687,6 +5776,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_fb_iir_coefs0_l[0]), &fb_limiter_att_l_old);
                 iir_coef_copy(&(anc_limiter_fb_iir_coefs0_l[1]), &fb_limiter_rls_l_old);
 #endif
+                *codec_iir2_gaina_ext_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
 
 #if defined(AUDIO_ANC_FB_MC_HW)
                 if (anc_type & ANC_MUSICCANCLE)
@@ -5707,6 +5797,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs0_l[0]), &mc_limiter_att_l_old);
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs0_l[1]), &mc_limiter_rls_l_old);
 #endif
+                *codec_iir2_gaina_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 #endif
                 anc_iir2_control->codec_iir2_iira_enable = 1;
                 iir2_coef_using = 0;
@@ -5786,6 +5877,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_fb_iir_coefs1_r[0]), &fb_limiter_att_r_old);
                 iir_coef_copy(&(anc_limiter_fb_iir_coefs1_r[1]), &fb_limiter_rls_r_old);
 #endif
+                *codec_iir3_gainb_ext_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
 
 #if defined(AUDIO_ANC_FB_MC_HW)
                 if (anc_type & ANC_MUSICCANCLE)
@@ -5807,6 +5899,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs1_r[0]), &mc_limiter_att_r_old);
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs1_r[1]), &mc_limiter_rls_r_old);
 #endif
+                *codec_iir3_gainb_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 #endif
 
                 anc_iir3_control->codec_iir3_iirb_enable = 1;
@@ -5839,6 +5932,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_fb_iir_coefs0_r[0]), &fb_limiter_att_r_old);
                 iir_coef_copy(&(anc_limiter_fb_iir_coefs0_r[1]), &fb_limiter_rls_r_old);
 #endif
+                *codec_iir3_gaina_ext_ch0 = ANC_GAIN_RAMP_GAIN_PRE;
 
 #if defined(AUDIO_ANC_FB_MC_HW)
                 if (anc_type & ANC_MUSICCANCLE)
@@ -5859,6 +5953,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs0_r[0]), &mc_limiter_att_r_old);
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs0_r[1]), &mc_limiter_rls_r_old);
 #endif
+                *codec_iir3_gaina_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
 #endif
                 anc_iir3_control->codec_iir3_iira_enable = 1;
                 iir3_coef_using = 0;
@@ -5943,6 +6038,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs1_l[1]), &mc_limiter_rls_l_old);
 #endif
 
+                *codec_iir2_gainb_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
                 anc_iir2_control->codec_iir2_iirb_enable = 1;
                 iir2_coef_using = 1;
             }
@@ -5984,6 +6080,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs0_l[1]), &mc_limiter_rls_l_old);
 #endif
 
+                *codec_iir2_gaina_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
                 anc_iir2_control->codec_iir2_iira_enable = 1;
                 iir2_coef_using = 0;
             }
@@ -6052,6 +6149,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs1_r[1]), &mc_limiter_rls_r_old);
 #endif
 
+                *codec_iir3_gainb_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
                 anc_iir3_control->codec_iir3_iirb_enable = 1;
                 iir3_coef_using = 1;
             }
@@ -6093,6 +6191,7 @@ static int anc_set_cfg_internal(const struct_anc_cfg *cfg, enum ANC_TYPE_T anc_t
                 iir_coef_copy(&(anc_limiter_mc_iir_coefs0_r[1]), &mc_limiter_rls_r_old);
 #endif
 
+                *codec_iir3_gaina_ext_ch1 = ANC_GAIN_RAMP_GAIN_PRE;
                 anc_iir3_control->codec_iir3_iira_enable = 1;
                 iir3_coef_using = 0;
             }

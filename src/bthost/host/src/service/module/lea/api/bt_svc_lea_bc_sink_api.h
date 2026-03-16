@@ -37,6 +37,8 @@ typedef enum
     BT_SVC_LEA_BC_SINK_STATE_CLOSE = 0,
     // Module opened ed state
     BT_SVC_LEA_BC_SINK_STATE_OPENED,
+    // Module pa established
+    BT_SVC_LEA_BC_SINK_STATE_PA_ESTABLISHED,
     // Module stream state
     BT_SVC_LEA_BC_SINK_STATE_STREAM_STARTED,
     // Module unknow state

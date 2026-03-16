@@ -23,22 +23,6 @@
 extern "C" {
 #endif
 
-typedef uint16_t btif_besaud_event;
-
-#define BTIF_BESAUD_EVENT_CONTROL_CONNECTED            0x21
-
-#define BTIF_BESAUD_EVENT_CONTROL_DISCONNECTED         0x22
-
-#define BTIF_BESAUD_EVENT_CONTROL_DATA_IND             0x23
-
-#define BTIF_BESAUD_EVENT_CONTROL_DATA_SENT            0x24
-
-#define BTIF_BESAUD_EVENT_CONTROL_SET_IDLE             0x30
-
-#define    BTIF_TWS_LINK_CONNECTED          (1 << 0)
-#define    BTIF_TWS_L2CAP_CONNECTED         (1 << 1)
-#define BTM_NAME_MAX_LEN                         248  /*include '\0'*/
-
 #define BT_RPOFILE_FINAL_FLAG   (0x5f)
 
 enum PROFILE_CONTEXT_FLAG
@@ -65,10 +49,6 @@ enum PROFILE_CONTEXT_FLAG
 #else
 #define BT_EARPHONE_BASIC_APP_ID       (BTIF_APP_A2DP_PROFILE_ID | BTIF_APP_AVRCP_PROFILE_ID)
 #endif
-
-typedef void (*btif_besaud_status_change_callback)(btif_besaud_event event);
-
-typedef void (*btif_besaud_data_received_callback)(uint8_t*, uint16_t);
 
 typedef void (*bt_hci_acl_ecc_softbit_handler_func)(uint16_t*,uint16_t*, uint16_t, uint8_t*);
 
@@ -144,6 +124,17 @@ typedef enum {
     BT_PROFILE_SYNC_STACK_MAP,
     BT_PROFILE_SYNC_STACK_BTGATT,
 } BT_PROFILE_SYNC_ENUM_T;
+
+typedef struct ibrt_hfp_status_t
+{
+    uint8_t audio_state;
+    uint8_t localVolume;
+    uint8_t sync_ctx;
+    bt_bdaddr_t mobile_addr;
+    uint8_t callsetup_state;
+    uint8_t call_state;
+    uint8_t callhold_state;
+} __attribute__((packed)) ibrt_hfp_status_t;
 
 #ifdef __cplusplus
 }

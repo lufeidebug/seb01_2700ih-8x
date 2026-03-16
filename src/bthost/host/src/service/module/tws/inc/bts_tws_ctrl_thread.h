@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __BTS_TWS_CTRL_THREAD__
-#define __BTS_TWS_CTRL_THREAD__
+#ifndef __BTS_TWS_CTRL_THREAD_H__
+#define __BTS_TWS_CTRL_THREAD_H__
 
 #include "app_tws_ibrt.h"
 

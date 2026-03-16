@@ -723,12 +723,12 @@ int a2dp_audio_sync_tune(uint8_t device_id, float ratio)
     sync_tune_dest_ratio = ratio;
 #if defined(BT_SVC_MODULE_IBRT_ENABLED)
     curr_device = app_bt_get_device(device_id);
-    if (bts_ibrt_if_is_profile_exchanged(&curr_device->remote)){
-        if (bts_bt_if_is_dev_link_connected(&curr_device->remote)){
+    if (bts_tws_if_is_tws_link_connected()){
+        if (bts_bt_if_is_dev_link_connected(&curr_device->remote) && bts_ibrt_if_a2dp_profile_is_exchanged(&curr_device->remote)){
             APP_TWS_IBRT_AUDIO_SYNC_TUNE_T sync_tune;
             sync_tune.factor_reference = ratio;
             sync_tune.mobile_addr = curr_device->remote;
-            if (!app_tws_ibrt_audio_sync_tune_need_skip()){
+            if (!app_tws_ibrt_audio_sync_tune_need_skip() && bts_tws_if_is_tws_link_connected()){
                 int ret = tws_ctrl_send_cmd(APP_TWS_CMD_SYNC_TUNE, (uint8_t*)&sync_tune, sizeof(APP_TWS_IBRT_AUDIO_SYNC_TUNE_T));
                 if (0 != ret)
                 {
@@ -2124,7 +2124,7 @@ exit:
             bts_bt_if_is_dev_link_connected(&curr_device->remote)){
             a2dp_audio_latency_factor_sethigh();
             if (bts_tws_if_is_tws_link_connected() &&
-                bts_ibrt_if_is_profile_exchanged(&curr_device->remote)){
+                bts_ibrt_if_a2dp_profile_is_exchanged(&curr_device->remote)){
                 float latency_factor = a2dp_audio_latency_factor_get();
                 tws_ctrl_send_cmd(APP_TWS_CMD_SET_LATENCYFACTOR, (uint8_t*)&latency_factor, sizeof(latency_factor));
                 force_audio_retrigger = true;
@@ -2212,7 +2212,7 @@ int a2dp_audio_init(uint32_t sysfreq, A2DP_AUDIO_CODEC_TYPE codec_type, A2DP_AUD
     uint32_t heap_size = 0;
     double ratio = 0;
 
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     if (a2dp_audio_retrigger_is_on_process()) {
         bts_tws_if_request_modify_tws_bandwidth(TWS_TIMING_CONTROL_USER_FAST_COMMUNICATION, true);
     }
@@ -2849,7 +2849,7 @@ void app_ibrt_send_custom_play_speed_tuning_req(uint8_t *p_buff, uint16_t length
 
 void app_ibrt_request_peer_custom_play_speed_tuning(void)
 {
-    if (a2dp_audio_context.audio_decoder.audio_decoder_get_sync_custom_data)
+    if (a2dp_audio_context.audio_decoder.audio_decoder_get_sync_custom_data && bts_tws_if_is_tws_link_connected())
     {
         AUDIO_SYNC_CUSTOM_DATA_T req;
         a2dp_audio_context.audio_decoder.audio_decoder_get_sync_custom_data(
@@ -2891,9 +2891,11 @@ void app_ibrt_sync_target_buf_cnt_req(uint8_t *p_buff, uint16_t length)
 void app_ibrt_request_peer_sync_target_buf_cnt(void)
 {
     uint16_t target_buf_cnt = a2dp_audio_context.dest_packet_mut;
-
-    tws_ctrl_send_cmd(APP_TWS_CMD_SYNC_TARGET_BUF_CNT_REQ,
-        (uint8_t *)&target_buf_cnt, sizeof(target_buf_cnt));
+    if (bts_tws_if_is_tws_link_connected())
+    {
+        tws_ctrl_send_cmd(APP_TWS_CMD_SYNC_TARGET_BUF_CNT_REQ,
+            (uint8_t *)&target_buf_cnt, sizeof(target_buf_cnt));
+    }
 }
 
 void app_ibrt_sync_target_buf_cnt_req_handler(uint16_t rsp_seq, uint8_t *ptrParam, uint16_t paramLen)
@@ -3529,7 +3531,7 @@ void a2dp_audio_decoder_param_change(int val)
     default:
         break;
     }
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     if(bts_bt_if_is_dev_link_connected(&curr_device->remote)){
         app_ibrt_if_force_audio_retrigger(RETRIGGER_BY_CODEC_PARAM_CHANGED);
     }

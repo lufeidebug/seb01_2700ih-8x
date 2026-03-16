@@ -17,8 +17,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __BAP_BASS__
-#define __BAP_BASS__
+#ifndef __BAP_BASS_H__
+#define __BAP_BASS_H__
 
 #include "gaf_prf.h"
 #include "gaf_cfg.h"

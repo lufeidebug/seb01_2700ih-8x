@@ -92,13 +92,7 @@
 #include "app_bt_stream.h"
 #endif
 
-
-#ifdef BIS_SELFSCAN_ENABLED
-extern void app_bis_selfscan_cmd_init(void);
-#endif
-
 #include "app_bt_func.h"
-#include "app_bt_cmd.h"
 #if defined(BISTO_ENABLED) || defined(__AI_VOICE__)
 #include "app_ai_if.h"
 #include "app_ai_tws.h"
@@ -185,6 +179,7 @@ extern void app_bis_selfscan_cmd_init(void);
 #endif
 
 #ifdef SPOT_ENABLED
+#include "hwtimer_list.h"
 #include "nvrecord_fp_account_key.h"
 #include "pmu.h"
 #endif
@@ -846,6 +841,27 @@ static uint8_t app_poweron_wait_case(void)
 }
 #endif
 
+#ifdef SPOT_ENABLED
+static HWTIMER_ID spot_auto_poweroff_timer_id = NULL;
+#define SPOT_AUTO_POWER_ON_TIME              30
+
+static void spot_auto_poweroff_handler(const void * param)
+{
+    MAIN_TRACE(1,"%s", __func__);
+    app_shutdown();
+}
+
+void ble_gfps_spot_auto_power_off_init(void)
+{
+    MAIN_TRACE(1,"%s,", __func__);
+    if (spot_auto_poweroff_timer_id == NULL)
+    {
+        spot_auto_poweroff_timer_id = hwtimer_alloc((HWTIMER_CALLBACK_T)spot_auto_poweroff_handler, NULL);
+    }
+    hwtimer_start(spot_auto_poweroff_timer_id, MS_TO_TICKS(SPOT_AUTO_POWER_ON_TIME*1000)); 
+}
+#endif
+
 static void POSSIBLY_UNUSED app_wait_stack_ready(void)
 {
     POSSIBLY_UNUSED uint32_t stime, etime;
@@ -855,6 +871,13 @@ static void POSSIBLY_UNUSED app_wait_stack_ready(void)
     MAIN_TRACE(1,"app_wait_stack_ready: wait:%d ms", TICKS_TO_MS(etime - stime));
     MAIN_TRACE(0,"stack init done");
     bt_add_event_callback(app_bth_event_callback, BT_EVENT_MASK_LINK_GROUP);
+
+#ifdef SPOT_ENABLED
+    if(pmu_boot_cause_get() == PMU_BOOT_CAUSE_RTC)
+    {
+        ble_gfps_spot_auto_power_off_init();
+    }
+#endif
 }
 
 extern "C" int system_shutdown(void);
@@ -1935,6 +1958,10 @@ void app_earbud_mode_init()
 
 #ifdef APP_SOUND_ENABLE
     soundInit(true);
+#elif defined(BT_SVC_FW_PRODUCT_WIRELESSMIC)
+    app_product_ui_init();
+#elif defined(BT_SVC_FW_PRODUCT_GLASSES)
+    app_bta_init();
 #else
     app_ibrt_init();
 #endif
@@ -1989,10 +2016,6 @@ int app_bluetooth_application_init()
         default:
             break;
     }
-
-#ifdef BIS_SELFSCAN_ENABLED
-    app_bis_selfscan_cmd_init();
-#endif
 
     return 0;
 }
@@ -2391,8 +2414,10 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 
 #if defined(__SNDP_REBOOT_FORCE_PAIRING__)
     if (hal_sw_bootmode_get() & HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT){
+        hal_sw_bootmode_clear(HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT);
         sndp_ui_pairing_type_set(SNDP_PAIRING_FREEMAN);
     } else if (hal_sw_bootmode_get() & HAL_SW_BOOTMODE_CUSTOM_OP2_AFTER_REBOOT){
+        hal_sw_bootmode_clear(HAL_SW_BOOTMODE_CUSTOM_OP2_AFTER_REBOOT);
         sndp_ui_pairing_type_set(SNDP_PAIRING_TWS);
     }
 #endif

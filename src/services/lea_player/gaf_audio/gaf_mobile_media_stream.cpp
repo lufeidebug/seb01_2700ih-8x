@@ -41,31 +41,23 @@
 #include "gaf_media_sync.h"
 #include "ble_audio_mobile_info.h"
 #include "bluetooth_ble_api.h"
+#include "gaf_source_data.h"
+#include "gaf_audio_path.h"
+
 #ifdef AOB_MOBILE_ENABLED
 #include "aob_cis_api.h"
 #include "gaf_ull_hid_support.h"
 #endif
-
-#ifdef GAF_CODEC_CROSS_CORE
-#include "app_dsp_m55.h"
-#include "mcu_dsp_m55_app.h"
-#endif
-
-#ifdef GAF_DSP
-#include "dsp_loader.h"
-#endif
-
 #include "bes_aob_api.h"
 #include "app_bt_sync.h"
-#ifdef BLE_USB_AUDIO_SUPPORT
-#include "app_ble_usb_audio.h"
+
+#ifdef GAF_OFFLOAD_ENABLE
+#include "codec_int.h"
+#include "gaf_cp_stream.h"
+#include "gaf_offload_dsp_stream.h"
+#include "gaf_offload_stream_cfg.h"
 #endif
-#ifdef USB_BLE_AUDIO_HW_TIMER_TRIGGER
-#include "app_usb_hw_timer.h"
-#endif
-#ifdef BLE_I2S_AUDIO_SUPPORT
-#include "app_ble_i2s_audio.h"
-#endif
+
 #ifdef GAF_DSP
 #include "mcu_dsp_hifi4_app.h"
 #endif
@@ -94,9 +86,6 @@ const GAF_MEDIA_STREAM_TYPE_OPERATION_RULE_T gaf_cis_mobile_stream_type_op_rule_
 #endif
 };
 
-#ifdef AOB_UC_TEST
-uint8_t mobile_freq;
-#endif
 /*******************************GAF CUSTOM**************************************/
 static const GAF_STREAM_COMMON_CUSTOM_DATA_HANDLER_FUNC_T *gaf_uc_cli_custom_data_callback = NULL;
 
@@ -122,7 +111,7 @@ static uint8_t gaf_mobile_get_connected_device_count(void)
 
 static void gaf_mobile_audio_add_ase_into_playback_ase_list(uint8_t con_lid, uint8_t ase_lid)
 {
-    LEA_PLAYER_TRACE(0, "set con_lid %d playback ase lid %d", con_lid, ase_lid);
+    LOG_D("set con_lid %d playback ase lid %d", con_lid, ase_lid);
     uint8_t idx = 0;
     if (ase_lid < GAF_AUDIO_ASE_TOTAL_COUNT)
     {
@@ -134,7 +123,7 @@ static void gaf_mobile_audio_add_ase_into_playback_ase_list(uint8_t con_lid, uin
                     &gaf_cis_mobile_media_dwelling_info[con_lid].playback_ase_id[0]);
             if (idx == GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT)
             {
-                LEA_PLAYER_TRACE(0, "no more space for adding playback ase lid: %d into list!!!", ase_lid);
+                LOG_E("no more space for adding playback ase lid: %d into list!!!", ase_lid);
             }
             else
             {
@@ -143,18 +132,18 @@ static void gaf_mobile_audio_add_ase_into_playback_ase_list(uint8_t con_lid, uin
         }
         else
         {
-            LEA_PLAYER_TRACE(0, "ase_lid: %d already in playback ase list!!!", ase_lid);
+            LOG_E("ase_lid: %d already in playback ase list!!!", ase_lid);
         }
     }
     else
     {
-        LEA_PLAYER_TRACE(0, "no more space for adding playback ase list!!!");
+        LOG_E("no more space for adding playback ase list!!!");
     }
 }
 
 static void gaf_mobile_audio_remove_ase_from_playback_ase_list(uint8_t con_lid, uint8_t ase_lid)
 {
-    LEA_PLAYER_TRACE(0, "set con_lid %d playback ase lid %d", con_lid, ase_lid);
+    LOG_D("set con_lid %d playback ase lid %d", con_lid, ase_lid);
     uint8_t idx = 0;
     if (ase_lid < GAF_AUDIO_ASE_TOTAL_COUNT)
     {
@@ -162,20 +151,20 @@ static void gaf_mobile_audio_remove_ase_from_playback_ase_list(uint8_t con_lid, 
                 &gaf_cis_mobile_media_dwelling_info[con_lid].playback_ase_id[0], ase_lid);
         if (idx == GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT)
         {
-            LEA_PLAYER_TRACE(0, "ase lid: %d is not in the list!!!", ase_lid);
+            LOG_E("ase lid: %d is not in the list!!!", ase_lid);
             return;
         }
         gaf_cis_mobile_media_dwelling_info[con_lid].playback_ase_id[idx] = GAF_INVALID_ASE_INDEX;
     }
     else
     {
-        LEA_PLAYER_TRACE(0, "no more space for removing playback ase list!!!");
+        LOG_E("no more space for removing playback ase list!!!");
     }
 }
 
 static void gaf_mobile_audio_add_ase_into_capture_ase_list(uint8_t con_lid, uint8_t ase_lid)
 {
-    LEA_PLAYER_TRACE(0, "set con_lid %d capture ase lid %d", con_lid, ase_lid);
+    LOG_D("set con_lid %d capture ase lid %d", con_lid, ase_lid);
     uint8_t idx = 0;
     if (ase_lid < GAF_AUDIO_ASE_TOTAL_COUNT)
     {
@@ -187,7 +176,7 @@ static void gaf_mobile_audio_add_ase_into_capture_ase_list(uint8_t con_lid, uint
                     &gaf_cis_mobile_media_dwelling_info[con_lid].capture_ase_id[0]);
             if (idx == GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT)
             {
-                LEA_PLAYER_TRACE(0, "no more space for adding capture ase lid: %d into list!!!", ase_lid);
+                LOG_E("no more space for adding capture ase lid: %d into list!!!", ase_lid);
             }
             else
             {
@@ -196,18 +185,18 @@ static void gaf_mobile_audio_add_ase_into_capture_ase_list(uint8_t con_lid, uint
         }
         else
         {
-            LEA_PLAYER_TRACE(0, "ase_lid: %d already in capture ase list!!!", ase_lid);
+            LOG_E("ase_lid: %d already in capture ase list!!!", ase_lid);
         }
     }
     else
     {
-        LEA_PLAYER_TRACE(0, "no more space for adding capture ase list!!!");
+        LOG_E("no more space for adding capture ase list!!!");
     }
 }
 
 static void gaf_mobile_audio_remove_ase_from_capture_ase_list(uint8_t con_lid, uint8_t ase_lid)
 {
-    LEA_PLAYER_TRACE(0, "set con_lid %d capture ase lid %d", con_lid, ase_lid);
+    LOG_I("set con_lid %d capture ase lid %d", con_lid, ase_lid);
     uint8_t idx = 0;
     if (ase_lid < GAF_AUDIO_ASE_TOTAL_COUNT)
     {
@@ -215,32 +204,32 @@ static void gaf_mobile_audio_remove_ase_from_capture_ase_list(uint8_t con_lid, u
                 &gaf_cis_mobile_media_dwelling_info[con_lid].capture_ase_id[0], ase_lid);
         if (idx == GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT)
         {
-            LEA_PLAYER_TRACE(0, "ase lid: %d is not in the list!!!", ase_lid);
+            LOG_E("ase lid: %d is not in the list!!!", ase_lid);
             return;
         }
         gaf_cis_mobile_media_dwelling_info[con_lid].capture_ase_id[idx] = GAF_INVALID_ASE_INDEX;
     }
     else
     {
-        LEA_PLAYER_TRACE(0, "no more space for removing capture ase list!!!");
+        LOG_E("no more space for removing capture ase list!!!");
     }
 }
 
 static uint8_t* gaf_mobile_audio_get_playback_ase_index_list(uint8_t con_lid)
 {
-    LEA_PLAYER_TRACE(0, "get playback con_lid %d", con_lid);
+    LOG_D("get playback con_lid %d", con_lid);
     return &gaf_cis_mobile_media_dwelling_info[con_lid].playback_ase_id[0];
 }
 
 static uint8_t* gaf_mobile_audio_get_capture_ase_index_list(uint8_t con_lid)
 {
-    LEA_PLAYER_TRACE(0, "get capture con_lid %d", con_lid);
+    LOG_D("get capture con_lid %d", con_lid);
     return &gaf_cis_mobile_media_dwelling_info[con_lid].capture_ase_id[0];
 }
 
 static void gaf_mobile_audio_clear_playback_ase_index_list(uint8_t con_lid)
 {
-    LEA_PLAYER_TRACE(0, "clear playback ase list con_lid %d", con_lid);
+    LOG_D("clear playback ase list con_lid %d", con_lid);
     memset_s(&gaf_cis_mobile_media_dwelling_info[con_lid].playback_ase_id[0],
         GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT*sizeof(uint8_t), GAF_INVALID_ASE_INDEX,
         GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT*sizeof(uint8_t));
@@ -248,7 +237,7 @@ static void gaf_mobile_audio_clear_playback_ase_index_list(uint8_t con_lid)
 
 static void gaf_mobile_audio_clear_capture_ase_index_list(uint8_t con_lid)
 {
-    LEA_PLAYER_TRACE(0, "clear capture ase list con_lid %d", con_lid);
+    LOG_D("clear capture ase list con_lid %d", con_lid);
     memset_s(&gaf_cis_mobile_media_dwelling_info[con_lid].capture_ase_id[0],
         GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT*sizeof(uint8_t), GAF_INVALID_ASE_INDEX,
         GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT*sizeof(uint8_t));
@@ -266,7 +255,7 @@ static GAF_AUDIO_STREAM_ENV_T* gaf_mobile_audio_get_stream_env_by_chl_index(uint
     return NULL;
 }
 
-void gaf_mobile_audio_receive_data(uint16_t conhdl, GAF_ISO_PKT_STATUS_E pkt_status)
+void gaf_mobile_audio_receive_data(uint16_t conhdl)
 {
     uint8_t channel = BLE_ISOHDL_TO_ACTID(conhdl);
     // map to gaf stream context
@@ -288,7 +277,7 @@ void gaf_mobile_audio_receive_data(uint16_t conhdl, GAF_ISO_PKT_STATUS_E pkt_sta
                                     pStreamEnv, BES_BLE_GAF_DIRECTION_SINK, channel);
     if (ase_lid >= GAF_AUDIO_ASE_TOTAL_COUNT)
     {
-        LEA_PLAYER_TRACE(0, "can not get ase chan lid by cis handle: 0x%x", conhdl);
+        LOG_E("can not get ase chan lid by cis handle: 0x%x", conhdl);
         return;
     }
 
@@ -314,8 +303,8 @@ void gaf_mobile_audio_receive_data(uint16_t conhdl, GAF_ISO_PKT_STATUS_E pkt_sta
         ASSERT(p_media_data->data_len <= pStreamEnv->stream_info.playbackInfo.maxFrameSize,
             "%s len %d %d, channel:%d, playbackInfo:%p", __func__, p_media_data->data_len,
             pStreamEnv->stream_info.playbackInfo.maxFrameSize, channel, &(pStreamEnv->stream_info.playbackInfo));
-        // LEA_PLAYER_TRACE(0, "%s pkt_status %d pkt_seq_nb 0x%x channel %d, len %d", __func__,
-        //     p_media_data->pkt_status, p_media_data->pkt_seq_nb, channel, p_media_data->data_len);
+        LOG_D("%s pkt_status %d pkt_seq_nb 0x%x channel %d, len %d", __func__,
+            p_media_data->pkt_status, p_media_data->pkt_seq_nb, channel, p_media_data->data_len);
 
         frame.time_stamp = p_media_data->time_stamp;
         frame.seq_nb = p_media_data->pkt_seq_nb;
@@ -330,64 +319,65 @@ void gaf_mobile_audio_receive_data(uint16_t conhdl, GAF_ISO_PKT_STATUS_E pkt_sta
                 gaf_cis_mobile_stream_type_op_rule_all.trigger_stream_type ) ||
                 (GAF_AUDIO_TRIGGER_BY_PLAYBACK_STREAM == gaf_cis_mobile_stream_type_op_rule_all.trigger_stream_type))
             {
-#ifdef USB_BLE_AUDIO_HW_TIMER_TRIGGER
-                uint32_t latest_anch_time = gaf_media_common_get_latest_rx_iso_evt_timestamp(pStreamEnv);
-                uint32_t isoInterval = pStreamEnv->stream_info.playbackInfo.isoIntervalUs;
-                LEA_PLAYER_TRACE(0, "expected play us %u latest_anch_time us %u seq 0x%x",
-                    p_media_data->time_stamp, latest_anch_time, p_media_data->pkt_seq_nb);
-                pStreamEnv->stream_info.playbackInfo.presDelayUs = 2 * isoInterval -
-                    (((p_media_data->time_stamp + 2*isoInterval) - latest_anch_time) % isoInterval);
-                pStreamEnv->stream_context.lastPlaybackDmaIrqTimeUs =
-                    p_media_data->time_stamp + pStreamEnv->stream_info.playbackInfo.presDelayUs - isoInterval;
-                LEA_PLAYER_TRACE(0, "presDelayUs:%d", pStreamEnv->stream_info.playbackInfo.presDelayUs);
-                gaf_stream_common_update_playback_stream_state(pStreamEnv, GAF_PLAYBACK_STREAM_START_TRIGGERING);
-#else
-                current_bt_time = gaf_media_sync_get_curr_time();
-                LEA_PLAYER_TRACE(0, "%s expected play us %u current us %u seq 0x%x", __func__,
-                    p_media_data->time_stamp, current_bt_time, p_media_data->pkt_seq_nb);
-                trigger_bt_time = p_media_data->time_stamp + pStreamEnv->stream_info.playbackInfo.presDelayUs
-                    - pStreamEnv->stream_info.playbackInfo.dma_info.dmaChunkIntervalUs;
-                LEA_PLAYER_TRACE(0, "calculated trigger ticks %u", trigger_bt_time);
-                if ((int32_t)(trigger_bt_time - current_bt_time) >= GAF_MARGIN_BETWEEN_TRIGGER_TIME_AND_CURRENT_TIME_US)
+                if (pStreamEnv->stream_info.timer_send)
                 {
-                    LEA_PLAYER_TRACE(0, "Starting playback seq num 0x%x", p_media_data->pkt_seq_nb);
-                    pStreamEnv->stream_context.lastestPlaybackSeqNum[GAF_AUDIO_DFT_PLAYBACK_LIST_IDX] = p_media_data->pkt_seq_nb;
-
-#if defined(BLE_USB_AUDIO_SUPPORT) && defined(BLE_USB_AUDIO_IS_DONGLE_ROLE)
-                    if (gaf_mobile_usb_audio_check_capture_need_start())
-                    {
-                        af_stream_start(AUD_STREAM_ID_1, AUD_STREAM_CAPTURE);
-                    }
-                    gaf_stream_common_set_playback_trigger_time_generic(pStreamEnv, AUD_STREAM_CAPTURE,
-                                                trigger_bt_time);
-#elif defined(BLE_I2S_AUDIO_SUPPORT)&&defined(BLE_USB_AUDIO_IS_DONGLE_ROLE)
-                    if (gaf_mobile_i2s_audio_check_capture_need_start())
-                    {
-                        af_stream_start(AUD_STREAM_ID_1, AUD_STREAM_CAPTURE);
-                    }
-                    gaf_stream_common_set_playback_trigger_time_generic(pStreamEnv, AUD_STREAM_CAPTURE,
-                                                trigger_bt_time);
-#else
-                    if (GAF_AUDIO_TRIGGER_BY_ISOLATE_STREAM == gaf_cis_mobile_stream_type_op_rule_all.trigger_stream_type)
-                    {
-                        gaf_media_prepare_playback_trigger(pStreamEnv->stream_context.playbackTriggerChannel);
-                        af_stream_start(AUD_STREAM_ID_0, AUD_STREAM_PLAYBACK);
-                    }
-                    gaf_stream_common_set_playback_trigger_time(pStreamEnv, trigger_bt_time);
-#endif
+                    uint32_t latest_anch_time = gaf_media_common_get_latest_rx_iso_evt_timestamp(pStreamEnv);
+                    uint32_t isoInterval = pStreamEnv->stream_info.playbackInfo.isoIntervalUs;
+                    LOG_I("expected play us %u latest_anch_time us %u seq 0x%x",
+                        p_media_data->time_stamp, latest_anch_time, p_media_data->pkt_seq_nb);
+                    pStreamEnv->stream_info.playbackInfo.presDelayUs = 2 * isoInterval -
+                        (((p_media_data->time_stamp + 2*isoInterval) - latest_anch_time) % isoInterval);
+                    pStreamEnv->stream_context.lastPlaybackDmaIrqTimeUs =
+                        p_media_data->time_stamp + pStreamEnv->stream_info.playbackInfo.presDelayUs - isoInterval;
+                    LOG_I("presDelayUs:%d", pStreamEnv->stream_info.playbackInfo.presDelayUs);
+                    gaf_stream_common_update_playback_stream_state(pStreamEnv, GAF_PLAYBACK_STREAM_START_TRIGGERING);
                 }
                 else
                 {
-                    LEA_PLAYER_TRACE(0, "time_stamp error");
-                }
+                    current_bt_time = gaf_media_sync_get_curr_time();
+                    LOG_I("%s expected play us %u current us %u seq 0x%x", __func__,
+                        p_media_data->time_stamp, current_bt_time, p_media_data->pkt_seq_nb);
+                    trigger_bt_time = p_media_data->time_stamp + pStreamEnv->stream_info.playbackInfo.presDelayUs
+                        - pStreamEnv->stream_info.playbackInfo.dma_info.dmaChunkIntervalUs;
+                    LOG_I("calculated trigger ticks %u", trigger_bt_time);
+                    if ((int32_t)(trigger_bt_time - current_bt_time) >= GAF_MARGIN_BETWEEN_TRIGGER_TIME_AND_CURRENT_TIME_US)
+                    {
+                        LOG_I("Starting playback seq num 0x%x", p_media_data->pkt_seq_nb);
+                        pStreamEnv->stream_context.lastestPlaybackSeqNum[GAF_AUDIO_DFT_PLAYBACK_LIST_IDX] = p_media_data->pkt_seq_nb;
+
+
+                        if (pStreamEnv->stream_info.audio_path == GAF_MOBILE_INPUT_I2S)
+                        {
+#if defined(BLE_I2S_AUDIO_SUPPORT)
+                            if (gaf_mobile_i2s_audio_check_capture_need_start())
+                            {
+                                af_stream_start(AUD_STREAM_ID_1, AUD_STREAM_CAPTURE);
+                            }
+                            gaf_stream_common_set_playback_trigger_time_generic(pStreamEnv, AUD_STREAM_CAPTURE, trigger_bt_time);
 #endif
+                        }
+                        else
+                        {
+                            if (GAF_AUDIO_TRIGGER_BY_ISOLATE_STREAM == gaf_cis_mobile_stream_type_op_rule_all.trigger_stream_type)
+                            {
+                                gaf_media_prepare_playback_trigger(pStreamEnv->stream_context.playbackTriggerChannel);
+                                af_stream_start(AUD_STREAM_ID_0, AUD_STREAM_PLAYBACK);
+                            }
+                            gaf_stream_common_set_playback_trigger_time(pStreamEnv, trigger_bt_time);
+                        }
+                    }
+                    else
+                    {
+                        LOG_I("time_stamp error");
+                    }
+                }
             }
         }
 
         if (pStreamEnv->stream_context.playback_stream_state >= GAF_PLAYBACK_STREAM_START_TRIGGERING)
         {
             if (frame.isPLC) {
-                LEA_PLAYER_TRACE(0, "PLC seq:%u ts:%u pk status:%d data len:%d",
+                LOG_I("PLC seq:%u ts:%u pk status:%d data len:%d",
                     p_media_data->pkt_seq_nb, p_media_data->time_stamp, p_media_data->pkt_status, p_media_data->data_len);
             }
             if (gaf_uc_cli_custom_data_callback->encoded_packet_recv_cb)
@@ -461,8 +451,8 @@ static void gaf_mobile_audio_process_pcm_data_send(void *pStreamEnv_,void *paylo
         {
             gaf_uc_cli_custom_data_callback->encoded_packet_send_cb(payload + channel_shift, payload_len_per_channel);
         }
-        // LEA_PLAYER_TRACE(0, "[CAPTURE SEND] p_len:%d stereo supp: %d, allocation_bf: 0x%x, shift :%d",
-        //       payload_len_per_channel, stereo_channel_support, audio_allocation_bf, channel_shift);
+        LOG_D("[CAPTURE SEND] p_len:%d stereo supp: %d, allocation_bf: 0x%x, shift :%d",
+              payload_len_per_channel, stereo_channel_support, audio_allocation_bf, channel_shift);
         bes_ble_bap_iso_dp_send_data(pStreamEnv->stream_info.captureInfo.aseChInfo[i].ase_handle,
                                 pStreamEnv->stream_context.latestCaptureSeqNum,
                                 payload + channel_shift, payload_len_per_channel,
@@ -499,7 +489,7 @@ static void gaf_mobile_audio_process_pcm_data(GAF_AUDIO_STREAM_ENV_T *_pStreamEn
         ((GAF_CAPTURE_STREAM_STREAMING_TRIGGERED == _pStreamEnv->stream_context.capture_stream_state) &&
         (dmaIrqHappeningTimeUs == _pStreamEnv->stream_context.lastCaptureDmaIrqTimeUs)))
     {
-        LEA_PLAYER_TRACE(0, "accumulated irq messages happen!");
+        LOG_W("accumulated irq messages happen!");
         memset(ptrBuf, 0x0, length);
         return;
     }
@@ -511,8 +501,8 @@ static void gaf_mobile_audio_process_pcm_data(GAF_AUDIO_STREAM_ENV_T *_pStreamEn
     }
     gaf_stream_common_capture_timestamp_checker(_pStreamEnv, dmaIrqHappeningTimeUs);
     dmaIrqHappeningTimeUs += (uint32_t)_pStreamEnv->stream_info.captureInfo.dma_info.dmaChunkIntervalUs;
-    // LEA_PLAYER_TRACE(0, "length %d encoded_len %d filled timestamp %u", length,
-    //     _pStreamEnv->stream_info.captureInfo.codec_info.frame_size, dmaIrqHappeningTimeUs);
+    LOG_D("length %d encoded_len %d filled timestamp %u", length,
+        _pStreamEnv->stream_info.captureInfo.codec_info.frame_size, dmaIrqHappeningTimeUs);
 
     /// gaf custom, may be a watch point to add some pattern in pcm data to be encoded
     if (gaf_uc_cli_custom_data_callback->raw_pcm_data_cb)
@@ -575,7 +565,7 @@ static void gaf_mobile_audio_process_encoded_data(GAF_AUDIO_STREAM_ENV_T *pStrea
             GAF_PLAYBACK_STREAM_STREAMING_TRIGGERED);
         gaf_stream_common_clr_trigger(pStreamEnv->stream_context.playbackTriggerChannel);
         pStreamEnv->stream_context.lastestPlaybackSeqNum[GAF_AUDIO_DFT_PLAYBACK_LIST_IDX]--;
-        LEA_PLAYER_TRACE(0, "Update playback seq to 0x%x", pStreamEnv->stream_context.lastestPlaybackSeqNum[GAF_AUDIO_DFT_PLAYBACK_LIST_IDX]);
+        LOG_I("Update playback seq to 0x%x", pStreamEnv->stream_context.lastestPlaybackSeqNum[GAF_AUDIO_DFT_PLAYBACK_LIST_IDX]);
     }
 
     /*******************************************stream decode frame*********************************************/
@@ -618,12 +608,12 @@ static void gaf_mobile_audio_process_encoded_data(GAF_AUDIO_STREAM_ENV_T *pStrea
                   (instance_handle, &(playback_Info->codec_info), out_frame->data_len,
                   out_frame->data, pcm_cache, out_frame->isPLC);
 
-        // LEA_PLAYER_TRACE(0, "(%d) dec ret:%d frame_len:%d %d length %d", i, ret,
-        //     out_frame->data_len, playback_Info->aseChInfo[i].iso_channel_hdl, length);
+        LOG_D("(%d) dec ret:%d frame_len:%d %d length %d", i, ret,
+            out_frame->data_len, playback_Info->aseChInfo[i].iso_channel_hdl, length);
 #endif
 
         if (ret) {
-            LEA_PLAYER_TRACE(0, "ret:%d", ret);
+            LOG_E("ret:%d", ret);
             memset(pcm_cache, 0, length);
         }
 
@@ -678,7 +668,7 @@ static void gaf_mobile_audio_process_encoded_data(GAF_AUDIO_STREAM_ENV_T *pStrea
 POSSIBLY_UNUSED static int gaf_mobile_audio_flexible_playback_stream_start_handler(void* _pStreamEnv)
 {
     GAF_AUDIO_STREAM_ENV_T* pStreamEnv = (GAF_AUDIO_STREAM_ENV_T *)_pStreamEnv;
-    LEA_PLAYER_TRACE(0, "%s start", __func__);
+    LOG_I("%s start", __func__);
     if (GAF_PLAYBACK_STREAM_INITIALIZING <= pStreamEnv->stream_context.playback_stream_state)
     {
         // TODO: shall use reasonable cpu frequency
@@ -776,7 +766,7 @@ static void gaf_mobile_audio_flexible_common_buf_init(GAF_AUDIO_STREAM_ENV_T * p
 
 static void gaf_mobile_audio_flexible_playback_buf_init(void* _pStreamEnv)
 {
-    LEA_PLAYER_TRACE(0, "%s start", __func__);
+    LOG_D("%s start", __func__);
     GAF_AUDIO_STREAM_ENV_T* pStreamEnv = (GAF_AUDIO_STREAM_ENV_T *)_pStreamEnv;
     gaf_mobile_audio_flexible_common_buf_init(pStreamEnv, GAF_STREAM_PLAYBACK);
 
@@ -840,6 +830,8 @@ static void gaf_mobile_audio_flexible_playback_buf_init(void* _pStreamEnv)
                 &(pStreamEnv->stream_info.playbackInfo.codec_info), (void*)gaf_stream_common_buf_alloc);
         }
     }
+
+    LOG_D("%s end", __func__);
 }
 
 POSSIBLY_UNUSED static int gaf_mobile_audio_flexible_playback_stream_stop_handler(void* _pStreamEnv)
@@ -873,36 +865,33 @@ POSSIBLY_UNUSED static int gaf_mobile_audio_flexible_playback_stream_stop_handle
 
 static uint32_t gaf_mobile_stream_flexible_playback_dma_irq_handler(uint8_t* ptrBuf, uint32_t length)
 {
-    // LEA_PLAYER_TRACE(0, "%s start", __func__);
+    LOG_D("%s start", __func__);
     GAF_AUDIO_STREAM_ENV_T* pStreamEnv = &gaf_mobile_audio_stream_env;
     gaf_mobile_audio_process_encoded_data(pStreamEnv, ptrBuf, length);
+    LOG_D("%s end", __func__);
     return length;
 }
 
 static void gaf_mobile_audio_flexible_playback_buf_deinit(void* _pStreamEnv)
 {
-    LEA_PLAYER_TRACE(0, "%s start", __func__);
+    LOG_I("%s start", __func__);
     GAF_AUDIO_STREAM_ENV_T* pStreamEnv = (GAF_AUDIO_STREAM_ENV_T *)_pStreamEnv;
     pStreamEnv->stream_info.playbackInfo.dma_info.dmaBufPtr = NULL;
     if (pStreamEnv->func_list->decoder_func_list)
     {
         pStreamEnv->func_list->decoder_func_list->decoder_deinit_buf_func(0);
     }
-    LEA_PLAYER_TRACE(0, "%s end", __func__);
+    LOG_I("%s end", __func__);
 }
 
 POSSIBLY_UNUSED static int gaf_mobile_audio_flexible_capture_stream_start_handler(void* _pStreamEnv)
 {
-    LEA_PLAYER_TRACE(0, "%s start", __func__);
+    LOG_D("%s start", __func__);
     GAF_AUDIO_STREAM_ENV_T* pStreamEnv = (GAF_AUDIO_STREAM_ENV_T *)_pStreamEnv;
     if (GAF_CAPTURE_STREAM_INITIALIZING <= pStreamEnv->stream_context.capture_stream_state)
     {
         // TODO: shall use reasonable cpu frequency
-#ifdef AOB_UC_TEST
-        app_sysfreq_req(APP_SYSFREQ_USER_AOB, (enum APP_SYSFREQ_FREQ_T)mobile_freq);
-#else
         app_sysfreq_req(APP_SYSFREQ_USER_AOB, APP_SYSFREQ_208M);
-#endif
         af_set_priority(AF_USER_AI, osPriorityHigh);
         struct AF_STREAM_CONFIG_T stream_cfg;
         // capture stream
@@ -954,7 +943,7 @@ POSSIBLY_UNUSED static int gaf_mobile_audio_flexible_capture_stream_start_handle
                 trigger_bt_time += pStreamEnv->stream_info.captureInfo.dma_info.dmaChunkIntervalUs;
             }
 
-            LEA_PLAYER_TRACE(0, "iso anch %d cur time %d trigger time %d",
+            LOG_I("iso anch %d cur time %d trigger time %d",
                 latest_iso_bt_time, current_bt_time, trigger_bt_time);
             gaf_stream_common_set_capture_trigger_time(pStreamEnv, trigger_bt_time);
         }
@@ -966,7 +955,7 @@ POSSIBLY_UNUSED static int gaf_mobile_audio_flexible_capture_stream_start_handle
 
 static void gaf_mobile_audio_flexible_capture_buf_init(void* _pStreamEnv)
 {
-    LEA_PLAYER_TRACE(0, "%s start", __func__);
+    LOG_I("%s start", __func__);
     GAF_AUDIO_STREAM_ENV_T* pStreamEnv = (GAF_AUDIO_STREAM_ENV_T *)_pStreamEnv;
     gaf_mobile_audio_flexible_common_buf_init(pStreamEnv, GAF_STREAM_CAPTURE);
 
@@ -989,12 +978,12 @@ static void gaf_mobile_audio_flexible_capture_buf_init(void* _pStreamEnv)
         pStreamEnv->func_list->encoder_func_list->encoder_init_buf_func(0,
             &(pStreamEnv->stream_info.captureInfo.codec_info), (void*)gaf_stream_common_buf_alloc);
     }
-    LEA_PLAYER_TRACE(0, "%s end", __func__);
+    LOG_I("%s end", __func__);
 }
 
 POSSIBLY_UNUSED static int gaf_mobile_audio_flexible_capture_stream_stop_handler(void* _pStreamEnv)
 {
-    LEA_PLAYER_TRACE(0, "%s stop", __func__);
+    LOG_I("%s stop", __func__);
     GAF_AUDIO_STREAM_ENV_T* pStreamEnv = (GAF_AUDIO_STREAM_ENV_T *)_pStreamEnv;
     uint8_t POSSIBLY_UNUSED adma_ch = HAL_DMA_CHAN_NONE;
     uint32_t dma_base;
@@ -1031,7 +1020,7 @@ static uint32_t gaf_mobile_stream_flexible_capture_dma_irq_handler(uint8_t* ptrB
 }
 static void gaf_mobile_audio_flexible_capture_buf_deinit(void* _pStreamEnv)
 {
-    LEA_PLAYER_TRACE(0, "%s start", __func__);
+    LOG_I("%s start", __func__);
     GAF_AUDIO_STREAM_ENV_T* pStreamEnv = (GAF_AUDIO_STREAM_ENV_T *)_pStreamEnv;
     pStreamEnv->stream_info.captureInfo.dma_info.dmaBufPtr = NULL;
 
@@ -1040,40 +1029,22 @@ static void gaf_mobile_audio_flexible_capture_buf_deinit(void* _pStreamEnv)
         pStreamEnv->func_list->encoder_func_list->encoder_deinit_buf_func(0);
     }
 
-    LEA_PLAYER_TRACE(0, "%s end", __func__);
+    LOG_I("%s end", __func__);
 }
 static GAF_AUDIO_FUNC_LIST_T gaf_mobile_audio_flexible_stream_func_list =
 {
     {
         .playback_dma_irq_handler_func = gaf_mobile_stream_flexible_playback_dma_irq_handler,
         .capture_dma_irq_handler_func = gaf_mobile_stream_flexible_capture_dma_irq_handler,
-#if defined(BLE_USB_AUDIO_SUPPORT)&&defined(BLE_USB_AUDIO_IS_DONGLE_ROLE)
-        .playback_start_stream_func = gaf_mobile_usb_audio_capture_start_handler,
-        .playback_init_stream_buf_func = gaf_mobile_audio_flexible_playback_buf_init,
-        .playback_stop_stream_func = gaf_mobile_usb_audio_capture_stop_handler,
-#elif defined(BLE_I2S_AUDIO_SUPPORT)&&defined(BLE_USB_AUDIO_IS_DONGLE_ROLE)
-        .playback_start_stream_func = gaf_mobile_i2s_audio_capture_start_handler,
-        .playback_init_stream_buf_func = gaf_mobile_audio_flexible_playback_buf_init,
-        .playback_stop_stream_func = gaf_mobile_i2s_audio_capture_stop_handler,
-#else
+
         .playback_start_stream_func = gaf_mobile_audio_flexible_playback_stream_start_handler,
         .playback_init_stream_buf_func = gaf_mobile_audio_flexible_playback_buf_init,
         .playback_stop_stream_func = gaf_mobile_audio_flexible_playback_stream_stop_handler,
-#endif
         .playback_deinit_stream_buf_func = gaf_mobile_audio_flexible_playback_buf_deinit,
-#if defined(BLE_USB_AUDIO_SUPPORT)&&defined(BLE_USB_AUDIO_IS_DONGLE_ROLE)
-        .capture_start_stream_func = gaf_mobile_usb_audio_media_stream_start_handler,
-        .capture_init_stream_buf_func = gaf_mobile_audio_flexible_capture_buf_init,
-        .capture_stop_stream_func = gaf_mobile_usb_audio_media_stream_stop_handler,
-#elif defined(BLE_I2S_AUDIO_SUPPORT)&&defined(BLE_USB_AUDIO_IS_DONGLE_ROLE)
-        .capture_start_stream_func = gaf_mobile_i2s_audio_media_stream_start_handler,
-        .capture_init_stream_buf_func = gaf_mobile_audio_flexible_capture_buf_init,
-        .capture_stop_stream_func = gaf_mobile_i2s_audio_media_stream_stop_handler,
-#else
+
         .capture_start_stream_func = gaf_mobile_audio_flexible_capture_stream_start_handler,
         .capture_init_stream_buf_func = gaf_mobile_audio_flexible_capture_buf_init,
         .capture_stop_stream_func = gaf_mobile_audio_flexible_capture_stream_stop_handler,
-#endif
         .capture_deinit_stream_buf_func = gaf_mobile_audio_flexible_capture_buf_deinit,
     },
 };
@@ -1091,7 +1062,7 @@ static GAF_AUDIO_STREAM_ENV_T* gaf_mobile_audio_refresh_stream_info_from_ase(uin
 
     if (p_ase_info == NULL)
     {
-        LEA_PLAYER_TRACE(0, "%s ASE info is NULL!!!", __func__);
+        LOG_W("%s ASE info is NULL!!!", __func__);
         return pStreamEnv;
     }
 
@@ -1116,7 +1087,7 @@ static GAF_AUDIO_STREAM_ENV_T* gaf_mobile_audio_refresh_stream_info_from_ase(uin
                                     AUD_CHANNEL_NUM_2 : AUD_CHANNEL_NUM_1;
         if (GAF_MOBILE_AUDIO_STREAM_PLAYBACK_CHANNEL_NUM < pCommonInfo->codec_info.num_channels)
         {
-            LEA_PLAYER_TRACE(0, "%s unsupport channel num %d", __func__, pCommonInfo->codec_info.num_channels);
+            LOG_E("%s unsupport channel num %d", __func__, pCommonInfo->codec_info.num_channels);
         }
     }
     // cig-cis timing info
@@ -1125,12 +1096,15 @@ static GAF_AUDIO_STREAM_ENV_T* gaf_mobile_audio_refresh_stream_info_from_ase(uin
     pCommonInfo->bnM2S = p_ase_info->bn_m2s;
     pCommonInfo->bnS2M = p_ase_info->bn_s2m;
     // codec info
-    pCommonInfo->codec_info.bits_depth = GAF_MOBILE_AUDIO_STREAM_BIT_NUM;
+    if (!pCommonInfo->codec_info.bits_depth)
+    {
+        pCommonInfo->codec_info.bits_depth = GAF_MOBILE_AUDIO_STREAM_BIT_NUM;
+    }
     pCommonInfo->aseChInfo[p_ase_info->ase_lid].allocation_bf = p_ase_info->p_cfg->param.location_bf;
-    LEA_PLAYER_TRACE(0, "refresh: ase_lid %d direction:%d codec_id:%d con_lid %d ase_id:%d",
+    LOG_I("refresh: ase_lid %d direction:%d codec_id:%d con_lid %d ase_id:%d",
         p_ase_info->ase_lid, p_ase_info->direction, p_ase_info->codec_id.codec_id[0], p_ase_info->con_lid, ase_lid);
 
-    LEA_PLAYER_TRACE(0, "cig sync delay %d us - iso interval %d us - presDelayUs:%d - bnM2S %d - bnS2M %d",
+    LOG_I("cig sync delay %d us - iso interval %d us - presDelayUs:%d - bnM2S %d - bnS2M %d",
         pCommonInfo->cigSyncDelayUs, pCommonInfo->isoIntervalUs, pCommonInfo->presDelayUs, pCommonInfo->bnM2S,
         pCommonInfo->bnS2M);
     switch (p_ase_info->codec_id.codec_id[0])
@@ -1176,31 +1150,6 @@ static GAF_AUDIO_STREAM_ENV_T* gaf_mobile_audio_refresh_stream_info_from_ase(uin
             break;
         }
 #endif
-#ifdef HID_ULL_ENABLE
-        case BES_BLE_GAF_CODEC_TYPE_ULL:
-        {
-            AOB_BAP_CFG_T* p_ull_cfg = p_ase_info->p_cfg;
-            pCommonInfo->codec_info.frame_ms =
-                gaf_stream_common_frame_duration_parse(p_ull_cfg->param.frame_dur);
-            pCommonInfo->codec_info.sample_rate =
-                gaf_stream_common_sample_freq_parse(p_ull_cfg->param.sampling_freq);
-#if BLE_AUDIO_STEREO_CHAN_OVER_CIS_CNT == 1
-            pCommonInfo->codec_info.frame_size = p_ull_cfg->param.frame_octet;
-#elif BLE_AUDIO_STEREO_CHAN_OVER_CIS_CNT == 2
-            pCommonInfo->codec_info.frame_size = p_ull_cfg->param.frame_octet/2; // Will mul 2 chnl at ull encode in mobile role
-#else
-            pCommonInfo->codec_info.frame_size = p_ull_cfg->param.frame_octet;
-#endif
-            pCommonInfo->maxCachedFrameCount = GAF_AUDIO_MEDIA_DATA_PACKET_NUM_LIMITER;
-            pCommonInfo->maxFrameSize = gaf_audio_lc3_encoder_get_max_frame_size();
-            pStreamEnv->stream_info.codec_type = LC3;
-#if !defined(GAF_CODEC_CROSS_CORE) && !defined(AOB_CODEC_CP)
-            gaf_audio_lc3_update_decoder_func_list(&(pStreamEnv->func_list->decoder_func_list));
-            gaf_audio_lc3_update_encoder_func_list(&(pStreamEnv->func_list->encoder_func_list));
-#endif
-            break;
-        }
-#endif
 #ifdef LEA_LHDC
         case BES_BLE_GAF_CODEC_TYPE_VENDOR:
         {
@@ -1226,8 +1175,33 @@ static GAF_AUDIO_STREAM_ENV_T* gaf_mobile_audio_refresh_stream_info_from_ase(uin
             break;
         }
 #endif
+#ifdef HID_ULL_ENABLE
+        case BES_BLE_GAF_CODEC_TYPE_ULL:
+        {
+            AOB_BAP_CFG_T* p_ull_cfg = p_ase_info->p_cfg;
+            pCommonInfo->codec_info.frame_ms =
+                gaf_stream_common_frame_duration_parse(p_ull_cfg->param.frame_dur);
+            pCommonInfo->codec_info.sample_rate =
+                gaf_stream_common_sample_freq_parse(p_ull_cfg->param.sampling_freq);
+#if BLE_AUDIO_STEREO_CHAN_OVER_CIS_CNT == 1
+            pCommonInfo->codec_info.frame_size = p_ull_cfg->param.frame_octet;
+#elif BLE_AUDIO_STEREO_CHAN_OVER_CIS_CNT == 2
+            pCommonInfo->codec_info.frame_size = p_ull_cfg->param.frame_octet/2; // Will mul 2 chnl at ull encode in mobile role
+#else
+            pCommonInfo->codec_info.frame_size = p_ull_cfg->param.frame_octet;
+#endif
+            pCommonInfo->maxCachedFrameCount = GAF_AUDIO_MEDIA_DATA_PACKET_NUM_LIMITER;
+            pCommonInfo->maxFrameSize = gaf_audio_lc3_encoder_get_max_frame_size();
+            pStreamEnv->stream_info.codec_type = LC3;
+#if !defined(GAF_CODEC_CROSS_CORE) && !defined(AOB_CODEC_CP)
+            gaf_audio_lc3_update_decoder_func_list(&(pStreamEnv->func_list->decoder_func_list));
+            gaf_audio_lc3_update_encoder_func_list(&(pStreamEnv->func_list->encoder_func_list));
+#endif
+            break;
+        }
+#endif
         default:
-            LEA_PLAYER_TRACE(0, "unknown codec type! 0x%x", p_ase_info->codec_id.codec_id[0]);
+            LOG_E("unknown codec type! 0x%x", p_ase_info->codec_id.codec_id[0]);
             return NULL;
     }
 
@@ -1253,20 +1227,20 @@ static GAF_AUDIO_STREAM_ENV_T* gaf_mobile_audio_refresh_stream_info_from_ase(uin
 
     pCommonInfo->aseChInfo[p_ase_info->ase_lid].iso_channel_hdl = BLE_ISOHDL_TO_ACTID(p_ase_info->cis_hdl);
     pCommonInfo->aseChInfo[p_ase_info->ase_lid].ase_handle = p_ase_info->cis_hdl;
-    LEA_PLAYER_TRACE(0, "frame encode size:%d num channels:%d",
+    LOG_I("frame encode size:%d num channels:%d",
         pCommonInfo->codec_info.frame_size, pCommonInfo->codec_info.num_channels);
-    LEA_PLAYER_TRACE(0, "cis handle 0x%x ,iso_channel_hdl %d", p_ase_info->cis_hdl,
+    LOG_I("cis handle 0x%x ,iso_channel_hdl %d", p_ase_info->cis_hdl,
         pCommonInfo->aseChInfo[p_ase_info->ase_lid].iso_channel_hdl);
-    LEA_PLAYER_TRACE(0, "frame len %d us, sample rate %d dma chunk time %d us dma chunk size %d",
+    LOG_I("frame len %d us, sample rate %d dma chunk time %d us dma chunk size %d",
         (uint32_t)(pCommonInfo->dma_info.frame_ms*1000), pCommonInfo->dma_info.sample_rate,
         pCommonInfo->dma_info.dmaChunkIntervalUs, pCommonInfo->dma_info.dmaChunkSize);
-    LEA_PLAYER_TRACE(0, "allocation bf: 0x%x", pCommonInfo->aseChInfo[p_ase_info->ase_lid].allocation_bf);
-    LEA_PLAYER_TRACE(0, "codec: %s", gaf_stream_common_print_code_type(p_ase_info->codec_id.codec_id[0]));
-    LEA_PLAYER_TRACE(0, "context: %s", gaf_stream_common_print_context(p_ase_info->p_metadata->param.context_bf));
+    LOG_I("allocation bf: 0x%x", pCommonInfo->aseChInfo[p_ase_info->ase_lid].allocation_bf);
+    LOG_I("codec: %s", gaf_stream_common_print_code_type(p_ase_info->codec_id.codec_id[0]));
+    LOG_I("context: %s", gaf_stream_common_print_context(p_ase_info->p_metadata->param.context_bf));
     return pStreamEnv;
 }
 
-static uint8_t gaf_mobile_audio_get_enabled_playback_ase_count(void)
+uint8_t gaf_mobile_audio_get_enabled_playback_ase_count(void)
 {
     uint8_t enabled_ase_count = 0;
     for (uint8_t con_id = 0; con_id < GAF_MOB_MAXIMUM_CONNECTION_COUNT; con_id++)
@@ -1309,7 +1283,7 @@ static gaf_stream_context_state_t gaf_mobile_audio_update_stream_info_from_ase(
     * Direction is defined from the perspective of the ASE server.
     * So for mobile phone, sink is capture stream.
     */
-    LEA_PLAYER_TRACE(0, "update stream ase %d purpose %d", ase_lid, purpose);
+    LOG_I("update stream ase %d purpose %d", ase_lid, purpose);
 
     if (BES_BLE_GAF_DIRECTION_SINK == p_bap_ase_info->direction)
     {
@@ -1342,7 +1316,7 @@ static gaf_stream_context_state_t gaf_mobile_audio_update_stream_info_from_ase(
     enabled_capture_ase_cnt = gaf_mobile_audio_get_enabled_capture_ase_count();
     gaf_connected_dev_num = gaf_mobile_get_connected_device_count();
 
-    LEA_PLAYER_TRACE(0, "direction %d started stream types updated to %d", p_bap_ase_info->direction,
+    LOG_I("direction %d started stream types updated to %d", p_bap_ase_info->direction,
         pDewellingInfo->startedStreamTypes);
 
     if (GAF_AUDIO_UPDATE_STREAM_INFO_TO_START == purpose)
@@ -1363,7 +1337,7 @@ static gaf_stream_context_state_t gaf_mobile_audio_update_stream_info_from_ase(
         }
     }
 
-    LEA_PLAYER_TRACE(0, "enabled playback/capture ase cnt: %d/%d, gaf connected dev cnt: %d",
+    LOG_I("enabled playback/capture ase cnt: %d/%d, gaf connected dev cnt: %d",
             enabled_playback_ase_cnt, enabled_capture_ase_cnt, gaf_connected_dev_num);
 }
 
@@ -1379,7 +1353,7 @@ static bool gaf_mobile_audio_is_all_used_ase_streaming(uint8_t direction)
                             i, direction, APP_GAF_BAP_UC_ASE_STATE_ENABLING, ase_lid_list);
         if (nb_ase != 0)
         {
-            LEA_PLAYER_TRACE(0, "Wait all ase enter streaming to send iso together, %d/%d",
+            LOG_I("Wait all ase enter streaming to send iso together, %d/%d",
                                                         nb_ase, capture_ase_used_cnt);
             return false;
         }
@@ -1395,10 +1369,15 @@ static void _gaf_mobile_audio_stream_start(uint8_t con_lid, uint8_t ase_lid)
 #endif
     GAF_AUDIO_STREAM_ENV_T* pStreamEnv = gaf_mobile_audio_refresh_stream_info_from_ase(ase_lid);
     GAF_MEDIA_DWELLING_INFO_T* pDewellingInfo = &gaf_cis_mobile_media_dwelling_info[con_lid];
-
+#ifdef GAF_OFFLOAD_ENABLE
+    if (pStreamEnv && gaf_mobile_offload_audio_stream_start(pDewellingInfo, pStreamEnv, con_lid))
+    {
+        return;
+    }
+#endif
     if (pStreamEnv)
     {
-        LEA_PLAYER_TRACE(0, "%s both connected %d streaming %d/%d state %d/%d con_lid:%d ase_lid:%d", __func__,
+        LOG_I("%s both connected %d streaming %d/%d state %d/%d con_lid:%d ase_lid:%d", __func__,
                 ble_audio_mobile_both_is_connected(),
                 gaf_mobile_audio_is_all_used_ase_streaming((uint8_t)BES_BLE_GAF_DIRECTION_SINK),
                 gaf_mobile_audio_is_all_used_ase_streaming((uint8_t)BES_BLE_GAF_DIRECTION_SRC),
@@ -1406,13 +1385,6 @@ static void _gaf_mobile_audio_stream_start(uint8_t con_lid, uint8_t ase_lid)
                 pStreamEnv->stream_context.playback_stream_state,
                 con_lid, ase_lid);
 
-#if defined (GAF_CODEC_CROSS_CORE) || defined (AOB_CODEC_CP)
-        const bes_ble_bap_ascc_ase_t *p_bap_ase_info = bes_ble_bap_ascc_get_ase_info(ase_lid);
-        if (p_bap_ase_info && BES_BLE_GAF_DIRECTION_SRC == p_bap_ase_info->direction)
-        {
-            gaf_playback_decoder_init(pStreamEnv, ase_lid);
-        }
-#endif
         if ((pDewellingInfo->startedStreamTypes&GAF_AUDIO_STREAM_TYPE_PLAYBACK) &&
             (GAF_PLAYBACK_STREAM_IDLE == pStreamEnv->stream_context.playback_stream_state))
         {
@@ -1422,6 +1394,14 @@ static void _gaf_mobile_audio_stream_start(uint8_t con_lid, uint8_t ase_lid)
                 pStreamEnv->func_list->stream_func_list.playback_start_stream_func(pStreamEnv);
             }
         }
+
+#if defined (GAF_CODEC_CROSS_CORE) || defined (AOB_CODEC_CP)
+        const bes_ble_bap_ascc_ase_t *p_bap_ase_info = bes_ble_bap_ascc_get_ase_info(ase_lid);
+        if (p_bap_ase_info && BES_BLE_GAF_DIRECTION_SRC == p_bap_ase_info->direction)
+        {
+            gaf_playback_decoder_init(pStreamEnv, ase_lid);
+        }
+#endif
 
         if ((pDewellingInfo->startedStreamTypes&GAF_AUDIO_STREAM_TYPE_CAPTURE) &&
             (GAF_CAPTURE_STREAM_IDLE == pStreamEnv->stream_context.capture_stream_state))
@@ -1473,8 +1453,8 @@ void gaf_mobile_sensor_receive_data(uint16_t conhdl, GAF_ISO_PKT_STATUS_E pkt_st
 
         if (((GAF_ISO_PKT_STATUS_VALID == sensor_frame_info.pkt_status) &&(sensor_frame_info.data_len > 0)))
         {
-            LEA_PLAYER_TRACE(0, "%s time_stamp:%d seq_numb:%d data_len:%d", __func__, sensor_frame_info.time_stamp, sensor_frame_info.pkt_seq_nb, sensor_frame_info.data_len);
-            LEA_PLAYER_TRACE(0, "mobile_received_data:");
+            LOG_D("%s time_stamp:%d seq_numb:%d data_len:%d", __func__, sensor_frame_info.time_stamp, sensor_frame_info.pkt_seq_nb, sensor_frame_info.data_len);
+            LOG_D("mobile_received_data:");
             DUMP8("%02x ", p_sdu_buf->sdu_data, sensor_frame_info.data_len);
         }
 
@@ -1484,7 +1464,7 @@ void gaf_mobile_sensor_receive_data(uint16_t conhdl, GAF_ISO_PKT_STATUS_E pkt_st
 
 static void gaf_mobile_simulated_sensor_data_upstream_start(void *_pStreamEnv)
 {
-    LEA_PLAYER_TRACE(0, "enter_sensor_stream_start_handler!");
+    LOG_D("enter_sensor_stream_start_handler!");
     gaf_mobile_audio_flexible_playback_buf_init(_pStreamEnv);
     /// register iso data callback api
     bes_ble_bap_dp_itf_data_come_callback_register((void *)gaf_mobile_sensor_receive_data);
@@ -1534,7 +1514,7 @@ static void _gaf_mobile_audio_stream_start_handler(uint8_t ase_lid, uint8_t con_
 
 void gaf_mobile_audio_stream_update_and_start_handler(uint8_t ase_lid, uint8_t con_lid)
 {
-    LEA_PLAYER_TRACE(0, "%s", __func__);
+    LOG_I("%s", __func__);
     gaf_media_stream_boost_freq(1500);
     _gaf_mobile_audio_stream_start_handler(ase_lid, con_lid);
 }
@@ -1551,8 +1531,8 @@ static void gaf_mobile_audio_stream_stop(uint8_t con_lid, uint8_t ase_lid)
 
     const bes_ble_bap_ascc_ase_t *p_bap_ase_info = bes_ble_bap_ascc_get_ase_info(ase_lid);
 
-    LEA_PLAYER_TRACE(0, "%s con_lid:%d ase_lid:%d", __func__, con_lid, ase_lid);
-    LEA_PLAYER_TRACE(0, "enabled_playback_ase_cnt:%d enabled_capture_ase_cnt:%d",
+    LOG_I("%s con_lid:%d ase_lid:%d", __func__, con_lid, ase_lid);
+    LOG_D("enabled_playback_ase_cnt:%d enabled_capture_ase_cnt:%d",
         enabled_playback_ase_cnt, enabled_capture_ase_cnt);
 
 #if defined (GAF_CODEC_CROSS_CORE) || defined (AOB_CODEC_CP)
@@ -1566,12 +1546,18 @@ static void gaf_mobile_audio_stream_stop(uint8_t con_lid, uint8_t ase_lid)
     if ((0 == enabled_playback_ase_cnt) &&
         (GAF_PLAYBACK_STREAM_IDLE != pStreamEnv->stream_context.playback_stream_state))
     {
+#ifdef GAF_OFFLOAD_ENABLE
+        gaf_mobile_offload_stop_playback_stream();
+#endif
         pStreamEnv->func_list->stream_func_list.playback_stop_stream_func(pStreamEnv);
     }
 
     if (0 == enabled_capture_ase_cnt &&
         (GAF_CAPTURE_STREAM_IDLE != pStreamEnv->stream_context.capture_stream_state))
     {
+#ifdef GAF_OFFLOAD_ENABLE
+        gaf_mobile_offload_stop_capture_stream();
+#endif
         pStreamEnv->func_list->stream_func_list.capture_stop_stream_func(pStreamEnv);
     }
 
@@ -1598,8 +1584,6 @@ static void gaf_mobile_audio_stream_stop(uint8_t con_lid, uint8_t ase_lid)
 
 static void _gaf_mobile_audio_stream_stop_handler(uint8_t ase_lid, uint8_t con_lid)
 {
-    gaf_mobile_audio_update_stream_info_from_ase(GAF_AUDIO_UPDATE_STREAM_INFO_TO_STOP, ase_lid, con_lid);
-
 #if (BES_AHP)
     const bes_ble_bap_ascc_ase_t *p_ase_info = bes_ble_bap_ascc_get_ase_info(ase_lid);
     // Get HT frame interval bf
@@ -1619,8 +1603,9 @@ static void _gaf_mobile_audio_stream_stop_handler(uint8_t ase_lid, uint8_t con_l
 
 void gaf_mobile_audio_stream_update_and_stop_handler(uint8_t ase_lid, uint8_t con_lid)
 {
-    LEA_PLAYER_TRACE(0, "%s, con_lid=%d", __func__, con_lid);
+    LOG_I("%s,ase_lid=%d con_lid=%d", __func__, ase_lid, con_lid);
     gaf_media_stream_boost_freq(1500);
+    gaf_mobile_audio_update_stream_info_from_ase(GAF_AUDIO_UPDATE_STREAM_INFO_TO_STOP, ase_lid, con_lid);
     app_bt_start_custom_function_in_bt_thread((uint32_t)ase_lid,
                                               (uint32_t)con_lid,
                                               (uint32_t)_gaf_mobile_audio_stream_stop_handler);
@@ -1644,7 +1629,7 @@ static void gaf_mobile_audio_steam_retrigger_handler(void* stream_env, uint32_t 
             gaf_cis_mobile_media_dwelling_info[0].startedStreamTypes &= ~GAF_AUDIO_STREAM_TYPE_PLAYBACK;
             gaf_cis_mobile_media_dwelling_info[1].startedStreamTypes &= ~GAF_AUDIO_STREAM_TYPE_PLAYBACK;
             playback_ase_lid_list = gaf_mobile_audio_get_playback_ase_index_list(con_lid);
-            for (uint8_t ase_lid = 0; ase_lid < GAF_AUDIO_ASE_TOTAL_COUNT - 1; ase_lid++)
+            for (uint8_t ase_lid = 0; ase_lid < GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT; ase_lid++)
             {
                 if (GAF_INVALID_ASE_INDEX != playback_ase_lid_list[ase_lid])
                 {
@@ -1657,7 +1642,7 @@ static void gaf_mobile_audio_steam_retrigger_handler(void* stream_env, uint32_t 
             gaf_cis_mobile_media_dwelling_info[0].startedStreamTypes &= ~GAF_AUDIO_STREAM_TYPE_CAPTURE;
             gaf_cis_mobile_media_dwelling_info[1].startedStreamTypes &= ~GAF_AUDIO_STREAM_TYPE_CAPTURE;
             capture_ase_lid_list = gaf_mobile_audio_get_capture_ase_index_list(con_lid);
-            for (uint8_t ase_lid = 0; ase_lid < GAF_AUDIO_ASE_TOTAL_COUNT - 1; ase_lid++)
+            for (uint8_t ase_lid = 0; ase_lid < GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT; ase_lid++)
             {
                 if (GAF_INVALID_ASE_INDEX != capture_ase_lid_list[ase_lid])
                 {
@@ -1678,7 +1663,7 @@ static void gaf_mobile_audio_steam_retrigger_handler(void* stream_env, uint32_t 
         if (GAF_AUDIO_STREAM_TYPE_PLAYBACK == StreamType)
         {
             playback_ase_lid_list = gaf_mobile_audio_get_playback_ase_index_list(con_lid);
-            for (uint8_t ase_lid = 0; ase_lid < GAF_AUDIO_ASE_TOTAL_COUNT - 1; ase_lid++)
+            for (uint8_t ase_lid = 0; ase_lid < GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT; ase_lid++)
             {
                 if (GAF_INVALID_ASE_INDEX != playback_ase_lid_list[ase_lid])
                 {
@@ -1689,7 +1674,7 @@ static void gaf_mobile_audio_steam_retrigger_handler(void* stream_env, uint32_t 
         else
         {
             capture_ase_lid_list = gaf_mobile_audio_get_capture_ase_index_list(con_lid);
-            for (uint8_t ase_lid = 0; ase_lid < GAF_AUDIO_ASE_TOTAL_COUNT - 1; ase_lid++)
+            for (uint8_t ase_lid = 0; ase_lid < GAF_AUDIO_USED_ASE_PER_DIR_MAX_CNT; ase_lid++)
             {
                 if (GAF_INVALID_ASE_INDEX != capture_ase_lid_list[ase_lid])
                 {
@@ -1699,6 +1684,70 @@ static void gaf_mobile_audio_steam_retrigger_handler(void* stream_env, uint32_t 
             }
         }
     }
+}
+
+void gaf_mobile_audio_data_write(uint8_t* data, uint32_t len)
+{
+    GAF_AUDIO_STREAM_ENV_T* pStreamEnv = gaf_mobile_audio_get_stream_env_from_ase(0);
+    GAF_AUDIO_STREAM_COMMON_INFO_T* pCommonInfo = &(pStreamEnv->stream_info.captureInfo);
+
+#ifdef APP_BLE_USB_AUDIO_RESAMPLE_SYNC
+    gaf_offload_stream_data_tx_write(data, len, pCommonInfo->codec_info.bits_depth/8);
+#else
+    gaf_source_stream_data_tx_write(data, len, pCommonInfo->codec_info.bits_depth/8);
+#endif
+}
+
+void gaf_mobile_audio_data_read(uint8_t* data, uint32_t len)
+{
+    gaf_source_stream_data_rx_read(data, len);
+}
+
+void gaf_mobile_audio_param_set(gaf_mobile_audio_param_t* param)
+{
+    GAF_AUDIO_STREAM_ENV_T* pStreamEnv = NULL;
+    GAF_AUDIO_STREAM_COMMON_INFO_T* pCommonInfo = NULL;
+
+    LOG_I("%s, audio_path=%d, stream_type=%d ", __func__, param->audio_path, param->stream_type);
+    pStreamEnv = gaf_mobile_audio_get_stream_env_from_ase(0);
+    if (param->stream_type)
+    {
+        // Save bis param
+        pStreamEnv->stream_info.is_bis = true;
+    }
+
+    pStreamEnv->stream_info.audio_path = param->audio_path;
+    if (param->audio_path == GAF_MOBILE_INPUT_USB)
+    {
+#if defined(BLE_USB_AUDIO_SUPPORT)
+        pStreamEnv->stream_info.timer_send = true;
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.playback_start_stream_func = gaf_mobile_usb_audio_capture_start_handler;
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.playback_init_stream_buf_func = gaf_mobile_audio_flexible_playback_buf_init;
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.playback_stop_stream_func = gaf_mobile_usb_audio_capture_stop_handler;
+
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.capture_start_stream_func = gaf_mobile_usb_audio_media_stream_start_handler;
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.capture_init_stream_buf_func = gaf_mobile_audio_flexible_capture_buf_init;
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.capture_stop_stream_func = gaf_mobile_usb_audio_media_stream_stop_handler;
+#endif
+    }
+    else if (param->audio_path == GAF_MOBILE_INPUT_I2S)
+    {
+#if defined(BLE_I2S_AUDIO_SUPPORT)
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.playback_start_stream_func = gaf_mobile_i2s_audio_capture_start_handler;
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.playback_init_stream_buf_func = gaf_mobile_audio_flexible_playback_buf_init;
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.playback_stop_stream_func = gaf_mobile_i2s_audio_capture_stop_handler;
+
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.capture_start_stream_func = gaf_mobile_i2s_audio_media_stream_start_handler;
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.capture_init_stream_buf_func = gaf_mobile_audio_flexible_capture_buf_init;
+        gaf_mobile_audio_flexible_stream_func_list.stream_func_list.capture_stop_stream_func = gaf_mobile_i2s_audio_media_stream_stop_handler;
+#endif
+    }
+
+    pCommonInfo = &(pStreamEnv->stream_info.playbackInfo);
+    pCommonInfo->codec_info.bits_depth = param->play_bits;
+
+    pCommonInfo = &(pStreamEnv->stream_info.captureInfo);
+    pCommonInfo->codec_info.bits_depth = param->cap_bits;
 }
 
 void gaf_mobile_audio_stream_init(void)

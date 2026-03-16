@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __BAP_BC_SINK_INC__
-#define __BAP_BC_SINK_INC__
+#ifndef __BAP_BC_SINK_H__
+#define __BAP_BC_SINK_H__
 
 #include "bap_broadcast_common.h"
 

@@ -20,10 +20,6 @@
 #include "bes_me_api.h"
 #include "app_keyhandle.h"
 
-#ifdef BIS_SELFSCAN_ENABLED
-#include "bis_selfscan/app_bis_selfscan.h"
-#endif /*BIS_SELFSCAN_ENABLED*/
-
 #ifdef BT_SVC_MODULE_TWS_ENABLED
 extern void app_tws_cmd_register_cmd_table(void);
 #endif
@@ -43,10 +39,6 @@ int bt_app_init(void)
 #ifndef BLE_ONLY_ENABLED
     bes_bt_app_init();
 #endif
-#endif
-
-#ifdef BIS_SELFSCAN_ENABLED
-    app_bis_selfscan_init(NULL, NULL);
 #endif
 
 #ifdef BT_APP_RSSI
@@ -72,8 +64,5 @@ int bt_app_init(void)
 
 int bt_app_deinit(void)
 {
-#ifdef BIS_SELFSCAN_ENABLED
-    app_bis_selfscan_deinit();
-#endif
     return 0;
 }

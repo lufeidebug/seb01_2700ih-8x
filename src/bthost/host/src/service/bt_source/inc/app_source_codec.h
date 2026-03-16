@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __APP_A2DP_SOURCE_CODEC__
-#define __APP_A2DP_SOURCE_CODEC__
+#ifndef __APP_A2DP_SOURCE_CODEC_H__
+#define __APP_A2DP_SOURCE_CODEC_H__
 #include "bt_source.h"
 #include "app_a2dp_source.h"
 #include "app_overlay.h"
@@ -92,10 +92,6 @@ typedef struct {
 
 typedef struct  {
     osSemaphoreId _osSemaphoreId;
-    osSemaphoreDef_t _osSemaphoreDef;
-#ifdef CMSIS_OS_RTX
-    uint32_t _semaphore_data[2];
-#endif
 } a2dp_source_lock_t;
 
 typedef struct{

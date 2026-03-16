@@ -40,6 +40,7 @@ extern "C" {
 #define AVDTP_DELAYREPORT 0x0D
 #define AVDTP_CUSTOM_VIVO_CMD1 0x30
 #define AVDTP_CUSTOM_VIVO_CMD2 0x31
+#define AVDTP_CUSTOM_VIVO_CMD3 0x32
 
 #define AVDTP_PKT_TYPE_SINGLE 0x00
 #define AVDTP_PKT_TYPE_START 0x01
@@ -1048,6 +1049,9 @@ bool av_is_remote_support_codec(struct a2dp_control_t *stream, uint8_t codec_typ
 struct avdtp_control_t *a2dp_get_avdtp_control(struct a2dp_control_t *stream);
 uint32 a2dp_save_ctx(struct a2dp_control_t *a2dp_ctl, uint8_t *buf, uint32_t buf_len);
 uint32 a2dp_restore_ctx(struct a2dp_ctx_input *input);
+
+typedef bool (*avdtp_cmd_req_delay_rsp)(struct bdaddr_t *remote, uint8_t *timeout);
+void avdtp_register_req_delay_rsp_cb(avdtp_cmd_req_delay_rsp delay_rsp_cb);
 
 #if defined(__cplusplus)
 }

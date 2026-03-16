@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __VAP_VAC_INT__
-#define __VAP_VAC_INT__
+#ifndef __VAP_VAC_H__
+#define __VAP_VAC_H__
 
 #include "gaf_cfg.h"
 #include "gaf_prf.h"

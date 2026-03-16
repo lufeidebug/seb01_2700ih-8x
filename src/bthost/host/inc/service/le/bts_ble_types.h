@@ -370,10 +370,10 @@ typedef struct
      *      general discoverable and connectable undirected mode
      *      connectable directed low duty cycle mode
      */
-    uint32_t min_adv_fast_interval_ms; // LE 1M PHY
-    uint32_t max_adv_fast_interval_ms; // LE 1M PHY
-    uint32_t min_adv_fast_interval_coded_ms; // LE Coded PHY
-    uint32_t max_adv_fast_interval_coded_ms; // LE Coded PHY
+    uint32_t min_adv_fast_interval_slot; // LE 1M PHY
+    uint32_t max_adv_fast_interval_slot; // LE 1M PHY
+    uint32_t min_adv_fast_interval_coded_slot; // LE Coded PHY
+    uint32_t max_adv_fast_interval_coded_slot; // LE Coded PHY
     /**
      * Recommended advertising interval for user initiated non-connectable modes:
      *      non-discoverable mode
@@ -387,17 +387,17 @@ typedef struct
      * might be alternately enabled for only a few seconds and disabled for
      * several minutes.
      */
-    uint32_t min_adv_slow_interval_ms; // LE 1M PHY
-    uint32_t max_adv_slow_interval_ms; // LE 1M PHY
-    uint32_t min_adv_slow_interval_coded_ms; // LE Coded PHY
-    uint32_t max_adv_slow_interval_coded_ms; // LE Coded PHY
+    uint32_t min_adv_slow_interval_slot; // LE 1M PHY
+    uint32_t max_adv_slow_interval_slot; // LE 1M PHY
+    uint32_t min_adv_slow_interval_coded_slot; // LE Coded PHY
+    uint32_t max_adv_slow_interval_coded_slot; // LE Coded PHY
     /**
      * Recommended advertising interval for background advertising other then Directed Connectable High Duty Mode:
      */
-    uint32_t min_adv_bg_interval_ms; // LE 1M PHY
-    uint32_t max_adv_bg_interval_ms; // LE 1M PHY
-    uint32_t min_adv_bg_interval_coded_ms; // LE Coded PHY
-    uint32_t max_adv_bg_interval_coded_ms; // LE Coded PHY
+    uint32_t min_adv_bg_interval_slot; // LE 1M PHY
+    uint32_t max_adv_bg_interval_slot; // LE 1M PHY
+    uint32_t min_adv_bg_interval_coded_slot; // LE Coded PHY
+    uint32_t max_adv_bg_interval_coded_slot; // LE Coded PHY
 } bts_ble_gap_adv_timing_t;
 
 typedef struct
@@ -455,19 +455,18 @@ typedef struct
     bts_ble_gap_dt_buf_t adv_data;
     bts_ble_gap_dt_buf_t scan_rsp_data;
     bts_ble_gap_decision_t decision_data;
-    uint32_t duration_ms;
+    uint16_t duration_10ms;
     uint8_t max_ext_adv_evts;
 } bts_ble_gap_adv_param_t;
 
 typedef struct bts_ble_gap_adv_actv_t
 {
+    /// Adv info provided by internal
     uint8_t adv_handle;
-    bool adv_is_started;
+    /// Adv param to be filled by external
     bt_ble_gap_adv_user_t user;
     uint32_t custom_adv_interval_ms;
     bts_ble_gap_adv_param_t adv_param;
-    bool (*adv_activity_func)(struct bts_ble_gap_adv_actv_t *adv);
-    bt_bdaddr_t local_rpa;
 } bts_ble_gap_adv_actv_t;
 
 typedef struct

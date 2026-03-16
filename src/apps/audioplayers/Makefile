@@ -124,7 +124,8 @@ ccflags-y := \
 	-Ithirdparty/tflite/tensorflow/lite/micro/src/dtln_denoise/ \
 	-Iservices/audio_manager/inc \
 	-Iapps/sensorhub \
-	$(AUDIO_ALGORITHMS_INCLUDES)
+	$(AUDIO_ALGORITHMS_INCLUDES) \
+	-Iservices/audioflinger/
 
 ccflags-y += $(BES_MULTIMEDIA_INCLUDES)
 
@@ -212,6 +213,18 @@ ifeq ($(SPEECH_TX_AEC_CODEC_REF),1)
 CFLAGS_voicebtpcmplay.o += -DSPEECH_TX_AEC_CODEC_REF
 CFLAGS_voicebtpcmplay_sco_dma_snapshot.o += -DSPEECH_TX_AEC_CODEC_REF
 CFLAGS_bt_sco_chain_cfg_default.o += -DSPEECH_TX_AEC_CODEC_REF
+endif
+
+ifeq ($(SPEECH_OUTPUT_SW_GAIN_BEFORE_ALGO),1)
+CFLAGS_voicebtpcmplay_sco_dma_snapshot.o += -DSPEECH_OUTPUT_SW_GAIN_BEFORE_ALGO
+CFLAGS_bt_sco_chain.o += -DSPEECH_OUTPUT_SW_GAIN_BEFORE_ALGO
+CFLAGS_bt_sco_chain_thirdparty.o += -DSPEECH_OUTPUT_SW_GAIN_BEFORE_ALGO
+endif
+
+ifeq ($(AUDIO_OUTPUT_SW_GAIN),1)
+CFLAGS_voicebtpcmplay_sco_dma_snapshot.o += -DAUDIO_OUTPUT_SW_GAIN
+CFLAGS_bt_sco_chain.o += -DAUDIO_OUTPUT_SW_GAIN
+CFLAGS_bt_sco_chain_thirdparty.o += -DAUDIO_OUTPUT_SW_GAIN
 endif
 
 ifeq ($(SPEECH_RX_24BIT),1)

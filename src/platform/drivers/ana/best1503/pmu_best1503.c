@@ -1196,6 +1196,8 @@ uint32_t BOOT_TEXT_FLASH_LOC read_hw_metal_id(void)
         metal_id = HAL_CHIP_METAL_ID_4;
     } else if (metal_id == 0xA) {
         metal_id = HAL_CHIP_METAL_ID_6;
+    } else if (metal_id == 0xB) {
+        metal_id = HAL_CHIP_METAL_ID_7;
     }
 
     return metal_id;

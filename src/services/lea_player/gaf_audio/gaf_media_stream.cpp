@@ -43,6 +43,7 @@
 #include "gaf_stream_dbg.h"
 #include "app_audio_active_device_manager.h"
 #include "app_bt_media_manager.h"
+#include "gaf_audio_path.h"
 #if (BES_AHP)
 #include "app_gaf_define.h"
 #include "gaf_non_codec_stream.h"
@@ -80,10 +81,6 @@ static int32_t *g_capture_combo_vpu_pcm_buf = NULL;
 
 #ifdef MIX_AUDIO_PROMPT_WITH_A2DP_MEDIA_ENABLED
 #include "audio_prompt_sbc.h"
-#endif
-
-#ifdef BLE_I2S_AUDIO_SUPPORT
-#include "app_ble_i2s_audio_stream.h"
 #endif
 
 #ifdef GAF_DSP

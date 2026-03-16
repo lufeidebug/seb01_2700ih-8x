@@ -23,69 +23,54 @@ endif
 obj_c += $(filter-out $(exclude_transport_c), $(transport_c))
 obj_cpp += $(filter-out $(exclude_transport_cpp), $(transport_cpp))
 
-framework_obj :=
+src_obj := $(obj_c:.c=.o) $(obj_s:.S=.o) $(obj_cpp:.cpp=.o)
 
-ifeq ($(VOC_ENCODE_ENABLE),1)
-framework_obj += codec/
-endif
+obj-y := $(src_obj)
 
-ifeq ($(IOS_IAP2_BLUETOOTH  ),1)
-obj_c += $(patsubst $(cur_dir)%,%,$(wildcard $(cur_dir)iAP2/src/*.c))
-endif
+obj-y += codec/
 
-GEN_LIB_NAME := libAI_api
 root_dir := $(abspath $(dir $(realpath $(firstword $(MAKEFILE_LIST))))/..)
 sinclude $(root_dir)/config/lib.mk
 
 ifeq ($(BISTO_ENABLE),1)
-framework_obj += protocol/gva/
+obj-y += protocol/gva/
 endif
 
 ifeq ($(AMA_VOICE),1)
-framework_obj += protocol/ama/
+obj-y += protocol/ama/
 endif
 
 ifeq ($(DMA_VOICE),1)
-framework_obj += protocol/dma/
+obj-y += protocol/dma/
 endif
 
 ifeq ($(SMART_VOICE),1)
-framework_obj += protocol/smartvoice/
+obj-y += protocol/smartvoice/
 endif
 
 ifeq ($(TENCENT_VOICE),1)
-framework_obj += protocol/tencent/
+obj-y += protocol/tencent/
 endif
 
 ifeq ($(GMA_VOICE),1)
-framework_obj += protocol/gma/
+obj-y += protocol/gma/
 endif
 
 ifeq ($(BIXBY_VOICE),1)
-framework_obj += protocol/bixbyvoice/
+obj-y += protocol/bixbyvoice/
 endif
 
 ifeq ($(CUSTOMIZE_VOICE),1)
-framework_obj += protocol/common_api/
-GEN_LIB_NAME := $(GEN_LIB_NAME)_COMMON
+obj-y += protocol/common_api/
 endif
 
 ifeq ($(DUAL_MIC_RECORDING),1)
-framework_obj += protocol/dual_mic_recording/
+obj-y += protocol/dual_mic_recording/
 endif
 
 ifeq ($(MMA_VOICE),1)
-framework_obj += protocol/mma/
+obj-y += protocol/mma/
 endif
-
-src_obj := $(obj_c:.c=.o) $(obj_s:.S=.o) $(obj_cpp:.cpp=.o)
-
-root_dir := $(abspath $(dir $(realpath $(firstword $(MAKEFILE_LIST))))/..)
-sinclude $(root_dir)/config/lib.mk
-$(GEN_LIB_NAME)-y := $(src_obj)
-
-obj-y := $(GEN_LIB_NAME).a
-obj-y += $(framework_obj)
 
 subdir-ccflags-y += \
     -Iapps/common \

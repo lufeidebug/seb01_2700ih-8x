@@ -5,6 +5,7 @@
 #include "app_iap2.h"
 #include "iap2_ota.h"
 #include "bta_iap2_api.h"
+#include "iap2_mfi_i2c.h"
 
 // Static global variable to store IAP2 information
 static bt_iap2_information_t iap2_info = {0};
@@ -94,7 +95,7 @@ void app_ia2p_info_init(void)
     iap2_info.bt_trans_group = &bt_trans_group;
     memcpy(iap2_info.ProductPlanUID, ProductPlanUID, sizeof(ProductPlanUID));
 
-    BTAPP_TRACE(0, "[IAP2 LOG]%s", __func__);
+    BTAPP_TRACE(0, "[IAP2]%s", __func__);
 }
 
 /**
@@ -188,7 +189,7 @@ void ext_accessory_data_tx_done_cb(uint8_t *addr)
     memcpy(&(link_info.addr.addr), addr, sizeof(bt_bdaddr_t));
     link_info.type = BT_IAP2_LINK_TYPE_BT;
     // Currently empty implementation - can be extended for tx done handling
-    BTAPP_TRACE(0, "[IAP2 LOG][scn:%d] iap2 ea packet tx done", bta_iap2_service_spp_local_channel());
+    BTAPP_TRACE(0, "[IAP2][scn:%d] iap2 ea packet tx done", bta_iap2_service_spp_local_channel());
 }
 
 /**
@@ -202,7 +203,7 @@ void accessory_authen_cb(uint8_t* addr, bool authen_state)
     memcpy(&(link_info.addr.addr), addr, sizeof(bt_bdaddr_t));
     link_info.type = BT_IAP2_LINK_TYPE_BT;
     // Currently empty implementation - can be extended for authentication handling
-    BTAPP_TRACE(0, "[IAP2 LOG]%s: authen_state %d addr %x:%x:...:%x", __func__, authen_state,
+    BTAPP_TRACE(0, "[IAP2]%s: authen_state %d addr %x:%x:...:%x", __func__, authen_state,
                         link_info.addr.addr.address[0], link_info.addr.addr.address[1], link_info.addr.addr.address[5]);
 }
 
@@ -217,7 +218,7 @@ void accessory_ident_cb(uint8_t* addr, bool ident_state)
     memcpy(&(link_info.addr.addr), addr, sizeof(bt_bdaddr_t));
     link_info.type = BT_IAP2_LINK_TYPE_BT;
     // Currently empty implementation - can be extended for identification handling
-    BTAPP_TRACE(0, "[IAP2 LOG]%s: ident_state %d addr %x:%x:...:%x", __func__, ident_state,
+    BTAPP_TRACE(0, "[IAP2]%s: ident_state %d addr %x:%x:...:%x", __func__, ident_state,
                         link_info.addr.addr.address[0], link_info.addr.addr.address[1], link_info.addr.addr.address[5]);
 }
 
@@ -228,7 +229,7 @@ void accessory_ident_cb(uint8_t* addr, bool ident_state)
  */
 void app_iap2_init_accessory_cb(void)
 {
-    BTAPP_TRACE(0, "[IAP2 LOG]%s", __func__);
+    BTAPP_TRACE(0, "[IAP2]%s", __func__);
     access_cb.authen_state_cb = accessory_authen_cb;
     access_cb.ident_state_cb = accessory_ident_cb;
     access_cb.start_ea_cb = ext_accessory_start_ea_session_cb;
@@ -240,17 +241,17 @@ void app_iap2_init_accessory_cb(void)
 void app_iap2_bes_ota_init(void)
 {
 #ifdef IOS_IAP2_BES_OTA_SUPPORT
-    BTAPP_TRACE(0, "[IAP2 LOG]%s", __func__);
+    BTAPP_TRACE(0, "[IAP2]%s", __func__);
     iap2_ota_set_ea_session_protocol_id(BT_IAP2_OTA_EA_PROTOCOL_IDENTIFIER);
 #endif
 }
 
 void app_iap2_service_config_init(void)
 {
-    BTAPP_TRACE(0, "[IAP2 LOG]%s", __func__);
+    BTAPP_TRACE(0, "[IAP2]%s", __func__);
     bta_iap2_service_enable_default_reconnect(true);
-    bta_iap2_service_enable_delay_detect(false);
-    bta_iap2_service_set_delay_detect_time(1000);
+    bta_iap2_service_enable_check_mfi_when_initialed(false);
+    bta_iap2_service_register_mfi_i2c_callback(NULL, NULL); // if NULL, means use stack default i2c
 }
 
 /**

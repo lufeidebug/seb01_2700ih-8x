@@ -583,22 +583,17 @@ void app_ibrt_if_disconnect_all_bt_connections(void)
 
 void app_ibrt_if_disconnect_mobile_device(const bt_bdaddr_t* remote_addr)
 {
-    bta_remove_device(remote_addr);
+    bta_remove_bt_device(remote_addr);
 }
 
 void app_ibrt_if_connect_mobile_device(const bt_bdaddr_t *addr, uint8_t page_count)
 {
-    bta_page_policy_t policy =
-    {
-        .addrs = { *addr } 
-    };
-    bta_set_page_policy(&policy);
-    bta_set_all_page_count(0, page_count);
+    bta_connect_bt_device(addr, page_count, 0);
 }
 
 uint8_t app_ibrt_if_get_mobile_connected_dev_list(bt_bdaddr_t *out_addrs)
 {
-    return bta_find_all_connected_device(out_addrs);
+    return bta_find_all_connected_bt_device(out_addrs);
 }
 
 bool app_ibrt_if_is_earbud_in_pairing_mode(void)
@@ -806,8 +801,8 @@ static void a2dp_audio_state_handler(const bt_bdaddr_t *address, bt_a2dp_audio_s
 
 static void a2dp_audio_config_handler(const bt_bdaddr_t *address, const bt_a2dp_audio_config_t *config)
 {
-    report_a2dp_state_changed(address, IBRT_CONN_A2DP_CODEC_CONFIGURED,0,config->codec, NULL);
-    TRACE(1, "a2dp_audio_config_handler:bit codec=%d pool=%d", config->codec, config->specific_params.sbc.bitpool);
+    report_a2dp_state_changed(address, IBRT_CONN_A2DP_CODEC_CONFIGURED, 0, config->codec, NULL);
+    TRACE(1, "a2dp_audio_config_handler:bit pool %d", config->specific_params.sbc.bitpool);
 }
 
 static void a2dp_unknown_cmd_handler(const bt_bdaddr_t *address, const bt_a2dp_unknown_cmd_t *param)
@@ -1114,9 +1109,13 @@ static void avrcp_connection_state_handler(const bt_bdaddr_t *address, bt_avrcp_
     {
         case BT_AVRCP_CONN_STATE_DISCONNECTED:
             event.avrcp_state = IBRT_CONN_AVRCP_DISCONNECTED;
+            event.erro_reason = error_code;
+            g_link_status_changed_callback.ibrt_avrcp_state_changed(address, &event);
         break;
         case BT_AVRCP_CONN_STATE_CONNECTED:
             event.avrcp_state = IBRT_CONN_AVRCP_CONNECTED;
+            event.erro_reason = error_code;
+            g_link_status_changed_callback.ibrt_avrcp_state_changed(address, &event);
         break;
     }
 }
@@ -1246,7 +1245,6 @@ static void report_peer_box_state_update(bta_tws_box_state_t box_state)
 
 static void bt_link_state_changed_handler(const bt_bdaddr_t *addr, bta_tws_bt_link_event_t event, bt_ibrt_role_t role, uint8_t reason)
 {
-    TRACE(0, "%s event=%d", __func__, event);
     switch (event)
     {
         case BTA_TWS_BT_DISCONNECTED_EVENT:
@@ -1392,7 +1390,7 @@ void app_bta_earbuds_deprecated_init()
 
     bta_tws_ui_policy_callbacks_t ui_policy =
     {
-        .accept_connection_request_callback = accept_connection_request_handler,
+        .accept_connection_request_callback = accept_connection_request_handler, 
         .set_page_scan_param_callback = set_page_scan_param_handler,
     };
     bta_tws_set_ui_policy_callbacks(&ui_policy);

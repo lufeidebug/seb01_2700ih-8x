@@ -14,8 +14,8 @@
  *
  ****************************************************************************/
 
-#ifndef __CONMGR_API_H_
-#define __CONMGR_API_H_
+#ifndef __CONMGR_API_H__
+#define __CONMGR_API_H__
 
 typedef U8 btif_cmgr_sniff_exit_policy_t;
 

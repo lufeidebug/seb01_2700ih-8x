@@ -30,7 +30,7 @@
 #include "nvrecord_bt.h"
 #include "nvrecord_env.h"
 #include "app_status_ind.h"
-#include "app_ui_api.h"
+//#include "app_ui_api.h"
 
 #ifdef IBRT_UI
 #include "app_ibrt_debug.h"

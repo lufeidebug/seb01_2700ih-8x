@@ -420,9 +420,14 @@ void WEAK bt_drv_reg_op_write_private_public_192_256_key(uint8_t* private_key,ui
 
 }
 
+void WEAK bt_drv_reg_op_wr_sec_con_host_supp(bool en)
+{
+    DRIVERS_TRACE(0, "%s: not implemented", __func__);
+}
+
 void WEAK bt_drv_reg_op_set_le_con_allow_use_same_addr(bool en)
 {
-
+    DRIVERS_TRACE(0, "%s: not implemented", __func__);
 }
 
 #ifdef BTC_CPUDUMP_BASE

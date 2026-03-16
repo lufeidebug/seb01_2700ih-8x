@@ -26,6 +26,22 @@ extern "C" {
 #include "bt_if.h"
 #include "bes_me_api.h"
 
+#ifndef BTIF_CMGR_SNIFF_MIN_INTERVAL
+#ifdef BISTO_ENABLED
+#define BTIF_CMGR_SNIFF_MIN_INTERVAL 160
+#else
+#define BTIF_CMGR_SNIFF_MIN_INTERVAL (796)
+#endif
+#endif /*  */
+
+#ifndef BTIF_CMGR_SNIFF_MAX_INTERVAL
+#ifdef BISTO_ENABLED
+#define BTIF_CMGR_SNIFF_MAX_INTERVAL (160)
+#else
+#define BTIF_CMGR_SNIFF_MAX_INTERVAL (796)
+#endif
+#endif /*  */
+
 enum APP_BT_GOLBAL_HANDLE_HOOK_USER_T {
     APP_BT_GOLBAL_HANDLE_HOOK_USER_0 = 0,
     APP_BT_GOLBAL_HANDLE_HOOK_USER_1,
@@ -290,10 +306,6 @@ void app_check_pending_stop_sniff_op(void);
 
 uint8_t app_bt_count_connected_device(void);
 
-struct BT_DEVICE_T * app_bt_get_connected_sink_device(void);
-
-struct BT_DEVICE_T *app_bt_get_connected_device_byaddr(const bt_bdaddr_t *remote);
-
 void app_bt_pause_media_player_again(uint8_t deviceId);
 
 bool app_bt_is_music_player_working(uint8_t deviceId);
@@ -456,11 +468,6 @@ int8_t app_bt_get_rssi(void);
 int8_t app_tile_get_ble_rssi(void);
 #endif
 
-#ifdef CTKD_ENABLE
-bool app_bt_ctkd_is_connecting_mobile_pending(void);
-void app_bt_ctkd_connecting_mobile_handler(void);
-#endif
-
 void app_bt_get_remote_cod(uint8_t *cod0, uint8_t *cod1);
 bool app_bt_get_remote_cod_by_addr(const bt_bdaddr_t *bd_ddr, uint8_t *cod);
 void app_bt_acl_data_packet_check(uint8_t *data);
@@ -474,10 +481,6 @@ void app_bt_reset_rssi_collector(void);
 int32_t app_bt_tx_rssi_analyzer(int8_t rssi);
 void app_bt_user_passkey_notify_callback(btif_remote_device_t *remdev,uint32_t passkey);
 void app_bt_user_passkey_request_callback(btif_remote_device_t *remdev);
-
-struct BT_DEVICE_T *app_bt_manager_get_device_all_start(void);
-
-struct BT_DEVICE_T *app_bt_manager_get_device_all_end(void);
 
 bool app_bt_need_disconnect_profiles_before_acl(btif_remote_device_t *remote_device);
 void app_bt_disconnect_all_profiles_and_acl(btif_remote_device_t *remote_device);
@@ -518,9 +521,7 @@ bt_pair_state_change_cb_t app_bt_get_pair_state_callback(void);
 
 int bt_pairing_init(void);
 
-#ifdef NV_RECORD_DEV_NAME
 uint8_t *app_get_current_remote_device_name(void);
-#endif
 
 btif_accessible_mode_t app_bt_get_curr_access_mode(void);
 

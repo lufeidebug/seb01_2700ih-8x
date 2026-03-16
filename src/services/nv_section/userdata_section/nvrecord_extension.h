@@ -430,6 +430,8 @@ typedef enum {
     NV_APP_SOUND,
     /// glasses
     NV_APP_GLASSES,
+    // earbuds or headset with lea feature dynamic switch and lea disabled
+    NV_APP_LEA_DISABLE_MODE,
     NV_APP_MONE_MAX,
 } nvrec_appmode_e;
 

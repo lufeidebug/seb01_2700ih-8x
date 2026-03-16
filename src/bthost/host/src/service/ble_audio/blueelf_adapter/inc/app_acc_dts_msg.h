@@ -21,8 +21,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_ACC_DTS_MSG_H_
-#define APP_ACC_DTS_MSG_H_
+#ifndef __APP_ACC_DTS_MSG_H__
+#define __APP_ACC_DTS_MSG_H__
 #if BLE_AUDIO_ENABLED
 #define APP_ACC_DTS_DFT_LOCAL_MAX_SDU (512)
 

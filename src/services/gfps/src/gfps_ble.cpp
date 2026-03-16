@@ -33,7 +33,6 @@
 #include "app_ble.h"
 #include "bes_gfps_api.h"
 #include "bts_core_if.h"
-#include "bt_vnd_api.h"
 #include "bes_aob_api.h"
 
 /************************private macro defination***************************/
@@ -45,6 +44,13 @@
 
 /************************extern function declearation***********************/
 extern int rand(void);
+
+#if defined(GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED)
+extern void gfps_write_sec_conn_host_supp(bool enable);
+extern void gfps_restore_sec_conn_host_supp(void);
+#else
+extern void gfps_set_le_con_allow_use_same_addr(uint8_t conidx, bool enable);
+#endif
 
 /**********************private function declearation************************/
 #ifdef SPOT_ENABLED
@@ -485,8 +491,8 @@ static bool gfps_ble_spot_adv_activity_prepare(ble_adv_activity_t *adv)
     adv_param->use_fake_btc_rpa_when_no_irk_exist = true;
 
     adv->adv_param.has_custom_adv_timing = true;
-    adv->adv_param.adv_timing.min_adv_slow_interval_ms = 800;
-    adv->adv_param.adv_timing.max_adv_slow_interval_ms = BLE_FASTPAIR_SPOT_ADVERTISING_INTERVAL;
+    adv->adv_param.adv_timing.min_adv_slow_interval_slot = 800 * 8 / 5;
+    adv->adv_param.adv_timing.max_adv_slow_interval_slot = BLE_FASTPAIR_SPOT_ADVERTISING_INTERVAL * 8 / 5;
 
     app_ble_set_adv_tx_power_level(adv, BLE_ADV_TX_POWER_LEVEL_1);
 
@@ -1861,6 +1867,7 @@ static uint8_t gfps_ble_handle_decrypted_keybase_pairing_request(gfps_ble_req_re
     uint8_t rawData[KEY_BASE_RSP_LEN] = {0};
     uint8_t rawDataLen = 0, offsetOfSalt = 0, saltLen = 0;
     gfps_ble_encrypted_resp en_rsp;
+    POSSIBLY_UNUSED bool is_lea_enabled = bes_bt_is_le_audio_enabled();
 
     memcpy(gfps_ble_env.keybase_pair_key, out_key, 16);
     memcpy(&gfps_ble_env.seeker_bt_addr.address[0] ,&raw_req->rx_tx.key_based_pairing_req.seeker_addr[0],6);
@@ -1876,11 +1883,18 @@ static uint8_t gfps_ble_handle_decrypted_keybase_pairing_request(gfps_ble_req_re
         bes_bt_me_confirmation_register_callback(gfps_process_bt_user_confirmation);
     }
 
+#if defined(GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED)
+    if (!is_lea_enabled || !raw_req->rx_tx.key_based_pairing_req.flags_support_le_audio)
+    {
+        bt_exec_async_1(false, gfps_write_sec_conn_host_supp, bt_fixed_param(false));
+    }
+#else
     // * for gfps certification compatiblity, allow accept le conn req with same addr temporarily
-    bt_defer_call_func_1(bt_vnd_set_le_con_allow_use_same_addr, bt_fixed_param(true));
+    bt_exec_async_1(false, gfps_set_le_con_allow_use_same_addr, bt_fixed_param(true));
+#endif  // GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED
 
 #if BLE_AUDIO_ENABLED
-    if (raw_req->rx_tx.key_based_pairing_req.flags_support_le)
+    if (is_lea_enabled && raw_req->rx_tx.key_based_pairing_req.flags_support_le)
     {
         gfps_ble_raw_ext_resp *ext_rsp = (gfps_ble_raw_ext_resp *)rawData;
         saltLen = KEY_BASE_EXT_RSP_SALT_LEN;
@@ -1904,7 +1918,7 @@ static uint8_t gfps_ble_handle_decrypted_keybase_pairing_request(gfps_ble_req_re
         }
 
 #if BLE_AUDIO_ENABLED
-        if(raw_req->rx_tx.key_based_pairing_req.flags_support_le_audio)
+        if(is_lea_enabled && raw_req->rx_tx.key_based_pairing_req.flags_support_le_audio)
         {
             ext_rsp->addrNum = bes_ble_aob_csip_if_get_device_numbers();
         }
@@ -2456,7 +2470,10 @@ void gfps_ble_disconnected_evt_handler(uint8_t conidx)
         gfps_ble_env.isPendingForWritingNameReq = false;
         gfps_ble_env.connectionIndex = BLE_INVALID_CONNECTION_INDEX;
         gfps_ble_env.isSubPairing = false;
-        bt_defer_call_func_1(bt_vnd_set_le_con_allow_use_same_addr, bt_fixed_param(false));
+#if !defined(GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED)
+        // * for gfps certification compatiblity, allow accept le conn req with same addr temporarily
+        bt_exec_async_2(false, gfps_set_le_con_allow_use_same_addr, bt_fixed_param(conidx), bt_fixed_param(false));
+#endif  // GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED
     }
 }
 
@@ -2472,6 +2489,10 @@ bool gfps_is_in_subsequent_pair_mode(void)
 
 void gfps_ble_tx_ccc_changed(uint8_t conidx, bool notify_enabled)
 {
+#if !defined(GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED)
+    // * for gfps certification compatiblity, allow accept le conn req with same addr temporarily
+    bt_exec_async_2(false, gfps_set_le_con_allow_use_same_addr, bt_fixed_param(conidx), bt_fixed_param(true));
+#endif  // GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED
     gfps_ble_env.isNotificationEnabled[conidx] = notify_enabled;
 }
 

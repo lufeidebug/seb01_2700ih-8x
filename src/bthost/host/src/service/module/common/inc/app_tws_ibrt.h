@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __APP_TWS_IBRT__
-#define __APP_TWS_IBRT__
+#ifndef __APP_TWS_IBRT_H__
+#define __APP_TWS_IBRT_H__
 #include "bluetooth_bt_api.h"
 #include "a2dp_api.h"
 #include "cmsis_os.h"

@@ -27,7 +27,7 @@
 #include "g726.h"
 #include "app_utils.h"
 #include "app_overlay.h"
-#include "voice_sbc.h"
+
 #include "cqueue.h"
 #include "voice_compression.h"
 #include "app_audio.h"

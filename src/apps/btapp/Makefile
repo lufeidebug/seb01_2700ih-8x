@@ -13,10 +13,6 @@ subdir-ccflags-y += \
 
 obj-y += bt_app/
 
-ifeq ($(BIS_SELFSCAN_ENABLED),1)
-obj-y += bis_selfscan/
-endif
-
 ifeq ($(BT_APP_RSSI),1)
 obj-y += app_rssi/
 endif

@@ -162,13 +162,13 @@ typedef struct
     uint8_t *bc_code;
     struct
     {
-        void (*bis_sink_scan_state_cb)(bool scan_or_pa_sync, bool started, uint32_t param);
-        bool (*bis_sink_select_source)(ble_bdaddr_t *addr, uint8_t adv_sid, uint8_t *bcast_id,
-                                            uint8_t *adv_data, uint8_t adv_data_len, int8_t rssi);
-        void (*bis_sink_started_callback)(uint8_t grp_lid);
-        void (*bis_sink_stoped_callback)(uint8_t grp_lid, uint16_t err_code);
-        void (*bis_sink_metadata_callback)(uint8_t subgrp_lid, uint8_t *buf, uint8_t buf_len);
-    } event_callback;
+        void (*bis_sink_scan_state_cb)(bool scan_started, uint16_t err_code);
+        bool (*bis_sink_scan_report_cb)(const ble_bdaddr_t *p_addr, uint8_t ea_sid,
+                                        const uint8_t *bcast_id, const uint8_t *ea_data, uint8_t ea_data_len, int8_t ea_rssi);
+        void (*bis_sink_pa_state_cb)(bool pa_synced, const ble_bdaddr_t *p_addr, uint8_t ea_sid, uint16_t sync_hdl, uint16_t err_code);
+        void (*bis_sink_pa_report_cb)(uint16_t sync_hdl, const uint8_t *pa_data, uint8_t pa_data_len, const app_gaf_big_info_t *big_info);
+        void (*bis_sink_big_state_cb)(bool sink_started, uint16_t sync_hdl, uint8_t grp_lid, uint16_t err_code);
+    } evt_cbs;
 } aob_bis_sink_start_param_t;
 
 
@@ -443,6 +443,25 @@ void aob_bis_scan_pa_sync_cancel(void);
  ****************************************************************************************
  */
 void aob_bis_scan_pa_report_ctrl(uint8_t pa_lid, bool enable);
+
+/**
+ ****************************************************************************************
+ * @brief Send past info to peer device via tws link
+ * @param[in] sync_hdl         Periodic advertising local handle
+ *
+ ****************************************************************************************
+ */
+int aob_bis_scan_past_info_send(uint16_t sync_hdl);
+
+/**
+ ****************************************************************************************
+ * @brief Control past info recv from peer device via tws link
+ * @param[in] con_lid        Peer device local index, 0xFF means set as default
+ * @param[in] enable         Enable or disable past recv
+ *
+ ****************************************************************************************
+ */
+int aob_bis_scan_past_info_recv_enable(uint8_t con_lid, bool enable);
 
 /**
  ****************************************************************************************

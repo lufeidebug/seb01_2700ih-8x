@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __GAF_GMAS_INC__
-#define __GAF_GMAS_INC__
+#ifndef __GAF_GMAS_INC_H__
+#define __GAF_GMAS_INC_H__
 
 #include "gaf_cfg.h"
 

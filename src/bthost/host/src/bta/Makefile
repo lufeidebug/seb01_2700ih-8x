@@ -24,6 +24,12 @@ src_obj += normal/
 endif
 endif
 
+ifneq (,$(findstring SPEAKER,$(BT_SVC_FW_PRODUCT)))
+ifneq ($(wildcard $(cur_dir)normal/Makefile),)
+src_obj += normal/
+endif
+endif
+
 ifneq (,$(findstring SOUND,$(BT_SVC_FW_PRODUCT)))
 ifneq ($(wildcard $(cur_dir)sound/Makefile),)
 src_obj += sound/
@@ -48,6 +54,10 @@ endif
 
 ifneq ($(GEN_LIB_NAME_BT),)
 BTHOST_APP_TWS_LIB_NAME := $(BTHOST_APP_TWS_LIB_NAME)$(GEN_LIB_NAME_BT)
+endif
+
+ifeq ($(USE_TRACE_ID), 1)
+BTHOST_APP_TWS_LIB_NAME := $(BTHOST_APP_TWS_LIB_NAME)_log_compressed
 endif
 
 $(BTHOST_APP_TWS_LIB_NAME)-y := $(src_obj)

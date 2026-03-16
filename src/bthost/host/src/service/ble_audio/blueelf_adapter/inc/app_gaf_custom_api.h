@@ -27,8 +27,8 @@
  * @{
  ****************************************************************************************
  */
-#ifndef APP_GAF_CUSTOM_API_H_
-#define APP_GAF_CUSTOM_API_H_
+#ifndef __APP_GAF_CUSTOM_API_H__
+#define __APP_GAF_CUSTOM_API_H__
 
 #if BLE_AUDIO_ENABLED
 
@@ -299,15 +299,6 @@ int app_bap_uc_srv_set_ase_qos_req(uint8_t ase_lid, app_gaf_bap_qos_req_t *qos_r
  ****************************************************************************************
  */
 app_bap_ascs_ase_t *app_bap_uc_srv_get_ase_info(uint8_t ase_lid);
-
-/**
- * @brief Get ASE info by cis handle
- *
- * @param direction
- * @param cis_hdl
- * @return app_bap_ascs_ase_t*
- */
-app_bap_ascs_ase_t *app_bap_uc_srv_get_ase_info_from_cis_hdl(enum app_gaf_direction direction, uint16_t cis_hdl);
 
 /**
  ****************************************************************************************
@@ -656,11 +647,14 @@ int app_bap_uc_cli_link_remove_group_cmd(uint8_t grp_lid);
 
 /**
  ****************************************************************************************
- * @brief Config ase codec using pac record
+ * @brief Config ase codec using codec configurations
  *
  * @param[in] ase_lid              ASE local index
  * @param[in] grp_lid              Group local index
  * @param[in] cis_id               cis index
+ * @param[in] codec_id             Codec id
+ * @param[in] sampleRate_enum      SampleRate
+ * @param[in] frame_octet          Octets per frame
  *
  ****************************************************************************************
  */
@@ -675,6 +669,8 @@ int app_bap_uc_cli_configure_codec(uint8_t ase_lid, uint8_t grp_lid, uint8_t cis
  * @param[in] ase_lid              ASE local index
  * @param[in] grp_lid              Group local index
  * @param[in] cis_id               cis index
+ * @param[in] codec_id             Codec id
+ * @param[in] p_cfg                Codec configurations
  *
  ****************************************************************************************
  */
@@ -801,12 +797,13 @@ int app_bap_uc_cli_link_create_group_req(uint8_t grp_lid);
  *
  * @param[in] ase_lid   ASE local index
  * @param[in] grp_lid   Group local index
+ * @param[in] cis_id    Group CIS ID
  * @param[in] max_sdu_size
  *                      Max SDU size
  *
  ****************************************************************************************
  */
-int app_bap_uc_cli_configure_qos(uint8_t ase_lid, uint8_t grp_lid, uint16_t max_sdu_size);
+int app_bap_uc_cli_configure_qos(uint8_t ase_lid, uint8_t grp_lid, uint8_t cis_id, uint16_t max_sdu_size);
 
 /**
  ****************************************************************************************

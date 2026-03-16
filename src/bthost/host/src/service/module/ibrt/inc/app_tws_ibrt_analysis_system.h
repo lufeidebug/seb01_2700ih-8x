@@ -14,8 +14,8 @@
  *
  ****************************************************************************/
 
-#ifndef __APP_TWS_IBRT_ANALYSIS_SYSTEM__
-#define __APP_TWS_IBRT_ANALYSIS_SYSTEM__
+#ifndef __APP_TWS_IBRT_ANALYSIS_SYSTEM_H__
+#define __APP_TWS_IBRT_ANALYSIS_SYSTEM_H__
 
 #include "stdint.h"
 

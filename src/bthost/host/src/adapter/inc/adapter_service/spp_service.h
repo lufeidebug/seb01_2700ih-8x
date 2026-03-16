@@ -32,7 +32,6 @@ extern "C" {
 #define bta_spp_connect(remote, local_server_channel, uuid, uuid_len) ((bt_status_t)0)
 #define bta_spp_connect_server_channel(remote, local_server_channel, remote_server_channel) ((bt_status_t)0)
 #define bta_spp_disconnect(rfcomm_handle, reason) ((bt_status_t)0)
-#define bta_spp_write(rfcomm_handle, data, size) ((bt_status_t)0)
 #define bta_spp_get_record_uuid(spp_chan, out) ((bt_status_t)0)
 #define bta_spp_give_handled_credits(rfcomm_handle, handled_credits) ((bt_status_t)0)
 #define bta_spp_create_channel(device_id, local_server_channel) ((bt_spp_channel_t *)NULL)
@@ -52,7 +51,6 @@ bt_status_t bta_spp_server_remove_listen(uint8_t local_server_channel);
 bt_status_t bta_spp_connect(const bt_bdaddr_t *remote, uint8_t local_server_channel, const uint8_t *uuid, uint16_t uuid_len);
 bt_status_t bta_spp_connect_server_channel(const bt_bdaddr_t *remote, uint8_t local_server_channel, uint8_t remote_server_channel);
 bt_status_t bta_spp_disconnect(uint32_t rfcomm_handle, uint8_t reason);
-bt_status_t bta_spp_write(uint32_t rfcomm_handle, const uint8_t *data, uint16_t size);
 bt_status_t bta_spp_get_record_uuid(const bt_spp_channel_t *spp_chan, bt_spp_uuid_t *out);
 bt_status_t bta_spp_give_handled_credits(uint32_t rfcomm_handle, uint16_t handled_credits);
 bt_spp_channel_t *bta_spp_create_channel(uint8_t device_id, uint8_t local_server_channel);

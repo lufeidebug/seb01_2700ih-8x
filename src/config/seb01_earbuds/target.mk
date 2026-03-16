@@ -367,7 +367,7 @@ endif
 ifeq ($(INTSRAM_RUN),1)
 LDS_FILE ?= best1000_intsram.lds
 else
-//LDS_FILE ?= best1000.lds
+#LDS_FILE ?= best1000.lds
 LDS_FILE ?= best1000_sndp.lds
 endif
 
@@ -404,7 +404,9 @@ include $(srctree)/config/$(CHIP)/ai_config.mk
 endif
 
 ifeq ($(ANC_ENABLE),1)
-include $(srctree)/config/$(CHIP)/anc_config.mk
+#include $(srctree)/config/$(CHIP)/anc_config.mk
+include $(srctree)/config/$(T)/anc_config.mk
+
 endif
 
 ifeq ($(ANC_ASSIST_ENABLE),1)

@@ -66,7 +66,7 @@ typedef struct app_ble_tile_event_param {
     uint8_t result; // APP_BLE_TILE_TX_DATA_DONE_EVENT
     struct {
         uint16_t interval;
-        uint16_t latency;;
+        uint16_t latency;
         uint16_t conn_sup_timeout;
     } ble_conn_param;
     struct { // APP_BLE_TILE_CH_CONN_EVENT APP_BLE_TILE_CH_DISCONN_EVENT

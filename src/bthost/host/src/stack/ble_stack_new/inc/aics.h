@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __ARC_AICS__
-#define __ARC_AICS__
+#ifndef __ARC_AICS_H__
+#define __ARC_AICS_H__
 
 #include "gaf_cfg.h"
 #include "generic_audio.h"

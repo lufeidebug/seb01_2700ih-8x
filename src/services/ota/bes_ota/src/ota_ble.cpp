@@ -82,18 +82,17 @@ static void ota_ble_event_callback(bes_ble_ota_event_param_t *param)
             }
         }
         app_ota_push_rx_data(BLE_RX_DATA_SELF_OTA, &otaParam);
-        break;        
+        break;
     }
 
     case BES_BLE_OTA_DISCONN:{
-        if (param->conidx == ota_ble_env.connectionIndex &&
-            (ota_ble_get_path_type() == app_ota_get_connected_type()))
+        if (param->conidx == ota_ble_env.connectionIndex)
         {
             otaParam.event = BES_OTA_DISCONN;
             ota_ble_disconn_hdl();
             app_ota_push_rx_data(BLE_RX_DATA_SELF_OTA, &otaParam);
         }
-        break;        
+        break;
     }
 
     case BES_BLE_OTA_RECEVICE_DATA:{

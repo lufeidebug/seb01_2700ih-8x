@@ -152,8 +152,8 @@ uint32_t codec_int_stream_setup(enum AUD_STREAM_T stream, struct HAL_CODEC_CONFI
             }
         }
     }
-    codec_int_cfg.stream_cfg[stream].codec_cfg.sample_rate = cfg->sample_rate;
-    codec_int_cfg.stream_cfg[stream].codec_cfg.set_flag |= HAL_CODEC_CONFIG_SAMPLE_RATE;
+    //codec_int_cfg.stream_cfg[stream].codec_cfg.sample_rate = cfg->sample_rate;
+    //codec_int_cfg.stream_cfg[stream].codec_cfg.set_flag |= HAL_CODEC_CONFIG_SAMPLE_RATE;
 
     if(codec_int_cfg.stream_cfg[stream].codec_cfg.bits != cfg->bits)
     {
@@ -192,7 +192,7 @@ uint32_t codec_int_stream_setup(enum AUD_STREAM_T stream, struct HAL_CODEC_CONFI
         codec_int_cfg.stream_cfg[stream].codec_cfg.use_dma = cfg->use_dma;
     }
 
-    if(codec_int_cfg.stream_cfg[stream].codec_cfg.vol != cfg->vol)
+    if((codec_int_cfg.stream_cfg[stream].codec_cfg.vol != cfg->vol)|| (codec_int_cfg.stream_cfg[stream].codec_cfg.sample_rate != cfg->sample_rate))
     {
         DRIVERS_TRACE(3,"[vol]old=%d new=%d chan_vol_set=%d", codec_int_cfg.stream_cfg[stream].codec_cfg.vol, cfg->vol, codec_int_cfg.chan_vol_set[stream]);
         codec_int_cfg.stream_cfg[stream].codec_cfg.vol = cfg->vol;
@@ -200,7 +200,8 @@ uint32_t codec_int_stream_setup(enum AUD_STREAM_T stream, struct HAL_CODEC_CONFI
             codec_int_cfg.stream_cfg[stream].codec_cfg.set_flag |= HAL_CODEC_CONFIG_VOL;
         }
     }
-
+    codec_int_cfg.stream_cfg[stream].codec_cfg.sample_rate = cfg->sample_rate;
+    codec_int_cfg.stream_cfg[stream].codec_cfg.set_flag |= HAL_CODEC_CONFIG_SAMPLE_RATE;
     if(codec_int_cfg.stream_cfg[stream].codec_cfg.io_path != cfg->io_path)
     {
         DRIVERS_TRACE(2,"[io_path]old=%d new=%d", codec_int_cfg.stream_cfg[stream].codec_cfg.io_path, cfg->io_path);

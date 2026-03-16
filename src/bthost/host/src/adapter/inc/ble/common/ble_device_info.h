@@ -140,7 +140,10 @@ typedef struct {
     uint8_t LOCAL_LTK[BLE_LTK_SIZE];
     uint8_t IRK[BLE_IRK_SIZE];
     uint8_t LOCAL_IRK[BLE_IRK_SIZE];
-    uint8_t enc_key_size;
+    uint8_t enc_key_size : 5;   // range from 7 to 16
+    uint8_t lea_visible : 1;    // only associated with tws state when pairing
+    uint8_t peer_lea_supp : 1;  // this device was connected to lea ever
+    uint8_t reserved : 1;
     gattc_server_cache_t server_cache;
 } __attribute__ ((packed)) BleDevicePairingInfo;
 

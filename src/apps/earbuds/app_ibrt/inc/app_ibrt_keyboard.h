@@ -18,6 +18,14 @@
 #include "app_key.h"
 #include "bluetooth_bt_api.h"
 
+struct ibrt_if_action_header
+{
+    uint8_t action;
+    bt_bdaddr_t remote;
+    uint32_t param;
+    uint32_t param2;
+} __attribute__ ((packed));
+
 #ifdef IBRT_SEARCH_UI
 void app_ibrt_search_ui_handle_key_v2(bt_bdaddr_t *remote, APP_KEY_STATUS *status, void *param);
 #else

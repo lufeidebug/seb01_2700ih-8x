@@ -13,7 +13,7 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifdef USB_BLE_AUDIO_HW_TIMER_TRIGGER
+#ifdef AOB_MOBILE_ENABLED
 #include "cmsis.h"
 #include "cmsis_os.h"
 #include "cqueue.h"
@@ -46,6 +46,11 @@ typedef struct
     uint8_t stream_flg;
     uint8_t playback_count;
     uint8_t capture_count;
+
+    uint8_t* playback_cache_buf;
+    uint8_t* playback_dmaBufPtr;
+    uint8_t* capture_cache_buf;
+    uint8_t* capture_dmaBufPtr;
 
     HWTIMER_ID playback_timer_id;
     HWTIMER_ID capture_timer_id;
@@ -183,16 +188,19 @@ void gaf_source_stream_data_rx_read(uint8_t* data, uint32_t len)
 {
     if (!gaf_cource_send_env.playbackStreamEnv)
     {
+        memset(data, 0, len);
         return;
     }
 
     if (!gaf_cource_send_env.rx_packet_start)
     {
+        memset(data, 0, len);
         return;
     }
 
     if (CQ_OK != DeCQueue(&gaf_cource_send_env.rx_pcm_queue, data, len))
     {
+        memset(data, 0, len);
         LOG_E("[%s][%d]: %d, %d", __FUNCTION__, __LINE__,
               LengthOfCQueue(&gaf_cource_send_env.rx_pcm_queue), len);
     }
@@ -269,7 +277,6 @@ static void gaf_source_send_data_thread(void)
 
 void gaf_source_playback_start(void *_pStreamEnv)
 {
-    uint8_t *pcm_queue_buf = NULL;
     uint32_t trig_tick;
     uint32_t current_bt_time;
 
@@ -294,11 +301,19 @@ void gaf_source_playback_start(void *_pStreamEnv)
     gaf_cource_send_env.playbackStreamEnv = (GAF_AUDIO_STREAM_ENV_T*)_pStreamEnv;
 
     gaf_cource_send_env.rx_packet_start = false;
-    app_audio_mempool_get_buff(&pcm_queue_buf, GAF_PCM_Q_CACHE_SIZE);
-    InitCQueue(&gaf_cource_send_env.rx_pcm_queue, GAF_PCM_Q_CACHE_SIZE, pcm_queue_buf);
 
-    app_audio_mempool_get_buff(&gaf_cource_send_env.playbackStreamEnv->stream_info.playbackInfo.dma_info.dmaBufPtr,
-        gaf_cource_send_env.playbackStreamEnv->stream_info.playbackInfo.dma_info.dmaChunkSize);
+    if (!gaf_cource_send_env.playback_cache_buf)
+    {
+        app_audio_mempool_get_buff(&gaf_cource_send_env.playback_cache_buf, GAF_PCM_Q_CACHE_SIZE);
+    }
+    if (!gaf_cource_send_env.playback_dmaBufPtr)
+    {
+        app_audio_mempool_get_buff(&gaf_cource_send_env.playback_dmaBufPtr,
+            gaf_cource_send_env.playbackStreamEnv->stream_info.playbackInfo.dma_info.dmaChunkSize);
+    }
+    gaf_cource_send_env.playbackStreamEnv->stream_info.playbackInfo.dma_info.dmaBufPtr = gaf_cource_send_env.playback_dmaBufPtr;
+
+    InitCQueue(&gaf_cource_send_env.rx_pcm_queue, GAF_PCM_Q_CACHE_SIZE, gaf_cource_send_env.playback_cache_buf);
 
     trig_tick = gaf_source_calculate_playback_trigger_time((GAF_AUDIO_STREAM_ENV_T*)_pStreamEnv);
     current_bt_time = bt_syn_ble_bt_time_to_bts(btdrv_syn_get_curr_ticks(), 0);
@@ -309,8 +324,6 @@ void gaf_source_playback_start(void *_pStreamEnv)
 
 void gaf_source_capture_start(void *_pStreamEnv, uint32_t trig_tick)
 {
-    uint8_t *pcm_queue_buf = NULL;
-
     if (NULL == _pStreamEnv)
     {
          LOG_E("%s please check param", __func__);
@@ -332,11 +345,19 @@ void gaf_source_capture_start(void *_pStreamEnv, uint32_t trig_tick)
     gaf_cource_send_env.captureStreamEnv = (GAF_AUDIO_STREAM_ENV_T*)_pStreamEnv;
 
     gaf_cource_send_env.tx_packet_start = false;
-    app_audio_mempool_get_buff(&pcm_queue_buf, GAF_PCM_Q_CACHE_SIZE);
-    InitCQueue(&gaf_cource_send_env.tx_pcm_queue, GAF_PCM_Q_CACHE_SIZE, pcm_queue_buf);
 
-    app_audio_mempool_get_buff(&gaf_cource_send_env.captureStreamEnv->stream_info.captureInfo.dma_info.dmaBufPtr,
-        gaf_cource_send_env.captureStreamEnv->stream_info.captureInfo.dma_info.dmaChunkSize);
+    if (!gaf_cource_send_env.capture_cache_buf)
+    {
+        app_audio_mempool_get_buff(&gaf_cource_send_env.capture_cache_buf, GAF_PCM_Q_CACHE_SIZE);
+    }
+    if (!gaf_cource_send_env.capture_dmaBufPtr)
+    {
+        app_audio_mempool_get_buff(&gaf_cource_send_env.capture_dmaBufPtr,
+            gaf_cource_send_env.captureStreamEnv->stream_info.captureInfo.dma_info.dmaChunkSize);
+    }
+    gaf_cource_send_env.captureStreamEnv->stream_info.captureInfo.dma_info.dmaBufPtr = gaf_cource_send_env.capture_dmaBufPtr;
+
+    InitCQueue(&gaf_cource_send_env.tx_pcm_queue, GAF_PCM_Q_CACHE_SIZE, gaf_cource_send_env.capture_cache_buf);
 
     uint32_t current_bt_time = bt_syn_ble_bt_time_to_bts(btdrv_syn_get_curr_ticks(), 0);
     LOG_I("hwtimer capture trigger_tick:%u curr_time:%u", trig_tick, current_bt_time);
@@ -372,6 +393,10 @@ void gaf_source_stop(uint32_t stream)
     if ((!gaf_cource_send_env.capture_timer_id) &&
         (!gaf_cource_send_env.playback_timer_id))
     {
+        gaf_cource_send_env.playback_cache_buf = NULL;
+        gaf_cource_send_env.playback_dmaBufPtr = NULL;
+        gaf_cource_send_env.capture_cache_buf  = NULL;
+        gaf_cource_send_env.capture_dmaBufPtr  = NULL;
         bt_svc_base_thread_delete_task(gaf_source_send_data_thread);
         bt_svc_base_thread_set_priority(osPriorityNormal);
     }

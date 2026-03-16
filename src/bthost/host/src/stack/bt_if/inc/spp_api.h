@@ -204,6 +204,10 @@ typedef struct {
     const uint8_t* local_spp_128bit_uuid;
     bt_spp_callback_t app_spp_callback;
     bt_spp_accept_callback_t accept_callback;
+    uint8_t *name;
+    uint8_t name_len;
+    void (*free_handler)(void* ptr);
+    uint16_t rx_buff_size; //default BT_SPP_SERVER_LISTEN_RECV_BUF_SIZE
 } bt_spp_server_config_t;
 
 typedef struct {
@@ -255,6 +259,7 @@ bt_status_t btif_spp_write(uint32_t rfcomm_handle, const uint8_t *data, uint16_t
 bt_status_t btif_spp_server_listen(const bt_spp_server_config_t* config);
 bt_status_t btif_spp_server_remove_listen(uint8_t local_server_channel);
 bt_status_t btif_spp_give_handled_credits(uint32_t rfcomm_handle, uint16_t handled_credits);
+bt_status_t btif_spp_connect_reply(const bt_bdaddr_t *remote, uint8_t local_server_channel, bool accept);
 bt_spp_channel_t *btif_spp_create_channel(uint8_t device_id, uint8_t local_server_channel);
 bool btif_spp_is_connected(uint32_t rfcomm_handle);
 bool btif_spp_is_port_connected(const bt_bdaddr_t *remote, uint8_t local_server_channel);

@@ -6,13 +6,20 @@ ccflags-y += -DBLUETOOTH_BT_IMPL
 ccflags-y += -DBLUETOOTH_BLE_IMPL
 subdir-ccflags-y += -DMODULE=STACK
 
-export BT_STACK_INCLUDES += \
+export BTH_STACK_INCLUDES += \
+    $(BT_STACK_INCLUDES)  \
+    $(BLE_STACK_INCLUDES) \
     -I$(BLUETOOTH_STACK_DIR_PATH)/ble_stack_new/inc \
     -I$(BLUETOOTH_STACK_DIR_PATH)/common
 
 ifeq ($(BTH_VERSION),)
 BTH_VERSION := $(shell git -C $(cur_dir) rev-parse HEAD || echo "unknown")
 KBUILD_CPPFLAGS += -DBTH_VERSION=\"$(BTH_VERSION)\"
+endif
+
+export BT_STACK_LOG_DISABLE ?= 0
+ifeq ($(BT_STACK_LOG_DISABLE),1)
+KBUILD_CPPFLAGS += -DBT_STACK_LOG_DISABLE
 endif
 
 ifneq ($(wildcard $(cur_dir)/transport/Makefile),)

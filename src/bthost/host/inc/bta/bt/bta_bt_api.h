@@ -130,6 +130,10 @@ uint8_t bta_get_device_id_by_addr(const bt_bdaddr_t *addr);
  */
 uint16_t bta_get_conhdl_by_addr(const bt_bdaddr_t *addr);
 
+void bta_bt_acl_disconnect(const bt_bdaddr_t *addr);
+
+bt_access_mode_t bta_get_access_mode();
+
 /**
  ****************************************************************************************
  * @brief       Get remote lmp version.
@@ -324,6 +328,14 @@ uint16_t bta_l2cap_get_psm_by_cid(uint16_t conhdl, bool scid, uint16_t cid);
 
 /**
  ****************************************************************************************
+ * @brief       APP get pts test device addr.
+ * @return      addr: Pointer to the Bluetooth address of the pts device.
+ ****************************************************************************************
+ */
+bt_bdaddr_t *bta_get_pts_address(void);
+
+/**
+ ****************************************************************************************
  *    ____  _             _    ____  ____  ____       _    ____ ___
  *   | __ )| |_ __ _     / \  |___ \|  _ \|  _ \     / \  |  _ \_ _|
  *   |  _ \| __/ _` |   / _ \   __) | | | | |_) |   / _ \ | |_) | |
@@ -341,6 +353,14 @@ uint16_t bta_l2cap_get_psm_by_cid(uint16_t conhdl, bool scid, uint16_t cid);
  ****************************************************************************************
  */
 void bta_a2dp_register_callbacks(bt_a2dp_sink_callback_user_t user, bt_a2dp_sink_callbacks_t *callbacks);
+
+/**
+ ****************************************************************************************
+ * @brief       Register the a2dp revied cmd request delay send response callback.
+ * @param[in]   req_delay_cb: Pointer to callbacks for handling a2dp sink events.
+ ****************************************************************************************
+ */
+void bta_a2dp_register_req_delay_rsp_callback(bt_a2dp_cmd_req_delay_rsp_cb req_delay_cb);
 
 /**
  ****************************************************************************************
@@ -457,6 +477,15 @@ bta_profile_status_t bta_get_a2dp_state(const bt_bdaddr_t *addr, bta_a2dp_state_
  */
 int bta_a2dp_codec_init(uint8_t codectype, uint8_t nonetype, uint8_t sep_priority, uint8_t *elements, uint8_t len);
 
+/**
+ ****************************************************************************************
+ * @brief       Register A2DP sep capability.
+ * @param[in]   bd_addr: Pointer to the Bluetooth address of peer device.
+ * @param[in]   quick_switch_enable: Indicates that the current state supports fast switching mode
+ * @return      0 if successful, non-zero otherwise.
+ ****************************************************************************************
+ */
+int bta_a2dp_update_quick_switch_state(const bt_bdaddr_t *addr, bool quick_switch_enable);
 /**
  ****************************************************************************************
  *    ____  _             ___     ______   ____ ____       _    ____ ___
@@ -597,6 +626,13 @@ bta_profile_status_t bta_get_avrcp_state(const bt_bdaddr_t *addr, bta_avrcp_stat
  ****************************************************************************************
  */
 void bta_hf_register_callbacks(bt_hfp_hf_callback_user_t user, bt_hfp_hf_callbacks_t *callbacks);
+
+/**
+ ****************************************************************************************
+ * @brief       Ddinit the hfp profile.
+ ****************************************************************************************
+ */
+void bta_hf_deinit(void);
 
 /**
  ****************************************************************************************
@@ -774,7 +810,7 @@ bta_profile_status_t bta_hf_get_hfp_call_status(const bt_bdaddr_t *addr, bta_cal
  ****************************************************************************************
  * @brief       HFP send battery level to specific mobile device address.
  * @param[in]   addr:Specify the mobile device address to get HFP Call status.
- * @param[out]  level:Battery level.
+ * @param[out]  level:Battery level(0~100).
  * @return      0 if successful, non-zero otherwise.
  ****************************************************************************************
  */
@@ -920,6 +956,15 @@ bool bta_dip_check_is_ios_device(const bt_bdaddr_t *address);
  ****************************************************************************************
  */
 bool bta_dip_check_is_ios_device_by_vend_id(uint16_t vend_id, uint16_t vend_id_source);
+
+/**
+ ****************************************************************************************
+ * @brief       Register dip info queried callback handler.
+ * @param[in]   func: see @bt_dip_info_queried_callback
+ * @return      None
+ ****************************************************************************************
+ */
+void bta_register_dip_info_queried_callback(bt_dip_info_queried_callback func);
 
 /**
  ****************************************************************************************

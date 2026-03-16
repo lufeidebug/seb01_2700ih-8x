@@ -28,8 +28,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_BAP_BC_SINK_MSG_H_
-#define APP_BAP_BC_SINK_MSG_H_
+#ifndef __APP_BAP_BC_SINK_MSG_H__
+#define __APP_BAP_BC_SINK_MSG_H__
 #if BLE_AUDIO_ENABLED
 
 #define APP_BAP_DFT_BC_SINK_DP_ID                  0

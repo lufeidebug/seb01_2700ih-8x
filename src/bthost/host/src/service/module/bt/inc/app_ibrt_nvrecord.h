@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __APP_IBRT_IF_NVRECORD__
-#define __APP_IBRT_IF_NVRECORD__
+#ifndef __APP_IBRT_IF_NVRECORD_H__
+#define __APP_IBRT_IF_NVRECORD_H__
 #include "cmsis_os.h"
 
 #include "app_tws_ibrt.h"

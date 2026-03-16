@@ -271,6 +271,7 @@ static void app_datapath_server_mtu_exchanged(uint8_t conidx, uint16_t connhdl, 
 
 static void app_datapaths_disconnected(uint8_t conidx, uint16_t connhdl)
 {
+    TRACE(0, "%s, %d", __func__, __LINE__);
     if (app_datapaths_free_con_info_by_connhdl(connhdl) == 0)
     {
         TRACE(0, "app datapath server dis-connected.");
@@ -293,6 +294,7 @@ static void app_datapaths_disconnected(uint8_t conidx, uint16_t connhdl)
 
 static void app_datapaths_tx_ccc_changed(uint8_t conidx, uint16_t connhdl, bool notify_enabled)
 {
+    TRACE(0, "%s, %d, notify_enabled=%d", __func__, __LINE__, notify_enabled);
     if (notify_enabled)
     {
         app_datapaths_connected(conidx, connhdl);

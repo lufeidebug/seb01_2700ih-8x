@@ -152,3 +152,6 @@ typedef struct {
     bt_iap2_accessory_authen_state_cb authen_state_cb;
     bt_iap2_accessory_ident_state_cb ident_state_cb;
 } bt_iap2_accessory_cb_t;
+
+typedef int (*bt_mfi_i2c_read_reg_data_cb)(uint8_t device_addr, uint8_t reg_addr, uint8_t *buf, int len);
+typedef int (*bt_mfi_i2c_write_reg_data_cb)(uint8_t device_addr, uint8_t reg_addr, uint8_t *buf, int len);

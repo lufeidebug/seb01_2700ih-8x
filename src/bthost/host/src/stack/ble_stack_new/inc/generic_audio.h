@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __GEN_AUD__
-#define __GEN_AUD__
+#ifndef __GEN_AUD_H__
+#define __GEN_AUD_H__
 
 #include "bap_service.h"
 #include "gaf_cfg.h"

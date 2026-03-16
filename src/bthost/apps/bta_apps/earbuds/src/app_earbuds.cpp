@@ -64,14 +64,16 @@
 #endif
 #endif
 
-#ifdef BLE_HOST_SUPPORT
-#include "app_ble_mgr.h"
-#include "app_ble_ota.h"
-#include "app_ble_swift.h"
+#ifdef CFG_APP_DATAPATH_CLIENT
+#include "app_datapathc.h"
 #endif
 
 #ifdef BLE_HOST_SUPPORT
 #include "app_ble_mgr.h"
+#include "app_ble_ota.h"
+#include "app_ble_swift.h"
+#include "app_bis_selfscan.h"
+#include "app_ble_battery.h"
 #endif
 
 #if defined(__SNDP_PROJ__)
@@ -258,6 +260,10 @@ static void tws_link_state_changed_handler(bta_tws_sync_state_t state, uint8_t r
 #if defined(SWIFT_ENABLED)
     app_ble_swift_adv_refresh();
 #endif /* SWIFT_ENABLED */
+
+#if defined (BIS_SELFSCAN_ENABLED)
+    app_bis_selfscan_tws_state_handler(state == BTA_TWS_SYNCED);
+#endif
 }
 
 static void pairing_mode_changed_handler(bool enabled)
@@ -413,10 +419,6 @@ static void fill_am_attributes(bt_am_attributes_t *attributes)
 
     attributes->second_sco_handle_mode = IBRT_REJECT_SECOND_SCO;
 
-    attributes->a2dp_prompt_play_only_when_avrcp_play_received = false;
-
-    attributes->a2dp_delay_prompt_play = false;
-
     attributes->a2dp_prompt_delay_ms = 0;
 
     attributes->bg_a2dp_action = MUTE_BG_A2DP;
@@ -446,6 +448,8 @@ static void fill_am_attributes(bt_am_attributes_t *attributes)
     attributes->dont_resume_music_when_preempted_by_another_music = false;
 
     attributes->auto_resume_stream_when_focus_empty = false;
+
+    attributes->sco_reject_connect_frist_and_disconnet_later = true;
 
 #if defined(SASS_ENABLED)
     attributes->call_preempt_play_mode = false;
@@ -740,6 +744,10 @@ void app_bta_init(void)
 #endif /* CFG_APP_DATAPATH_SERVER */
 #endif /* BLE_HOST_SUPPORT || __GATT_OVER_BR_EDR__*/
 
+#ifdef CFG_APP_DATAPATH_CLIENT
+    app_datapathc_init();
+#endif /* CFG_APP_DATAPATH_CLIENT */
+
 #ifdef BLE_HOST_SUPPORT
     app_ble_mgr_init();
 
@@ -750,7 +758,17 @@ void app_bta_init(void)
 #if defined(SWIFT_ENABLED)
     app_ble_swift_init();
 #endif
+
+#if defined (BIS_SELFSCAN_ENABLED)
+    app_bis_selfscan_init(NULL, NULL);
+#endif
+
+#if defined (BLE_BATT_ENABLE)
+    app_ble_batt_init();
+#endif
+
 #endif /* BLE_HOST_SUPPORT */
+
     bta_sep_codec_config_init();
 }
 

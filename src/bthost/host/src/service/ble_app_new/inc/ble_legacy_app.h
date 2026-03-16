@@ -17,7 +17,6 @@
 #define __BLE_LEGACY_APP_H__
 
 #include "bluetooth.h"
-#include "app_ble.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,16 +28,6 @@ int ble_legacy_app_deinit(void);
 void ble_legacy_app_tws_sync_info(void);
 void ble_legacy_app_tws_sync_info_receive_handler(uint8_t *p_info, uint16_t len);
 void ble_legacy_app_tws_state_changed(bool connected);
-
-/**
- * @brief CUSTOM Adv register prepare adv param handler api
- *
- * @param[in] adv_handle Custom adv handle
- * @param[in] adv_activity_func Custom adv prepare handler
- *
- * @return ble_adv_activity_t* adv activity register success or NULL
- */
-ble_adv_activity_t *ble_legacy_app_register_advertising(uint8_t adv_handle, app_ble_adv_activity_func adv_activity_func);
 
 #ifdef __cplusplus
 }

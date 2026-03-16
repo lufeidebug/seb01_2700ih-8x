@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __CSIS_CRYPTO__
-#define __CSIS_CRYPTO__
+#ifndef __CSIS_CRYPTO_H__
+#define __CSIS_CRYPTO_H__
 
 #include "gaf_cfg.h"
 

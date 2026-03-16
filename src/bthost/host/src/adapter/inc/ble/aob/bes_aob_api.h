@@ -515,13 +515,13 @@ typedef struct
     uint8_t *bc_code;
     struct
     {
-        void (*bis_sink_scan_state_cb)(bool scan_or_pa_sync, bool started, uint32_t param);
-        bool (*bis_sink_select_source)(ble_bdaddr_t *addr, uint8_t adv_sid, uint8_t *bcast_id,
-                                       uint8_t *adv_data, uint8_t adv_data_len, int8_t rssi);
-        void (*bis_sink_started_callback)(uint8_t grp_lid);
-        void (*bis_sink_stoped_callback)(uint8_t grp_lid, uint16_t err_code);
-        void (*bis_sink_metadata_cb)(uint8_t subgrp_lid, uint8_t *buf, uint8_t buf_len);
-    } event_callback;
+        void (*bis_sink_scan_state_cb)(bool scan_started, uint16_t err_code);
+        bool (*bis_sink_scan_report_cb)(const ble_bdaddr_t *p_addr, uint8_t ea_sid,
+                                        const uint8_t *bcast_id, const uint8_t *ea_data, uint8_t ea_data_len, int8_t ea_rssi);
+        void (*bis_sink_pa_state_cb)(bool pa_synced, const ble_bdaddr_t *p_addr, uint8_t ea_sid, uint16_t sync_hdl, uint16_t err_code);
+        void (*bis_sink_pa_report_cb)(uint16_t sync_hdl, const uint8_t *pa_data, uint8_t pa_data_len, const bes_ble_bap_bc_big_info_t *big_info);
+        void (*bis_sink_big_state_cb)(bool sink_started, uint16_t sync_hdl, uint8_t grp_lid, uint16_t err_code);
+    } evt_cbs;
 } bes_ble_bis_sink_start_param_t;
 
 /// sync see@app_gaf_codec_id_t
@@ -1418,8 +1418,9 @@ void bes_ble_bap_ascc_configure_codec_by_ase_lid(uint8_t ase_lid, uint8_t grp_li
  *
  * @param[in] ase_lid  ASE lid
  * @param[in] grp_lid  CIG group lid
+ * @param[in] cis_id   CIG group CIS id
  */
-void bes_ble_bap_ascc_ase_qos_cfg_by_ase_lid(uint8_t ase_lid, uint8_t grp_lid);
+void bes_ble_bap_ascc_ase_qos_cfg_by_ase_lid(uint8_t ase_lid, uint8_t grp_lid, uint8_t cis_id);
 
 /**
  * @brief Create cig group

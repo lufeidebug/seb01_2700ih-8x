@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __GAF_DBG_INC__
-#define __GAF_DBG_INC__
+#ifndef __GAF_DBG_H__
+#define __GAF_DBG_H__
 
 #include <stdint.h>
 #include "co_log.h"
@@ -32,15 +32,73 @@
 #define GAF_LOG_LEVEL_MAX       (5)
 
 /*DEFINE*/
-#if (DEBUG)
+#if (GAF_LEVEL <= LOGGER_LEVEL_DEBUG)
 #define GAF_LOG_LEVEL           GAF_LOG_LEVEL_DEBUG
-#else
+#elif (GAF_LEVEL == LOGGER_LEVEL_INFO)
+#define GAF_LOG_LEVEL           GAF_LOG_LEVEL_INFO
+#elif (GAF_LEVEL == LOGGER_LEVEL_WARN)
+#define GAF_LOG_LEVEL           GAF_LOG_LEVEL_WARN
+#elif (GAF_LEVEL == LOGGER_LEVEL_ERROR)
+#define GAF_LOG_LEVEL           GAF_LOG_LEVEL_ERROR
+#elif (GAF_LEVEL == LOGGER_LEVEL_FATAL)
 #define GAF_LOG_LEVEL           GAF_LOG_LEVEL_CRITICAL
 #endif
 
+#if (GAF_LOG_LEVEL > GAF_LOG_LEVEL_CRITICAL)
 #ifndef GAF_LOG_MODULE
-#define GAF_LOG_MODULE          "GAF_LOG_UNDEF"
+#define GAF_LOG_MODULE                  "GAF_LOG_UNDEF"
 #endif /// GAF_LOG_MODULE
+
+#define GAF_MODULE_GEN_AUD              "GEN_AUD"
+
+#define GAF_MODULE_BAP_ISO_AL           "BAP_ISO_AL"
+
+#define GAF_MODULE_BAP_UC_CLI           "BAP_UC_CLI"
+#define GAF_MODULE_BAP_UC_SRV           "BAP_UC_SRV"
+
+#define GAF_MODULE_BAP_BC_SINK          "BAP_BC_SINK"
+#define GAF_MODULE_BAP_BC_SRC           "BAP_BC_SRC"
+
+#define GAF_MODULE_BAP_SCAN_DELEG       "BAP_SCAN_DELEG"
+#define GAF_MODULE_BAP_BC_ASSIST        "BAP_BC_ASSIST"
+
+#define GAF_MODULE_ASCC                 "ASCC"
+#define GAF_MODULE_ASCS                 "ASCS"
+#define GAF_MODULE_PACC                 "PACC"
+#define GAF_MODULE_PACS                 "PACS"
+#define GAF_MODULE_BASS                 "BASS"
+
+#define GAF_MODULE_MCC                  "MCC"
+#define GAF_MODULE_MCS                  "MCS"
+#define GAF_MODULE_TBC                  "TBC"
+#define GAF_MODULE_TBS                  "TBS"
+#define GAF_MODULE_VCC                  "VCC"
+#define GAF_MODULE_VCS                  "VCS"
+#define GAF_MODULE_MICC                 "MICC"
+#define GAF_MODULE_MICS                 "MICS"
+#define GAF_MODULE_AICC                 "AICC"
+#define GAF_MODULE_AICS                 "AICS"
+#define GAF_MODULE_VOCC                 "VOCC"
+#define GAF_MODULE_VOCS                 "VOCS"
+#define GAF_MODULE_CSI_CRYPTO           "CSI_CRYPTO"
+#define GAF_MODULE_CSI_COORD            "CSI_COORD"
+#define GAF_MODULE_CSI_MEMBER           "CSI_MEMBER"
+#define GAF_MODULE_CSIS                 "CSI_SRV"
+#define GAF_MODULE_CSISC                "CSI_CLI"
+#define GAF_MODULE_CAC                  "CAC"
+#define GAF_MODULE_CAS                  "CAS"
+#define GAF_MODULE_TMAC                 "TMAC"
+#define GAF_MODULE_TMAS                 "TMAS"
+#define GAF_MODULE_HAC                  "HAC"
+#define GAF_MODULE_HAS                  "HAS"
+#define GAF_MODULE_OTC                  "OTC"
+#define GAF_MODULE_OTS                  "OTS"
+#define GAF_MODULE_GMAS                 "GMAS"
+#define GAF_MODULE_GMAC                 "GMAC"
+#define GAF_MODULE_VAC                  "VAC"
+#define GAF_MODULE_VAS                  "VAS"
+#define GAF_MODULE_SHS                  "SHS"
+#endif
 
 #define GAF_PRINTF(lvl, str, ...)\
                                 gaf_log_printf(lvl, LOGGER_SECTION(str), ##__VA_ARGS__)

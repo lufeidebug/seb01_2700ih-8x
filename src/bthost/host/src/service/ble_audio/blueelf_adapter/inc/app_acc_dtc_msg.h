@@ -21,8 +21,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_ACC_DTC_MSG_H_
-#define APP_ACC_DTC_MSG_H_
+#ifndef __APP_ACC_DTC_MSG_H__
+#define __APP_ACC_DTC_MSG_H__
 #if BLE_AUDIO_ENABLED
 #endif
 #endif // APP_ACC_DTC_MSG_H_

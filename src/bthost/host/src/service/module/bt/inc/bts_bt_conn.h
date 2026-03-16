@@ -89,6 +89,8 @@ uint8_t bts_bt_sink_conn_get_all_valid_mobile_info(ibrt_mobile_info_t *p_mobile_
 
 uint8_t bts_bt_conn_get_dev_acl_connected_count();
 
+uint8_t bts_bt_conn_get_dev_acl_connecting_count();
+
 uint8_t app_tws_ibrt_get_mobile_num_connected(void);
 
 mobile_statemachine_t* bts_bt_sink_conn_get_mobile_sm_by_addr(const bt_bdaddr_t* addr);

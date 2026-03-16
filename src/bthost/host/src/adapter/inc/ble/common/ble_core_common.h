@@ -156,11 +156,7 @@ enum BLE_SCAN_FILTER_POLICY {
     BLE_SCAN_ALLOW_ADV_WLST_AND_INIT_RPA,
 };
 
-#ifdef BLE_ADV_RPA_ENABLED
 #define BLE_DEFAULT_SCAN_POLICY BLE_SCAN_ALLOW_ADV_ALL_AND_INIT_RPA
-#else
-#define BLE_DEFAULT_SCAN_POLICY BLE_SCAN_ALLOW_ADV_ALL
-#endif
 
 enum BLE_ADV_SWITCH_USER_E {
     BLE_SWITCH_USER_RS          = 0, // used for role switch
@@ -558,19 +554,6 @@ typedef enum{
     BLE_EVENT_NUM_MAX,
 } ble_event_type_e;
 
-/**
- * @brief The event type of other module
- *
- */
-typedef enum{
-    BLE_CALLBACK_RS_START = 0,
-    BLE_CALLBACK_RS_COMPLETE,
-    BLE_CALLBACK_ROLE_UPDATE,
-    BLE_CALLBACK_IBRT_EVENT_ENTRY,
-
-    BLE_CALLBACK_EVENT_NUM_MAX,
-} ble_callback_evnet_type_e;
-
 typedef struct {
     uint8_t conidx;
     uint8_t role; //0 = Central / 1 = Peripheral
@@ -653,16 +636,16 @@ typedef struct {
 } set_random_bd_addr_handled_t;
 
 typedef struct {
-    uint8_t actv_user;
+    uint8_t adv_user;
 } adv_started_handled_t;
 
 typedef struct {
-    uint8_t actv_user;
+    uint8_t adv_user;
     uint8_t err_code;
 } adv_starting_failed_handled_t;
 
 typedef struct {
-    uint8_t actv_user;
+    uint8_t adv_user;
 } adv_stopped_handled_t;
 
 typedef struct {

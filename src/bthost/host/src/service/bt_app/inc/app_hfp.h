@@ -18,6 +18,7 @@
 #include "bluetooth.h"
 #include "btapp.h"
 #include "hfp_api.h"
+#include "ibrt_common_define.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,38 +31,6 @@ uint8_t hfp_volume_local_get(int id);
 void hfp_volume_local_set(int id, uint8_t vol);
 uint8_t app_bt_hfp_adjust_volume(uint8_t device_id, bool up, bool adjust_local_vol_level);
 int app_hfp_force_disconnect(uint8_t device_id,uint8_t reason);
-void app_pts_hfp_siri_voice_enable(void);
-void app_pts_hfp_siri_voice_disable(void);
-void app_pts_hf_acs_bi_13_i_set_enable(void);
-void app_pts_hf_acs_bi_13_i_set_disable(void);
-void app_pts_av_create_channel(bt_bdaddr_t *btaddr);
-void app_pts_av_set_sink_delay(void);
-void app_pts_hf_create_service_link(bt_bdaddr_t *btaddr);
-void app_pts_hf_disc_service_link(void);
-void app_pts_hf_create_audio_link(void);
-void app_pts_hf_disc_audio_link(void);
-void app_pts_hf_send_key_pressed(void);
-void app_pts_hf_redial_call(void);
-void app_pts_hf_dial_number(void);
-void app_pts_hf_dial_number_memory_index(void);
-void app_pts_hf_dial_number_invalid_memory_index(void);
-void app_pts_hf_answer_call(void);
-void app_pts_hf_hangup_call(void);
-void app_pts_hf_vr_enable(void);
-void app_pts_hf_vr_disable(void);
-void app_pts_hf_list_current_calls(void);
-void app_pts_hf_release_active_call_2(void);
-void app_pts_hf_hold_active_call(void);
-void app_pts_hf_hold_active_call_2(void);
-void app_pts_hf_release_active_call(void);
-void app_pts_hf_hold_call_transfer(void);
-void app_pts_hf_send_ind_1(void);
-void app_pts_hf_send_ind_2(void);
-void app_pts_hf_send_ind_3(void);
-void app_pts_hf_update_ind_value(void);
-void app_pts_hf_report_mic_volume(void);
-void app_pts_hf_attach_voice_tag(void);
-void app_pts_hf_ind_activation(void);
 void*app_bt_get_hf_custom_id(void);
 
 #ifdef BT_HFP_SUPPORT
@@ -84,7 +53,7 @@ struct hf_sendbuff_control {
 extern struct hf_sendbuff_control  hf_sendbuff_ctrl;
 #endif
 
-int app_hfp_battery_report_by_channel(const bt_bdaddr_t *address, uint32_t level);
+int app_hfp_battery_report_by_address(const bt_bdaddr_t *address, uint32_t level);
 
 int app_hfp_battery_report(uint8_t level);
 

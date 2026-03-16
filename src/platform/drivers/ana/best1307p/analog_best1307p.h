@@ -40,6 +40,12 @@ void analog_aud_classd_pa_enable(bool en);
 
 void analog_aud_adc_mic_sel(enum AUD_CHANNEL_MAP_T mic_map);
 
+void analog_aud_dre_dc_sel(bool en);
+
+uint16_t analog_aud_dc_diff_to_val(int32_t val, int32_t val_offset[]);
+
+void analog_aud_dc_calib_set_dre_ana_dc(uint32_t offs, uint16_t dc_offs_l, uint16_t dc_offs_r);
+
 void analog_aud_adc_dc_auto_calib_enable(enum AUD_CHANNEL_MAP_T ch_map, bool on);
 
 void analog_aud_adc_dc_calib_set_step(enum AUD_CHANNEL_MAP_T ch_map, uint16_t step);

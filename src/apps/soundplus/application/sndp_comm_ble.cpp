@@ -7,6 +7,7 @@
 #include "hal_sleep.h"
 #include "cqueue.h"
 #include "bta_ble_api.h"
+#include "bts_ble_api.h"
 
 #include "sndp_if_common.h"
 #include "sndp_comm_main.h"
@@ -126,7 +127,10 @@ static void sndp_comm_ble_send_data_handle(void)
 	sndp_comm_ble_ctx.sending = true;
 	osTimerStart(ble_send_timeout_timer, 100);
 #ifdef CFG_APP_DATAPATH_SERVER   
-	app_datapath_server_send_data_via_notification(sndp_comm_ble_ctx.conidx, sndp_comm_ble_send_pop_buf, send_len);
+	app_datapath_server_send_data_via_notification(
+	        bta_ble_get_conhdl_by_conidx(sndp_comm_ble_ctx.conidx), 
+	        sndp_comm_ble_send_pop_buf, 
+	        send_len);
 #endif	
 }
 
@@ -190,6 +194,12 @@ POSSIBLY_UNUSED static void sndp_comm_ble_mtuexchanged_done(uint8_t conidx, uint
 {
 	COMM_BLE_TRACE(1, "mute=%d", mtu);
 	//sndp_comm_ble_ctx.mtu = mtu;
+	
+    sndp_comm_ble_ctx.conidx = conidx;
+    sndp_comm_ble_ctx.conn_status = SNDP_COMM_BLE_CONNECTED;
+#ifdef CFG_APP_DATAPATH_SERVER    
+    app_datapath_server_register_tx_done(sndp_comm_ble_tx_done);
+#endif    
 }
 
 sndp_comm_ble_conn_status_e sndp_comm_ble_get_conn_status(void)
@@ -199,6 +209,9 @@ sndp_comm_ble_conn_status_e sndp_comm_ble_get_conn_status(void)
 
 bool sndp_comm_ble_is_connected(void)
 {
+    if(bts_ble_gap_is_connection_on(bta_ble_get_conhdl_by_conidx(sndp_comm_ble_ctx.conidx))) {
+        return true;
+    }
 	return (sndp_comm_ble_ctx.conn_status == SNDP_COMM_BLE_CONNECTED) ? (true) : (false);
 }
 

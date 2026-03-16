@@ -134,7 +134,8 @@ typedef struct
     int32_t (*play)( uint16_t stream_type, const Audio_device_t* device);
     int32_t (*stop)( uint16_t stream_type, const Audio_device_t* device);
     int32_t (*pause)(uint16_t stream_type, const Audio_device_t* device);
-    void (*play_prompt)(uint32_t id,uint8_t device_id);
+    void (*play_prompt)(uint32_t id, uint8_t device_id);
+    void (*stop_prompt)(uint32_t id, uint8_t device_id);
     int32_t (*seek)(int64_t time_in_ms);
     void (*dump_playback_status)(void);
     int32_t (*set_volume)(uint16_t volume);
@@ -220,10 +221,22 @@ void audio_player_dump_playback_status(void);
  * @param[in] id
  * @param[in] device
  *
- * @return playback status
+ * @return void
  ****************************************************************************************
  */
-void audio_player_play_prompt(uint32_t id,uint8_t device_id);
+void audio_player_play_prompt(uint32_t id, uint8_t device_id);
+
+/**
+ ****************************************************************************************
+ * @brief audio_player_stop_prompt
+ *
+ * @param[in] id
+ * @param[in] device
+ *
+ * @return void
+ ****************************************************************************************
+ */
+void audio_player_stop_prompt(uint32_t id, uint8_t device_id);
 
 /**
  ****************************************************************************************

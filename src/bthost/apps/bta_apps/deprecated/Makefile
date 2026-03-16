@@ -100,6 +100,4 @@ subdir-ccflags-y += \
     -Iservices/app_debug_info_system/inc \
     -I$(BT_SERVICE_MODULE_DIR_PATH)/module/config \
     -Iservices/bt_app \
-    -Iservices/osif \
-    -Iservices/bt_sync \
-    -Iservices/osif/
+    -Iservices/bt_sync

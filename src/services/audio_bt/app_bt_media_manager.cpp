@@ -184,17 +184,32 @@ bool bt_audio_is_continue_media(uint32_t id)
     return is_continue_id;
 }
 
-static void bt_audio_play_media(uint32_t id,uint8_t device_id)
+static void bt_audio_play_media(uint32_t aud_id, uint8_t device_id)
 {
 #ifdef MEDIA_PLAYER_SUPPORT
-    if(bt_audio_is_continue_media(id))
+#ifdef PROMPT_SELF_MANAGEMENT
+    if(bt_audio_is_continue_media(aud_id))
     {
-        media_PlayAudio_continuous_start((AUD_ID_ENUM)id, device_id);
+        media_PlayAudio_continuous_start((AUD_ID_ENUM)aud_id, device_id);
     }
     else
     {
-        media_PlayAudio((AUD_ID_ENUM)id, device_id);
+        media_PlayAudio((AUD_ID_ENUM)aud_id, device_id);
     }
+#else
+    app_audio_manager_sendrequest(APP_BT_STREAM_MANAGER_START, BT_STREAM_MEDIA, device_id, aud_id);
+#endif
+#endif
+}
+
+static void bt_audio_stop_media(uint32_t aud_id, uint8_t device_id)
+{
+#ifdef MEDIA_PLAYER_SUPPORT
+#ifdef PROMPT_SELF_MANAGEMENT
+    app_stop_both_prompt_playing();
+#else
+    app_audio_manager_sendrequest(APP_BT_STREAM_MANAGER_STOP, BT_STREAM_MEDIA, device_id, aud_id);
+#endif
 #endif
 }
 
@@ -219,6 +234,7 @@ static Audio_Player_Adapter_t app_bt_media_player =
     .stop = bt_audio_media_stop,
     .pause = NULL,
     .play_prompt = bt_audio_play_media,
+    .stop_prompt = bt_audio_stop_media,
     .seek  = NULL,
     .dump_playback_status = bt_audio_print_playback_status,
     .set_volume = bt_audio_local_volume_set,

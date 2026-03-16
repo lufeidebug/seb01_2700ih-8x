@@ -106,6 +106,7 @@ typedef enum {
     APP_UI_EV_MOBILE_AUTH_COMPLETE,                      // Mobile device authentication complete
     APP_UI_EV_MOBILE_RUN_COMPLETE,                       // Mobile device run complete
     APP_UI_EV_MOBILE_CANCEL,                             // Mobile device cancel
+    APP_UI_EV_MOBILE_ACL_CONNECTED,                      // Mobile device acl connected
 
     /**********reload complete Events**********/
     APP_UI_EV_PEER_RELOAD_COMPLETE = APP_UI_RELOAD_EVT_BASE,  //Reload Complete
@@ -217,7 +218,6 @@ typedef enum
     REQ_NONE,
     REQ_LOCAL_RUN,        /* Request running of initiator*/
     REQ_WAIT_DECISION,    /* Request running is decision by responder*/
-    REQ_LOCAL_RUN_PREFER, /* if peer mobile connected,peer run,otherwise local run */
 
     // Response exchange infor types from deciesion
     RSP_LOCAL_RUN,         /* Running of initiator*/

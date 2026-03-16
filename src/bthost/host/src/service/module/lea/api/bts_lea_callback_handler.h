@@ -26,7 +26,8 @@
 
 typedef struct
 {
-    void (*ble_audio_adv_state_changed)(AOB_ADV_STATE_T state, uint8_t err_code);
+    void (*ble_audio_raw_connected_cb)(uint8_t con_lid);
+    void (*ble_audio_adv_state_changed)(AOB_ADV_STATE_T state, AOB_ADV_TYPE_T type, uint8_t err_code);
     void (*mob_acl_state_changed)(uint8_t conidx, const ble_bdaddr_t* addr, AOB_ACL_STATE_T state, uint8_t errCode);
     void (*vol_changed_cb)(uint8_t con_lid, uint8_t volume, uint8_t mute);
     void (*vocs_offset_changed_cb)(int16_t offset, uint8_t output_lid);

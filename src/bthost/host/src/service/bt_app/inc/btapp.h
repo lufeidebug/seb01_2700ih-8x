@@ -87,6 +87,18 @@
 /* the LOSC of SBC media codec capabilitiy */
 #define A2D_SBC_INFO_LEN            6
 
+#ifdef BT_SOURCE
+#if defined(BT_MULTI_SOURCE)
+#define BT_SOURCE_DEVICE_NUM 2
+#else
+#define BT_SOURCE_DEVICE_NUM 1
+#endif
+#endif
+
+#ifndef BT_SOURCE_DEVICE_NUM
+#define BT_SOURCE_DEVICE_NUM 0
+#endif
+
 #ifdef A2DP_LDAC_ON
 #ifndef A2DP_LDAC_OCTET_NUMBER
 #define A2DP_LDAC_OCTET_NUMBER                     (8)
@@ -191,11 +203,11 @@ typedef struct{
     bool this_is_closed_bg_a2dp;
     bool a2dp_is_auto_paused_by_phone;
     bool auto_make_remote_play;
-    bool this_sco_wait_to_play;
     bool waiting_pause_suspend;
     bool ignore_ring_and_play_tone_self;
     bool this_is_curr_playing_a2dp_and_paused; //remove?
     bool is_need_recon_hfp_after_hfp_dis;
+    uint8_t this_sco_wait_to_play;
     uint8_t remember_interrupted_a2dp_for_a_while;
     uint32_t acl_conn_prio;
     uint32_t a2dp_audio_prio;
@@ -209,6 +221,7 @@ typedef struct{
     uint32_t hfp_call_active_time;
     osTimerId clcc_timer;
     osTimerId reconn_hfp_timer;
+    osTimerId delay_abandon_a2dp_focus_timer;
     osTimerId delay_play_a2dp_timer;
     osTimerId avrcp_play_status_wait_timer;
     osTimerId a2dp_stream_recheck_timer;
@@ -226,6 +239,8 @@ typedef struct{
     osTimerId check_a2dp_restreaming_timer;
     osTimerId avrcp_pause_play_quick_switch_filter_timer;
     osTimerId streaming_ava_check_timer;
+    uint8_t delay_abandon_focus: 1;
+    uint8_t rfu: 7;
     int8_t a2dp_audio_focus;
     int8_t call_audio_focus;
     int8_t ring_audio_focus;
@@ -310,6 +325,7 @@ struct BT_DEVICE_T {
     void *pcustom_param;
     uint16_t l2hc_bitrate;          // Bit field
     app_bt_audio_policy_t bt_policy;
+    bool quick_switch_enable;               //wifi xplay /bredr a2dp streaming quick switch enable state
 #if defined(A2DP_STREAM_DETECT_NO_DECODE)
     a2dp_stream_detect_t stream_detect;
 #endif // A2DP_STREAM_DETECT_NO_DECODE
@@ -374,6 +390,7 @@ struct BT_DEVICE_MANAGER_T {
     bool trigger_a2dp_switch;
     uint8_t trigger_sco_device_id;
     uint8_t a2dp_switch_trigger_device;
+    uint8_t a2dp_switch_target_device;
     uint32_t a2dp_switch_trigger_btclk;
     uint32_t sco_switch_trigger_btclk;
     bool trigger_a2dp_cis_toggle;
@@ -411,6 +428,10 @@ void app_bt_manager_init(void);
 void app_bt_init_config(const bt_am_attributes_t *config);
 
 struct BT_DEVICE_T* app_bt_get_device(int i);
+struct BT_DEVICE_T * app_bt_get_connected_sink_device(void);
+struct BT_DEVICE_T *app_bt_get_connected_device_byaddr(const bt_bdaddr_t *remote);
+struct BT_DEVICE_T *app_bt_manager_get_device_all_start(void);
+struct BT_DEVICE_T *app_bt_manager_get_device_all_end(void);
 app_bt_audio_policy_t* app_bt_get_device_audio_policy(uint8_t device_id);
 extern struct BT_DEVICE_MANAGER_T app_bt_manager;
 

@@ -165,9 +165,6 @@ typedef uint8_t btif_event_type_t;
 #define BTIF_BTEVENT_HCI_FAILED                         104
 #define BTIF_BTEVENT_HCI_COMMAND_SENT                   105
 
-#define BTIF_BTEVENT_BES_AUD_CONNECTED                  200
-#define BTIF_BTEVENT_BES_AUD_DISCONNECTED               201
-
 #define BTIF_BTEVENT_COMMAND_CMP_EVENT                  221
 #define BTIF_BTEVENT_COMMAND_STATUS_EVENT               222
 
@@ -306,22 +303,6 @@ typedef void btif_cmgr_handler_t;
 #define BTIF_CMGR_AUDIO_DEFAULT_PARMS CMGR_AUDIO_PARMS_S4
 #endif /*  */
 
-#ifndef BTIF_CMGR_SNIFF_MIN_INTERVAL
-#ifdef BISTO_ENABLED
-#define BTIF_CMGR_SNIFF_MIN_INTERVAL 160
-#else
-#define BTIF_CMGR_SNIFF_MIN_INTERVAL (796)
-#endif
-#endif /*  */
-
-#ifndef BTIF_CMGR_SNIFF_MAX_INTERVAL
-#ifdef BISTO_ENABLED
-#define BTIF_CMGR_SNIFF_MAX_INTERVAL (160)
-#else
-#define BTIF_CMGR_SNIFF_MAX_INTERVAL (796)
-#endif
-#endif /*  */
-
 #ifndef BTIF_CMGR_SNIFF_ATTEMPT
 #define BTIF_CMGR_SNIFF_ATTEMPT 3
 #endif /*  */
@@ -384,6 +365,8 @@ typedef uint8_t cmgr_event_t;
 #define UPDATE_ACTIVE_MODE_FOR_ALL_LINKS    MAX_ACTIVE_MODE_MANAGED_LINKS
 
 typedef void (*btif_confirmation_req_callback_t)(struct bdaddr_t *bdaddr, uint32 numeric_value);
+
+typedef void (*btif_sec_conn_callback_t)(bool enable);
 
 typedef struct {
     uint16_t inqInterval;            /* Inquiry scan interval */
@@ -1401,8 +1384,8 @@ typedef enum
     A2DP_MODE = 0,
     ESCO_MODE,
     CIS_MODE,
+    INVALID_MODE = 3, //bt controller rom limited to set 3
     BIS_SCAN_MODE,
-    INVALID_MODE,
 } link_traffic_mode_t;
 
 enum btif_le_phy_rate
@@ -1487,7 +1470,7 @@ bt_bdaddr_t *btif_me_get_callback_event_inq_result_bd_addr(const btif_event_t * 
 bt_bdaddr_t *btif_me_get_callback_event_name_rsp_bd_addr(const btif_event_t * event);
 uint8_t *btif_me_get_callback_event_inq_result_bd_addr_addr(const btif_event_t * event);
 uint8_t btif_me_get_callback_event_inq_result_inq_mode(const btif_event_t * event);
-uint8_t btif_me_get_callback_event_rssi(const btif_event_t *event);
+int8_t btif_me_get_callback_event_rssi(const btif_event_t *event);
 uint8_t *btif_me_get_callback_event_inq_result_ext_inq_resp(const btif_event_t * event);
 uint32_t btif_me_get_callback_event_inq_result_classofdevice(const btif_event_t *event);
 uint8_t btif_me_get_callback_event_err_code(const btif_event_t * event);

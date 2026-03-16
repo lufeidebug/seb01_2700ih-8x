@@ -9,13 +9,6 @@ COMMAND=$2
 
 single_dac=0
 
-# cd ./bthost/
-# git checkout origin/cust/ep_comm_sdk_v2.0
-# cd ../
-# cd ./multimedia/algorithms/
-# git checkout origin/cust/ep_comm_sdk_v2.0
-# cd ../../
-
 if [[ $CHIPID == "best1306p" ]];
 then
     TARGET_LIST="best1306p"
@@ -36,12 +29,6 @@ then
     echo "1503p"
 elif [[ $CHIPID == "best1307p" ]];
 then
-    # cd ./bthost/
-    # git checkout origin/cust/ep_comm_sdk_v2.0_1307p
-    # cd ../
-    # cd ./multimedia/algorithms/
-    # git checkout origin/cust/ep_comm_sdk_v2.0_1307p
-    # cd ../../
     TARGET_LIST="best1307p"
     single_dac=1
     echo "1307p"
@@ -113,9 +100,3 @@ else
     $build_ota_cmd ||{ echo "$LINENO command failed"; exit 1; }
     echo $build_app_cmd
 fi
-# cd ./bthost/
-# git checkout origin/cust/ep_comm_sdk_v2.0
-# cd ../
-# cd ./multimedia/algorithms/
-# git checkout origin/cust/ep_comm_sdk_v2.0
-# cd ../../

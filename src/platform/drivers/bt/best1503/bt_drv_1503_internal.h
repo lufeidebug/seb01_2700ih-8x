@@ -213,6 +213,12 @@ extern "C" {
 #define FACTOR_ATTENUATION_12DBM  2
 #define FACTOR_ATTENUATION_18DBM  3
 
+#define CHAS_ENABLE_BIT                                         (0x1)
+#define CHAS_ENABLE_POS                                         (0)
+#define CHAS_NOSYNC_ENABLE_BIT                                 (0x2)
+#define CHAS_NOSYNC_ENABLE_POS                                 (1)
+#define CHAS_VER_BIT                                            (0xFC)
+#define CHAS_VER_POS                                            (2)
 
 #if (__FASTACK_ECC_CONFIG_BLOCK__ == 1)    // 1 BLOCK
     #define ECC_MODU_MODE ECC_DPSK
@@ -249,6 +255,16 @@ extern "C" {
 #define BLE_PREAMBLE_ACCESS_ADDR_DUR_2MBPS      (6*4)
 #define BLE_PREAMBLE_ACCESS_ADDR_DUR_125KBPS    (80+256)
 #define BLE_PREAMBLE_ACCESS_ADDR_DUR_500KBPS    (80+256)
+
+/// Macro to set a bit into a bit field
+/// @param[in] __r bit field value
+/// @param[in] __b bit field name
+/// @param[in] __v value to put in field
+#define SETB(__r, __b, __v)                                                      \
+    do {                                                                         \
+        ASSERT_ERR( ( ( ( ((__v) ? 1 : 0) << (__b##_POS) ) & ( ~(__b##_BIT) ) ) ) == 0 ); \
+        (__r) = (((__r) & ~(__b##_BIT)) | ((__v) ? 1 : 0) << (__b##_POS));                  \
+    } while (false)
 
 typedef struct
 {
@@ -585,6 +601,26 @@ struct hci_dbg_set_afh_assess_params
     int8_t  afh_good_chl_thr;
 
     uint16_t afh_sch_expect_assess_num;
+}__attribute__((packed));
+
+struct hci_dbg_set_chas_params
+{
+    /* @brief enable
+     * bit[0] 0b00:disable channel assess function
+     *        0b01:enable channel assess function
+     * bit[1] 0b00:disable nosync function
+     *        0b01:enable nosync function
+    */
+    uint8_t enable;
+    uint8_t policy;                                         // @chas_policy_t
+    uint8_t nb_channel;
+    uint8_t sch_prio_dft;
+    uint8_t nosync_timeout;                                 // unit: slots
+    int8_t rssi_smooth_max;
+    int8_t rssi_diff_thd;
+    int8_t rssi_max_para;
+    int8_t gain_sw_thd;
+    uint16_t monitor_interval;                              // unit: slots
 }__attribute__((packed));
 
 struct hci_dbg_set_rf_impedance_params

@@ -358,10 +358,6 @@ ifeq ($(AUDIO_BASS_ENHANCER),1)
 CFLAGS_app_bt_stream.o += -D__AUDIO_BASS_ENHANCER__
 endif
 
-ifeq ($(BT_NO_SLEEP),1)
-ccflags-y += -D__BT_NO_SLEEP__
-endif
-
 ifeq ($(APP_DEBUG_TOOL), BT_HFP_AT)
 CFLAGS_app_hfp.o += -DAPP_DEBUG_TOOL_BT_HFP_AT
 endif

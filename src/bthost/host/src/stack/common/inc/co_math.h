@@ -17,8 +17,8 @@
  *
  ****************************************************************************/
 
-#ifndef _CO_MATH_INC_
-#define _CO_MATH_INC_
+#ifndef __CO_MATH_H__
+#define __CO_MATH_H__
 
 #include <stdint.h>        // standard integer definitions
 #include <stdbool.h>       // boolean definitions
@@ -120,48 +120,20 @@ static inline uint32_t co_mod(uint32_t val, uint32_t div)
 
 inline uint32_t co_clz(uint32_t val)
 {
-#if defined(__arm__)
-    return __builtin_clz(val);
-#elif defined(__GNUC__)
     if (val == 0)
     {
         return 32;
     }
     return __builtin_clz(val);
-#else
-    uint32_t i;
-    for (i = 0; i < 32; i++)
-    {
-        if (val & CO_BIT(31 - i))
-        {
-            break;
-        }
-    }
-    return i;
-#endif // defined(__arm__)
 }
 
 inline uint32_t co_ctz(uint32_t val)
 {
-#if defined(__arm__)
-    return __builtin_ctz(val);
-#elif defined(__GNUC__)
     if (val == 0)
     {
         return 32;
     }
     return __builtin_ctz(val);
-#else
-    uint32_t i;
-    for (i = 0; i < 32; i++)
-    {
-        if (val & CO_BIT(i))
-        {
-            break;
-        }
-    }
-    return i;
-#endif // defined(__arm__)
 }
 
 inline uint32_t co_min(uint32_t a, uint32_t b)

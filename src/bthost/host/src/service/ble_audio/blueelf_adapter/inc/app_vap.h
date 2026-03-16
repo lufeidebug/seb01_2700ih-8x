@@ -16,8 +16,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __APP_VAP_COMMON__
-#define __APP_VAP_COMMON__
+#ifndef __APP_VAP_COMMON_H__
+#define __APP_VAP_COMMON_H__
 
 #if BLE_AUDIO_ENABLED
 

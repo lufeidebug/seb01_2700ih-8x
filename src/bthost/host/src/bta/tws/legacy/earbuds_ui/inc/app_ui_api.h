@@ -35,6 +35,7 @@ typedef enum
     APP_UI_MOBILE_OPEN_BOX_RECONNCET,        //connect by open_box
     APP_UI_MOBILE_RS_CONTINUE_RECONNECT,     //new_master_Inheritance_slave_try_reconncet_times_reconncet
     APP_UI_MOBILE_IBRT_COMPLETED_CONTINUE_RECONNECT,    //First, establish the Ibrt, cancel other devices, and after the cancellation is completed, restore the connection of other devices
+    APP_UI_MOBILE_STRAMING_CLOSED_CONTINUE_RECONNECT, //stream close or suspend,continue reconnect
 
     /****TWS_RECONNECT_TYPE****/
     APP_UI_TWS_OPEN_BOX_RECONNCET,          //connect by open_box
@@ -109,7 +110,7 @@ typedef void (*tws_chnl_recv_func_t)(uint8_t *, uint16_t);
 void app_ui_init();
 
 bta_tws_attributes_t* app_ui_get_config();
-
+uint8_t app_ui_get_all_sides_connected_dev_count();
 void *app_ui_get_devices_ctx(uint8_t index);
 
 void app_ui_custom_role_switch_cb_ind(const bt_bdaddr_t *addr, ibrt_conn_role_change_state state, bt_ibrt_role_t role);
@@ -198,9 +199,11 @@ bool app_ui_high_priority_event_interrupt_reconnec(uint16_t link_id);
 
 bool app_ui_disallow_reconnect_mobile_by_peer_status(void);
 
+bool app_ui_curr_addr_is_exist_in_sms(const bt_bdaddr_t *addr);
+
 bool app_ui_notify_peer_to_destroy_device(const bt_bdaddr_t *addr, bool delete_record);
 
-bool app_ui_destroy_device_ongoing(void);
+uint8_t app_ui_destroy_device_count(void);
 
 bool app_ui_destroy_device(const bt_bdaddr_t *del_nv_addr, bool delete_record);
 
@@ -385,13 +388,6 @@ bool app_ui_is_disconnect_evt(app_ui_evt_t evt);
  * @param evt                - event
  */
 bool app_ui_is_reconnect_evt(app_ui_evt_t evt);
-
-/**
- * @brief put the device at the top of NV record
- *
- * @param device address
- */
- void app_ui_put_dev_at_nv_top(const bt_bdaddr_t *addr);
 
 /**
  ****************************************************************************************

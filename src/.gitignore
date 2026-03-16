@@ -56,8 +56,8 @@ GTAGS
 *.pch
 
 # Libraries
-*.lib
-*.a
+# *.lib
+# *.a
 *.la
 *.lai
 *.pyd
@@ -104,13 +104,3 @@ Release/
 # *.ini
 
 # other repositories
-/nn/
-/net
-/bthost
-/services/btservice
-#/thirdparty/tflite
-/libc_adapter
-/apps/aiot_generic/prj
-/services/aiot
-/platform/drivers/wifi
-/multimedia

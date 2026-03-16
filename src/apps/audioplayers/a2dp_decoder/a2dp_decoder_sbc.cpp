@@ -28,6 +28,9 @@
 #include "app_tws_ibrt_audio_analysis.h"
 #endif
 
+#include "btapp.h"
+#include "audio_policy.h"
+
 #if defined(A2DP_SBC_PLC_ENABLED)
 #include "sbcplc.h"
 static float *cos_buf = NULL;
@@ -447,7 +450,7 @@ static int a2dp_cp_sbc_cp_decode(void)
 #endif
             sbc_stream_info_t info;
             sbc_decoder_get_stream_info(sbc_decoder, &info);
-            memmove(&p_out_info->in_info, p_in_info, sizeof(*p_in_info));
+            memcpy(&p_out_info->in_info, p_in_info, sizeof(*p_in_info));
             p_out_info->decoded_frames++;
             p_out_info->frame_samples = info.pcm_samples;
 #if defined(A2DP_SBC_PLC_ENABLED)
@@ -660,6 +663,10 @@ int a2dp_audio_sbc_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
     } else {
         out_frame_len = sizeof(struct A2DP_CP_SBC_OUT_FRM_INFO_T) +
             SBC_LIST_SAMPLES * 4 * cp_buffer_frames_max;
+    }
+
+    if(app_bt_get_device(app_bt_audio_get_curr_a2dp_device())->a2dp_channel_num == 1){
+        out_frame_len = (out_frame_len - sizeof(struct A2DP_CP_SBC_OUT_FRM_INFO_T))/2 + sizeof(struct A2DP_CP_SBC_OUT_FRM_INFO_T);
     }
 
     ret = a2dp_cp_decoder_init(out_frame_len, cp_buffer_frames_max * 2);

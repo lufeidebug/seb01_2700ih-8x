@@ -99,8 +99,8 @@ void hfcall_next_sta_handler(uint8_t device_id, hf_event_t event)
             {
                 BTAPP_TRACE(0,"NEXT_ACTION = HFP_ANOTHER_ADDTOEARPHONE");
                 btif_hf_create_audio_link(hf_channel_another);
-                app_bt_manager.hf_call_next_state = HFCALL_NEXT_STA_NULL;
             }
+            app_bt_manager.hf_call_next_state = HFCALL_NEXT_STA_NULL;
             break;
         case HFCALL_NEXT_STA_CURR_ANSWER:
              BTAPP_TRACE(0,"NEXT_ACTION = HF_CURRENT_ANSWER");

@@ -33,6 +33,9 @@
 #if defined(__SNDP_HEART_RATE_MGR__)
 #include "sndp_heart_rate.h"
 #endif
+#include "sndp_comm_ble.h"
+#include "app_ble_swift.h"
+
 
 
 /**************************************************************************************************
@@ -721,7 +724,16 @@ static void sndp_ui_pwr_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
-            sndp_ui_anc_switch();
+#if 1
+            //sndp_ui_anc_switch();
+            app_swift_enter_pairing_mode();
+#else
+            {
+                uint8_t data[] = {0xa1, 0xb2, 0xc3, 0xd4};
+                sndp_comm_ble_send_data(data, 4);
+            }
+#endif
+            
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
             sndp_ui_working_mode_switch();

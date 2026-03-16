@@ -354,6 +354,7 @@ void bt_drv_reg_op_set_sleep_duration(uint32_t tws_slp_dura_dec, uint32_t normal
 void btdrv_regop_set_btc_srand_seed_initial(void);
 void bt_drv_reg_op_config_tport_type(uint32_t tport_type, uint8_t iomux_type);
 
+void bt_drv_reg_op_wr_sec_con_host_supp(bool en);
 void bt_drv_reg_op_set_le_con_allow_use_same_addr(bool en);
 void bt_drv_reg_op_set_pscan_gap_slot_in_a2dp(uint8_t pscan_gap_slot);
 void bt_drv_reg_op_set_page_gap_slot_in_a2dp(uint8_t page_gap_slot);

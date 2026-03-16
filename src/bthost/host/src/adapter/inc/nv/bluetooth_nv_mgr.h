@@ -39,6 +39,8 @@ typedef enum ble_nv_record_add_event
     BLE_NV_REC_ADD_LE_DEMO_APP_SYNC,
     // LE RS cmd nv record
     BLE_NV_REC_ADD_LE_SWITCH_SYNC,
+    // Refresh pairing info
+    BLE_NV_REC_ADD_REFRESH_INFO,
 
     BLE_NV_REC_ADD_EVENT_MAX,
 } le_nv_rec_add_evt;
@@ -103,6 +105,9 @@ typedef enum bt_nv_record_del_event
 } bt_nv_rec_del_evt;
 
 typedef struct {
+    void (*nv_mgr_add_ble_record)(const uint8_t *p_addr);
+    void (*nv_mgr_add_bt_record)(const uint8_t *p_addr);
+
     void (*nv_mgr_del_ble_record)(const uint8_t *p_addr);
     void (*nv_mgr_del_bt_record)(const uint8_t *p_addr);
 } bluetooth_nv_mgr_del_cb_t;

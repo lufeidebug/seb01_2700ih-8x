@@ -51,10 +51,6 @@ extern "C" {
         __r; })
 #endif
 
-#if ! defined ( __GNUC__ )
-#error "Not support on non gnu c"
-#endif
-
 /**
  * @brief CO RPC call function api, build with macro for different usages
  *

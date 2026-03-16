@@ -31,6 +31,12 @@
 #include "arm_nnfunctions.h"
 #include "arm_nnsupportfunctions.h"
 
+#ifdef __GNUC__
+#define NN_UNUSED __attribute__((unused))
+#else
+#define NN_UNUSED
+#endif
+
 /**
  *  @ingroup Public
  */
@@ -40,7 +46,7 @@
  * @{
  */
 
-static void __attribute__((unused)) depthwise_conv_s16_mult_4_s16(const int16_t *input,
+static void NN_UNUSED depthwise_conv_s16_mult_4_s16(const int16_t *input,
                                                                   const int32_t input_x,
                                                                   const int32_t input_y,
                                                                   const int32_t input_ch,

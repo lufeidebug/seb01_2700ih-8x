@@ -172,6 +172,8 @@ typedef struct
 {
     // connect index
     uint8_t con_idx;
+    // ase direction
+    uint8_t direction;
     // Event status,see@BT_SVC_ERROR_CODE_E
     int     status;
 } bts_lea_uc_cli_event_stream_t;

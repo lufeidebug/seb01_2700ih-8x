@@ -84,6 +84,7 @@ subdir-ccflags-y += \
 	$(BLUETOOTH_ADAPTER_INCLUDES) \
 	$(BT_STACK_INCLUDES) \
 	$(BT_SERVICE_UX_INCLUDES) \
+        -Ibthost/host/src/service/module/tws/inc \
 	-Iinclude/cmsis_dsp \
 	-Iservices/audio_dump/include/ \
 	-Iservices/audio_manager/inc \

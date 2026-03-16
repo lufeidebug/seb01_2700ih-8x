@@ -1456,6 +1456,11 @@ bool hal_codec_adc_dc_auto_calib_check(void)
 {
     return false;
 }
+
+bool hal_codec_adc_ana_dc_auto_calib_check(void)
+{
+    return false;
+}
 #endif
 
 #if defined(AUDIO_OUTPUT_DC_CALIB) && defined(AUDIO_OUTPUT_DC_AUTO_CALIB)

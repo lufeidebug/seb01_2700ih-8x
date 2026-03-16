@@ -1,13 +1,23 @@
 cur_dir := $(dir $(lastword $(MAKEFILE_LIST)))
 
 #Only allowed to be used within bthost
-export BTH_STACK_INT_INCLUDES ?= \
-	-I$(BLUETOOTH_STACK_DIR_PATH)/ble_stack_new/inc \
-	-I$(BLUETOOTH_STACK_DIR_PATH)/common
+export BTH_STACK_INCLUDES += \
+    $(BT_STACK_INCLUDES)  \
+    $(BLE_STACK_INCLUDES) \
+    -I$(BLUETOOTH_STACK_DIR_PATH)/ble_stack_new/inc \
+    -I$(BLUETOOTH_STACK_DIR_PATH)/common
+
+
+export BLUETOOTH_ADAPTER_INCLUDES += \
+    -Ibthost/host/src/external_func/inc \
+    -Ibthost/host/src/pts
+
 
 #***********************************
 # Build app
 #***********************************
+ifeq ($(BTHOST_MIDDLEWARE),)
+
 ifeq ($(BT_SVC_FW_ENABLED),1)
 obj-y += src/bta/
 endif
@@ -15,7 +25,7 @@ endif
 #***********************************
 # Build service
 #***********************************
-ifeq ($(BTHOST_MIDDLEWARE),)
+
 
 ifneq ($(wildcard $(cur_dir)src/adapter/Makefile),)
 src_obj += src/adapter/
@@ -34,6 +44,12 @@ ifneq ($(wildcard $(cur_dir)src/porting/Makefile),)
 src_obj += src/porting/
 endif
 
+#***********************************
+# Build bthost test cmd
+#***********************************
+ifneq ($(wildcard $(cur_dir)src/pts/Makefile),)
+src_obj += src/pts/
+endif
 
 #***********************************
 # Build middleware
@@ -61,8 +77,10 @@ endif
 #***********************************
 # SDK build
 #***********************************
+
 BTHOST_SERVICE_LIB_NAME := libbthost_service
 
+ifeq ($(BTHOST_MIDDLEWARE),)
 ifeq ($(BLE_AUDIO_ENABLED), 1)
 BTHOST_SERVICE_LIB_NAME := $(BTHOST_SERVICE_LIB_NAME)_aob
 endif
@@ -78,9 +96,11 @@ endif
 ifeq ($(USE_TRACE_ID), 1)
 BTHOST_SERVICE_LIB_NAME := $(BTHOST_SERVICE_LIB_NAME)_log_compressed
 endif
+endif #BTHOST_MIDDLEWARE
 
 $(BTHOST_SERVICE_LIB_NAME)-y := $(src_obj)
 obj-y += $(BTHOST_SERVICE_LIB_NAME).a
+
 
 # Git revision
 BESLIB_INFO := $(shell cd $(cur_dir) && (which git >/dev/null 2>&1) && (git rev-parse --short HEAD 2>/dev/null))

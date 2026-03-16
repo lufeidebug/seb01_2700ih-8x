@@ -13,8 +13,8 @@
  * trademark and other intellectual property rights.
  *
  ****************************************************************************/
-#ifndef __APP_TWS_PROFILE_SYNC__
-#define __APP_TWS_PROFILE_SYNC__
+#ifndef __APP_TWS_PROFILE_SYNC_H__
+#define __APP_TWS_PROFILE_SYNC_H__
 
 #include "bluetooth_bt_api.h"
 #include "spp_api.h"

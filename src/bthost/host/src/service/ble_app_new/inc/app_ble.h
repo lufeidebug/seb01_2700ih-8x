@@ -25,27 +25,17 @@
 #include "ble_datapath_server.h"
 #include "ble_datapath_client.h"
 #include "ble_tws.h"
+#include "ble_adv_mgr.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define BLE_BASIC_ADV_HANDLE        0x00 // for legacy ble, ota, ai, dp, tile etc. advertising
-#define BLE_AUDIO_ADV_HANDLE        0x01 // for ble audio adertising
-#define BLE_GFPS_ADV_HANDLE         0x02
-#define BLE_SPOT_ADV_HANDLE         0x03
-#define BLE_SWIFT_ADV_HANDLE        0x04
-#define BLE_FINDMY_ADV_HANDLE       0x05
-#define BLE_AI_ADV_HANDLE           0x06
-#define BLE_CUSTOMER0_ADV_HANDLE    0x07
-#define BLE_CUSTOMER1_ADV_HANDLE    0x08
-#define BLE_CUSTOMER2_ADV_HANDLE    0x09
-#define BLE_CUSTOMER3_ADV_HANDLE    0x0a
-#define BLE_MAX_FIXED_ADV_HANDLE    0x0b
 #define BLE_MAX_CORE_EVT_CB         5
 
-#define BLE_ADV_ACTV_ENV_NUM_MAX    (7)
-
 #define BLE_CONN_MAX_INTERVAL (200) // 200*1.25 = 250ms Peripheral Preferred Max Connection Parameters
+
+#define BLE_SUPERV_TO_FROM_DONGLE_10MS    (501)
 
 #if defined(BISTO_ENABLED)||defined(__AI_VOICE_BLE_ENABLE__)|| \
     defined(CTKD_ENABLE)||defined(GFPS_ENABLED)||(BLE_AUDIO_ENABLED)
@@ -65,40 +55,6 @@ extern "C" {
 #define CFG_APP_GFPS
 #endif
 #endif
-
-typedef struct ble_adv_activity_t
-{
-    uint8_t adv_handle;
-    bool adv_is_started;
-    BLE_ADV_USER_E user;
-    uint32_t custom_adv_interval_ms;
-    gap_adv_param_t adv_param;
-    bool (*adv_activity_func)(struct ble_adv_activity_t *adv);
-    bt_bdaddr_t local_rpa;
-#ifdef BLE_WATCH_ADAPTER
-    bool adv_from_adapter;
-#endif
-} ble_adv_activity_t;
-
-typedef struct
-{
-    ble_callback_evnet_type_e evt_type;
-    union
-    {
-        struct
-        {
-            uint8_t newRole;
-        } rs_complete_handled;
-        struct
-        {
-            uint8_t newRole;
-        } role_update_handled;
-        struct
-        {
-            uint8_t event;
-        } ibrt_event_entry_handled;
-    } p;
-} ble_callback_event_t;
 
 typedef struct
 {
@@ -149,7 +105,7 @@ typedef union
     uint32_t passkey_6_digit;
     // OOB Term Key
     uint8_t oob_term_key[16];
-    /// OOB Auth data peer/local 
+    /// OOB Auth data peer/local
     struct
     {
         uint8_t pkx[32];
@@ -167,21 +123,13 @@ typedef union
 
 typedef void (*APP_BLE_CORE_EVENT_CALLBACK)(ble_event_t *);
 typedef void (*app_ble_mtu_exch_cb_t)(uint8_t con_lid, uint32_t mtu_size);
-typedef bool (*app_ble_enable_adv_cb_t)(uint8_t adv_user);
 
 typedef struct
 {
-    uint16_t appearance;
-    ble_adv_activity_t adv[BLE_ADV_ACTV_ENV_NUM_MAX];
-    BLE_DATA_FILL_FUNC_T data_fill_func[BLE_ADV_USER_NUM];
-    bool data_fill_enable[BLE_ADV_USER_NUM];
-    uint32_t adv_force_disabled;
+    bool ble_stub_adv_enable;
     APP_BLE_CORE_EVENT_CALLBACK ble_core_evt_cb;
     APP_BLE_CORE_GLOBAL_HANDLER_FUNC ble_global_handler[BLE_MAX_CORE_EVT_CB];
-    set_rsp_dist_lk_bit_field_func dist_lk_set_cb;
-    smp_identify_addr_exch_complete ble_smp_info_derived_from_bredr_complete;
     void (*ble_global_handle)(ble_event_t *event, void *output);
-    bool ble_stub_adv_enable;
     uint16_t curr_mtu_size[BLE_CONNECTION_MAX];
     // Device name
     const char *ble_dev_name;
@@ -201,6 +149,8 @@ typedef struct
     uint8_t gattc_profile_id;
     uint32_t gatt_hash_read_token[BLE_CONNECTION_MAX];
     uint16_t lmp_subversion[BLE_CONNECTION_MAX];
+    uint32_t smp_sec_req_ongoing_bf;
+    uint32_t dongle_connected_bf;
     uint8_t (*ble_resolving_list_fill_cb)(void);
     void (*ble_smp_require_modify)(uint16_t connhdl, ble_smp_require_t *p_requirements);
     void (*ble_add_record_modify)(uint16_t connhdl, BleDevicePairingInfo *p_record_add);
@@ -302,8 +252,6 @@ void ble_sasc_deinit(void);
 bt_status_t ble_sasc_start_discover(uint16_t connhdl);
 #endif
 
-typedef bool (*app_ble_adv_activity_func)(ble_adv_activity_t *adv);
-
 #ifdef GFPS_ENABLED
 void ble_app_gfps_init(app_ble_adv_activity_func func);
 void ble_app_gfps_deinit(void);
@@ -404,14 +352,6 @@ bool app_tota_send_indication(uint8_t conidx, uint8_t *data, uint32_t len);
 void app_ble_mesh_init();
 #endif
 
-typedef struct
-{
-    const uint8_t *adv_data;
-    const uint8_t *scan_rsp_data;
-    uint16_t adv_data_len;
-    uint16_t scan_rsp_len;
-} app_ble_adv_data_param_t;
-
 typedef gap_scan_callback_t app_ble_scan_callback_t;
 
 typedef struct
@@ -432,8 +372,6 @@ typedef struct
     app_ble_scan_callback_t scan_callback;
 } BLE_SCAN_PARAM_T;
 
-typedef bool (*app_ble_adv_activity_func)(ble_adv_activity_t *adv);
-
 void app_ble_init(void);
 void app_ble_deinit(void);
 ble_global_t *ble_get_global(void);
@@ -451,10 +389,9 @@ void app_ble_smp_get_specifc_irk_ia_callback_register(void (*ble_get_specific_ir
 void app_ble_gap_add_record_modify_callback_register(void (*ble_add_record_modify)(uint16_t, BleDevicePairingInfo *));
 void app_ble_gap_get_specifc_record_callback_register(bool (*ble_get_specific_record)(uint16_t, const ble_bdaddr_t *,
                                                                                       BleDevicePairingInfo *));
-void app_sec_reg_dist_lk_bit_set_callback(set_rsp_dist_lk_bit_field_func callback);
-void *app_sec_reg_dist_lk_bit_get_callback(void);
 bt_status_t app_ble_start_connect(const ble_bdaddr_t *peer_addr, uint8_t ia_rpa_npa);
-bt_status_t app_ble_connect_ble_audio_device(const ble_bdaddr_t *peer_addr, uint8_t ia_rpa_npa, uint32_t connect_time);
+bt_status_t app_ble_connect_ble_audio_device(const ble_bdaddr_t *peer_addr, uint8_t ia_rpa_npa,
+                                             uint32_t connect_time, uint8_t phys);
 bt_status_t app_ble_start_auto_connect(const ble_bdaddr_t *addr_list, uint16_t list_size, uint8_t ia_rpa_npa,
                                        uint32_t connect_time);
 void app_ble_cancel_connecting(void);
@@ -466,19 +403,17 @@ bool app_ble_get_peer_solved_addr(uint8_t conidx, ble_bdaddr_t *p_addr);
 const char *app_ble_get_peer_device_name(uint8_t conidx);
 ble_bdaddr_t app_ble_get_local_identity_addr(uint8_t conidx);
 const uint8_t *app_ble_get_local_rpa_addr(uint8_t conidx);
-const uint8_t *app_ble_get_local_rpa_by_adv_hdl(uint8_t adv_hdl);
-void app_ble_read_local_rpa_by_adv_hdl(uint8_t adv_hdl);
 bool app_ble_is_remote_dev_connected(const ble_bdaddr_t *p_addr);
 uint8_t app_ble_connection_count(void);
 bool app_is_arrive_at_max_ble_connections(void);
 bool app_ble_is_any_connection_exist(void);
 bool app_ble_is_connection_on(uint8_t conidx);
+bool app_ble_is_dongle_connected(uint8_t *p_conidx_ret);
 uint16_t app_ble_get_conhdl_from_conidx(uint8_t conidx);
 uint8_t app_ble_get_conidx_from_conhdl(uint16_t connhdl);
 uint8_t app_ble_get_conidx_from_addr(const ble_bdaddr_t *p_addr);
 void app_ble_update_conn_param_mode(BLE_CONN_PARAM_MODE_E mode, bool enable);
 void app_ble_update_conn_param_mode_of_specific_connection(uint8_t con_idx, BLE_CONN_PARAM_MODE_E mode, bool enable);
-void app_ble_register_ia_exchanged_callback(smp_identify_addr_exch_complete callback);
 void app_ble_set_white_list(BLE_WHITE_LIST_USER_E user, const ble_bdaddr_t *bdaddr, uint8_t size);
 void app_ble_clear_white_list(BLE_WHITE_LIST_USER_E user);
 void app_ble_clear_all_white_list(void);
@@ -497,36 +432,8 @@ void app_ble_get_local_irk(uint8_t *p_irk);
 void app_ble_get_peer_irk_by_addr(const ble_bdaddr_t *addr, uint8_t *p_irk);
 void app_ble_start_scan(BLE_SCAN_PARAM_T *param);
 void app_ble_stop_scan(void);
-void app_ble_data_fill_enable(BLE_ADV_USER_E user, bool enable);
-void app_ble_register_data_fill_handle(BLE_ADV_USER_E user, BLE_DATA_FILL_FUNC_T func, bool enable);
-void app_ble_dt_set_flags(gap_adv_param_t *adv_param, bool simu_bredr_support);
-void app_ble_dt_set_local_name(gap_adv_param_t *adv_param, const char *cust_le_name);
-void app_ble_parse_out_adv_data_service_uuid(BLE_ADV_PARAM_T *data, gap_dt_buf_t *out_uuid_16,
-                                             gap_dt_buf_t *out_uuid_128);
-void app_ble_parse_out_scan_rsp_service_uuid(BLE_ADV_PARAM_T *data, gap_dt_buf_t *out_uuid_16,
-                                             gap_dt_buf_t *out_uuid_128);
-BLE_ADV_ACTIVITY_USER_E app_ble_param_get_actv_user_from_adv_user(BLE_ADV_USER_E user);
-void app_ble_param_set_adv_interval(BLE_ADV_INTERVALREQ_USER_E adv_intv_user, BLE_ADV_USER_E adv_user,
-                                    uint32_t interval_ms);
-void app_ble_force_switch_adv(enum BLE_ADV_SWITCH_USER_E user, bool enable_adv);
-bool app_ble_is_connection_on_by_addr(uint8_t *addr);
-int app_ble_server_callback_api(uintptr_t connhdl, gap_adv_event_t event, gap_adv_callback_param_t param);
-bool app_ble_is_in_advertising_state(void);
-bool ble_adv_is_allowed(void);
-void ble_core_enable_stub_adv(void);
-void ble_core_disable_stub_adv(void);
-void app_ble_stub_user_init(void);
-void app_ble_start_adv_generic(void);
-void app_ble_stop_adv_generic(void);
-void app_ble_refresh_adv_state_generic(void);
-void app_ble_enable_advertising(uint8_t adv_handle);
-void app_ble_disable_advertising(uint8_t adv_handle);
-void app_ble_reg_sync_info(void (*sync_info)(void));
-void app_ble_sync_ble_info(void);
+bool app_ble_is_connection_on_by_addr(const uint8_t *addr);
 void app_ble_mode_tws_sync_init(void);
-void ble_roleswitch_start(void);
-void ble_roleswitch_complete(uint8_t newRole);
-void ble_role_update(uint8_t newRole);
 int8_t app_ble_get_rssi(uint8_t conidx);
 uint16_t app_ble_get_connection_interval_1_25_ms(uint8_t conidx);
 ble_conn_timing_t app_ble_get_connection_curr_timing(uint8_t conidx);
@@ -534,14 +441,6 @@ uint16_t app_ble_get_connection_current_mtu_size(uint8_t conidx);
 const char *app_ble_get_local_name();
 uint8_t app_ble_own_addr_type(void);
 ble_bdaddr_t app_get_current_ble_addr(void);
-ble_adv_activity_t *app_ble_register_advertising(uint8_t adv_handle, app_ble_adv_activity_func adv_activity_func);
-void app_ble_unregister_advertising(uint8_t adv_handle);
-ble_adv_activity_t *app_ble_get_advertising_by_user(BLE_ADV_USER_E user);
-void app_ble_set_adv_txpwr_by_adv_user(BLE_ADV_USER_E user, int8_t txpwr_dbm);
-void app_ble_set_adv_tx_power_dbm(ble_adv_activity_t *adv, int8_t tx_power_dbm);
-void app_ble_set_adv_tx_power_level(ble_adv_activity_t *adv, BLE_ADV_TX_POWER_LEVEL_E tx_power_level);
-void app_ble_dt_add_adv_data(ble_adv_activity_t *adv, BLE_ADV_PARAM_T *a, const app_ble_adv_data_param_t *b);
-bool app_ble_get_user_adv_data(ble_adv_activity_t *adv, BLE_ADV_PARAM_T *param, int user_group);
 bt_status_t app_ble_gatt_update_enc_data_key_material(const gap_key_material_t *key_material);
 bt_status_t app_ble_gatt_read_peer_character_value(uint16_t connhdl, uint16_t uuid);
 bt_status_t app_ble_gatt_server_send_service_change(uint32_t con_bfs);
@@ -552,31 +451,28 @@ bt_status_t app_ble_gap_dump_state_info(void);
 bt_status_t app_ble_set_public_address(const bt_bdaddr_t *public_addr);
 bt_status_t app_ble_set_le_tx_pwr(uint16_t connhdl, int8_t tx_pwr);
 void app_ble_set_appearance(uint16_t appearance);
-void app_ble_get_appearance(uint16_t* appearance);
-uint16_t app_ble_get_peer_appearance(uint8_t addr_type, uint8_t* addr);
+void app_ble_get_appearance(uint16_t *appearance);
+uint16_t app_ble_get_peer_appearance(uint8_t addr_type, uint8_t *addr);
 uint16_t app_ble_get_peer_lmp_version(uint8_t conidx);
 bool app_ble_check_device_master_role(void);
+bool app_ble_check_ibrt_allow_adv(BLE_ADV_USER_E user);
 uint16_t app_ble_update_conn_param(uint8_t conidx, uint32_t min_intvl_ms, uint32_t max_intvl_ms,
                                    uint32_t supv_timeout_ms, uint8_t peripheral_latency);
-#if defined(IBRT)
-bool app_ble_check_ibrt_allow_adv(BLE_ADV_USER_E user);
-#endif
+
 int app_ble_server_callback(uintptr_t connhdl, gap_adv_event_t event, gap_adv_callback_param_t param);
 uint32_t app_ble_save_ctx(uint8_t conidx, uint8_t *buf, uint16_t buf_len);
 uint32_t app_ble_restore_ctx(uint8_t conidx, uint8_t *buf, uint16_t buf_len);
 
-void app_ble_adv_set_param(BLE_ADV_PARAM_T *param);
-ble_adv_activity_t *app_ble_adv_get_param(BLE_ADV_USER_E actv_user);
-void app_ble_enable_adv_cb_register(app_ble_enable_adv_cb_t cb);
-
 void app_ble_set_device_config(const ble_dev_cfg_t *p_cfg);
-uint8_t app_ble_get_adv_hdl_by_user(BLE_ADV_USER_E user);
 
 #if (mHDT_LE_SUPPORT)
 void app_ble_mhdt_hci_le_rd_local_proprietary_feat_cmd();
 void app_ble_mhdt_hci_le_rd_remote_proprietary_feat_cmd(uint8_t conidx);
 #endif
 
+void ble_core_enable_stub_adv(void);
+void ble_core_disable_stub_adv(void);
+void app_ble_stub_user_init(void);
 
 void ble_con_param_mgr_init(void);
 bool ble_con_param_mgr_on_peer_upd_req(uint16_t conn_handle, uint8_t conidx,
@@ -585,7 +481,7 @@ void ble_con_param_mgr_on_upd_complete(uint16_t conn_handle, int status);
 void ble_con_param_mgr_on_disconnected(uint16_t conn_handle, uint8_t conidx);
 
 void ble_con_param_set_prefer_range(uint16_t conn_handle, uint16_t prefer_min_1_25ms,
-                                    uint16_t prefer_max_1_25ms, uint16_t peripheral_latency_cnt);
+                                    uint16_t prefer_max_1_25ms, uint16_t superv_timeout_10ms, uint16_t peripheral_latency_cnt);
 
 #ifdef __cplusplus
 }

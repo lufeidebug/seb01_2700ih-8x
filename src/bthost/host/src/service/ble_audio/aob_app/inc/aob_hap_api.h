@@ -19,8 +19,8 @@
  ****************************************************************************************
  */
 
-#ifndef _AOB_HAP_API_H_
-#define _AOB_HAP_API_H_
+#ifndef __AOB_HAP_API_H__
+#define __AOB_HAP_API_H__
 
 #ifdef __cplusplus
 extern "C" {

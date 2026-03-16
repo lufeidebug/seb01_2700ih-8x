@@ -18,18 +18,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#ifndef XA_INTEGER_SIZE
-#define XA_INTEGER_SIZE     4
-#endif
-
-#define BTIF_DISABLED       0
-#define BTIF_ENABLED        1
-#define BTIF_SBC_ENCODER    BTIF_ENABLED
-#define BTIF_SBC_DECODER    BTIF_ENABLED
-#define BTIF_SPP_CLIENT     BTIF_ENABLED
-#define BTIF_SPP_SERVER     BTIF_ENABLED
-
 #define BTIF_BT_DEFAULT_PAGE_SCAN_WINDOW    0x12
 #define BTIF_BT_DEFAULT_PAGE_SCAN_INTERVAL  0x800
 #define BTIF_BT_DEFAULT_INQ_SCAN_WINDOW     0x12
@@ -43,17 +31,6 @@ extern "C" {
 #define BTIF_HF_CUSTOM_FEATURE_NR_REPORT         (0x01 << 4)
 #define BTIF_HF_CUSTOM_FEATURE_SUPPORT \
     (BTIF_HF_CUSTOM_FEATURE_BATTERY_REPORT | BTIF_HF_CUSTOM_FEATURE_SIRI_REPORT)
-
-/* for debug usage */
-#if !defined(DEBUG)
-#define BTHOST_DEBUG 0
-#endif
-
-#if BTHOST_DEBUG == 1
-#define DBG_DEBUG_PRINT_ENABLE                  1
-#else
-#define DBG_DEBUG_PRINT_ENABLE                  0
-#endif
 
 #define HCI_TX_BUFF_SIZE_CHECK 128
 #define HCI_TX_BUFF_SIZE_NO_LESS_COUNT 8
@@ -123,20 +100,6 @@ extern "C" {
 #endif
 #endif
 
-#undef BT_A2DP_TEST_SUPPORT
-#ifdef BT_A2DP_SUPPORT
-#if 0
-#define BT_A2DP_TEST_SUPPORT
-#endif
-#endif
-
-#undef BT_AVRCP_TEST_SUPPORT
-#ifdef BT_AVRCP_SUPPORT
-#if 0
-#define BT_AVRCP_TEST_SUPPORT
-#endif
-#endif
-
 #undef BT_PBAP_TEST_SUPPORT
 #ifdef BT_PBAP_SUPPORT
 #if 0
@@ -164,8 +127,6 @@ extern "C" {
 #define LOCAL_AUDIO_TEST_ENABLE
 #endif
 #endif // LOCAL_AUDIO_SUPPORT
-
-#define ESCO_ENABLE 1
 
 #ifdef CVSD_BYPASS
 #define BTM_SYNC_CONN_AUDIO_SETTING_DEFAULT            0x0040
@@ -200,7 +161,7 @@ extern "C" {
 
 /* HFP */
 #define HFP_CMD_FLOW_CONTROL_ENABLE        1
-#define HFP_CMD_SYST_TX_TIMEOUT_VAL_MS     3000
+#define HFP_CMD_SYST_TX_TIMEOUT_VAL_MS     8000
 
 #define HFP_HF_CHANNEL 7
 
@@ -278,12 +239,9 @@ extern "C" {
 #define HCI_CFG_SYNC_MAX_LATENCY             0xffff
 #define HCI_CFG_SYNC_RETX_EFFORT             0x2
 //#define HCI_CFG_SYNC_PKT_TYPE              HCI_PKT_TYPE_HV3
-#if ESCO_ENABLE
+
 #define HCI_CFG_SYNC_SCO_PKTS                (PACKET_TYPE_HV1 | PACKET_TYPE_HV2 | PACKET_TYPE_HV3)
 #define HCI_CFG_SYNC_PKT_TYPE                (PACKET_TYPE_HV1 | PACKET_TYPE_HV2 | PACKET_TYPE_HV3 | PACKET_TYPE_EV3)
-#else
-#define HCI_CFG_SYNC_PKT_TYPE                (PACKET_TYPE_HV1_FLAG | PACKET_TYPE_HV2_FLAG | PACKET_TYPE_HV3_FLAG)
-#endif
 #define HCI_CFG_INPUT_CODING                 INPUT_CODING_LINEAR
 #define HCI_CFG_INPUT_DATA_FORMAT            INPUT_DATA_FORMAT_1S
 #define HCI_CFG_INPUT_SAMPLE_SIZE            INPUT_SAMPLE_SIZE_8BITS
@@ -446,6 +404,12 @@ extern "C" {
 
 #ifdef _SCO_BTPCM_CHANNEL_
 #define CFG_SYNC_CONFIG_PATH                 (0<<8|1<<4|1<<0) /* all links use hci */
+#elif defined (SCO_OVER_INTERSYS)
+#ifdef DSP_USE_SCO_INTERSYS
+#define CFG_SYNC_CONFIG_PATH                 ((SCO_INTERSYS_ID+4)<<8|0x3<<4|0x3<<0)
+#else
+#define CFG_SYNC_CONFIG_PATH                 (SCO_INTERSYS_ID<<8|0x3<<4|0x3<<0)
+#endif
 #else
 #define CFG_SYNC_CONFIG_PATH                 (0<<8|0<<4|0<<0) /* all links use hci */
 #endif
@@ -545,8 +509,6 @@ extern "C" {
 #if !defined(BLE_ONLY_ENABLED) && !defined(BT_SERVICE_ENABLE)
 #define  __BTIF_BT_RECONNECT__
 #endif
-
-#define __BTIF_SNIFF__
 
 #ifdef __cplusplus
 }

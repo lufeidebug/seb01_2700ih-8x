@@ -154,7 +154,7 @@
 /***************************************************************************
  *Fast ack configration
  ****************************************************************************/
-#define FA_RX_WIN_SIZE            (0xA)
+#define FA_RX_WIN_SIZE            (0x8)
 #define FA_CNT_PKT_US             (0x7)
 #define FA_RXPWRUP_TIMING         (0x37)
 #define FA_TXPWRUP_TIMING         (0x28)

@@ -194,10 +194,6 @@ void ble_audio_set_bis_src_ble_addr(const uint8_t *addr);
 
 uint8_t *ble_audio_get_bis_src_ble_addr(void);
 
-bool app_ble_audio_adv_enable(void);
-
-bool app_ble_audio_adv_disable(void);
-
 void app_ble_audio_dump_adv_state(void);
 
 uint8_t ble_audio_get_tws_conidx(void);

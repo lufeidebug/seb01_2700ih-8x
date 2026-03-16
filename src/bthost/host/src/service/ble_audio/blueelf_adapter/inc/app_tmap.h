@@ -20,8 +20,8 @@
  ****************************************************************************************
  */
 
-#ifndef APP_TMAP_H_
-#define APP_TMAP_H_
+#ifndef __APP_TMAP_H__
+#define __APP_TMAP_H__
 
 #if BLE_AUDIO_ENABLED
 #include "prf_types.h"

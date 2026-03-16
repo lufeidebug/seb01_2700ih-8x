@@ -4230,6 +4230,197 @@ int codec_calib_dac_dig_dc(uint32_t ch_l_en, uint32_t ch_r_en,
 }
 #endif /* AUDIO_OUTPUT_DIG_DC_DEEP_CALIB */
 
+#ifdef AUDIO_OUTPUT_ANA_DC_DEEP_CALIB
+int codec_calib_dac_ana_dc(uint32_t ch_l_en, uint32_t ch_r_en,
+                           int32_t tgt_dc_l, int32_t tgt_dc_r,
+                           uint32_t *comp_dc_l, uint32_t *comp_dc_r)
+{
+#define DC_CALIB_DEBUG
+#define ANA_DC_SIGN_BIT             (13)
+#define ANA_DC_REG_MSB_POS          (12)
+#define ANA_DC_REG_BIT_MAX_WIGHT    (8) //BIT 12: x256(1<<8)
+#define ANA_DC_DET_GATE             (10)
+#define ANA_DC_DET_GATE_ERR         (100)
+
+    int i;
+    int success = 0;
+    int ch_l_done = 0, ch_r_done = 0;
+    int32_t dc_l = 0, dc_r = 0;
+    int32_t det_l = 0, det_r = 0;
+    int32_t orig_det_l = 0, orig_det_r = 0;
+    uint16_t regval_l = 0, regval_r = 0;
+    uint32_t det_gate_l = ANA_DC_DET_GATE, det_gate_r = ANA_DC_DET_GATE;
+    int32_t weight_a_l, weight_b_l;
+    int32_t weight_a_r, weight_b_r;
+    int32_t weight_mid_l = 0, weight_mid_r = 0;
+
+    if ((!ch_l_en) && (!ch_r_en)) {
+        return 0;
+    }
+    AUDIOFLINGER_TRACE(1, "CALIB: TGT_DC: tgt_dc_l=%d, tgt_dc_r=%d", tgt_dc_l, tgt_dc_r);
+
+    analog_aud_dac_dc_auto_calib_set_mode(ANA_DAC_DC_CALIB_MODE_DAC_TO_ADC);
+    analog_aud_dc_calib_set_value(0, 0);
+    osDelay(10);
+
+    get_codec_dac_dc(&dc_l, &dc_r);
+    det_l = tgt_dc_l - dc_l;
+    det_r = tgt_dc_r - dc_r;
+
+    orig_det_l = det_l;
+    orig_det_r = det_r;
+    AUDIOFLINGER_TRACE(0, "orig_det_l: %d", orig_det_l);
+    AUDIOFLINGER_TRACE(0, "orig_det_r: %d", orig_det_r);
+
+    int32_t dac_l_dc_value[ANA_DC_SIGN_BIT],  dac_r_dc_value[ANA_DC_SIGN_BIT];
+    int32_t max_dac_l_dc = 0, max_dac_r_dc = 0;
+    for (uint16_t reg_bit = 0; reg_bit < ANA_DC_SIGN_BIT; reg_bit++) {
+        regval_l = (1 << reg_bit);
+        regval_r = (1 << reg_bit);
+        if (orig_det_l < 0) {
+            regval_l |= (1 << ANA_DC_SIGN_BIT);
+        }
+        if (orig_det_r < 0) {
+            regval_r |= (1 << ANA_DC_SIGN_BIT);
+        }
+        analog_aud_dc_calib_set_value(regval_l, regval_r);
+
+        get_codec_dac_dc(&dc_l, &dc_r);
+        det_l = tgt_dc_l - dc_l;
+        det_r = tgt_dc_r - dc_r;
+
+        dac_l_dc_value[reg_bit] = orig_det_l - det_l;
+        dac_r_dc_value[reg_bit] = orig_det_r - det_r;
+    }
+
+    for (uint16_t reg_bit = 0; reg_bit < ANA_DC_SIGN_BIT; reg_bit++) {
+        max_dac_l_dc += ABS(dac_l_dc_value[reg_bit]);
+        AUDIOFLINGER_TRACE(0, "[%d] dc_l: %d", reg_bit, dac_l_dc_value[reg_bit]);
+    }
+    for (uint16_t reg_bit = 0; reg_bit < ANA_DC_SIGN_BIT; reg_bit++) {
+        max_dac_r_dc += ABS(dac_r_dc_value[reg_bit]);
+        AUDIOFLINGER_TRACE(0, "[%d] dc_r: %d", reg_bit, dac_r_dc_value[reg_bit]);
+    }
+
+    weight_a_l = -max_dac_l_dc;
+    weight_b_l = max_dac_l_dc;
+
+    weight_a_r = -max_dac_r_dc;
+    weight_b_r = max_dac_r_dc;
+    analog_aud_dc_calib_set_value(0, 0);
+    AUDIOFLINGER_TRACE(0, "init [%d, %d]", weight_a_l, weight_b_l);
+
+    get_codec_dac_dc(&dc_l, &dc_r);
+    det_l = tgt_dc_l - dc_l;
+    det_r = tgt_dc_r - dc_r;
+
+    for (i = ANA_DC_REG_MSB_POS; i >= 0;) {
+#ifdef DC_CALIB_DEBUG
+        AUDIOFLINGER_TRACE(1, "[%d]:dc_l=%d,tgt_dc_l=%d,det_l=%d",i,dc_l,tgt_dc_l,det_l);
+        AUDIOFLINGER_TRACE(1, "[%d]:dc_r=%d,tgt_dc_r=%d,det_r=%d",i,dc_r,tgt_dc_r,det_r);
+#endif
+        if (ch_l_en) {
+            if (!ch_l_done) {
+                if (ABS(det_l) < det_gate_l) {
+                    ch_l_done = 1;
+                    AUDIOFLINGER_TRACE(1, "[%d]: DONE: weight_mid_l=%d", i, weight_mid_l);
+                }
+                if (!ch_l_done) {
+                    if (det_l < 0) {
+                        weight_a_l = weight_mid_l;
+                    } else {
+                        weight_b_l = weight_mid_l;
+                    }
+                    AUDIOFLINGER_TRACE(0, "[%d]:[%d, %d]", i, weight_a_l, weight_b_l);
+                }
+            }
+            AUDIOFLINGER_TRACE(1, "[%d]: weight_mid_l=%d, regval_l=0x%x", i, weight_mid_l, regval_l);
+        }
+        if (ch_r_en) {
+            if (!ch_r_done) {
+                if (ABS(det_r) < det_gate_r) {
+                    ch_r_done = 1;
+                    AUDIOFLINGER_TRACE(1, "[%d]: DONE: weight_mid_r=%d", i, weight_mid_r);
+                }
+                if (!ch_r_done) {
+                    if (det_r < 0) {
+                        weight_a_r = weight_mid_r;
+                    } else {
+                        weight_b_r = weight_mid_r;
+                    }
+                    AUDIOFLINGER_TRACE(0, "[%d]:[%d, %d]", i, weight_a_r, weight_b_r);
+                }
+            }
+            AUDIOFLINGER_TRACE(1, "[%d]: weight_mid_r=%d, regval_r=0x%x", i, weight_mid_r, regval_r);
+        }
+
+        if (ch_l_en && ch_r_en) {
+            if (ch_l_done && ch_r_done) {
+                AUDIOFLINGER_TRACE(1, "DAC CH L/R DC calib done");
+                success = 1;
+                break;
+            }
+        } else if (ch_l_en) {
+            if (ch_l_done) {
+                AUDIOFLINGER_TRACE(1, "DAC CH L DC calib done");
+                success = 1;
+                break;
+            }
+        } else if (ch_r_en) {
+            if (ch_r_done) {
+                AUDIOFLINGER_TRACE(1, "DAC CH R DC calib done");
+                success = 1;
+                break;
+            }
+        }
+        weight_mid_l = (weight_a_l + weight_b_l) / 2;
+        weight_mid_r = (weight_a_r + weight_b_r) / 2;
+        regval_l = analog_aud_dc_diff_to_val(weight_mid_l, dac_l_dc_value);
+        regval_r = analog_aud_dc_diff_to_val(weight_mid_r, dac_r_dc_value);
+        analog_aud_dc_calib_set_value(regval_l, regval_r);
+        osDelay(5);
+
+        get_codec_dac_dc(&dc_l, &dc_r);
+        det_l = tgt_dc_l - dc_l;
+        det_r = tgt_dc_r - dc_r;
+        i--;
+#ifdef DC_CALIB_DEBUG
+        AUDIOFLINGER_TRACE(1,"-----------------------");
+#endif
+    }
+    // DC CALIB CHECK
+    if (!success) {
+        if (ch_l_en && !ch_l_done) {
+            if (ABS(det_l) > ANA_DC_DET_GATE_ERR) {
+                AUDIOFLINGER_TRACE(false, " ** L DAC CALIB FAIL det_l=%d **", det_l);
+            } else {
+                ch_l_done = 1;
+            }
+        }
+        if (ch_r_en && !ch_r_done) {
+            if (ABS(det_r) > ANA_DC_DET_GATE_ERR) {
+                AUDIOFLINGER_TRACE(false, " ** R DAC CALIB FAIL det_l=%d **", det_r);
+            } else {
+                ch_r_done = 1;
+            }
+        }
+        success = (ch_l_en ? ch_l_done : 1) && (ch_r_en ? ch_r_done : 1);
+        AUDIOFLINGER_TRACE(1, "DAC DC CALIB CHECK success = %d", success);
+    }
+
+    AUDIOFLINGER_TRACE(1, "FINAL ANA DC: regval_l=%x, regval_r=%x", regval_l, regval_r);
+    if (comp_dc_l) {
+        *comp_dc_l = regval_l;
+    }
+    if (comp_dc_r) {
+        *comp_dc_r = regval_r;
+    }
+    // DAC dre dc select ana ctrl mode
+    analog_aud_dre_dc_sel(true);
+    return success;
+}
+#endif /* AUDIO_OUTPUT_ANA_DC_DEEP_CALIB */
+
 #define DAC_DC_CALIB_SPK_CHAN_MAP (AUD_CHANNEL_MAP_CH0 | AUD_CHANNEL_MAP_CH1)
 
 int af_codec_calib_dac_dc(enum AF_CODEC_CALIB_CMD_T calib_cmd,
@@ -4253,9 +4444,8 @@ int af_codec_calib_dac_dc(enum AF_CODEC_CALIB_CMD_T calib_cmd,
     uint8_t *buf = cfg->buf;
     uint32_t len = cfg->len;
 #ifdef AUDIO_OUTPUT_DC_CALIB_ANA
-    int16_t dc_step_old_l = 0, dc_step_old_r = 0;
-#else
-    POSSIBLY_UNUSED uint32_t comp_gate_l = 0, comp_gate_r = 0;
+    uint32_t ana_val_l = 0, ana_val_r = 0;
+    analog_aud_dre_dc_sel(false);
 #endif
 
     POSSIBLY_UNUSED uint32_t time = hal_fast_sys_timer_get();
@@ -4361,6 +4551,9 @@ int af_codec_calib_dac_dc(enum AF_CODEC_CALIB_CMD_T calib_cmd,
         cal_stream_is_opened = false;
 
         af_set_dac_dc_offset();
+#ifdef AUDIO_OUTPUT_DC_CALIB_ANA
+        analog_aud_dre_dc_sel(true);
+#endif
         goto _end;
     }
 
@@ -4408,10 +4601,13 @@ int af_codec_calib_dac_dc(enum AF_CODEC_CALIB_CMD_T calib_cmd,
     AUDIOFLINGER_TRACE(1, "\nDAC TO ADC\n");
     analog_aud_dac_dc_auto_calib_set_mode(ANA_DAC_DC_CALIB_MODE_DAC_TO_ADC);
 #ifdef AUDIO_OUTPUT_DC_CALIB_ANA
+    hal_codec_set_dac_ana_gain(cal_dac_ini_ana_gain, cal_dac_gain_offset);
     analog_aud_dc_calib_set_value(0, 0);
+    hal_codec_dac_dc_offset_enable(cal_dac_dig_dc_l, cal_dac_dig_dc_r);
     dc_step_l = analog_aud_dac_dc_get_step();
     dc_step_r = dc_step_l;
 #else
+    uint32_t comp_gate_l = 0, comp_gate_r = 0;
     dc_step_l = 1;
     dc_step_r = dc_step_l;
     if (cal_dac_ana_gain >= 0xF) {
@@ -4533,11 +4729,19 @@ int af_codec_calib_dac_dc(enum AF_CODEC_CALIB_CMD_T calib_cmd,
         AUDIOFLINGER_TRACE(1, "dc_tgt_l=%d, dc_tgt_r=%d", dc_target_l, dc_target_r);
     } while (1);
 #endif
-#ifdef AUDIO_OUTPUT_DIG_DC_DEEP_CALIB
+
+#if defined(AUDIO_OUTPUT_DIG_DC_DEEP_CALIB) || defined(AUDIO_OUTPUT_ANA_DC_DEEP_CALIB)
+#if defined(AUDIO_OUTPUT_DIG_DC_DEEP_CALIB)
     ret = codec_calib_dac_dig_dc(en_l, en_r, dc_target_l, dc_target_r, &val_l, &val_r);
+#elif defined(AUDIO_OUTPUT_ANA_DC_DEEP_CALIB)
+    ret = codec_calib_dac_ana_dc(en_l, en_r, dc_target_l, dc_target_r, &ana_val_l, &ana_val_r);
+    AUDIOFLINGER_TRACE(0, "ana_val_l = 0x%x, ana_val_r = 0x%x", ana_val_l, ana_val_r);
+#endif
     if (!ret) {
         cfg->state = CODEC_CALIB_STATE_ERR_DAC_DC_L | CODEC_CALIB_STATE_ERR_DAC_DC_R;
     }
+    (void)dc_step_l;
+    (void)dc_step_r;
     (void)diff_l;
     (void)diff_r;
     (void)comp_old_l;
@@ -4562,6 +4766,7 @@ int af_codec_calib_dac_dc(enum AF_CODEC_CALIB_CMD_T calib_cmd,
         AUDIOFLINGER_TRACE(1, "[%u] comp_l=%d comp_r=%d", i, comp_l, comp_r);
 
 #ifdef AUDIO_OUTPUT_DC_CALIB_ANA
+        int16_t dc_step_old_l = 0, dc_step_old_r = 0;
         if (i == 1) {
             if (en_l) {
                 dc_step_old_l = dc_step_l;
@@ -4685,12 +4890,21 @@ int af_codec_calib_dac_dc(enum AF_CODEC_CALIB_CMD_T calib_cmd,
         }
 #endif
     }
+#ifdef AUDIO_OUTPUT_DC_CALIB_ANA
+    if (calib_cmd == CODEC_CALIB_CMD_ANA_DC) {
+        cfg->ana_dc_l = (uint16_t)ana_val_l;
+        cfg->ana_dc_r = (uint16_t)ana_val_r;
+    }
+#endif
+
     AUDIOFLINGER_TRACE(1, "Final analog_gain: %d", cal_dac_ana_gain);
     AUDIOFLINGER_TRACE(1, "Final comp_l=%d, comp_r=%d", comp_l, comp_r);
     AUDIOFLINGER_TRACE(1, "Final diff_l=%d, diff_r=%d", diff_l, diff_r);
-    AUDIOFLINGER_TRACE(1, "Final val_l  =0x%08X val_r  =0x%08X", val_l, val_r);
+    AUDIOFLINGER_TRACE(1, "Final val_l  =0x%08x val_r  =0x%08x", val_l, val_r);
 #ifdef AUDIO_OUTPUT_DC_CALIB_ANA
-    AUDIOFLINGER_TRACE(1, "Final efuse_l=0x%04X efuse_r=0x%04X", analog_aud_dc_calib_val_to_efuse(val_l), analog_aud_dc_calib_val_to_efuse(val_r));
+    AUDIOFLINGER_TRACE(1, "Final ana_val_l = 0x%08x ana_val_r = 0x%08x", (uint16_t)ana_val_l, (uint16_t)ana_val_r);
+    AUDIOFLINGER_TRACE(1, "Final ana_val_l = 0x%08x ana_val_r = 0x%08x", cfg->ana_dc_l, cfg->ana_dc_r);
+    // AUDIOFLINGER_TRACE(1, "Final efuse_l=0x%04X efuse_r=0x%04X", analog_aud_dc_calib_val_to_efuse(val_l), analog_aud_dc_calib_val_to_efuse(val_r));
 #endif
 
     AUDIOFLINGER_TRACE(1, "\nGetting final values consumes %u ms\n", FAST_TICKS_TO_MS(hal_fast_sys_timer_get() - time));

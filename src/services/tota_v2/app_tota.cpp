@@ -73,7 +73,6 @@
 #include "app_tota_audio_EQ.h"
 #include "app_tota_common.h"
 #include "audio_cfg.h"
-#include "app_bt_cmd.h"
 
 #include <map>
 

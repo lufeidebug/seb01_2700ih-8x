@@ -70,7 +70,7 @@ void app_ai_if_ble_update_conn_param_mode(bool isEnabled)
 
 void app_ai_if_ble_register_data_fill_handle(void *func, bool enable)
 {
-    app_ble_register_advertising(BLE_AI_ADV_HANDLE, (app_ble_adv_activity_func)func);
+    app_ble_register_advertising(BLE_AI_ADV_HANDLE, BLE_ADV_USAGE_LE_TRANSPARENT, (app_ble_adv_activity_func)func);
 }
 
 void app_ai_if_ble_data_fill_enable(bool enable)

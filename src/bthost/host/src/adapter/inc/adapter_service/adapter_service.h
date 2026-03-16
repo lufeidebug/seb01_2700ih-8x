@@ -208,10 +208,6 @@ void bes_bt_a2dp_get_device_codec_info(uint8_t dev_num, uint8_t *codec);
 
 void app_bt_get_local_device_address(void *bd_addr);
 
-void bt_adapter_register_hci_log_report_callback(uint16_t max_len,
-                int (*tx_cb)(const uint8_t *buf, uint16_t len),
-                int (*rx_cb)(const uint8_t *buf, uint16_t len));
-
 void bt_adapter_register_key_evt_handle_cb(const bta_key_click_event_cb_t *cbs);
 
 void bta_register_bt_sink_callback(void *cbs);

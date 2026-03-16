@@ -73,6 +73,8 @@ typedef enum
     BT_SVC_AUD_PATH_LEA_BC,
     // SMF audio path
     BT_SVC_AUD_PATH_SMF,
+    // SPDIF audio path
+    BT_SVC_AUD_PATH_SPDIF,
     // MAX audio path
     BT_SVC_AUD_PATH_MAX,
 } BT_SVC_DATA_PATH_TYPE_E;
