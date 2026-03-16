@@ -1223,8 +1223,11 @@ int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd)
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
     COMM_CMD_TRACE(1, "eq mode=%d", cmd_info->value[0]);
+#if defined(__SNDP_EQ_MODE_SETTING__)
     sndp_set_eq_index(cmd_info->value[0]);
+#else
 
+#endif
     cmd_info->value[0] = 0; // success
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -1233,7 +1236,11 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_mode(sleep_app_co
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
+#if defined(__SNDP_EQ_MODE_SETTING__)
     uint8_t eq_index = sndp_get_eq_index(app_anc_work_status());
+#else
+    uint8_t eq_index = 0xff;
+#endif
     cmd_info->data_len = 0x02;
 
     if(app_anc_work_status()){

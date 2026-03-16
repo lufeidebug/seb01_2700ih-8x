@@ -96,7 +96,7 @@ const IIR_CFG_T audio_eq_hw_dac_iir_cfg = {
     }
 };
 
-#if defined(__SNDP_PROJ__)
+#if defined(__SNDP_EQ_MODE_SETTING__)
 const IIR_CFG_T audio_eq_hw_dac_iir_jazz = {
 #if defined(AUDIO_HEARING_COMPSATN)
     .gain0 = -22,
@@ -336,7 +336,7 @@ IIR_CFG_T audio_eq_hw_dac_iir_adaptive_eq_cfg = {
 
 const IIR_CFG_T * const POSSIBLY_UNUSED audio_eq_hw_dac_iir_cfg_list[EQ_HW_DAC_IIR_LIST_NUM]={
     &audio_eq_hw_dac_iir_cfg,  //normal mode
-#if defined(__SNDP_PROJ__)
+#if defined(__SNDP_EQ_MODE_SETTING__)
     &audio_eq_hw_dac_iir_jazz,
     &audio_eq_hw_dac_iir_rock,
     &audio_eq_hw_dac_iir_classic,
@@ -344,7 +344,7 @@ const IIR_CFG_T * const POSSIBLY_UNUSED audio_eq_hw_dac_iir_cfg_list[EQ_HW_DAC_I
     &audio_eq_hw_dac_iir_custom_mode,
 #endif
     &audio_eq_anc_hw_dac_iir_cfg,
-#if defined(__SNDP_PROJ__)
+#if defined(__SNDP_EQ_MODE_SETTING__)
     &audio_eq_anc_hw_dac_iir_jazz,
     &audio_eq_anc_hw_dac_iir_rock,
     &audio_eq_anc_hw_dac_iir_classic,

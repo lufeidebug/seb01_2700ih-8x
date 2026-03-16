@@ -74,8 +74,9 @@
 static void sndp_ibrt_reconfig_save_to_nvrecord(ibrt_config_t *config);
 extern "C" uint8_t is_a2dp_mode(void);
 extern "C" uint8_t is_sco_mode(void);
+#if defined(__SNDP_EQ_MODE_SETTING__)
 extern const IIR_CFG_T * const POSSIBLY_UNUSED audio_eq_hw_dac_iir_cfg_list[EQ_HW_DAC_IIR_LIST_NUM];
-
+#endif
 
 /**************************************************************************************************
 * Variable
@@ -368,9 +369,11 @@ uint8_t *sndp_get_nvrecord_bt_peer_address(void)
 static void sndp_ibrt_reconfig_save_to_nvrecord(ibrt_config_t *config)
 { 
     struct nvrecord_env_t *nvrecord_env = NULL;
+#if defined(__SNDP_EQ_MODE_SETTING__)
     nv_record_env_get(&nvrecord_env);
     memset((uint8_t *)&(nvrecord_env->ibrt_mode), 0xff, sizeof(nvrecord_env->ibrt_mode));
     nv_record_env_set(nvrecord_env);
+#endif
 
     bta_tws_reconfig_nv_role(config->nv_role, (bt_bdaddr_t *)&config->peer_addr);
     nv_record_flash_flush();
@@ -1170,6 +1173,7 @@ sndp_anc_mode_e sndp_anc_get_curr_mode(void)
 }
 
 /******************************************* EQ Contrl Interface ****************************************/
+#if defined(__SNDP_EQ_MODE_SETTING__)
 uint8_t eq_index = 0; //开机默认就是normal mode
 uint32_t sndp_bt_audio_set_eq(uint8_t index)
 {
@@ -1231,7 +1235,7 @@ uint8_t sndp_bt_audio_updata_eq_for_anc(void)
 	return 0;
 
 }
-
+#endif
 /******************************************* Voice Assistant Interface ****************************************/
 extern int app_hfp_siri_voice(bool en);
 

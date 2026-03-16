@@ -197,9 +197,11 @@ void sndp_anc_off_locally(void);
 void sndp_anc_mode_set(sndp_anc_mode_e anc_mode);
 void sndp_anc_mode_switch(void);
 sndp_anc_mode_e sndp_anc_get_curr_mode(void);
+#if defined(__SNDP_EQ_MODE_SETTING__)
 void sndp_set_eq_index(uint8_t index);
 uint8_t sndp_get_eq_index(uint8_t anc_statu);
 uint8_t sndp_bt_audio_updata_eq_for_anc(void);
+#endif
 void sndp_wakeup_voice_assistant(bool onoff);
 void sndp_update_audio_channel(bool tws_conn);
 

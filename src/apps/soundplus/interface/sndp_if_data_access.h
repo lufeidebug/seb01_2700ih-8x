@@ -60,7 +60,7 @@ typedef struct {
 #if defined(__SNDP_ALG_MGR__)
 typedef struct {
 	uint32_t key;  /* This key must be defined, but it cannot be modified */
-	uint8_t data[1024];//512
+	uint8_t data[512];//512
 } sndp_da_field_alg_data_s;
 #endif
 
@@ -70,6 +70,10 @@ typedef struct {
 	uint16_t size;
 } sndp_da_field_info_s;
 
+typedef struct {
+	uint32_t key;  /* This key must be defined, but it cannot be modified */
+	uint8_t data[768];
+}sndp_da_field_eq_data_s;
 
 typedef struct {
 	sndp_da_field_bat_info_s field_bat_info;
@@ -79,6 +83,7 @@ typedef struct {
 #if defined(__SNDP_ALG_MGR__)	
 	sndp_da_field_alg_data_s field_alg_data;
 #endif
+	sndp_da_field_eq_data_s field_eq_data;
 } sndp_da_param_s;
 
 
