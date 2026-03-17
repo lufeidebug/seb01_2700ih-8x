@@ -121,6 +121,8 @@ typedef struct {
 #endif	
 } sndp_dev_all_status_s;
 
+#if defined(__SNDP_SLEEP_APP__)
+#if defined(__SNDP_GESTURE_MAP__)
 typedef void (*function_callback_t)(void);
 
 typedef enum {
@@ -147,6 +149,19 @@ typedef struct {
     ear_mapping_t ear_mapping_table;
     bool initialized;
 } sndp_dev_gesture_mapper_t;
+#endif
+typedef struct
+{
+	/* data */
+	uint8_t sleep_eq_index;
+	uint8_t sleep_anc_mode;
+	uint8_t sleep_gesture_onoff;
+	uint8_t sleep_prompt_onoff;
+}sndp_sleep_app_flag;
+
+#endif
+
+
 
 typedef struct {
 	uint8_t fw_ver[4];
@@ -160,9 +175,6 @@ typedef struct {
 
 	int16_t temperature;
 
-	bool prompt_onoff; //true: on, false: off
-
-	bool gesture_onoff; //true: on, false: off
 
     sndp_dev_charger_plug_e charger_status;
         
@@ -173,9 +185,12 @@ typedef struct {
 	sndp_dev_wear_status_e wear_status;
 
 	sndp_dev_iobox_status_e inout_status;
-
+#if defined(__SNDP_SLEEP_APP__)
+#if defined(__SNDP_GESTURE_MAP__)
 	sndp_dev_gesture_mapper_t gesture_mapper;
-
+#endif
+	sndp_sleep_app_flag sleep_app_flag;
+#endif
 } sndp_dev_earbuds_param_s;
 
 
@@ -231,6 +246,8 @@ void sndp_dev_wear_init(sndp_dev_wear_status_changed_cb callback);
 /************************************************** Gesture Info Start **************************************************/
 void sndp_dev_gesture_set_event_callback(sndp_dev_gesture_event_cb callback);
 void sndp_dev_gesture_init(sndp_dev_gesture_event_cb callback);
+#if defined(__SNDP_SLEEP_APP__)
+#if defined(__SNDP_GESTURE_MAP__)
 void sndp_dev_gesture_onoff(bool peer, bool onoff);
 bool sndp_dev_get_gesture_onoff(bool peer);
 void sndp_dev_gesture_mapper_init(void);
@@ -238,6 +255,8 @@ bool sndp_dev_gesture_mapper_update_mapping(bool peer, sndp_dev_gesture_type_t g
 void sndp_dev_gesture_mapper_handle_gesture(sndp_dev_gesture_type_t gesture);
 void sndp_dev_register_gesture_funcs(function_callback_t *func_table);
 void sndp_dev_gesture_mapper_set_default(sndp_dev_gesture_mapper_t* mapper);
+#endif
+#endif
 /************************************************** Gesture Info End **************************************************/
 
 
@@ -367,8 +386,10 @@ void sndp_dev_acc_init(void);
 /**************************************************  acc End **************************************************/
 
 /************************************************** prompt start **************************************************/
+#if defined(__SNDP_SLEEP_APP__)
 void sndp_dev_set_prompt_onoff(bool peer, bool onoff);
 bool sndp_dev_get_prompt_onoff(bool peer);
+#endif
 /************************************************** prompt end **************************************************/
 
 void sndp_dev_init(void);

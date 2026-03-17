@@ -6,7 +6,7 @@
 *
 *
 */
-#if defined(__SNDP_COMM_MGR__)
+#if defined(__SNDP_SLEEP_APP__)
 
 #include "stdio.h"
 #include "string.h"

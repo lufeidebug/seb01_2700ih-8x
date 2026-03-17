@@ -39,12 +39,15 @@
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
+#if defined(__SNDP_SLEEP_APP__)
+static sleep_app_comm_cmd_info_s sndp_sleep_comm_recv_cmd;
 inline void SleepAppFlagGet(uint32_t *flagaddr, uint8_t *dataaddr)
 {
     ((uint8_t*)flagaddr)[2] = dataaddr[0];
     ((uint8_t*)flagaddr)[1] = dataaddr[1];
     ((uint8_t*)flagaddr)[0] = dataaddr[2];
 }
+#endif
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -85,7 +88,6 @@ static uint8_t sndp_comm_recv_deal_buf[512];
 
 static sndp_comm_cmd_info_s sndp_comm_recv_cmd;
 static sndp_comm_cmd_info_s sndp_comm_send_cmd;
-static sleep_app_comm_cmd_info_s sndp_sleep_comm_recv_cmd;
 static uint8_t sndp_comm_send_frame[SNDP_COMM_FRAME_LEN_MAX];
 
 
@@ -311,11 +313,13 @@ static int32_t sndp_comm_main_execute_cmd(sndp_comm_cmd_info_s *cmd)
 	return 0;
 }
 
+#if defined(__SNDP_SLEEP_APP__)
 static int32_t sleep_app_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
 {
     sleep_comm_execute_cmd_hdlr(cmd);
     return 0;
 }
+#endif
 
 static void sndp_comm_recv_thread(void const *argument)
 {
@@ -414,6 +418,7 @@ static void sndp_comm_recv_thread(void const *argument)
                     }
                 }
             } else {
+#if defined(__SNDP_SLEEP_APP__)
                 uint32_t appflag = 0;
                 uint16_t app_pop_len = 0;
                 uint32_t sleep_app_error_code;
@@ -439,13 +444,15 @@ static void sndp_comm_recv_thread(void const *argument)
                     }
                 } else {
                     COMM_MIAN_TRACE(0, "recv unknown data, appflag=0x%08X", appflag);
+#endif
                     path_hdlr->recv_wait_more_cnt = 0;
                     pop_len = sndp_comm_protocol_find_next_frame_idx(deal_buf, peek_len);
                     //COMM_MIAN_TRACE(0, "111 pop_len=%02x", pop_len);
                     sndp_comm_queue_pop_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, pop_len);
                     sndp_comm_queue_set_change_status(path_hdlr, true);
+#if defined(__SNDP_SLEEP_APP__)
                 }
-
+#endif
             }
             
         }
@@ -607,6 +614,7 @@ int32_t sndp_comm_main_send_cmd(sndp_comm_cmd_info_s *cmd)
     return 0;
 }
 
+#if defined(__SNDP_SLEEP_APP__)
 int32_t sleep_app_comm_main_send_cmd(sleep_app_comm_cmd_info_s *cmd)
 {
     if(cmd == NULL) {
@@ -634,6 +642,7 @@ int32_t sleep_app_comm_main_send_cmd(sleep_app_comm_cmd_info_s *cmd)
     sndp_comm_main_send_data(send_path, sndp_comm_send_frame, SLEEP_APP_COMM_HEAD_LEN + cmd->data_len);
     return 0;
 }
+#endif
 
 int32_t sndp_comm_main_send_cmd_by_id(sndp_comm_cmd_id_e cmd_id, uint8_t from, uint8_t to, uint8_t path, uint8_t *cmd_data, uint16_t cmd_data_len)
 {
@@ -679,6 +688,7 @@ int32_t sndp_comm_main_rsp_cmd(sndp_comm_cmd_info_s *rsp_cmd)
     return 0;
 }
 
+#if defined(__SNDP_SLEEP_APP__)
 int32_t sndp_sleep_comm_main_rsp_cmd(sleep_app_comm_cmd_info_s *rsp_cmd)
 {
     sleep_app_comm_cmd_info_s *cmd = &sndp_sleep_comm_recv_cmd;
@@ -696,6 +706,7 @@ int32_t sndp_sleep_comm_main_rsp_cmd(sleep_app_comm_cmd_info_s *rsp_cmd)
     sleep_app_comm_main_send_cmd(cmd);
     return 0;
 }
+#endif
 
 #if defined(__SNDP_COMM_TRACE_UART__)
 void sndp_comm_main_trace_uart_init(void)

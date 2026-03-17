@@ -513,6 +513,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_call_ctrl(sndp_comm_cmd_info_s *cmd_i
 	return 0;
 }
 
+#if defined(__SNDP_SLEEP_APP__)
 uint32_t sndp_comm_cmd_send_lr_sync_gesture_onoff(bool onoff)
 {
     uint8_t data = onoff ? 0x01 : 0x00;
@@ -522,9 +523,11 @@ uint32_t sndp_comm_cmd_send_lr_sync_gesture_onoff(bool onoff)
 
 static uint32_t sndp_comm_cmd_recv_lr_sync_gesture_onoff(sndp_comm_cmd_info_s *cmd_info)
 {
+#if defined(__SNDP_GESTURE_MAP__)
     if(cmd_info->data_len == 1) {
         sndp_dev_gesture_onoff(false, cmd_info->data[0] ? true : false);
     }
+#endif
     return 0;
 }
 
@@ -551,13 +554,18 @@ uint32_t sndp_comm_cmd_send_lr_sync_update_mapping(uint8_t key_behavior,uint8_t 
 
 static uint32_t sndp_comm_cmd_recv_lr_sync_update_mapping(sndp_comm_cmd_info_s *cmd_info)
 {
+#if defined(__SNDP_GESTURE_MAP__)
     uint8_t key_behavior = cmd_info->data[0];
     uint8_t key_function = cmd_info->data[1];
     if(cmd_info->data_len == 2) {
+
         sndp_dev_gesture_mapper_update_mapping(false, (sndp_dev_gesture_type_t)key_behavior, (sndp_dev_function_type_t)key_function);
+
     }
+#endif
     return 0;
 }
+#endif
 
 uint32_t sndp_comm_cmd_send_lr_sync_all_dev_status(uint8_t *data, uint16_t data_len)
 {
@@ -1145,9 +1153,11 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_LR_SYNC_BOTH_SHUTDOWN          , "LR_SYNC_BOTH_SHUTDOWN"   , sndp_comm_cmd_recv_lr_sync_both_shutdown          },
     { COMM_CMDID_LR_SYNC_MUSIC_CTRL             , "LR_SYNC_MUSIC_CTRL"      , sndp_comm_cmd_recv_lr_sync_music_ctrl             },
     { COMM_CMDID_LR_SYNC_CALL_CTRL              , "LR_SYNC_CALL_CTRL"       , sndp_comm_cmd_recv_lr_sync_call_ctrl              },
+#if defined(__SNDP_SLEEP_APP__)
     { COMM_CMDID_LR_SYNC_PROMPT_ONOFF           , "LR_SYNC_PROMPT_ONOFF"    , sndp_comm_cmd_recv_lr_sync_prompt_onoff           },
     { COMM_CMDID_LR_SYNC_UPDATE_MAPPING         , "LR_SYNC_UPDATE_MAPPING"  , sndp_comm_cmd_recv_lr_sync_update_mapping         },
     { COMM_CMDID_LR_SYNC_GESTURE_ONOFF          , "LR_SYNC_GESTURE_ONOFF"   , sndp_comm_cmd_recv_lr_sync_gesture_onoff          },
+#endif
     { COMM_CMDID_LR_SYNC_ALL_DEV_STATUS         , "LR_SYNC_ALL_DEV_STATUS"  , sndp_comm_cmd_recv_lr_sync_all_dev_status         },
     { COMM_CMDID_LR_SYNC_BT_ONOFF               , "LR_SYNC_BT_ONOFF"        , sndp_comm_cmd_recv_lr_sync_bt_onoff               },
     
@@ -1220,14 +1230,11 @@ int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd)
     return ret;
 }
 
+#if defined(__SNDP_SLEEP_APP__)
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
     COMM_CMD_TRACE(1, "eq mode=%d", cmd_info->value[0]);
-#if defined(__SNDP_EQ_MODE_SETTING__)
     sndp_set_eq_index(cmd_info->value[0]);
-#else
-
-#endif
     cmd_info->value[0] = 0; // success
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -1236,11 +1243,8 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_mode(sleep_app_co
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
-#if defined(__SNDP_EQ_MODE_SETTING__)
     uint8_t eq_index = sndp_get_eq_index(app_anc_work_status());
-#else
-    uint8_t eq_index = 0xff;
-#endif
+
     cmd_info->data_len = 0x02;
 
     if(app_anc_work_status()){
@@ -1346,6 +1350,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_ap
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_enable(sleep_app_comm_cmd_info_s *cmd_info)
 {
+#if defined(__SNDP_GESTURE_MAP__)
     if(cmd_info->value[0]) {
         COMM_CMD_TRACE(0, "enable touch");
         sndp_dev_gesture_onoff(false, true);
@@ -1357,6 +1362,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_enable(sleep_a
     cmd_info->value[0] = 0; // success
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
+#endif
     return 0;
 }
 
@@ -1373,6 +1379,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_voice_prompt_enable(
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_key_mapping(sleep_app_comm_cmd_info_s *cmd_info)
 {
+#if defined(__SNDP_GESTURE_MAP__)
     uint8_t lrflag = cmd_info->value[0];
     uint8_t key_behavior = cmd_info->value[1];
     uint8_t key_function = cmd_info->value[2];
@@ -1396,6 +1403,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_key_mapping(sl
     }
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
+#endif
     return 0;
 }
 
@@ -1517,7 +1525,7 @@ int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
     }
     return ret;
 }
-
+#endif
 #endif	/* __SNDP_COMM_CMD_DEFAULT__ */
 
 

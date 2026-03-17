@@ -1,6 +1,6 @@
 #ifndef __SLEEPWAVE_APP_PROTOCOL_H__
 #define __SLEEPWAVE_APP_PROTOCOL_H__
-
+#if defined(__SNDP_SLEEP_APP__)
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -59,5 +59,6 @@ uint16_t sleep_protocol_pack_send_data(sleep_app_comm_cmd_info_s *cmd_info, uint
 
 #ifdef __cplusplus
 }
+#endif
 #endif
 #endif

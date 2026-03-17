@@ -82,7 +82,7 @@ export SNDP_BLE_MODIFY                          := 0
 export SNDP_HEART_RATE_MGR                      := 1
 export SNDP_KEY_TEST                            := 1
 export SNDP_APP_WHITE_NOISE                     := 1
-export SNDP_EQ_SETTING                          := 1
+export SNDP_SLEEP_APP                           := 1
 
 ifeq ($(SNDP_UI),1)
     KBUILD_CPPFLAGS += -D__SNDP_UI__
@@ -416,9 +416,10 @@ ifeq ($(SNDP_APP_WHITE_NOISE),1)
     KBUILD_CPPFLAGS += -D__SNDP_APP_WHITE_NOISE__
 endif
 
-ifeq ($(SNDP_EQ_SETTING),1)
-    KBUILD_CPPFLAGS += -D__SNDP_EQ_MODE_SETTING__
-    KBUILD_CPPFLAGS += -D__SNDP_EQ_PARAM_SETTING__
+ifeq ($(SNDP_SLEEP_APP),1)
+    KBUILD_CPPFLAGS += -D__SNDP_SLEEP_APP__
+    #KBUILD_CPPFLAGS += -D__SNDP_GESTURE_MAP__
+    #KBUILD_CPPFLAGS += -D__SNDP_EQ_PARAM_SETTING__
 endif
 
 endif 

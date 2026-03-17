@@ -93,6 +93,17 @@ typedef enum {
 	SNDP_ANC_MODE_QTY,
 } sndp_anc_mode_e;
 
+#if defined(__SNDP_SLEEP_APP__)
+typedef enum {
+		SNDP_EQ_MODE_NORMAL = 0,
+		SNDP_EQ_MODE_JAZZ,
+		SNDP_EQ_MODE_ROCK,
+		SNDP_EQ_MODE_CLASSIC,
+		SNDP_EQ_MODE_RELAXED,
+		SNDP_EQ_MODE_CUSTOM_MODE = 0x09, //用户自定义模式
+		SNDP_EQ_MAX,
+} sndp_eq_mode_e;
+#endif
 
 typedef enum {
 	SNDP_PAIRING_SUCCESS = 0,
@@ -197,11 +208,6 @@ void sndp_anc_off_locally(void);
 void sndp_anc_mode_set(sndp_anc_mode_e anc_mode);
 void sndp_anc_mode_switch(void);
 sndp_anc_mode_e sndp_anc_get_curr_mode(void);
-#if defined(__SNDP_EQ_MODE_SETTING__)
-void sndp_set_eq_index(uint8_t index);
-uint8_t sndp_get_eq_index(uint8_t anc_statu);
-uint8_t sndp_bt_audio_updata_eq_for_anc(void);
-#endif
 void sndp_wakeup_voice_assistant(bool onoff);
 void sndp_update_audio_channel(bool tws_conn);
 
@@ -210,7 +216,13 @@ uint8_t *sndp_get_nvrecord_bt_peer_address(void);
 
 int sndp_language_switch_handler(int new_lan);
 void sndp_bt_switch(bool onoff, bool sync);
-
+#if defined(__SNDP_SLEEP_APP__)
+void sndp_set_eq_index(uint8_t index);
+uint8_t sndp_get_eq_index(uint8_t anc_statu);
+uint8_t sndp_bt_audio_updata_eq_for_anc(void);
+void sndp_load_eq_param(void);
+int sndp_check_data_crc(uint32_t *crc, uint8_t *data_ptr, uint32_t flash_crc, uint32_t data_len);
+#endif
 
 #ifdef __cplusplus
 }
