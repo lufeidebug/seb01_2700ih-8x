@@ -1079,6 +1079,12 @@ bool spfi_call_is_hfp_audio_on(void)
 void sndp_call_ctrl(sndp_call_ctrl_event_e event)
 {
     SNDP_IF_TRACE(0, "event=%d", event);
+
+    if(sndp_is_tws_link_connected() && sndp_is_tws_slave_mode()) {
+        SNDP_IF_TRACE(0, "send to master.");
+        sndp_comm_cmd_send_lr_sync_call_ctrl(event);
+        return;
+    }
     
 	switch(event) {
 		case SNDP_CALL_CTRL_REJECT:
