@@ -408,7 +408,7 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
         bta_tws_box_event_entry(BTA_TWS_CLOSE);
         
     } else {
-        sndp_dev_wear_enable_detection();
+        //sndp_dev_wear_enable_detection();
 #if defined(__BTIF_EARPHONE__)
         app_stop_10_second_timer(APP_PAIR_TIMER_ID);
 #endif
@@ -428,6 +428,7 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         bta_tws_box_event_entry(BTA_TWS_DOCK);
     } else {
         bta_tws_box_event_entry(BTA_TWS_UNDOCK);
+        sndp_dev_wear_enable_detection();
         //spif_wear_detection_exec_calibration_self_calib();
     }
 }
@@ -1034,7 +1035,7 @@ static void sndp_ui_temperature_measure_callback(int16_t temperature)
 //---------------------------------------- bt ctrl --------------------------------------------
 POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e conn_status, uint8_t reason)
 {
-    SPUI_TRACE(0, "conn_sta=%d, reason=%d", conn_status, reason);
+    SPUI_TRACE(0, "conn_sta=%d, reason=%02X", conn_status, reason);
     
 	switch(conn_status) {
 		case SNDP_BT_CONN_STATUS_MOBILE_DISCONNECTED:
