@@ -492,6 +492,7 @@ APP_10_SECOND_TIMER_STRUCT app_10_second_array[] =
 #elif defined(__SNDP_UI__)
     INIT_APP_TIMER(APP_PAIR_TIMER_ID, 0, 0, 30, sndp_mobile_pairing_timeout),
     INIT_APP_TIMER(APP_POWEROFF_TIMER_ID, 0, 0, 90, CloseEarphone),
+    INIT_APP_TIMER(APP_BT_RECONNECT_TIMER_ID, 0, 0, 90, sndp_mobile_reconnect_timeout),
 #else
 #ifdef BESUI_TWS_EN
     INIT_APP_TIMER(APP_PAIR_TIMER_ID, 0, 0, 32, PairingTransferToConnectable),
@@ -517,6 +518,9 @@ APP_10_SECOND_TIMER_STRUCT app_10_second_array[] =
 void app_stop_10_second_timer(uint8_t timer_id)
 {
     APP_10_SECOND_TIMER_STRUCT *timer = &app_10_second_array[timer_id];
+#if defined(__SNDP_UI__)
+    MAIN_TRACE(0, "%s, id=%d", __func__, timer_id);
+#endif
 
     timer->timer_en = 0;
     timer->timer_count = 0;
@@ -525,6 +529,9 @@ void app_stop_10_second_timer(uint8_t timer_id)
 void app_start_10_second_timer(uint8_t timer_id)
 {
     APP_10_SECOND_TIMER_STRUCT *timer = &app_10_second_array[timer_id];
+#if defined(__SNDP_UI__)
+    MAIN_TRACE(0, "%s, id=%d", __func__, timer_id);
+#endif
 
     timer->timer_en = 1;
     timer->timer_count = 0;
@@ -533,6 +540,9 @@ void app_start_10_second_timer(uint8_t timer_id)
 void app_set_10_second_timer(uint8_t timer_id, uint8_t enable, uint8_t period)
 {
     APP_10_SECOND_TIMER_STRUCT *timer = &app_10_second_array[timer_id];
+#if defined(__SNDP_UI__)
+    MAIN_TRACE(0, "%s, id=%d, %d, %d", __func__, timer_id, enable, period);
+#endif
 
     timer->timer_en = enable;
     timer->timer_count = period;
@@ -556,7 +566,7 @@ void app_10_second_timer_check(void)
             BESUI_TRACE(2,"[UITIMER]%s id %d count %d", __func__, i, timer->timer_count);
 #endif
 #if defined(__SNDP_UI__)
-            MAIN_TRACE(2, "%s, id=%d, %d, %d", __func__, i, timer->timer_count, timer->timer_period);
+            MAIN_TRACE(0, "%s, id=%d, %d, %d", __func__, i, timer->timer_count, timer->timer_period);
 #endif
 
             if (timer->timer_count >= timer->timer_period) {
@@ -2176,7 +2186,7 @@ static int app_heartbeat_msg_handler(APP_MESSAGE_BODY *msg_body)
     sndp_ui_timing_to_do();
 #endif
 
-#if defined(__BTIF_EARPHONE__)
+#if defined(APP_10_SECOND_TIMER_EN)
     app_10_second_timer_check();
 #endif
 

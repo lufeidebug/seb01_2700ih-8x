@@ -146,6 +146,7 @@ void sndp_enter_freeman_pairing(void);
 void sndp_enter_tws_pairing(void);
 bool sndp_is_left_right_bound(void);
 void sndp_mobile_reconnect_timeout(void);
+void sndp_mobile_reconnect_sccessful(void);
 void sndp_enter_mobile_reconnect(void);
 void sndp_mobile_pairing_timeout(void);
 void sndp_mobile_pairing_sccessful(void);

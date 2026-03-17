@@ -58,11 +58,17 @@ extern uint8_t  app_poweroff_flag;
 #define APP_FAST_PAIRING_TIMEOUT_IN_SECOND  120
 #endif
 #define APP_10_SECOND_TIMER_EN  		1
+#if defined(__SNDP_UI__)
+#define APP_PAIR_TIMER_ID       		0
+#define APP_POWEROFF_TIMER_ID   		1
+#define APP_BT_RECONNECT_TIMER_ID       2
+#else
 #define APP_PAIR_TIMER_ID       		0
 #define APP_POWEROFF_TIMER_ID   		1
 #define APP_FASTPAIR_LASTING_TIMER_ID   2
 #ifdef BESUI_STEREO_EN
 #define APP_SCAN_TIMER_ID 				3
+#endif
 #endif
 
 void app_stop_10_second_timer(uint8_t timer_id);

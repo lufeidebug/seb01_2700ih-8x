@@ -263,13 +263,25 @@ bool sndp_is_left_right_bound(void)
 
 void sndp_mobile_reconnect_timeout(void)
 {
-	
+    SNDP_IF_TRACE(0, ".");
+	sndp_enter_mobile_pairing_after_tws_connected();
 }
+
+void sndp_mobile_reconnect_sccessful(void)
+{
+    SNDP_IF_TRACE(0, ".");
+#if defined(__BTIF_AUTOPOWEROFF__)
+    app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+    app_stop_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
+#endif
+}
+
 
 void sndp_enter_mobile_reconnect(void)
 {
 #if defined(__BTIF_AUTOPOWEROFF__)
-    app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
+    app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+    app_start_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
 #endif
 }
 
@@ -1067,6 +1079,12 @@ bool spfi_call_is_hfp_audio_on(void)
 void sndp_call_ctrl(sndp_call_ctrl_event_e event)
 {
     SNDP_IF_TRACE(0, "event=%d", event);
+
+    if(sndp_is_tws_link_connected() && sndp_is_tws_slave_mode()) {
+        SNDP_IF_TRACE(0, "send to master.");
+        sndp_comm_cmd_send_lr_sync_call_ctrl(event);
+        return;
+    }
     
 	switch(event) {
 		case SNDP_CALL_CTRL_REJECT:
