@@ -1051,9 +1051,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			
     			} else { 
     				//other reason, shutdown time is set to 15 minutes
-#if defined(__BTIF_EARPHONE__)
-                    app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
-#endif
+                    sndp_enter_mobile_reconnect();
     			}			
 
             }
@@ -1065,6 +1063,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
             media_PlayAudio(AUD_ID_BT_CONNECTED, 0);
 #endif			
 			sndp_mobile_pairing_sccessful();
+            sndp_mobile_reconnect_sccessful();
 			break;
 	
 		case SNDP_BT_CONN_STATUS_IBRT_DISCONNECTED:
@@ -1074,14 +1073,13 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 		
 			} else { 
 				//other reason, shutdown time is set to 15 minutes
-#if defined(__BTIF_EARPHONE__)
-                app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
-#endif
+                sndp_enter_mobile_reconnect();
 			}	
 			break;
         
 		case SNDP_BT_CONN_STATUS_IBRT_CONNECTED:
-            sndp_mobile_pairing_sccessful();	
+            sndp_mobile_pairing_sccessful();
+            sndp_mobile_reconnect_sccessful();
 			break;
 
 		case SNDP_BT_CONN_STATUS_TWS_DISCONNECTED:

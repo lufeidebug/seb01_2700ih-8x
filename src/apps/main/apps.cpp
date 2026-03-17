@@ -492,6 +492,7 @@ APP_10_SECOND_TIMER_STRUCT app_10_second_array[] =
 #elif defined(__SNDP_UI__)
     INIT_APP_TIMER(APP_PAIR_TIMER_ID, 0, 0, 30, sndp_mobile_pairing_timeout),
     INIT_APP_TIMER(APP_POWEROFF_TIMER_ID, 0, 0, 90, CloseEarphone),
+    INIT_APP_TIMER(APP_BT_RECONNECT_TIMER_ID, 0, 0, 90, sndp_mobile_reconnect_timeout),
 #else
 #ifdef BESUI_TWS_EN
     INIT_APP_TIMER(APP_PAIR_TIMER_ID, 0, 0, 32, PairingTransferToConnectable),

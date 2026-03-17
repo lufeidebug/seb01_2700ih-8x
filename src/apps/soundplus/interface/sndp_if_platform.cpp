@@ -263,13 +263,25 @@ bool sndp_is_left_right_bound(void)
 
 void sndp_mobile_reconnect_timeout(void)
 {
-	
+    SNDP_IF_TRACE(0, ".");
+	sndp_enter_mobile_pairing_after_tws_connected();
 }
+
+void sndp_mobile_reconnect_sccessful(void)
+{
+    SNDP_IF_TRACE(0, ".");
+#if defined(__BTIF_AUTOPOWEROFF__)
+    app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+    app_stop_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
+#endif
+}
+
 
 void sndp_enter_mobile_reconnect(void)
 {
 #if defined(__BTIF_AUTOPOWEROFF__)
-    app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
+    app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+    app_start_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
 #endif
 }
 
