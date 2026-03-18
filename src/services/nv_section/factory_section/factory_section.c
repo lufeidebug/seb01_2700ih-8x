@@ -556,3 +556,22 @@ void factory_section_original_btaddr_get(uint8_t *btAddr)
     }
 }
 
+void factory_section_original_bleaddr_get(uint8_t *btAddr)
+{
+    if(factory_section_p){
+        NV_SECTION_TRACE(0,"get factory_section_p");
+        if (1 == nv_record_dev_rev)
+        {
+            memcpy(btAddr, factory_section_p->data.ble_address, 6);
+        }
+        else
+        {
+            memcpy(btAddr, factory_section_p->data.rev2_ble_addr, 6);
+        }
+    }else{
+        NV_SECTION_TRACE(0,"get ble_addr");
+        memcpy(btAddr, ble_global_addr, 6);
+    }
+}
+
+

@@ -1462,7 +1462,7 @@ void sndp_dev_init_device_info(void)
 	hw_ver[1] = HW_VERSION2;
 
 	factory_section_original_btaddr_get(local_bt_addr);
-	//factory_section_original_bleaddr_get(local_ble_addr);
+	factory_section_original_bleaddr_get(local_ble_addr);
 
     sndp_dev_set_fw_ver(false, fw_ver);
 	sndp_dev_set_hw_ver(false, hw_ver);
