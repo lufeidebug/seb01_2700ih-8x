@@ -223,9 +223,7 @@ uint8_t dolby_role = -1;
 #ifdef EQ_SET_CUSTOMER_EN
 #include "nvrecord_env.h"
 #endif
-#if defined(__SNDP_EQ_MODE_SETTING__)
 #include "sndp_if_platform.h"
-#endif
 void(*app_bt_stream_ext_sco_playback)(uint8_t *buf, uint32_t len) = NULL;
 uint32_t (*app_bt_stream_ext_sco_capture)(uint8_t *buf, uint32_t len) = NULL;
 void app_bt_stream_set_ext_sco_data_path(void(*playback_cb)(uint8_t *buf, uint32_t len),
@@ -1604,7 +1602,7 @@ if (stream_route_info.output_route_info)
 
 #ifndef AUDIO_EQ_TUNING
 #ifdef ANC_APP
-#if defined(__SNDP_EQ_MODE_SETTING__)
+#if defined(__SNDP_SLEEP_APP__)
     sndp_bt_audio_updata_eq_for_anc();
 #else
     bt_audio_updata_eq_for_anc(app_anc_work_status());
@@ -3921,7 +3919,7 @@ static int bt_a2dp_player(enum PLAYER_OPER_T on, enum APP_SYSFREQ_FREQ_T freq)
 #ifndef AUDIO_EQ_TUNING
 #ifdef ANC_APP
         anc_status_record = 0xff;
-#if defined(__SNDP_EQ_MODE_SETTING__)
+#if defined(__SNDP_SLEEP_APP__)
         sndp_bt_audio_updata_eq_for_anc();
 #else
         bt_audio_updata_eq_for_anc(app_anc_work_status());

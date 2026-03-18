@@ -68,7 +68,19 @@ static int32_t sndp_da_find_field_info(sndp_da_field_id_e field_id, sndp_da_fiel
 			field_info->offset = (uint32_t)(&((sndp_da_param_s *)0)->field_alg_data);
 			field_info->size = sizeof(sndp_da_field_alg_data_s);
 			break;
-#endif			
+#endif	
+#if defined(__SNDP_SLEEP_APP__)
+#if defined(__SNDP_EQ_PARAM_SETTING__)
+		case SNDP_DA_FIELD_EQ_DATA:
+			field_info->offset = (uint32_t)(&((sndp_da_param_s *)0)->field_eq_data);
+			field_info->size = sizeof(sndp_da_field_eq_data_s);
+			break;
+#endif
+		case SNDP_DA_FIELD_APP_DATA:
+			field_info->offset = (uint32_t)(&((sndp_da_param_s *)0)->field_sleep_app_data);
+			field_info->size = sizeof(sndp_da_field_sleep_app_data_s);
+			break;		
+#endif
 		default:
 			ret = -1;
 			ASSERT(0, "Invalid field_id=%d", field_id);

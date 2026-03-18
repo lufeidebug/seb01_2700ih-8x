@@ -90,6 +90,7 @@ typedef enum {
     COMM_CMDID_LR_SYNC_CALL_CTRL                    = 0x29, /* desc: 左右耳同步通话控制指令。
                                                              * recv: 1 bytes, event(1)
                                                              * rsp : 0 bytes */
+#if defined(__SNDP_SLEEP_APP__)
     COMM_CMDID_LR_SYNC_PROMPT_ONOFF                 = 0x2A, /* desc: 左右耳同步提示音开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
@@ -98,7 +99,8 @@ typedef enum {
                                                              * rsp : 0 bytes */       
     COMM_CMDID_LR_SYNC_GESTURE_ONOFF                = 0x2C, /* desc: 左右耳同步手势使能开关指令。
                                                              * recv: 1 bytes, onoff(1)
-                                                             * rsp : 0 bytes */           
+                                                             * rsp : 0 bytes */    
+#endif                                                                   
     COMM_CMDID_LR_SYNC_ALL_DEV_STATUS               = 0x2D, /* desc: 左右耳同步所有设备状态指令。
                                                              * recv: n bytes, 
                                                              * rsp : 0 bytes */ 
@@ -186,19 +188,22 @@ typedef enum {
 
 
 typedef uint32_t (*sndp_comm_cmd_exec_func)(sndp_comm_cmd_info_s *cmd_info);
+#if defined(__SNDP_SLEEP_APP__)
 typedef uint32_t (*sleep_app_comm_cmd_exec_func)(sleep_app_comm_cmd_info_s *cmd_info);
-
+#endif
 typedef struct {
 	uint8_t cmd_id;
 	const char *name;
 	sndp_comm_cmd_exec_func cmd_exec_hdlr;
 } sndp_comm_cmd_handle_s;
 
+#if defined(__SNDP_SLEEP_APP__)
 typedef struct {
 	uint8_t cmd_id;
 	const char *name;
 	sleep_app_comm_cmd_exec_func cmd_exec_hdlr;
 } sndp_sleep_comm_cmd_handle_s;
+#endif
 
 uint32_t sndp_comm_cmd_send_lr_sync_dev_info(void);
 uint32_t sndp_comm_cmd_send_lr_sync_bat_info(void);
@@ -219,9 +224,9 @@ uint32_t sndp_comm_cmd_send_pt_test_ir(uint8_t *data, uint16_t data_len);
 uint32_t sndp_comm_cmd_send_pt_report_wear_status(uint8_t status);
 
 int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd);
+
+#if defined(__SNDP_SLEEP_APP__)
 int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd);
-
-
 typedef enum {
     SLEEP_APP_CMDID_SET_EQ_MODE = 0x01, /* recv: 0 bytes. 
                                                     rsp: 1 bytes, error code(1). */
@@ -281,7 +286,7 @@ typedef enum {
                                                     rsp: 1 bytes, error code(1). */
 } sleep_app_cmd_id_e;
 
-
+#endif
 #ifdef __cplusplus
 }
 #endif

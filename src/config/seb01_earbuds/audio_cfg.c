@@ -95,8 +95,7 @@ const IIR_CFG_T audio_eq_hw_dac_iir_cfg = {
         {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
     }
 };
-
-#if defined(__SNDP_EQ_MODE_SETTING__)
+#if defined(__SNDP_SLEEP_APP__)
 const IIR_CFG_T audio_eq_hw_dac_iir_jazz = {
 #if defined(AUDIO_HEARING_COMPSATN)
     .gain0 = -22,
@@ -187,14 +186,14 @@ const IIR_CFG_T audio_eq_hw_dac_iir_custom_mode = {
 #endif
     .num = 8,
     .param = {
-        {IIR_TYPE_PEAK, 0,   31.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   62.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   125.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   250.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   2000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   4000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   8000.0,   0.7},
+        {IIR_TYPE_PEAK, 0,   31.0,   0.75},
+        {IIR_TYPE_PEAK, 0,   62.0,   0.75},
+        {IIR_TYPE_PEAK, 0,   125.0,   0.75},
+        {IIR_TYPE_PEAK, 0,   250.0,   0.75},
+        {IIR_TYPE_PEAK, 0,   1000.0,   0.75},
+        {IIR_TYPE_PEAK, 0,   2000.0,   0.75},
+        {IIR_TYPE_PEAK, 0,   4000.0,   0.75},
+        {IIR_TYPE_PEAK, 0,   8000.0,   0.75},
     }
 };
 
@@ -281,26 +280,6 @@ const IIR_CFG_T audio_eq_anc_hw_dac_iir_relaxed = {
         {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
     }
 };
-const IIR_CFG_T audio_eq_anc_hw_dac_iir_custom_mode = {
-#if defined(AUDIO_HEARING_COMPSATN)
-    .gain0 = -22,
-    .gain1 = -22,
-#else
-    .gain0 = 0,
-    .gain1 = 0,
-#endif
-    .num = 8,
-    .param = {
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-    }
-};
 #endif
 
 const IIR_CFG_T audio_eq_anc_hw_dac_iir_cfg = {
@@ -336,20 +315,18 @@ IIR_CFG_T audio_eq_hw_dac_iir_adaptive_eq_cfg = {
 
 const IIR_CFG_T * const POSSIBLY_UNUSED audio_eq_hw_dac_iir_cfg_list[EQ_HW_DAC_IIR_LIST_NUM]={
     &audio_eq_hw_dac_iir_cfg,  //normal mode
-#if defined(__SNDP_EQ_MODE_SETTING__)
+#if defined(__SNDP_SLEEP_APP__)
     &audio_eq_hw_dac_iir_jazz,
     &audio_eq_hw_dac_iir_rock,
     &audio_eq_hw_dac_iir_classic,
     &audio_eq_hw_dac_iir_relaxed,
-    &audio_eq_hw_dac_iir_custom_mode,
 #endif
     &audio_eq_anc_hw_dac_iir_cfg,
-#if defined(__SNDP_EQ_MODE_SETTING__)
+#if defined(__SNDP_SLEEP_APP__)
     &audio_eq_anc_hw_dac_iir_jazz,
     &audio_eq_anc_hw_dac_iir_rock,
     &audio_eq_anc_hw_dac_iir_classic,
     &audio_eq_anc_hw_dac_iir_relaxed,
-    &audio_eq_anc_hw_dac_iir_custom_mode,
 #endif
 #if defined(EQ_SET_CUSTOMER_EN)
     &audio_eq_hw_dac_iir_cfg_1,

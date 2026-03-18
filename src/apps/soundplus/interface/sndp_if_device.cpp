@@ -333,13 +333,14 @@ void sndp_dev_gesture_init(void)
 {
 	SNDP_IF_TRACE_ENTER();
 
-    sndp_dev_gesture_onoff(false, true);
 #if defined(__SNDP_GESTURE_MGR__)
 	sndp_hal_gesture_init();
 	sndp_hal_gesture_set_event_callback(sndp_dev_gesture_event_callback);
 #endif
 }
 
+#if defined(__SNDP_SLEEP_APP__)
+#if defined(__SNDP_GESTURE_MAP__)
 function_callback_t sndp_dev_gesture_func_table[SNDP_FUNC_MAX] = {0};
 
 void sndp_dev_gesture_mapper_set_default(sndp_dev_gesture_mapper_t* mapper) 
@@ -414,21 +415,22 @@ void sndp_dev_gesture_onoff(bool peer, bool onoff)
 {
 	SNDP_IF_TRACE(0, "enter");
 	if(peer) {
-		sndp_dev_ctx.peer.gesture_onoff = onoff;
+		sndp_dev_ctx.peer.sleep_app_flag.sleep_gesture_onoff = onoff;
 	} else {
-		sndp_dev_ctx.local.gesture_onoff = onoff;
+		sndp_dev_ctx.local.sleep_app_flag.sleep_gesture_onoff = onoff;
 	}
 }
 
 bool sndp_dev_get_gesture_onoff(bool peer)
 {
 	if(peer) {
-		return sndp_dev_ctx.peer.gesture_onoff;
+		return sndp_dev_ctx.peer.sleep_app_flag.sleep_gesture_onoff;
 	} else {
-		return sndp_dev_ctx.local.gesture_onoff;
+		return sndp_dev_ctx.local.sleep_app_flag.sleep_gesture_onoff;
 	}
 }
-
+#endif
+#endif
 /************************************************** Gesture Info End **************************************************/
 
 
@@ -1592,36 +1594,120 @@ void sndp_dev_acc_init(void)
 }
 
 /**************************************************  acc End **************************************************/
-
+#if defined(__SNDP_SLEEP_APP__)
 /************************************************** prompt start **************************************************/
 void sndp_dev_set_prompt_onoff(bool peer, bool onoff)
 {
 	if(peer)
-		sndp_dev_ctx.peer.prompt_onoff = onoff;
+		sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff = onoff;
 	else
-		sndp_dev_ctx.local.prompt_onoff = onoff;
+		sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff = onoff;
 
-		SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.prompt_onoff, sndp_dev_ctx.peer.prompt_onoff);
+		SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff, sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff);
 }
 
 bool sndp_dev_get_prompt_onoff(bool peer)
 {
 	if(peer)
-		return sndp_dev_ctx.peer.prompt_onoff;
+		return sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff;
 	else
-		return sndp_dev_ctx.local.prompt_onoff;
+		return sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff;
 	
-		SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.prompt_onoff, sndp_dev_ctx.peer.prompt_onoff);
+		SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff, sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff);
 }
 
 /************************************************** prompt end **************************************************/
+static sndp_da_field_sleep_app_data_s sleep_app_data_global;
+static sndp_sleep_app_flag sleep_flag_run;
+static sndp_sleep_app_flag sleep_flag_flash;
 
+void sndp_save_app_flag_to_flash(void)
+{
+	// Save the custom EQ parameters to flash, so that it can be loaded and used after power on.
+	sndp_da_field_sleep_app_data_s *sleep_flag_ptr = &sleep_app_data_global;
+
+	sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
+	if(memcmp(sleep_flag_ptr->sleep_app_flag, &sleep_flag_flash, sizeof(sndp_sleep_app_flag)) == 0)
+	{
+		SNDP_IF_TRACE(0, "app flag not changed, no need to write to flash");
+	}
+	else
+	{
+		SNDP_IF_TRACE(0, "app flag changed, write to flash");
+		memcpy(sleep_flag_ptr->sleep_app_flag, &sleep_flag_flash, sizeof(sndp_sleep_app_flag));
+		sndp_check_data_crc(&sleep_flag_ptr->data_crc, sleep_flag_ptr->sleep_app_flag, sleep_flag_ptr->data_crc, sizeof(sndp_sleep_app_flag));
+		sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_sleep_app_flag),true);
+	}
+
+}
+
+void sndp_set_default_flag(void)
+{
+	// Set default EQ parameters to the running param, so that the UI can read and display them.
+	sndp_da_field_sleep_app_data_s *sleep_flag_ptr = &sleep_app_data_global;
+	memset(&sleep_flag_flash, 0, sizeof(sndp_sleep_app_flag));
+	memset(&sleep_flag_run, 0, sizeof(sndp_sleep_app_flag));
+
+	sleep_flag_flash.sleep_eq_index = 0;
+	sleep_flag_flash.sleep_anc_mode = 0;
+	sleep_flag_flash.sleep_gesture_onoff = 1;
+	sleep_flag_flash.sleep_prompt_onoff = 1;
+	sleep_flag_run.sleep_eq_index = 0;
+	sleep_flag_run.sleep_anc_mode = 0;
+	sleep_flag_run.sleep_gesture_onoff = 1;
+	sleep_flag_run.sleep_prompt_onoff = 1;	
+	sleep_flag_ptr->key = SNDP_DA_PARAM_FIELD_VALID;
+	memcpy(sleep_flag_ptr->sleep_app_flag, &sleep_flag_flash, sizeof(sndp_sleep_app_flag));
+	sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
+}
+
+void sndp_load_sleep_app_flag(void)
+{
+	sndp_da_field_sleep_app_data_s* sleep_flag_ptr = &sleep_app_data_global;
+	sndp_sleep_app_flag* default_flag_ptr = NULL;
+	sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_APP_DATA, sleep_flag_ptr,sizeof(sndp_da_field_sleep_app_data_s),false);
+	if(sleep_flag_ptr->key == SNDP_DA_PARAM_FIELD_VALID)
+	{
+		if(sndp_check_data_crc(NULL, sleep_flag_ptr->sleep_app_flag, sleep_flag_ptr->data_crc, sizeof(sndp_sleep_app_flag)) == 0)
+		{
+			SNDP_IF_TRACE(0, "Load EQ param from flash");
+			return;
+		}
+		else
+		{
+			SNDP_IF_TRACE(0, "Load EQ param from flash fail, use default param");
+			sndp_set_default_flag();
+		}
+	}
+	else
+	{
+			sndp_set_default_flag();
+	}
+	default_flag_ptr = (sndp_sleep_app_flag*)sleep_flag_ptr->sleep_app_flag;
+	memcpy(&sleep_flag_flash, default_flag_ptr, sizeof(sndp_sleep_app_flag));
+	memcpy(&sleep_flag_run, default_flag_ptr, sizeof(sndp_sleep_app_flag));
+}
+
+void sndp_load_sleep_app_param(void)
+{
+	sndp_load_sleep_app_flag();
+#if defined(__SNDP_EQ_PARAM_SETTING__)
+	sndp_load_eq_param();
+#endif
+	sndp_dev_set_prompt_onoff(false, (sleep_flag_run.sleep_prompt_onoff==0) ? false : true);
+#if defined(__SNDP_GESTURE_MAP__)
+	sndp_dev_gesture_onoff(false, (sleep_flag_run.sleep_gesture_onoff==0) ? false:true);
+#endif
+	sndp_set_eq_index(sleep_flag_run.sleep_eq_index);
+}
+#endif
 void sndp_dev_init(void)
 {
 	//SPUI_TRACE_ENTER();
-    
+#if defined(__SNDP_SLEEP_APP__)
+  sndp_load_sleep_app_param();
+#endif
 	sndp_dev_init_device_info();
-    sndp_dev_set_prompt_onoff(false, true);
     
 	sndp_dev_charger_plug_init();
     sndp_dev_charger_init();

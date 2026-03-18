@@ -26,8 +26,8 @@ extern "C" {
 #include "hal_aud.h"
 
 //config hwardware codec iir.
-#if defined(__SNDP_EQ_MODE_SETTING__)
-#define EQ_HW_DAC_IIR_LIST_NUM              12
+#if defined(__SNDP_SLEEP_APP__)
+#define EQ_HW_DAC_IIR_LIST_NUM              10
 #else
 #define EQ_HW_DAC_IIR_LIST_NUM              2
 #endif

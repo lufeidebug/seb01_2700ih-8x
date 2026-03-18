@@ -495,6 +495,8 @@ void sndp_ui_gesture_3click_hdlr(bool remote)
     
 }
 
+#if defined(__SNDP_SLEEP_APP__)
+#if defined(__SNDP_GESTURE_MAP__)
 void sndp_function_play_pause(void) {
     // 实现播放/暂停功能
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
@@ -575,35 +577,20 @@ static function_callback_t sndp_ui_gesture_func_table[SNDP_FUNC_MAX] = {
     sndp_function_voice_assistant,
     sndp_function_anc_mode_switch,  
 };
-    
+#endif 
+#endif
 /**
 * 本地处理手势事件
 */
 void sndp_ui_gesture_event_local_hdlr(sndp_dev_gesture_event_e gesture_event)
 {
     SPUI_TRACE(0, "event=%d", gesture_event);
-    
+
+#if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_GESTURE_MAP__)
     if(!sndp_dev_get_gesture_onoff(false)){
         SPUI_TRACE(0, "gesture detection is off, rtn");
         return;
     }
-    
-#if 1
-    //user gesture mapper, cancel this switch!!!!!!!
-    switch(gesture_event) {
-        case SNDP_DEV_GESTURE_EVENT_1_CLICK:
-            sndp_ui_gesture_1click_hdlr(false);
-            break;
-        case SNDP_DEV_GESTURE_EVENT_2_CLICK:
-            sndp_ui_gesture_2click_hdlr(false);
-            break;
-        case SNDP_DEV_GESTURE_EVENT_3_CLICK:
-            sndp_ui_gesture_3click_hdlr(false);
-            break;
-        default:
-            break;
-    }
-#else
     sndp_dev_gesture_type_t dev_gesture = SNDP_DEV_GESTURE_MAX;
     switch (gesture_event)
     {
@@ -623,7 +610,22 @@ void sndp_ui_gesture_event_local_hdlr(sndp_dev_gesture_event_e gesture_event)
         break;
     }
     sndp_dev_gesture_mapper_handle_gesture(dev_gesture);
-#endif
+#else
+    //user gesture mapper, cancel this switch!!!!!!!
+    switch(gesture_event) {
+        case SNDP_DEV_GESTURE_EVENT_1_CLICK:
+            sndp_ui_gesture_1click_hdlr(false);
+            break;
+        case SNDP_DEV_GESTURE_EVENT_2_CLICK:
+            sndp_ui_gesture_2click_hdlr(false);
+            break;
+        case SNDP_DEV_GESTURE_EVENT_3_CLICK:
+            sndp_ui_gesture_3click_hdlr(false);
+            break;
+        default:
+            break;
+    }
+#endif    
 }
 
 /**
@@ -1292,9 +1294,13 @@ static void sndp_ui_check_dev_initial_status(void)
     sndp_dev_cover_set_status_changed_callback(sndp_ui_cover_status_changed);
     sndp_dev_iobox_set_status_changed_callback(sndp_ui_iobox_status_changed);
     sndp_dev_wear_set_status_changed_callback(sndp_ui_wear_status_changed);
+#if defined(__SNDP_SLEEP_APP__)
+#if defined(__SNDP_GESTURE_MAP__)
     sndp_dev_register_gesture_funcs(sndp_ui_gesture_func_table);
     sndp_dev_gesture_mapper_init();
     sndp_dev_gesture_set_event_callback(sndp_ui_gesture_event_generated);
+#endif
+#endif
     sndp_dev_hr_init();
     sndp_dev_acc_init();	
 

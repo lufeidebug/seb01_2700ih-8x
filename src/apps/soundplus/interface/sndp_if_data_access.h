@@ -22,7 +22,13 @@ typedef enum {
 #endif
 #if defined(__SNDP_ALG_MGR__)	
 	SNDP_DA_FIELD_HR_DATA,
-#endif    
+#endif 
+#if defined(__SNDP_SLEEP_APP__)   
+#if defined(__SNDP_EQ_PARAM_SETTING__)	
+	SNDP_DA_FIELD_EQ_DATA,
+#endif
+	SNDP_DA_FIELD_APP_DATA,
+#endif
 } sndp_da_field_id_e;
 
 
@@ -70,10 +76,22 @@ typedef struct {
 	uint16_t size;
 } sndp_da_field_info_s;
 
+#if defined(__SNDP_SLEEP_APP__) 
+#if defined(__SNDP_EQ_PARAM_SETTING__)
 typedef struct {
 	uint32_t key;  /* This key must be defined, but it cannot be modified */
+	uint32_t data_crc;
 	uint8_t data[768];
 }sndp_da_field_eq_data_s;
+#endif
+
+typedef struct {
+	/* data */
+	uint32_t key;
+	uint32_t data_crc;
+	uint8_t sleep_app_flag[16];
+}sndp_da_field_sleep_app_data_s;
+#endif
 
 typedef struct {
 	sndp_da_field_bat_info_s field_bat_info;
@@ -83,7 +101,12 @@ typedef struct {
 #if defined(__SNDP_ALG_MGR__)	
 	sndp_da_field_alg_data_s field_alg_data;
 #endif
+#if defined(__SNDP_SLEEP_APP__) 
+#if defined(__SNDP_EQ_PARAM_SETTING__)
 	sndp_da_field_eq_data_s field_eq_data;
+#endif
+	sndp_da_field_sleep_app_data_s field_sleep_app_data;
+#endif
 } sndp_da_param_s;
 
 
