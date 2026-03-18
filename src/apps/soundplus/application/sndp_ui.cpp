@@ -727,7 +727,8 @@ static void sndp_ui_pwr_key_hdlr(APP_KEY_STATUS *status, void *param)
         case APP_KEY_EVENT_CLICK:
 #if 1
             //sndp_ui_anc_switch();
-            app_swift_enter_pairing_mode();
+            //app_swift_enter_pairing_mode();
+            sndp_start_freeman_pairing();
 #else
             {
                 uint8_t data[] = {0xa1, 0xb2, 0xc3, 0xd4};

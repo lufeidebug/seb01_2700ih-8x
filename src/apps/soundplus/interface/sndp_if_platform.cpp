@@ -220,19 +220,26 @@ void sndp_enter_restore_factory_setting(void)
 void sndp_enter_freeman_pairing(void)
 {
     SNDP_IF_TRACE(0, "...");
+    bta_tws_box_event_entry(BTA_TWS_OPEN);
+	bta_tws_enable_freeman_mode(true); 
+    bta_tws_enable_pairing_mode(true);
+}
+
+void sndp_start_freeman_pairing(void)
+{
+    SNDP_IF_TRACE(0, "...");
     sndp_clear_mobile_pairing_list();
     
 #if defined(__SNDP_REBOOT_FORCE_PAIRING__)
 	osDelay(100);
 	sndp_pmu_reboot(HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT);
 #else
-    bta_tws_box_event_entry(BTA_TWS_OPEN);
-	bta_tws_enable_freeman_mode(true);
+    sndp_enter_freeman_pairing();
 #endif    
 
 }
 
-void sndp_enter_tws_pairing(void)
+void sndp_start_tws_pairing(void)
 {
     SNDP_IF_TRACE(0, "...");
     sndp_disconnect_all_mobile_link();
