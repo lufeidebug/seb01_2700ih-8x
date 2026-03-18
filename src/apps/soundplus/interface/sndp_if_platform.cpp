@@ -1288,7 +1288,7 @@ void sndp_load_eq_param(void)
 		memcpy(&custom_eq_global_flash_cfg, default_cfg_ptr, sizeof(IIR_CFG_T));
 }
 
-void sndp_set_custom_eq_param(uint8_t *param)
+void sndp_set_custom_eq_param(int8_t *param)
 {
 		sndp_da_field_eq_data_s *eq_data_ptr = &custom_global_eq_data;
 		IIR_CFG_T* custom_cfg_tab = &custom_eq_global_run_cfg;
@@ -1304,13 +1304,13 @@ void sndp_set_custom_eq_param(uint8_t *param)
 			// Use the custom EQ parameters
 			for(int i=0; i < 8; i++)
 			{
-				custom_cfg_tab->param[i].gain = param[i] - 0x7f; // -12db ~ +12db
+				custom_cfg_tab->param[i].gain = (float)(param[i] - 0x7f)/10.0; // -12db ~ +12db
 			}
 		}
 		sndp_save_eq_param_to_flash();
 }
 
-void sndp_get_custom_eq_param(IIR_CFG_T *param)
+void sndp_get_custom_eq_param(uint8_t *param)
 {
 		IIR_CFG_T* custom_cfg_tab = &custom_eq_global_run_cfg;
 

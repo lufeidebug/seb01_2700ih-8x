@@ -11,6 +11,7 @@
 #include "factory_section.h"
 #include "app_media_player.h"
 #include "app_anc.h"
+#include "iir_process.h"
 
 #include "sndp_if_common.h"
 #include "sndp_if_device.h"
@@ -1261,13 +1262,39 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_mode(sleep_app_co
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_param(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    // IIR_CFG_T *eq_param = (IIR_CFG_T *)&audio_eq_hw_dac_iir_custom_mode;
+    int8_t freq_gain[8];
+    memset(freq_gain, 0, sizeof(freq_gain));
+    memcpy(freq_gain, cmd_info->value, cmd_info->data_len-1);
+    sndp_set_custom_eq_param(freq_gain);
+    memset(cmd_info->value, 0, cmd_info->data_len-1);
+    
+    cmd_info->data_len = 2;
+    cmd_info->value[0] = 0; //success
 
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_param(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    IIR_CFG_T sleep_iir_cfg;
+    int8_t eq_gain = 0;
+    sndp_get_custom_eq_param((uint8_t*)&sleep_iir_cfg);
+    cmd_info->data_len = 9;
+    for(int i=0; i<8; i++)
+    {
+        eq_gain = (int8_t)sleep_iir_cfg.param[i].gain;
+        if(eq_gain > -12 && eq_gain < 12)
+        {
+            cmd_info->value[i] = (uint8_t)(eq_gain + 0x7F);
+        }
+        else
+        {
+            cmd_info->value[i] = 0;
+        }
+        
+    }
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 

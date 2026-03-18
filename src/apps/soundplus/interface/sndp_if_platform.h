@@ -223,6 +223,10 @@ uint8_t sndp_get_eq_index(uint8_t anc_statu);
 uint8_t sndp_bt_audio_updata_eq_for_anc(void);
 void sndp_load_eq_param(void);
 int sndp_check_data_crc(uint32_t *crc, uint8_t *data_ptr, uint32_t flash_crc, uint32_t data_len);
+#if defined(__SNDP_EQ_PARAM_SETTING__)
+void sndp_get_custom_eq_param(uint8_t *param);
+void sndp_set_custom_eq_param(int8_t *param);
+#endif
 #endif
 
 #ifdef __cplusplus
