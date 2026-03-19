@@ -25,6 +25,78 @@ extern "C" {
 #include "hal_key.h"
 #include "hal_aud.h"
 
+#if defined(__SNDP_PROJ__)
+#if defined(__HW_VER_1_0__)
+#define HW_PIN_EAR_SIDE						(HAL_IOMUX_PIN_P1_0)
+#define HW_PIN_LDO_1V8_ENABLE				(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_LDO_3V3_ENABLE				(HAL_IOMUX_PIN_P3_3)
+#define HW_PIN_DUMMY_LOAD					(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_HALL_INT						(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_VMIC_ENABLE					(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_SHIPMODE_CNT					(HAL_IOMUX_PIN_P0_0)
+#define HW_PIN_IOBOX_DET					(HAL_IOMUX_PIN_P0_6)
+
+
+#define HW_PIN_CHARGING_ENABLE				(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_CHARGING_QUICK				(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_CHARGING_STATUS				(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_CHARGING_I2C_SCL				(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_CHARGING_I2C_SDA				(HAL_IOMUX_PIN_NUM)
+
+#define HW_PIN_POGOPIN_UART_TX				(HAL_IOMUX_PIN_P2_1)
+#define HW_PIN_POGOPIN_UART_RX				(HAL_IOMUX_PIN_P2_0)
+#define HW_PIN_POGOPIN_UART_MODE_CHANGE		(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_POGOPIN_UART_COMM_EN		    (HAL_IOMUX_PIN_P0_5)
+
+#define HW_PIN_GSENSOR_INT1					(HAL_IOMUX_PIN_P1_5)
+#define HW_PIN_GSENSOR_INT2					(HAL_IOMUX_PIN_P3_0)
+#define HW_PIN_GSENSOR_I2C_SCL				(HAL_IOMUX_PIN_P3_4)
+#define HW_PIN_GSENSOR_I2C_SDA				(HAL_IOMUX_PIN_P3_5)
+#define HW_PIN_GSENSOR_EN				    (HAL_IOMUX_PIN_NUM)
+
+#define HW_PIN_HRSENSOR_I2C_SCL				(HAL_IOMUX_PIN_P3_6)
+#define HW_PIN_HRSENSOR_I2C_SDA				(HAL_IOMUX_PIN_P3_7)
+#define HW_PIN_HRSENSOR_STATUS				(HAL_IOMUX_PIN_P0_3)
+#define HW_PIN_HRSENSOR_RESET			    (HAL_IOMUX_PIN_NUM)
+#define HW_PIN_HRSENSOR_EN				    (HAL_IOMUX_PIN_NUM)
+
+#else
+#define HW_PIN_EAR_SIDE						(HAL_IOMUX_PIN_P1_6)
+#define HW_PIN_LDO_1V8_ENABLE				(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_LDO_3V3_ENABLE				(HAL_IOMUX_PIN_P3_0)
+#define HW_PIN_DUMMY_LOAD					(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_HALL_INT						(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_VMIC_ENABLE					(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_SHIPMODE_CNT					(HAL_IOMUX_PIN_P1_5)
+#define HW_PIN_IOBOX_DET					(HAL_IOMUX_PIN_NUM)
+
+
+#define HW_PIN_CHARGING_ENABLE				(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_CHARGING_QUICK				(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_CHARGING_STATUS				(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_CHARGING_I2C_SCL				(HAL_IOMUX_PIN_NUM)
+#define HW_PIN_CHARGING_I2C_SDA				(HAL_IOMUX_PIN_NUM)
+
+#define HW_PIN_POGOPIN_UART_TX				(HAL_IOMUX_PIN_P2_1)
+#define HW_PIN_POGOPIN_UART_RX				(HAL_IOMUX_PIN_P2_0)
+#define HW_PIN_POGOPIN_UART_COMM_EN		    (HAL_IOMUX_PIN_P1_7)
+
+#define HW_PIN_GSENSOR_INT1					(HAL_IOMUX_PIN_P3_2)
+#define HW_PIN_GSENSOR_INT2					(HAL_IOMUX_PIN_P3_3)
+#define HW_PIN_GSENSOR_I2C_SCL				(HAL_IOMUX_PIN_P3_4)
+#define HW_PIN_GSENSOR_I2C_SDA				(HAL_IOMUX_PIN_P3_5)
+#define HW_PIN_GSENSOR_EN				    (HAL_IOMUX_PIN_NUM)
+
+#define HW_PIN_HRSENSOR_I2C_SCL				(HAL_IOMUX_PIN_P3_6)
+#define HW_PIN_HRSENSOR_I2C_SDA				(HAL_IOMUX_PIN_P3_7)
+#define HW_PIN_HRSENSOR_STATUS				(HAL_IOMUX_PIN_P3_1)
+#define HW_PIN_HRSENSOR_RESET			    (HAL_IOMUX_PIN_NUM)
+#define HW_PIN_HRSENSOR_EN				    (HAL_IOMUX_PIN_NUM)
+#endif
+
+#endif
+
+
 //config hwardware codec iir.
 #if defined(__SNDP_SLEEP_APP__)
 #define EQ_HW_DAC_IIR_LIST_NUM              10
@@ -74,7 +146,11 @@ extern const uint16_t cfg_hw_adckey_vol_table[CFG_HW_ADCKEY_NUMBER];
 #elif BES_AUDIO_DEV_Main_Board_9v0
 #define CFG_HW_GPIOKEY_NUM (6)
 #elif defined(__SNDP_KEY_TEST__)
+#if defined(__HW_VER_0_0__)
 #define CFG_HW_GPIOKEY_NUM (4)
+#else
+#define CFG_HW_GPIOKEY_NUM (2)
+#endif
 #else
 #define CFG_HW_GPIOKEY_NUM (0)
 #endif
@@ -200,9 +276,6 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_quick_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_status_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_i2c_scl_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_charging_i2c_sda_pin_cfg;
-extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_pogopin_uart_tx_pin_cfg;
-extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_pogopin_uart_rx_pin_cfg;
-extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_pogopin_uart_mode_change_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_gsensor_int1_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_gsensor_int2_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_gsensor_i2c_scl_pin_cfg;

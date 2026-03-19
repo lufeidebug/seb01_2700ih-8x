@@ -36,9 +36,6 @@
 #define PGP_UART_RECV_BUF_SIZE                  (128)
 #define PGP_UART_SEND_BUF_SIZE                  (128)
 
-#define PGP_UART_RX_PIN                         (HAL_IOMUX_PIN_P2_0)
-#define PGP_UART_TX_PIN                         (HAL_IOMUX_PIN_P2_1)
-
 #define PGP_UART_BAUD                           (115200)
 
 #define PGP_UART_DMA                            (0)

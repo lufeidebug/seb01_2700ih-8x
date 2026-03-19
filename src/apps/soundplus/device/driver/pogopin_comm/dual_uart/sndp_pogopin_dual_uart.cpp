@@ -36,9 +36,6 @@
 #define PGP_UART_RECV_BUF_SIZE             (128)
 #define PGP_UART_SEND_BUF_SIZE             (128)
 
-#define PGP_UART_RX_PIN                    (HAL_IOMUX_PIN_P2_0)
-#define PGP_UART_TX_PIN                    (HAL_IOMUX_PIN_P2_1)
-
 #define PGP_UART_BAUD                      (115200)
 
 #define PGP_UART_DMA                       (0)
@@ -141,21 +138,24 @@ osMutexDef(pgp_uart_send_queue_mutex);
 
 
 static const struct HAL_IOMUX_PIN_FUNCTION_MAP pgp_rx_pin_gpio_cfg = {
-    PGP_UART_RX_PIN, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_NOPULL,
+    HW_PIN_POGOPIN_UART_RX, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_NOPULL,
 };
 
 static const struct HAL_IOMUX_PIN_FUNCTION_MAP pgp_tx_pin_gpio_cfg = {
-    PGP_UART_TX_PIN, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_NOPULL,
+    HW_PIN_POGOPIN_UART_TX, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_NOPULL,
 };
 
 static const struct HAL_IOMUX_PIN_FUNCTION_MAP pgp_rx_pin_uart_cfg = {
-    PGP_UART_RX_PIN, HAL_IOMUX_FUNC_MCU_UART1_RX, HAL_IOMUX_PIN_VOLTAGE_MEM, HAL_IOMUX_PIN_PULLUP_ENABLE,
+    HW_PIN_POGOPIN_UART_RX, HAL_IOMUX_FUNC_MCU_UART1_RX, HAL_IOMUX_PIN_VOLTAGE_MEM, HAL_IOMUX_PIN_PULLUP_ENABLE,
 };
 
-static const struct HAL_IOMUX_PIN_FUNCTION_MAP pgp_tx_pin_uart_cfg[] = {
-    PGP_UART_TX_PIN, HAL_IOMUX_FUNC_MCU_UART1_TX, HAL_IOMUX_PIN_VOLTAGE_MEM, HAL_IOMUX_PIN_NOPULL,
+static const struct HAL_IOMUX_PIN_FUNCTION_MAP pgp_tx_pin_uart_cfg = {
+    HW_PIN_POGOPIN_UART_TX, HAL_IOMUX_FUNC_MCU_UART1_TX, HAL_IOMUX_PIN_VOLTAGE_MEM, HAL_IOMUX_PIN_NOPULL,
 };
 
+static const struct HAL_IOMUX_PIN_FUNCTION_MAP pgp_comm_en_pin_cfg = {
+    HW_PIN_POGOPIN_UART_COMM_EN, HAL_IOMUX_FUNC_AS_GPIO, HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_PULLUP_ENABLE
+};
 
 
 /**************************************************************************************************
@@ -597,34 +597,74 @@ void pgp_uart_rx_stop(void)
 
 }
 
-static void pgp_uart_pin_config(sndp_hal_pogopin_mode_e mode)
+
+static void pgp_rx_pin_cfg_gpio(void)
 {
-    if(mode == SNDP_HAL_POGOPIN_MODE_COMM_RX) {
+    if (pgp_rx_pin_uart_cfg.pin != HAL_IOMUX_PIN_NUM) {
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&pgp_rx_pin_gpio_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)pgp_rx_pin_gpio_cfg.pin, HAL_GPIO_DIR_IN, 0); 
+    }
+}
+
+static void pgp_rx_pin_cfg_uart(void)
+{
+    if (pgp_rx_pin_uart_cfg.pin != HAL_IOMUX_PIN_NUM) {
 #if 0
         hal_iomux_set_uart1();
 #else
         hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&pgp_rx_pin_uart_cfg, 1);
 #endif
-        
-        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&pgp_tx_pin_gpio_cfg, 1);
-        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)pgp_tx_pin_gpio_cfg.pin, HAL_GPIO_DIR_IN, 0);
 
-    } else if(mode == SNDP_HAL_POGOPIN_MODE_COMM_TX) {
+    }
+}
+
+static void pgp_tx_pin_cfg_gpio(void)
+{
+    if (pgp_tx_pin_gpio_cfg.pin != HAL_IOMUX_PIN_NUM) {
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&pgp_tx_pin_gpio_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)pgp_tx_pin_gpio_cfg.pin, HAL_GPIO_DIR_IN, 0); 
+    }
+}
+
+static void pgp_tx_pin_cfg_uart(void)
+{
+    if (pgp_tx_pin_uart_cfg.pin != HAL_IOMUX_PIN_NUM) {
 #if 0
         hal_iomux_set_uart1();
 #else
         hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&pgp_tx_pin_uart_cfg, 1);
 #endif
-        
-        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&pgp_rx_pin_gpio_cfg, 1);
-        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)pgp_rx_pin_gpio_cfg.pin, HAL_GPIO_DIR_IN, 0);    
+    }
+}
+
+static void pgp_comm_en(bool en)
+{
+    return;
+    if (pgp_comm_en_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        if(en) {
+            hal_gpio_pin_set((enum HAL_GPIO_PIN_T)pgp_comm_en_pin_cfg.pin);
+        } else {
+            hal_gpio_pin_clr((enum HAL_GPIO_PIN_T)pgp_comm_en_pin_cfg.pin);
+        }
+    }
+}
+
+static void pgp_uart_pin_config(sndp_hal_pogopin_mode_e mode)
+{
+    if(mode == SNDP_HAL_POGOPIN_MODE_COMM_RX) {
+        pgp_tx_pin_cfg_gpio();
+        pgp_rx_pin_cfg_uart();
+        pgp_comm_en(true);
+
+    } else if(mode == SNDP_HAL_POGOPIN_MODE_COMM_TX) {
+        pgp_rx_pin_cfg_gpio();
+        pgp_tx_pin_cfg_uart();
+        pgp_comm_en(true);
         
     } else {
-        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&pgp_rx_pin_gpio_cfg, 1);
-        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)pgp_rx_pin_gpio_cfg.pin, HAL_GPIO_DIR_IN, 0);
-        
-        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&pgp_tx_pin_gpio_cfg, 1);
-        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)pgp_tx_pin_gpio_cfg.pin, HAL_GPIO_DIR_IN, 0);
+        pgp_comm_en(false);
+        pgp_rx_pin_cfg_gpio();
+        pgp_tx_pin_cfg_gpio();
         
     }
 }
@@ -647,6 +687,12 @@ static int32_t pgp_uart_init(void)
         ASSERT(pgp_uart_send_queue_mutex_id != NULL, "%s, %d", __func__, __LINE__);
     }
     InitCQueue(&pgp_uart_send_queue, sizeof(pgp_uart_send_queue_buf), (CQItemType *)pgp_uart_send_queue_buf);
+
+    if (pgp_comm_en_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
+        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&pgp_comm_en_pin_cfg, 1);
+        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)pgp_comm_en_pin_cfg.pin, HAL_GPIO_DIR_OUT, 0); 
+    }
+
 
     memset(&pgp_uart_ctx, 0, sizeof(pgp_uart_ctx));    
     pgp_uart_ctx.uart_port = HAL_UART_ID_1;
