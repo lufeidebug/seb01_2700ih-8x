@@ -404,7 +404,7 @@ include $(srctree)/config/$(CHIP)/ai_config.mk
 endif
 
 ifeq ($(ANC_ENABLE),1)
-#include $(srctree)/config/$(CHIP)/anc_config.mk
+#include $(srctree)/config/$(T)/anc_config.mk
 include $(srctree)/config/$(T)/anc_config.mk
 
 endif
