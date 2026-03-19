@@ -1294,16 +1294,13 @@ static void sndp_ui_check_dev_initial_status(void)
     sndp_dev_cover_set_status_changed_callback(sndp_ui_cover_status_changed);
     sndp_dev_iobox_set_status_changed_callback(sndp_ui_iobox_status_changed);
     sndp_dev_wear_set_status_changed_callback(sndp_ui_wear_status_changed);
+    sndp_dev_gesture_set_event_callback(sndp_ui_gesture_event_generated);
 #if defined(__SNDP_SLEEP_APP__)
 #if defined(__SNDP_GESTURE_MAP__)
     sndp_dev_register_gesture_funcs(sndp_ui_gesture_func_table);
     sndp_dev_gesture_mapper_init();
-    sndp_dev_gesture_set_event_callback(sndp_ui_gesture_event_generated);
 #endif
 #endif
-    sndp_dev_hr_init();
-    sndp_dev_acc_init();	
-
 	sndp_call_func_in_dev_thread((uint32_t)sndp_dev_charger_plug_check_curr_status, 0, 0, 0);
     sndp_call_func_in_dev_thread((uint32_t)sndp_dev_charger_check_curr_status, 0, 0, 0);
 	sndp_call_func_in_dev_thread((uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
