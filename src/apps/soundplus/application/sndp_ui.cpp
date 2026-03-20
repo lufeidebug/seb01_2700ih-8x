@@ -190,7 +190,42 @@ void sndp_ui_volume_dec(uint8_t type, uint8_t level)
 }
 
 
-//---------------------------------------- music ctrl --------------------------------------------
+//---------------------------------------- anc ctrl --------------------------------------------
+
+static void sndp_ui_anc_switch(void) 
+{
+	SPUI_TRACE(1, "status=%d, mode=%d", sndp_ui_ctx.anc_status, sndp_ui_ctx.anc_mode);
+	
+	if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_OFF) {
+        sndp_ui_ctx.anc_status = SNDP_ANC_STA_ON;
+        
+#ifdef MEDIA_PLAYER_SUPPORT        
+		media_PlayAudio(AUD_ID_ANC_ON, 0);
+#endif
+		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_ui_ctx.anc_mode, 0, 0);
+
+	} else if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_ON) {
+        sndp_ui_ctx.anc_status = SNDP_ANC_STA_TRANSPARENT;
+        
+		sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+#ifdef MEDIA_PLAYER_SUPPORT        
+		media_PlayAudio(AUD_ID_ANC_ON, 0);
+#endif           
+		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE_TRANSPARENT, 0, 0);
+
+	} else if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_TRANSPARENT) {
+        sndp_ui_ctx.anc_status = SNDP_ANC_STA_OFF;
+        
+	    sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+#ifdef MEDIA_PLAYER_SUPPORT        
+		media_PlayAudio(AUD_ID_ANC_OFF, 0);
+#endif  
+
+	}
+}
+
+
+//---------------------------------------- wear ctrl --------------------------------------------
 POSSIBLY_UNUSED static void sndp_ui_wear_on_play_music(void)
 {
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
@@ -233,8 +268,26 @@ static void sndp_ui_wear_off_stop_music(void)
 	sndp_music_ctrl(SNDP_MUSIC_CTRL_PAUSE);
 }
 
+static void sndp_ui_wear_on_role_switch(void)
+{
+    if(sndp_is_tws_link_connected()) {
+        if(sndp_is_tws_slave_mode() && !sndp_dev_wear_is_worn(true)) {
+            SPUI_TRACE(0, "%d", __LINE__);
+            sndp_ibrt_tws_switch();
+        }
+    }
+}
 
-//---------------------------------------- call ctrl --------------------------------------------
+static void sndp_ui_wear_off_role_switch(void)
+{
+    if(sndp_is_tws_link_connected()) {
+        if(sndp_is_tws_master_mode() && sndp_dev_wear_is_worn(true)) {
+            SPUI_TRACE(0, "%d", __LINE__);
+            sndp_ibrt_tws_switch();
+        }
+    }
+}
+
 static POSSIBLY_UNUSED void sndp_ui_wear_off_tone_switch_to_phone(void)
 {
 //	return;
@@ -269,41 +322,7 @@ static POSSIBLY_UNUSED void sndp_ui_wear_on_tone_switch_to_earbuds(void)
     sndp_call_ctrl(SNDP_CALL_CTRL_TONE_SWITCH_TO_EARPHONE);
 }
 
-//---------------------------------------- anc ctrl --------------------------------------------
-
-static void sndp_ui_anc_switch(void) 
-{
-	SPUI_TRACE(1, "status=%d, mode=%d", sndp_ui_ctx.anc_status, sndp_ui_ctx.anc_mode);
-	
-	if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_OFF) {
-        sndp_ui_ctx.anc_status = SNDP_ANC_STA_ON;
-        
-#ifdef MEDIA_PLAYER_SUPPORT        
-		media_PlayAudio(AUD_ID_ANC_ON, 0);
-#endif
-		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_ui_ctx.anc_mode, 0, 0);
-
-	} else if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_ON) {
-        sndp_ui_ctx.anc_status = SNDP_ANC_STA_TRANSPARENT;
-        
-		sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
-#ifdef MEDIA_PLAYER_SUPPORT        
-		media_PlayAudio(AUD_ID_ANC_ON, 0);
-#endif           
-		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE_TRANSPARENT, 0, 0);
-
-	} else if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_TRANSPARENT) {
-        sndp_ui_ctx.anc_status = SNDP_ANC_STA_OFF;
-        
-	    sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
-#ifdef MEDIA_PLAYER_SUPPORT        
-		media_PlayAudio(AUD_ID_ANC_OFF, 0);
-#endif  
-
-	}
-}
-
-static POSSIBLY_UNUSED void sndp_ui_wear_anc_on(void)
+static POSSIBLY_UNUSED void sndp_ui_wear_on_open_anc(void)
 {
 	SPUI_TRACE(0, "starting...");
 	if(sndp_is_tws_link_connected()) {
@@ -317,7 +336,7 @@ static POSSIBLY_UNUSED void sndp_ui_wear_anc_on(void)
 	}
 }
 
-static POSSIBLY_UNUSED void sndp_ui_wear_anc_off(void)
+static POSSIBLY_UNUSED void sndp_ui_wear_off_close_anc(void)
 {
 	if(!sndp_anc_is_on()) {
 		SPUI_TRACE(0, "%d, rtn", __LINE__);
@@ -333,7 +352,6 @@ static POSSIBLY_UNUSED void sndp_ui_wear_anc_off(void)
 	
 }
 
-//---------------------------------------- wear ctrl --------------------------------------------
 static void sndp_ui_wear_on_play_tone(void) 
 {
 	SPUI_TRACE_ENTER();
@@ -351,12 +369,16 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 	if(remote == false) {
 		if(SNDP_DEV_WEAR_ON == wear_action) {	
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds, 0, 0, 0);
-			//sndp_ui_wear_play_music();
+            sndp_delay_exec_start(300, (uint32_t)sndp_ui_wear_on_play_music, 0, 0, 0);
+			sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_role_switch, 0, 0, 0);
+            
 	    } else if(SNDP_DEV_WEAR_OFF == wear_action) {
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_off_tone_switch_to_phone, 0, 0, 0);
-			sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_off_stop_music, 0, 0, 0);		
+			sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_off_stop_music, 0, 0, 0);	
+            sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_off_role_switch, 0, 0, 0);
 		}
 
+        
 	} else if(remote == true) {
 		// only the master can execute.
 		if(SNDP_DEV_WEAR_ON == wear_action) {		
@@ -374,10 +396,12 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 	SPUI_TRACE(1, "WEAR_%s", (SNDP_DEV_WEAR_ON == wear_status) ? "ON" : "OFF");
 
 	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_tone);
-	//sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_music);
+	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_music);
 	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_stop_music);
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds);
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_tone_switch_to_phone);
+    sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_role_switch);
+    sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_role_switch);
 
     if(sndp_ui_pairing_type_is(SNDP_PAIRING_FREEMAN)) {
         SPUI_TRACE(0, "freeman pairing return.");
@@ -400,7 +424,7 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 	sndp_ui_wear_action(wear_status, false);
 }
 
-//---------------------------------------- bat ctrl --------------------------------------------
+//---------------------------------------- cover ctrl --------------------------------------------
 static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 {
     struct nvrecord_env_t *nvrecord_env;
@@ -425,16 +449,46 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 }
 
 
+//---------------------------------------- iobox ctrl --------------------------------------------
+
+static void sndp_ui_inbox_role_switch(void)
+{
+    if(sndp_is_tws_link_connected()) {
+        if(sndp_is_tws_master_mode() && !sndp_dev_iobox_is_in_box(true)) {
+            SPUI_TRACE(0, "%d", __LINE__);
+            sndp_ibrt_tws_switch();
+        }
+    }
+}
+
+static void sndp_ui_outbox_role_switch(void)
+{
+    if(sndp_is_tws_link_connected()) {
+        if(sndp_is_tws_slave_mode() && sndp_dev_iobox_is_in_box(true)) {
+            SPUI_TRACE(0, "%d", __LINE__);
+            sndp_ibrt_tws_switch();
+        }
+    }
+}
+
 static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
 {
     SPUI_TRACE(1, "%s", (SNDP_DEV_IOBOX_IN == inout_status) ? "IN_BOX" : "OUT_BOX");
 
+    sndp_delay_exec_stop((uint32_t)sndp_ui_inbox_role_switch);
+    sndp_delay_exec_stop((uint32_t)sndp_ui_outbox_role_switch);
+    
     if(inout_status == SNDP_DEV_IOBOX_IN) {
         bta_tws_box_event_entry(BTA_TWS_DOCK);
+
+        sndp_delay_exec_start(300, (uint32_t)sndp_ui_inbox_role_switch, 0, 0, 0);
+    
     } else {
         bta_tws_box_event_entry(BTA_TWS_UNDOCK);
         sndp_dev_wear_enable_detection();
         //spif_wear_detection_exec_calibration_self_calib();
+
+        sndp_delay_exec_start(300, (uint32_t)sndp_ui_outbox_role_switch, 0, 0, 0);
     }
 }
 
