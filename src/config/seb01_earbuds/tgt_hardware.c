@@ -126,8 +126,9 @@ const struct HAL_KEY_GPIOKEY_CFG_T cfg_hw_gpio_key_cfg[CFG_HW_GPIOKEY_NUM] = {
 #endif
 
 //bt config
-const char *BT_LOCAL_NAME = TO_STRING(BT_DEV_NAME) "\0";
-const char *BLE_DEFAULT_NAME = "BES_BLE";
+//const char *BT_LOCAL_NAME = TO_STRING(BT_DEV_NAME) "\0";
+const char *BT_LOCAL_NAME = "Sleepbuds\0";
+const char *BLE_DEFAULT_NAME = "Sleepbuds-LE";
 uint8_t ble_global_addr[6] = {
 #ifdef BLE_DEV_ADDR
 	BLE_DEV_ADDR
