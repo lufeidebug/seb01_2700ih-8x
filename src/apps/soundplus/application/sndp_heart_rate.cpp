@@ -377,7 +377,7 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 
     // hr_setp_1: 算法初始化
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)    
-    dbbeats_initialize_heartrate_data(1, 0);
+    dbbeats_initialize_heartrate_data(ppg_sampling_rate, dump_state);
 #endif
 
     // hr_setp_2: 打开读取加速度数据
