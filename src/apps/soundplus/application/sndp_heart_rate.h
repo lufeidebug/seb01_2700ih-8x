@@ -24,12 +24,37 @@ extern "C" {
 
 
 
+/**
+ * @brief       Start heartrate mearsuring
+ * @param[in]   ppg_sampling_rate  1:64Hz, 2:128Hz, 3:256Hz
+ * @param[in]   dump_state  Dump Data enable, 0:OFF, 1:ON
+ * @return      void
+ */
+void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state);
 
-void sndp_hr_mearsuring_start(void);
+/**
+ * @brief       Stop heartrate mearsuring
+ * @return      void
+ */
 void sndp_hr_mearsuring_stop(void);
-void sndp_sleep_analysis_start(void);
+
+/**
+ * @brief       Start heartrate mearsuring
+ * @param[in]   sleep_control default:0
+ * @return      void
+ */
+void sndp_sleep_analysis_start(int32_t sleep_control);
+
+/**
+ * @brief       Stop sleep analysis.
+ * @return      void
+ */
 void sndp_sleep_analysis_stop(void);
 
+/**
+ * @brief       Heartrate app init.
+ * @return      void
+ */
 void sndp_hr_app_init(void);
 
 

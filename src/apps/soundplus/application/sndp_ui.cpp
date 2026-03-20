@@ -154,7 +154,7 @@ void sndp_ui_working_mode_switch(void)
 
         //Open sleep analysis.
 #if defined(__SNDP_HEART_RATE_MGR__)        
-        sndp_sleep_analysis_start();
+        sndp_sleep_analysis_start(0);
 #endif
 
     }
@@ -770,8 +770,8 @@ static void sndp_ui_fn1_key_hdlr(APP_KEY_STATUS *status, void *param)
 #endif
 
 #if defined(__SNDP_HEART_RATE_MGR__)            
-            //sndp_hr_mearsuring_start();
-            sndp_sleep_analysis_start();
+            //sndp_hr_mearsuring_start(1, 0);
+            sndp_sleep_analysis_start(0);
 #endif
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
