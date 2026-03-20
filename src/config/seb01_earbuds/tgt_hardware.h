@@ -177,7 +177,7 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP cfg_hw_pinmux_pwl[CFG_HW_PWL_NUM]
 #define ANC_FUNCTION_KEY                    HAL_KEY_CODE_PWR
 
 // ANC coefficient curve number
-#define ANC_COEF_NUM                        (1)
+#define ANC_COEF_NUM                        (5)
 
 #define PSAP_COEF_LIST_NUM                  (1)
 

@@ -80,18 +80,23 @@ typedef enum {
 } sndp_call_ctrl_event_e;
 
 typedef enum {
-	SNDP_ANC_MODE_OFF = 0,
-	SNDP_ANC_MODE1,
-	SNDP_ANC_MODE2,
-	SNDP_ANC_MODE3,
-	SNDP_ANC_MODE4,
-	SNDP_ANC_MODE5,
-	SNDP_ANC_MODE6,
-	SNDP_ANC_MODE7,
-	SNDP_ANC_MODE8,
+	SNDP_ANC_MODE_OFF,
+	SNDP_ANC_MODE_1,
+	SNDP_ANC_MODE_2,
+	SNDP_ANC_MODE_3,
+	SNDP_ANC_MODE_4,
+	SNDP_ANC_MODE_TRANSPARENT,
 	
 	SNDP_ANC_MODE_QTY,
 } sndp_anc_mode_e;
+
+typedef enum {
+	SNDP_ANC_STA_OFF = 0,
+	SNDP_ANC_STA_ON  = 1,
+	SNDP_ANC_STA_TRANSPARENT = 2,
+	
+} sndp_anc_status_e;
+
 
 #if defined(__SNDP_SLEEP_APP__)
 typedef enum {
@@ -203,13 +208,10 @@ void sndp_call_ctrl(sndp_call_ctrl_event_e event);
 uint8_t sndp_get_call_volume(void);
 
 bool sndp_anc_is_on(void);
-void sndp_anc_on(void);
-void sndp_anc_on_locally(void);
-void sndp_anc_off(void);
-void sndp_anc_off_locally(void);
 void sndp_anc_mode_set(sndp_anc_mode_e anc_mode);
-void sndp_anc_mode_switch(void);
+void sndp_anc_mode_set_locally(sndp_anc_mode_e anc_mode);
 sndp_anc_mode_e sndp_anc_get_curr_mode(void);
+
 void sndp_wakeup_voice_assistant(bool onoff);
 void sndp_update_audio_channel(bool tws_conn);
 

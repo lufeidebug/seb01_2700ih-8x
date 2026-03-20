@@ -1156,35 +1156,14 @@ bool sndp_anc_is_on(void)
     }
 }
 
-void sndp_anc_on(void)
-{
-    app_anc_switch(APP_ANC_MODE1);
-}
-
-void sndp_anc_on_locally(void)
-{
-    app_anc_switch_locally(APP_ANC_MODE1);
-}
-
-void sndp_anc_off(void)
-{
-    app_anc_switch(APP_ANC_MODE_OFF);
-}
-
-void sndp_anc_off_locally(void)
-{
-    app_anc_switch_locally(APP_ANC_MODE_OFF);
-}
-
 void sndp_anc_mode_set(sndp_anc_mode_e anc_mode)
 {
-	app_anc_switch((app_anc_mode_t)anc_mode);
+    app_anc_switch((app_anc_mode_t)anc_mode);
 }
 
-void sndp_anc_mode_switch(void)
+void sndp_anc_mode_set_locally(sndp_anc_mode_e anc_mode)
 {
-    app_anc_loop_switch();
-
+    app_anc_switch_locally((app_anc_mode_t)anc_mode);
 }
 
 sndp_anc_mode_e sndp_anc_get_curr_mode(void)

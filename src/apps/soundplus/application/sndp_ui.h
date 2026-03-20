@@ -37,23 +37,6 @@ typedef enum {
     
 } sndp_pairing_type_e;
 
-typedef struct {
-	uint32_t charging_time;
-	uint32_t charging_full_time;
-
-	bool lowpwr_check_enable;
-	uint16_t lowpwr_warning_cnt;
-	uint32_t lowpwr_warning_last_time;
-	uint16_t lowpwr_shutdown_cnt;
-    
-	uint32_t close_discharge_time;
-
-	bool temperature_check_enable;
-	uint16_t temperature_exp_shutdown_time; 
-
-	bool wear_play_music_allowed;
-} sndp_ui_ctx_s;
-
 
 void sndp_ui_pairing_type_set(sndp_pairing_type_e type);
 bool sndp_ui_pairing_type_is(sndp_pairing_type_e type);
@@ -63,8 +46,6 @@ void sndp_ui_volume_set(uint8_t type, uint8_t level);
 void sndp_ui_volume_inc(uint8_t type, uint8_t level);
 void sndp_ui_volume_dec(uint8_t type, uint8_t level);
 
-
-void sndp_ui_anc_onoff(bool onoff);
 
 void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote);
 

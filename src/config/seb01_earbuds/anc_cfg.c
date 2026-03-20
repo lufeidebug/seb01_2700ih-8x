@@ -331,24 +331,27 @@ static const struct_anc_cfg POSSIBLY_UNUSED AncFirCoef_44p1k_mode0 = {
 #endif //#if !defined(BESUI_TWS_EN) && !defined(BESUI_STEREO_EN)
 
 const struct_anc_cfg * anc_coef_list_50p7k[ANC_COEF_LIST_NUM] = {
-    &AncFirCoef_50p7k_mode0,
-#if defined(BESUI_TWS_EN) || defined(BESUI_STEREO_EN)
-    &AncFirCoef_50p7k_mode1,
-#endif
+    &AncFirCoef_50p7k_mode0, //mode1
+    &AncFirCoef_50p7k_mode0, //mode2
+    &AncFirCoef_50p7k_mode0, //mode3
+    &AncFirCoef_50p7k_mode0, //mode4
+    &AncFirCoef_50p7k_mode0, //transparent
 };
 
 const struct_anc_cfg * anc_coef_list_48k[ANC_COEF_LIST_NUM] = {
     &AncFirCoef_48k_mode0,
-#if defined(BESUI_TWS_EN) || defined(BESUI_STEREO_EN)
-    &AncFirCoef_48k_mode1,
-#endif
+    &AncFirCoef_48k_mode0,
+    &AncFirCoef_48k_mode0,
+    &AncFirCoef_48k_mode0,
+    &AncFirCoef_48k_mode0,
 };
 
 const struct_anc_cfg * anc_coef_list_44p1k[ANC_COEF_LIST_NUM] = {
     &AncFirCoef_44p1k_mode0,
-#if defined(BESUI_TWS_EN) || defined(BESUI_STEREO_EN)
-    &AncFirCoef_44p1k_mode1,
-#endif
+    &AncFirCoef_44p1k_mode0,
+    &AncFirCoef_44p1k_mode0,
+    &AncFirCoef_44p1k_mode0,
+    &AncFirCoef_44p1k_mode0,
 };
 
 static const struct_psap_cfg POSSIBLY_UNUSED PsapFirCoef_50p7k_mode0 = {
