@@ -1446,14 +1446,21 @@ int sndp_language_switch_handler(int new_lan)
 
 void sndp_bt_switch(bool onoff, bool sync)
 {
+    POSSIBLY_UNUSED bt_bdaddr_t mobile_addr1;
+    POSSIBLY_UNUSED bt_bdaddr_t mobile_addr2;
+    
     if(sync) {
         sndp_comm_cmd_send_lr_sync_bt_onoff(onoff);
     }
     
     if(onoff) {
         SNDP_IF_TRACE(0, "on..");
+#if 1        
+        bta_tws_box_event_entry(BTA_TWS_OPEN);
+#else
         bta_tws_enable_access_mode(true);
         bta_tws_connect_all_bt_devices();
+#endif        
     } else {
         SNDP_IF_TRACE(0, "off..");
         bta_tws_remove_all_bt_devices();
