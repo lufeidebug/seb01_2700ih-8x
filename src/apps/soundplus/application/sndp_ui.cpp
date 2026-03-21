@@ -34,8 +34,7 @@
 #include "sndp_heart_rate.h"
 #endif
 #include "sndp_comm_ble.h"
-#include "app_ble_swift.h"
-
+#include "app_ble_sndp.h"
 
 
 /**************************************************************************************************
@@ -64,14 +63,26 @@
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
-typedef void (*sndp_ui_key_hdlr)(void);
-
 typedef struct {
-    uint8_t code;
-    uint8_t event;
-    sndp_ui_key_hdlr key_hdlr;
-} sndp_ui_key_hdlr_s;
+    uint32_t charging_time;
+    uint32_t charging_full_time;
 
+    bool lowpwr_check_enable;
+    uint16_t lowpwr_warning_cnt;
+    uint32_t lowpwr_warning_last_time;
+    uint16_t lowpwr_shutdown_cnt;
+    
+    uint32_t close_discharge_time;
+
+    bool temperature_check_enable;
+    uint16_t temperature_exp_shutdown_time; 
+
+    bool wear_play_music_allowed;
+
+    sndp_anc_status_e anc_status;
+    sndp_anc_mode_e anc_mode;
+    
+} sndp_ui_ctx_s;
 
 typedef struct {
     sndp_dev_cover_status_e cover_sta;
@@ -139,11 +150,11 @@ void sndp_ui_working_mode_switch(void)
 #endif
 
         //Open ANC.
-        sndp_anc_mode_set(SNDP_ANC_MODE1);
+        sndp_anc_mode_set(sndp_ui_ctx.anc_mode);
 
         //Open sleep analysis.
 #if defined(__SNDP_HEART_RATE_MGR__)        
-        sndp_sleep_analysis_start();
+        sndp_sleep_analysis_start(0);
 #endif
 
     }
@@ -179,7 +190,42 @@ void sndp_ui_volume_dec(uint8_t type, uint8_t level)
 }
 
 
-//---------------------------------------- music ctrl --------------------------------------------
+//---------------------------------------- anc ctrl --------------------------------------------
+
+static void sndp_ui_anc_switch(void) 
+{
+	SPUI_TRACE(1, "status=%d, mode=%d", sndp_ui_ctx.anc_status, sndp_ui_ctx.anc_mode);
+	
+	if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_OFF) {
+        sndp_ui_ctx.anc_status = SNDP_ANC_STA_ON;
+        
+#ifdef MEDIA_PLAYER_SUPPORT        
+		media_PlayAudio(AUD_ID_ANC_ON, 0);
+#endif
+		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_ui_ctx.anc_mode, 0, 0);
+
+	} else if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_ON) {
+        sndp_ui_ctx.anc_status = SNDP_ANC_STA_TRANSPARENT;
+        
+		sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+#ifdef MEDIA_PLAYER_SUPPORT        
+		media_PlayAudio(AUD_ID_ANC_ON, 0);
+#endif           
+		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE_TRANSPARENT, 0, 0);
+
+	} else if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_TRANSPARENT) {
+        sndp_ui_ctx.anc_status = SNDP_ANC_STA_OFF;
+        
+	    sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+#ifdef MEDIA_PLAYER_SUPPORT        
+		media_PlayAudio(AUD_ID_ANC_OFF, 0);
+#endif  
+
+	}
+}
+
+
+//---------------------------------------- wear ctrl --------------------------------------------
 POSSIBLY_UNUSED static void sndp_ui_wear_on_play_music(void)
 {
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
@@ -234,8 +280,26 @@ static void sndp_ui_wear_off_stop_music(void)
 	sndp_music_ctrl(SNDP_MUSIC_CTRL_PAUSE);
 }
 
+static void sndp_ui_wear_on_role_switch(void)
+{
+    if(sndp_is_tws_link_connected()) {
+        if(sndp_is_tws_slave_mode() && !sndp_dev_wear_is_worn(true)) {
+            SPUI_TRACE(0, "%d", __LINE__);
+            sndp_ibrt_tws_switch();
+        }
+    }
+}
 
-//---------------------------------------- call ctrl --------------------------------------------
+static void sndp_ui_wear_off_role_switch(void)
+{
+    if(sndp_is_tws_link_connected()) {
+        if(sndp_is_tws_master_mode() && sndp_dev_wear_is_worn(true)) {
+            SPUI_TRACE(0, "%d", __LINE__);
+            sndp_ibrt_tws_switch();
+        }
+    }
+}
+
 static POSSIBLY_UNUSED void sndp_ui_wear_off_tone_switch_to_phone(void)
 {
 //	return;
@@ -270,61 +334,21 @@ static POSSIBLY_UNUSED void sndp_ui_wear_on_tone_switch_to_earbuds(void)
     sndp_call_ctrl(SNDP_CALL_CTRL_TONE_SWITCH_TO_EARPHONE);
 }
 
-//---------------------------------------- anc ctrl --------------------------------------------
-void sndp_ui_anc_onoff(bool onoff) 
-{
-    SPUI_TRACE(1, "onoff=%d", onoff);
-    
-	if(onoff) {
-#ifdef MEDIA_PLAYER_SUPPORT
-        media_PlayAudio(AUD_ID_ANC_ON, 0);
-#endif
-        sndp_anc_mode_set(SNDP_ANC_MODE1);
-	} else {        
-        sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
-#ifdef MEDIA_PLAYER_SUPPORT
-        media_PlayAudio(AUD_ID_ANC_OFF, 0);
-#endif
-	}
-}
-
-
-static POSSIBLY_UNUSED void sndp_ui_anc_switch(void) 
-{
-	sndp_anc_mode_e curr_mode =  sndp_anc_get_curr_mode();
-
-	SPUI_TRACE(1, "curr_mode=%d", curr_mode);
-	
-	if(curr_mode == SNDP_ANC_MODE_OFF) {
-#ifdef MEDIA_PLAYER_SUPPORT        
-		media_PlayAudio(AUD_ID_ANC_ON, 0);
-#endif
-
-		sndp_delay_exec_start(2000, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE1, 0, 0);
-	} else {
-		sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
-#ifdef MEDIA_PLAYER_SUPPORT        
-		sndp_delay_exec_start(100, (uint32_t)media_PlayAudio, (uint32_t)AUD_ID_ANC_OFF, 0, 0);
-#endif
-
-	}
-}
-
-static POSSIBLY_UNUSED void sndp_ui_wear_anc_on(void)
+static POSSIBLY_UNUSED void sndp_ui_wear_on_open_anc(void)
 {
 	SPUI_TRACE(0, "starting...");
 	if(sndp_is_tws_link_connected()) {
 		if(sndp_dev_wear_is_worn(false) && sndp_dev_wear_is_worn(true)) {
-			sndp_anc_on();
+			sndp_anc_mode_set(sndp_ui_ctx.anc_mode);
 		} else {
-			sndp_anc_on_locally();
+			sndp_anc_mode_set_locally(sndp_ui_ctx.anc_mode);
 		}
 	} else {
-		sndp_anc_on_locally();
+		sndp_anc_mode_set_locally(sndp_ui_ctx.anc_mode);
 	}
 }
 
-static POSSIBLY_UNUSED void sndp_ui_wear_anc_off(void)
+static POSSIBLY_UNUSED void sndp_ui_wear_off_close_anc(void)
 {
 	if(!sndp_anc_is_on()) {
 		SPUI_TRACE(0, "%d, rtn", __LINE__);
@@ -333,14 +357,13 @@ static POSSIBLY_UNUSED void sndp_ui_wear_anc_off(void)
 
 	SPUI_TRACE(0, "stopping...");
 #if 0		
-	sndp_anc_off();
+	sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
 #else
-	sndp_anc_off_locally();
+	sndp_anc_mode_set_locally(SNDP_ANC_MODE_OFF);
 #endif
 	
 }
 
-//---------------------------------------- wear ctrl --------------------------------------------
 static void sndp_ui_wear_on_play_tone(void) 
 {
 	SPUI_TRACE_ENTER();
@@ -358,12 +381,16 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 	if(remote == false) {
 		if(SNDP_DEV_WEAR_ON == wear_action) {	
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds, 0, 0, 0);
-			//sndp_ui_wear_play_music();
+            sndp_delay_exec_start(300, (uint32_t)sndp_ui_wear_on_play_music, 0, 0, 0);
+			sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_role_switch, 0, 0, 0);
+            
 	    } else if(SNDP_DEV_WEAR_OFF == wear_action) {
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_off_tone_switch_to_phone, 0, 0, 0);
-			sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_off_stop_music, 0, 0, 0);		
+			sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_off_stop_music, 0, 0, 0);	
+            sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_off_role_switch, 0, 0, 0);
 		}
 
+        
 	} else if(remote == true) {
 		// only the master can execute.
 		if(SNDP_DEV_WEAR_ON == wear_action) {		
@@ -381,10 +408,12 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 	SPUI_TRACE(1, "WEAR_%s", (SNDP_DEV_WEAR_ON == wear_status) ? "ON" : "OFF");
 
 	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_tone);
-	//sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_music);
+	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_music);
 	sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_stop_music);
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds);
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_tone_switch_to_phone);
+    sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_role_switch);
+    sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_role_switch);
 
     if(sndp_ui_pairing_type_is(SNDP_PAIRING_FREEMAN)) {
         SPUI_TRACE(0, "freeman pairing return.");
@@ -407,7 +436,7 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 	sndp_ui_wear_action(wear_status, false);
 }
 
-//---------------------------------------- bat ctrl --------------------------------------------
+//---------------------------------------- cover ctrl --------------------------------------------
 static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 {
     struct nvrecord_env_t *nvrecord_env;
@@ -432,16 +461,46 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 }
 
 
+//---------------------------------------- iobox ctrl --------------------------------------------
+
+static void sndp_ui_inbox_role_switch(void)
+{
+    if(sndp_is_tws_link_connected()) {
+        if(sndp_is_tws_master_mode() && !sndp_dev_iobox_is_in_box(true)) {
+            SPUI_TRACE(0, "%d", __LINE__);
+            sndp_ibrt_tws_switch();
+        }
+    }
+}
+
+static void sndp_ui_outbox_role_switch(void)
+{
+    if(sndp_is_tws_link_connected()) {
+        if(sndp_is_tws_slave_mode() && sndp_dev_iobox_is_in_box(true)) {
+            SPUI_TRACE(0, "%d", __LINE__);
+            sndp_ibrt_tws_switch();
+        }
+    }
+}
+
 static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
 {
     SPUI_TRACE(1, "%s", (SNDP_DEV_IOBOX_IN == inout_status) ? "IN_BOX" : "OUT_BOX");
 
+    sndp_delay_exec_stop((uint32_t)sndp_ui_inbox_role_switch);
+    sndp_delay_exec_stop((uint32_t)sndp_ui_outbox_role_switch);
+    
     if(inout_status == SNDP_DEV_IOBOX_IN) {
         bta_tws_box_event_entry(BTA_TWS_DOCK);
+
+        sndp_delay_exec_start(300, (uint32_t)sndp_ui_inbox_role_switch, 0, 0, 0);
+    
     } else {
         bta_tws_box_event_entry(BTA_TWS_UNDOCK);
         sndp_dev_wear_enable_detection();
         //spif_wear_detection_exec_calibration_self_calib();
+
+        sndp_delay_exec_start(300, (uint32_t)sndp_ui_outbox_role_switch, 0, 0, 0);
     }
 }
 
@@ -739,16 +798,7 @@ static void sndp_ui_pwr_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
-#if 1
-            //sndp_ui_anc_switch();
-            app_swift_enter_pairing_mode();
-#else
-            {
-                uint8_t data[] = {0xa1, 0xb2, 0xc3, 0xd4};
-                sndp_comm_ble_send_data(data, 4);
-            }
-#endif
-            
+           sndp_start_freeman_pairing();
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
             sndp_ui_working_mode_switch();
@@ -772,9 +822,22 @@ static void sndp_ui_fn1_key_hdlr(APP_KEY_STATUS *status, void *param)
     
     switch(status->event) {
         case APP_KEY_EVENT_CLICK:
+#if 0
+            sndp_ui_anc_switch();
+#endif
+#if 0            
+            sndp_start_freeman_pairing();
+#endif            
+#if 0
+            {
+                uint8_t data[] = {0xa1, 0xb2, 0xc3, 0xd4};
+                sndp_comm_ble_send_data(data, 4);
+            }
+#endif
+
 #if defined(__SNDP_HEART_RATE_MGR__)            
-            //sndp_hr_mearsuring_start();
-            sndp_sleep_analysis_start();
+            //sndp_hr_mearsuring_start(1, 0);
+            sndp_sleep_analysis_start(0);
 #endif
             break;
         case APP_KEY_EVENT_DOUBLECLICK:
@@ -1305,16 +1368,13 @@ static void sndp_ui_check_dev_initial_status(void)
     sndp_dev_cover_set_status_changed_callback(sndp_ui_cover_status_changed);
     sndp_dev_iobox_set_status_changed_callback(sndp_ui_iobox_status_changed);
     sndp_dev_wear_set_status_changed_callback(sndp_ui_wear_status_changed);
+    sndp_dev_gesture_set_event_callback(sndp_ui_gesture_event_generated);
 #if defined(__SNDP_SLEEP_APP__)
 #if defined(__SNDP_GESTURE_MAP__)
     sndp_dev_register_gesture_funcs(sndp_ui_gesture_func_table);
     sndp_dev_gesture_mapper_init();
-    sndp_dev_gesture_set_event_callback(sndp_ui_gesture_event_generated);
 #endif
 #endif
-    sndp_dev_hr_init();
-    sndp_dev_acc_init();	
-
 	sndp_call_func_in_dev_thread((uint32_t)sndp_dev_charger_plug_check_curr_status, 0, 0, 0);
     sndp_call_func_in_dev_thread((uint32_t)sndp_dev_charger_check_curr_status, 0, 0, 0);
 	sndp_call_func_in_dev_thread((uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
@@ -1329,6 +1389,9 @@ void sndp_ui_init_pre(void)
 	SPUI_TRACE_ENTER();
     
 	memset(&sndp_ui_ctx, 0, sizeof(sndp_ui_ctx));
+    sndp_ui_ctx.anc_status = SNDP_ANC_STA_OFF;
+    sndp_ui_ctx.anc_mode = SNDP_ANC_MODE_1; //need init from flash.
+        
     sndp_set_bt_conn_status_changed_callback(sndp_ui_bt_conn_status_changed);
 	app_prompt_start_callback_register(sndp_ui_prompt_start_cb);
 	app_prompt_finish_callback_register(sndp_ui_prompt_finish_cb);

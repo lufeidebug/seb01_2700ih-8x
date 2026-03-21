@@ -361,7 +361,7 @@ static void sndp_hr_process_thread(void const *argument)
 
 }
 
-void sndp_hr_mearsuring_start(void)
+void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
 
@@ -377,7 +377,7 @@ void sndp_hr_mearsuring_start(void)
 
     // hr_setp_1: 算法初始化
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)    
-    dbbeats_initialize_heartrate_data(1, 0);
+    dbbeats_initialize_heartrate_data(ppg_sampling_rate, dump_state);
 #endif
 
     // hr_setp_2: 打开读取加速度数据
@@ -434,13 +434,13 @@ void sndp_sleep_analysis_callback(int8_t *sleep_stage,
     }
 }
 
-void sndp_sleep_analysis_start(void)
+void sndp_sleep_analysis_start(int32_t sleep_control)
 {
     ppg_raw_data_queue_reset();
     
     // sleep_step_1:算法初始化
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
-    dbbeats_initialize_sleep_data(0, sndp_sleep_analysis_callback);
+    dbbeats_initialize_sleep_data(sleep_control, sndp_sleep_analysis_callback);
 #endif
 
     // sleep_step_2:打开读取加速度数据。

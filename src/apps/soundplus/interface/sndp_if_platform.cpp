@@ -228,19 +228,26 @@ void sndp_enter_restore_factory_setting(void)
 void sndp_enter_freeman_pairing(void)
 {
     SNDP_IF_TRACE(0, "...");
+    bta_tws_box_event_entry(BTA_TWS_OPEN);
+	bta_tws_enable_freeman_mode(true); 
+    bta_tws_enable_pairing_mode(true);
+}
+
+void sndp_start_freeman_pairing(void)
+{
+    SNDP_IF_TRACE(0, "...");
     sndp_clear_mobile_pairing_list();
     
 #if defined(__SNDP_REBOOT_FORCE_PAIRING__)
 	osDelay(100);
 	sndp_pmu_reboot(HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT);
 #else
-    bta_tws_box_event_entry(BTA_TWS_OPEN);
-	bta_tws_enable_freeman_mode(true);
+    sndp_enter_freeman_pairing();
 #endif    
 
 }
 
-void sndp_enter_tws_pairing(void)
+void sndp_start_tws_pairing(void)
 {
     SNDP_IF_TRACE(0, "...");
     sndp_disconnect_all_mobile_link();
@@ -1157,35 +1164,14 @@ bool sndp_anc_is_on(void)
     }
 }
 
-void sndp_anc_on(void)
-{
-    app_anc_switch(APP_ANC_MODE1);
-}
-
-void sndp_anc_on_locally(void)
-{
-    app_anc_switch_locally(APP_ANC_MODE1);
-}
-
-void sndp_anc_off(void)
-{
-    app_anc_switch(APP_ANC_MODE_OFF);
-}
-
-void sndp_anc_off_locally(void)
-{
-    app_anc_switch_locally(APP_ANC_MODE_OFF);
-}
-
 void sndp_anc_mode_set(sndp_anc_mode_e anc_mode)
 {
-	app_anc_switch((app_anc_mode_t)anc_mode);
+    app_anc_switch((app_anc_mode_t)anc_mode);
 }
 
-void sndp_anc_mode_switch(void)
+void sndp_anc_mode_set_locally(sndp_anc_mode_e anc_mode)
 {
-    app_anc_loop_switch();
-
+    app_anc_switch_locally((app_anc_mode_t)anc_mode);
 }
 
 sndp_anc_mode_e sndp_anc_get_curr_mode(void)
@@ -1457,14 +1443,21 @@ int sndp_language_switch_handler(int new_lan)
 
 void sndp_bt_switch(bool onoff, bool sync)
 {
+    POSSIBLY_UNUSED bt_bdaddr_t mobile_addr1;
+    POSSIBLY_UNUSED bt_bdaddr_t mobile_addr2;
+    
     if(sync) {
         sndp_comm_cmd_send_lr_sync_bt_onoff(onoff);
     }
     
     if(onoff) {
         SNDP_IF_TRACE(0, "on..");
+#if 1        
+        bta_tws_box_event_entry(BTA_TWS_OPEN);
+#else
         bta_tws_enable_access_mode(true);
         bta_tws_connect_all_bt_devices();
+#endif        
     } else {
         SNDP_IF_TRACE(0, "off..");
         bta_tws_remove_all_bt_devices();

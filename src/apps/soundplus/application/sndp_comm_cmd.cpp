@@ -160,7 +160,7 @@ static uint32_t sndp_comm_cmd_recv_eb_freeman_pairing(sndp_comm_cmd_info_s *cmd_
     sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
 
     if(err_code == SNDP_COMM_ERROR_NONE) {
-	    sndp_call_func_in_app_thread((uint32_t)sndp_enter_freeman_pairing, 0, 0, 0);
+	    sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
     }
 	return 0;
 }
@@ -193,7 +193,7 @@ static uint32_t sndp_comm_cmd_recv_eb_tws_pairing(sndp_comm_cmd_info_s *cmd_info
 
     if(err_code == SNDP_COMM_ERROR_NONE) {
     	sndp_tws_pairing_config(recv_bt_addr, sizeof(recv_bt_addr));
-    	sndp_call_func_in_app_thread((uint32_t)sndp_enter_tws_pairing, 0, 0, 0);
+    	sndp_call_func_in_app_thread((uint32_t)sndp_start_tws_pairing, 0, 0, 0);
     }
 	return 0;
 }
@@ -699,7 +699,7 @@ static uint32_t sndp_comm_cmd_recv_pt_single_pairing(sndp_comm_cmd_info_s *cmd_i
 {
 	sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NONE);
 
-	sndp_call_func_in_app_thread((uint32_t)sndp_enter_freeman_pairing, 0, 0, 0);
+	sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
 	return 0;
 }
 
@@ -728,7 +728,7 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_tws_pairing(sndp_comm_cmd_
 
     if(err_code == SNDP_COMM_ERROR_NONE) {
         sndp_tws_pairing_config(recv_bt_addr, sizeof(recv_bt_addr));
-        sndp_call_func_in_app_thread((uint32_t)sndp_enter_tws_pairing, 0, 0, 0);
+        sndp_call_func_in_app_thread((uint32_t)sndp_start_tws_pairing, 0, 0, 0);
     }
     return 0;
 }
@@ -963,7 +963,7 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_speaker(sndp_comm_cmd
 {
 	sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NONE);
     
-	sndp_call_func_in_app_thread((uint32_t) sndp_enter_freeman_pairing, 0, 0, 0);
+	sndp_call_func_in_app_thread((uint32_t) sndp_start_freeman_pairing, 0, 0, 0);
 	return 0;
 }
 

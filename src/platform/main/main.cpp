@@ -252,21 +252,6 @@ int tgt_hardware_setup(void)
         hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_charging_i2c_sda_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
     }
 
-    if (app_pogopin_uart_tx_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
-        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_pogopin_uart_tx_pin_cfg, 1);
-        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_pogopin_uart_tx_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
-    }
-
-    if (app_pogopin_uart_rx_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
-        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_pogopin_uart_rx_pin_cfg, 1);
-        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_pogopin_uart_rx_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
-    }
-
-    if (app_pogopin_uart_mode_change_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
-        hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_pogopin_uart_mode_change_pin_cfg, 1);
-        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_pogopin_uart_mode_change_pin_cfg.pin, HAL_GPIO_DIR_OUT, 1);
-    }
-
     if (app_gsensor_int1_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
         hal_iomux_init((struct HAL_IOMUX_PIN_FUNCTION_MAP *)&app_gsensor_int1_pin_cfg, 1);
         hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)app_gsensor_int1_pin_cfg.pin, HAL_GPIO_DIR_IN, 1);
