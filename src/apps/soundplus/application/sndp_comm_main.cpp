@@ -385,7 +385,7 @@ static void sndp_comm_recv_thread(void const *argument)
             COMM_MIAN_TRACE(0, "queue_len=%d, peek_len=%d", queue_len, peek_len);
             sndp_comm_queue_peek_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, peek_len);
 
-            // DUMP8("%02X ", deal_buf, peek_len > 32 ? 32 : peek_len);
+            DUMP8("%02X ", deal_buf, peek_len > 32 ? 32 : peek_len);
 
             if(deal_buf[0] == SNDP_COMM_FRAME_FLAG) {
                 error_code = sndp_comm_protocol_parse_recv_data(deal_buf, peek_len, recv_cmd);

@@ -201,7 +201,13 @@ POSSIBLY_UNUSED static void sndp_ui_wear_on_play_music(void)
 		SPUI_TRACE(0, "%d, rtn", __LINE__);
 		return;
 	}
-	
+#if defined(__SNDP_SLEEP_APP__)
+    if(sndp_dev_get_splaypause_onoff(false) == 0)
+    {
+		SPUI_TRACE(0, "%d, rtn", __LINE__);
+		return;        
+    }
+#endif
 	sndp_music_ctrl(SNDP_MUSIC_CTRL_PLAY);
 }
 
@@ -218,7 +224,13 @@ static void sndp_ui_wear_off_stop_music(void)
 			return;
 		}
 	}
-	
+#if defined(__SNDP_SLEEP_APP__)
+    if(sndp_dev_get_splaypause_onoff(false) == 0)
+    {
+		SPUI_TRACE(0, "%d, rtn", __LINE__);
+		return;        
+    }
+#endif
 	sndp_music_ctrl(SNDP_MUSIC_CTRL_PAUSE);
 }
 

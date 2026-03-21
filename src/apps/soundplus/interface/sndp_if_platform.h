@@ -218,15 +218,16 @@ uint8_t *sndp_get_nvrecord_bt_peer_address(void);
 int sndp_language_switch_handler(int new_lan);
 void sndp_bt_switch(bool onoff, bool sync);
 #if defined(__SNDP_SLEEP_APP__)
-void sndp_set_eq_index(uint8_t index);
-uint8_t sndp_get_eq_index(uint8_t anc_statu);
-uint8_t sndp_bt_audio_updata_eq_for_anc(void);
 void sndp_load_eq_param(void);
-int sndp_check_data_crc(uint32_t *crc, uint8_t *data_ptr, uint32_t flash_crc, uint32_t data_len);
+void sndp_set_crc(uint32_t *crc, uint8_t *data_ptr, uint32_t data_len);
+bool sndp_check_crc(uint8_t *data_ptr, uint32_t flash_crc, uint32_t data_len);
 #if defined(__SNDP_EQ_PARAM_SETTING__)
 void sndp_get_custom_eq_param(uint8_t *param);
 void sndp_set_custom_eq_param(int8_t *param);
+void sndp_save_eq_param_to_flash(void);
 #endif
+uint32_t sndp_bt_audio_set_eq(uint8_t index);
+uint8_t sndp_bt_audio_updata_eq_for_anc(void);
 #endif
 
 #ifdef __cplusplus

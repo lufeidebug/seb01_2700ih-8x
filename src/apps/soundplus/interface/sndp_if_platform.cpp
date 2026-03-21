@@ -77,6 +77,7 @@ extern "C" uint8_t is_a2dp_mode(void);
 extern "C" uint8_t is_sco_mode(void);
 #if defined(__SNDP_SLEEP_APP__)
 extern const IIR_CFG_T * const POSSIBLY_UNUSED audio_eq_hw_dac_iir_cfg_list[EQ_HW_DAC_IIR_LIST_NUM];
+extern const IIR_CFG_T audio_eq_hw_dac_iir_custom_mode;
 #endif
 /**************************************************************************************************
 * Variable
@@ -108,13 +109,20 @@ void sndp_shutdown_hw_config(void)
 void sndp_save_data_before_shutdown(void)
 {
 	SNDP_IF_TRACE_ENTER();
-#if 0
+#if 1
 #if  0
 	/* save bat info */
 	sndp_da_field_bat_info_s bat_info;
 	bat_info.bat_per = sndp_get_bat_percentage(false);
 	bat_info.bat_volt = sndp_get_bat_voltage(false);
 	spda_write_field_data_to_running_param(SNDP_DA_FIELD_BAT_INFO, &bat_info, sizeof(sndp_da_field_bat_info_s), true);
+#endif
+
+#if defined(__SNDP_SLEEP_APP__)
+	sndp_save_app_flag_to_flash();
+#if defined(__SNDP_EQ_PARAM_SETTING__)
+	sndp_save_eq_param_to_flash();
+#endif
 #endif
 
 #if defined(__SNDP_ALG_APPLICATION__)
@@ -1190,34 +1198,46 @@ sndp_anc_mode_e sndp_anc_get_curr_mode(void)
 
 /******************************************* EQ Contrl Interface ****************************************/
 #if defined(__SNDP_SLEEP_APP__)
+static uint32_t sndp_calc_crc(uint8_t *data_ptr, uint32_t data_len)
+{
+	uint32_t calc_crc = 0;
+	if(data_ptr == NULL)
+	{
+		SNDP_IF_TRACE(0, "data_ptr or crc_ptr is NULL");
+		return -1;
+	}
+		calc_crc = crc32_c(0, data_ptr, data_len);
+	SNDP_IF_TRACE(2, "calc_crc=0x%08x", calc_crc);	
 
-int sndp_check_data_crc(uint32_t *crc, uint8_t *data_ptr, uint32_t flash_crc, uint32_t data_len)
+	return calc_crc;
+}
+
+void sndp_set_crc(uint32_t *crc, uint8_t *data_ptr, uint32_t data_len)
+{
+	
+	if(data_ptr == NULL || crc == NULL)
+	{
+		SNDP_IF_TRACE(0, "data_ptr or crc_ptr is NULL");
+		return;
+	}
+
+	*crc = sndp_calc_crc(data_ptr, data_len);
+	SNDP_IF_TRACE(2, "crc=0x%08x", *crc);
+}
+
+bool sndp_check_crc(uint8_t *data_ptr, uint32_t flash_crc, uint32_t data_len)
 {
 	uint32_t check_crc = 0;
 
-	if(data_ptr == NULL)
-	{
-		SNDP_IF_TRACE(0, "data_ptr is NULL");
-		return -1;
-	}
-
-	check_crc = crc32_c(0, data_ptr, data_len);
-	SNDP_IF_TRACE(2, "check_crc=0x%08x, crc=0x%08x", check_crc, flash_crc);
-
-	if(crc != NULL)
-	{
-		*crc = check_crc;
-	}
-
+	check_crc = sndp_calc_crc(data_ptr, data_len);
+SNDP_IF_TRACE(2, "check_crc=0x%08x flash_crc=0x%08x", check_crc, flash_crc);	
 	if(check_crc == flash_crc)
 	{
-		SNDP_IF_TRACE(0, "EQ param crc check pass");
-		return 0;
+		return true;
 	}
 	else
 	{
-		SNDP_IF_TRACE(0, "EQ param crc check fail");
-		return -1;
+		return false;
 	}
 }
 
@@ -1225,7 +1245,6 @@ int sndp_check_data_crc(uint32_t *crc, uint8_t *data_ptr, uint32_t flash_crc, ui
 static IIR_CFG_T custom_eq_global_flash_cfg;
 static IIR_CFG_T custom_eq_global_run_cfg;
 static sndp_da_field_eq_data_s custom_global_eq_data;
-extern const IIR_CFG_T audio_eq_hw_dac_iir_custom_mode;
 void sndp_save_eq_param_to_flash(void)
 {
 	// Save the custom EQ parameters to flash, so that it can be loaded and used after power on.
@@ -1240,7 +1259,7 @@ void sndp_save_eq_param_to_flash(void)
 	{
 		SNDP_IF_TRACE(0, "EQ param changed, write to flash");
 		memcpy(eq_data_ptr->data, &custom_eq_global_flash_cfg, sizeof(IIR_CFG_T));
-		sndp_check_data_crc(&eq_data_ptr->data_crc, eq_data_ptr->data, eq_data_ptr->data_crc, sizeof(IIR_CFG_T));
+		sndp_set_crc(&eq_data_ptr->data_crc, eq_data_ptr->data, sizeof(IIR_CFG_T));
 		sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),true);
 	}
 
@@ -1268,7 +1287,7 @@ void sndp_load_eq_param(void)
 	sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),false);
 	if(eq_data_ptr->key == SNDP_DA_PARAM_FIELD_VALID)
 	{
-		if(sndp_check_data_crc(NULL, eq_data_ptr->data, eq_data_ptr->data_crc,sizeof(IIR_CFG_T)) == 0)
+		if(sndp_check_crc(eq_data_ptr->data, eq_data_ptr->data_crc,sizeof(IIR_CFG_T)))
 		{
 			SNDP_IF_TRACE(0, "Load EQ param from flash");
 			return;
@@ -1323,7 +1342,6 @@ void sndp_get_custom_eq_param(uint8_t *param)
 		memcpy(param, custom_cfg_tab, sizeof(IIR_CFG_T));
 }
 #endif
-sndp_eq_mode_e eq_index = SNDP_EQ_MODE_NORMAL; //开机默认就是normal mode 0x09 is custom mode
 uint32_t sndp_bt_audio_set_eq(uint8_t index)
 {
     const FIR_CFG_T *fir_cfg=NULL;
@@ -1353,35 +1371,6 @@ uint32_t sndp_bt_audio_set_eq(uint8_t index)
 #endif	
     return audio_eq_set_cfg_full(fir_cfg,fir_cfg_2,iir_cfg,iir_cfg_2,AUDIO_EQ_TYPE_HW_DAC_IIR);
 }
-void sndp_set_eq_index(uint8_t index)
-{
-	SNDP_IF_TRACE(1, "index=%d", index);
-	if(index > SNDP_EQ_MODE_RELAXED && index != SNDP_EQ_MODE_CUSTOM_MODE) 
-	{
-		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
-		return;
-	}
-	eq_index = (sndp_eq_mode_e)index;
-}
-
-uint8_t sndp_get_eq_index(uint8_t anc_statu)
-{
-	uint8_t select_eq_num = 0;
-	SNDP_IF_TRACE(1, "index=%d", eq_index);
-	
-	if(eq_index > SNDP_EQ_MODE_RELAXED && eq_index != SNDP_EQ_MODE_CUSTOM_MODE) 
-	{
-		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
-		return 0;
-	}
-
-	if(anc_statu){
-		select_eq_num = eq_index + EQ_HW_DAC_IIR_LIST_NUM/2;
-	}else{
-		select_eq_num = eq_index;
-	}
-	return select_eq_num;
-}
 
 uint8_t sndp_bt_audio_updata_eq_for_anc(void)
 {
@@ -1389,7 +1378,15 @@ uint8_t sndp_bt_audio_updata_eq_for_anc(void)
 	SNDP_IF_TRACE(1, "anc_status=%d", anc_status);
 	hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_104M);
 
-	sndp_bt_audio_set_eq(sndp_get_eq_index(anc_status));
+	if(anc_status)
+	{
+		sndp_bt_audio_set_eq(sndp_get_eq_index(false) + EQ_HW_DAC_IIR_LIST_NUM/2);
+	}
+	else
+	{
+		sndp_bt_audio_set_eq(sndp_get_eq_index(false));
+	}
+	
 
 	hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_32K);
 	return 0;

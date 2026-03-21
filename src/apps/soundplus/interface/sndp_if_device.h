@@ -155,8 +155,9 @@ typedef struct
 	/* data */
 	uint8_t sleep_eq_index;
 	uint8_t sleep_anc_mode;
-	uint8_t sleep_gesture_onoff;
 	uint8_t sleep_prompt_onoff;
+	uint8_t sleep_gesture_onoff;
+	uint8_t sleep_splaypause_onoff;
 }sndp_sleep_app_flag;
 
 #endif
@@ -248,8 +249,6 @@ void sndp_dev_gesture_set_event_callback(sndp_dev_gesture_event_cb callback);
 void sndp_dev_gesture_init(sndp_dev_gesture_event_cb callback);
 #if defined(__SNDP_SLEEP_APP__)
 #if defined(__SNDP_GESTURE_MAP__)
-void sndp_dev_gesture_onoff(bool peer, bool onoff);
-bool sndp_dev_get_gesture_onoff(bool peer);
 void sndp_dev_gesture_mapper_init(void);
 bool sndp_dev_gesture_mapper_update_mapping(bool peer, sndp_dev_gesture_type_t gesture, sndp_dev_function_type_t func_type);
 void sndp_dev_gesture_mapper_handle_gesture(sndp_dev_gesture_type_t gesture);
@@ -387,8 +386,17 @@ void sndp_dev_acc_init(void);
 
 /************************************************** prompt start **************************************************/
 #if defined(__SNDP_SLEEP_APP__)
-void sndp_dev_set_prompt_onoff(bool peer, bool onoff);
+void sndp_set_eq_index(bool peer, uint8_t index, bool save_data);
+uint8_t sndp_get_eq_index(bool peer);
+void sndp_dev_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_data);
 bool sndp_dev_get_prompt_onoff(bool peer);
+void sndp_save_app_flag_to_flash(void);
+void sndp_sleep_app_anc_mode_set(bool peer,uint8_t anc_mode,bool sava_data);
+uint8_t sndp_sleep_app_anc_mode_get(bool peer);
+void sndp_dev_gesture_onoff(bool peer, uint8_t onoff, bool sava);
+bool sndp_dev_get_gesture_onoff(bool peer);
+void sndp_dev_splaypause_onoff(bool peer, uint8_t onoff, bool sava);
+uint8_t sndp_dev_get_splaypause_onoff(bool peer);
 #endif
 /************************************************** prompt end **************************************************/
 

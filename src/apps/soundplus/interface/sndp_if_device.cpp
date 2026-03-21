@@ -9,6 +9,8 @@
 #include "app_thread.h"
 #include "tgt_hardware.h"
 #include "factory_section.h"
+#include "fir_process.h"
+#include "iir_process.h"
 
 #include "sndp_if_common.h"
 #include "sndp_if_device.h"
@@ -127,7 +129,11 @@ static sndp_dev_gesture_event_cb sndp_dev_gesture_event_cb_ptr = NULL;
 static sndp_dev_charger_plug_cb sndp_dev_charger_plug_cb_ptr = NULL;
 
 static const char *sndp_dev_dev_model_name = "EAGLEPLUS\0";    //SNDP_BT_NAME;
-
+#if defined(__SNDP_SLEEP_APP__)
+ static sndp_da_field_sleep_app_data_s sleep_app_data_global;
+ static sndp_sleep_app_flag sleep_flag_run;
+ static sndp_sleep_app_flag sleep_flag_flash;
+#endif
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
@@ -409,25 +415,6 @@ void sndp_dev_register_gesture_funcs(function_callback_t *funcs)
             sndp_dev_gesture_func_table[i] = funcs[i];
         }
     }
-}
-
-void sndp_dev_gesture_onoff(bool peer, bool onoff)
-{
-	SNDP_IF_TRACE(0, "enter");
-	if(peer) {
-		sndp_dev_ctx.peer.sleep_app_flag.sleep_gesture_onoff = onoff;
-	} else {
-		sndp_dev_ctx.local.sleep_app_flag.sleep_gesture_onoff = onoff;
-	}
-}
-
-bool sndp_dev_get_gesture_onoff(bool peer)
-{
-	if(peer) {
-		return sndp_dev_ctx.peer.sleep_app_flag.sleep_gesture_onoff;
-	} else {
-		return sndp_dev_ctx.local.sleep_app_flag.sleep_gesture_onoff;
-	}
 }
 #endif
 #endif
@@ -1596,13 +1583,24 @@ void sndp_dev_acc_init(void)
 /**************************************************  acc End **************************************************/
 #if defined(__SNDP_SLEEP_APP__)
 /************************************************** prompt start **************************************************/
-void sndp_dev_set_prompt_onoff(bool peer, bool onoff)
+void sndp_dev_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_data)
 {
 	if(peer)
+	{
 		sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff = onoff;
+	}
 	else
+	{
 		sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff = onoff;
+	}	
+	
 
+		sleep_flag_run.sleep_prompt_onoff = onoff;
+		if(sava_data)
+		{
+			sleep_flag_flash.sleep_prompt_onoff = onoff;
+			sndp_save_app_flag_to_flash();
+		}
 		SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff, sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff);
 }
 
@@ -1617,9 +1615,129 @@ bool sndp_dev_get_prompt_onoff(bool peer)
 }
 
 /************************************************** prompt end **************************************************/
-static sndp_da_field_sleep_app_data_s sleep_app_data_global;
-static sndp_sleep_app_flag sleep_flag_run;
-static sndp_sleep_app_flag sleep_flag_flash;
+/**************************************************set eq mode **************************************************/
+void sndp_set_eq_index(bool peer, uint8_t index, bool save_data)
+{
+	SNDP_IF_TRACE(1, "index=%d", index);
+	if(index > SNDP_EQ_MODE_RELAXED && index != SNDP_EQ_MODE_CUSTOM_MODE) 
+	{
+		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+		return;
+	}
+	
+	if(peer){
+		sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index = index;
+	}
+	else{
+		sndp_dev_ctx.local.sleep_app_flag.sleep_eq_index = index;
+	}
+
+	sleep_flag_run.sleep_eq_index = index;
+	if(save_data)
+	{
+		sleep_flag_flash.sleep_eq_index = index;
+		sndp_save_app_flag_to_flash();
+	}
+
+}
+
+uint8_t sndp_get_eq_index(bool peer)
+{
+	uint8_t select_eq_num = 0;
+	SNDP_IF_TRACE(1, "index=%d", sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index);
+	
+	if(sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index > SNDP_EQ_MODE_RELAXED && sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index != SNDP_EQ_MODE_CUSTOM_MODE) 
+	{
+		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+		return 0;
+	}
+
+	if(peer)
+	{
+			select_eq_num = sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index;
+	}
+	else
+	{
+			select_eq_num = sndp_dev_ctx.local.sleep_app_flag.sleep_eq_index;	
+	}
+	return select_eq_num;
+}
+
+void sndp_sleep_app_anc_mode_set(bool peer,uint8_t anc_mode,bool sava_data)
+{
+	if(peer)
+		sndp_dev_ctx.peer.sleep_app_flag.sleep_anc_mode = anc_mode;
+	else
+		sndp_dev_ctx.local.sleep_app_flag.sleep_anc_mode = anc_mode;
+
+	sleep_flag_run.sleep_anc_mode = anc_mode;
+	if(sava_data)
+	{
+		sleep_flag_flash.sleep_anc_mode = anc_mode;
+		sndp_save_app_flag_to_flash();
+	}
+	sndp_anc_mode_set((sndp_anc_mode_e)anc_mode);
+}
+
+uint8_t sndp_sleep_app_anc_mode_get(bool peer)
+{
+	if(peer)
+		return sndp_dev_ctx.peer.sleep_app_flag.sleep_anc_mode;
+	else
+		return sndp_dev_ctx.local.sleep_app_flag.sleep_anc_mode;
+}
+/**************************************************set eq mode end************************************************/
+void sndp_dev_gesture_onoff(bool peer, uint8_t onoff, bool sava)
+{
+	SNDP_IF_TRACE(0, "enter");
+	if(peer) {
+		sndp_dev_ctx.peer.sleep_app_flag.sleep_gesture_onoff = onoff;
+	} else {
+		sndp_dev_ctx.local.sleep_app_flag.sleep_gesture_onoff = onoff;
+	}
+
+	sleep_flag_run.sleep_gesture_onoff = onoff;
+	if(sava)
+	{
+		sleep_flag_flash.sleep_gesture_onoff = onoff;
+		sndp_save_app_flag_to_flash();		
+	}
+}
+
+bool sndp_dev_get_gesture_onoff(bool peer)
+{
+	if(peer) {
+		return sndp_dev_ctx.peer.sleep_app_flag.sleep_gesture_onoff;
+	} else {
+		return sndp_dev_ctx.local.sleep_app_flag.sleep_gesture_onoff;
+	}
+}
+
+void sndp_dev_splaypause_onoff(bool peer, uint8_t onoff, bool sava)
+{
+	SNDP_IF_TRACE(0, "enter");
+	if(peer) {
+		sndp_dev_ctx.peer.sleep_app_flag.sleep_splaypause_onoff = onoff;
+	} else {
+		sndp_dev_ctx.local.sleep_app_flag.sleep_splaypause_onoff = onoff;
+	}
+
+	sleep_flag_run.sleep_splaypause_onoff = onoff;
+	if(sava)
+	{
+		sleep_flag_flash.sleep_splaypause_onoff = onoff;
+		sndp_save_app_flag_to_flash();		
+	}
+}
+
+uint8_t sndp_dev_get_splaypause_onoff(bool peer)
+{
+	if(peer) {
+		return sndp_dev_ctx.peer.sleep_app_flag.sleep_splaypause_onoff;
+	} else {
+		return sndp_dev_ctx.local.sleep_app_flag.sleep_splaypause_onoff;
+	}
+}
 
 void sndp_save_app_flag_to_flash(void)
 {
@@ -1633,10 +1751,10 @@ void sndp_save_app_flag_to_flash(void)
 	}
 	else
 	{
-		SNDP_IF_TRACE(0, "app flag changed, write to flash");
 		memcpy(sleep_flag_ptr->sleep_app_flag, &sleep_flag_flash, sizeof(sndp_sleep_app_flag));
-		sndp_check_data_crc(&sleep_flag_ptr->data_crc, sleep_flag_ptr->sleep_app_flag, sleep_flag_ptr->data_crc, sizeof(sndp_sleep_app_flag));
-		sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_sleep_app_flag),true);
+		sndp_set_crc(&sleep_flag_ptr->data_crc, sleep_flag_ptr->sleep_app_flag, sizeof(sndp_sleep_app_flag));
+		SNDP_IF_TRACE(0, "app flag changed, write to flash %d",sleep_flag_ptr->data_crc);
+		sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
 	}
 
 }
@@ -1652,6 +1770,8 @@ void sndp_set_default_flag(void)
 	sleep_flag_flash.sleep_anc_mode = 0;
 	sleep_flag_flash.sleep_gesture_onoff = 1;
 	sleep_flag_flash.sleep_prompt_onoff = 1;
+	sleep_flag_flash.sleep_splaypause_onoff = 1;
+	sleep_flag_run.sleep_splaypause_onoff = 1;
 	sleep_flag_run.sleep_eq_index = 0;
 	sleep_flag_run.sleep_anc_mode = 0;
 	sleep_flag_run.sleep_gesture_onoff = 1;
@@ -1668,19 +1788,20 @@ void sndp_load_sleep_app_flag(void)
 	sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_APP_DATA, sleep_flag_ptr,sizeof(sndp_da_field_sleep_app_data_s),false);
 	if(sleep_flag_ptr->key == SNDP_DA_PARAM_FIELD_VALID)
 	{
-		if(sndp_check_data_crc(NULL, sleep_flag_ptr->sleep_app_flag, sleep_flag_ptr->data_crc, sizeof(sndp_sleep_app_flag)) == 0)
+		if(sndp_check_crc(sleep_flag_ptr->sleep_app_flag, sleep_flag_ptr->data_crc, sizeof(sndp_sleep_app_flag)))
 		{
 			SNDP_IF_TRACE(0, "Load EQ param from flash");
 			return;
 		}
 		else
 		{
-			SNDP_IF_TRACE(0, "Load EQ param from flash fail, use default param");
+			SNDP_IF_TRACE(0, "Load EQ param from crc fail, use default param");
 			sndp_set_default_flag();
 		}
 	}
 	else
 	{
+			SNDP_IF_TRACE(0, "Load EQ param from key fail, use default param");
 			sndp_set_default_flag();
 	}
 	default_flag_ptr = (sndp_sleep_app_flag*)sleep_flag_ptr->sleep_app_flag;
@@ -1694,11 +1815,12 @@ void sndp_load_sleep_app_param(void)
 #if defined(__SNDP_EQ_PARAM_SETTING__)
 	sndp_load_eq_param();
 #endif
-	sndp_dev_set_prompt_onoff(false, (sleep_flag_run.sleep_prompt_onoff==0) ? false : true);
+	sndp_dev_set_prompt_onoff(false, sleep_flag_run.sleep_prompt_onoff, false);
 #if defined(__SNDP_GESTURE_MAP__)
-	sndp_dev_gesture_onoff(false, (sleep_flag_run.sleep_gesture_onoff==0) ? false:true);
+	sndp_dev_gesture_onoff(false, sleep_flag_run.sleep_gesture_onoff, false);
 #endif
-	sndp_set_eq_index(sleep_flag_run.sleep_eq_index);
+	sndp_set_eq_index(false,sleep_flag_run.sleep_eq_index, false);
+	sndp_dev_splaypause_onoff(false,sleep_flag_run.sleep_splaypause_onoff, false);
 }
 #endif
 void sndp_dev_init(void)
