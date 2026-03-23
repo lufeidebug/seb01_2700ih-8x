@@ -66,6 +66,10 @@ extern "C" {
 #define APP_SYSFREQ_USER_SNDP_WHITE_NOISE   APP_SYSFREQ_USER_APP_32
 #endif
 
+#if defined(__SNDP_AUDIO_TEST__)
+#define APP_SYSFREQ_USER_SNDP_AUDIO_TEST    APP_SYSFREQ_USER_APP_33
+#endif
+
 #endif
 
 /*

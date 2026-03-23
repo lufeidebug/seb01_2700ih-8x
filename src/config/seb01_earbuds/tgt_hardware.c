@@ -193,6 +193,10 @@ const CODEC_DAC_VOL_T codec_dac_hfp_vol[TGT_VOLUME_LEVEL_QTY] = {
 
 #define CFG_HW_AUD_INPUT_PATH_DC_CALIB      (CFG_ADC_DC_CALIB_MIC_DEV | VMIC_MAP_CFG)
 
+#if defined(__SNDP_AUDIO_TEST__)
+#define CFG_HW_AUD_INPUT_SNDP_AUDIO_TEST    (AUD_CHANNEL_MAP_CH0 | AUD_CHANNEL_MAP_CH1 | AUD_VMIC_MAP_VMIC1 | AUD_VMIC_MAP_VMIC2)
+#endif 
+
 const struct AUD_IO_PATH_CFG_T cfg_audio_input_path_cfg[CFG_HW_AUD_INPUT_PATH_NUM] = {
 #if defined(SPEECH_TX_AEC_CODEC_REF)
     // NOTE: If enable Ch5 and CH6, need to add channel_num when setup audioflinger stream
@@ -213,6 +217,9 @@ const struct AUD_IO_PATH_CFG_T cfg_audio_input_path_cfg[CFG_HW_AUD_INPUT_PATH_NU
     { AUD_INPUT_PATH_HEARING,   CFG_HW_AUD_INPUT_PATH_HEARING_DEV, },
 #endif
     { AUD_INPUT_PATH_DC_CALIB,  CFG_HW_AUD_INPUT_PATH_DC_CALIB, },
+#if defined(__SNDP_AUDIO_TEST__)
+    { AUD_INPUT_PATH_SNDP_AUDIO_TEST,  CFG_HW_AUD_INPUT_SNDP_AUDIO_TEST, },
+#endif        
 };
 
 const struct HAL_IOMUX_PIN_FUNCTION_MAP app_battery_ext_charger_enable_cfg = {

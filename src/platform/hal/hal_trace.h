@@ -27,11 +27,24 @@ extern "C" {
 #include "plat_types.h"
 #include "hal_trace_mod.h"
 
-#if defined(USER_SPEECH_DUMP_EN) || defined(USER_ANC_DUMP_EN) || defined(__SNDP_HEART_RATE_DUMP__)
+#if defined(USER_SPEECH_DUMP_EN) || defined(USER_ANC_DUMP_EN)
 #define AUDIO_DEBUG
 #endif
+
+#if defined(__SNDP_HEART_RATE_DUMP__)
+#ifndef AUDIO_DEBUG
+#define AUDIO_DEBUG
+#endif
+#endif
+
+#if defined(__SNDP_AUDIO_TEST_MIC_DUMP__)
+#ifndef AUDIO_DEBUG
+#define AUDIO_DEBUG
+#endif
+#endif
+
 // #define INTERSYS_RAW_DATA_ONLY
-#ifdef BESUI_TWS_EN
+#if defined(BESUI_TWS_EN) || defined(__SNDP_AUDIO_TEST_MIC_DUMP__)
 #ifdef AUDIO_DEBUG
 #define AUDIO_DEBUG_V0_1_0
 #undef TRACE_BAUD_RATE

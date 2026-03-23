@@ -217,7 +217,15 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP cfg_hw_pinmux_pwl[CFG_HW_PWL_NUM]
 #define ANC_VMIC_CFG                        (AUD_VMIC_MAP_VMIC1)
 
 // audio codec
-#define CFG_HW_AUD_INPUT_PATH_NUM           (6)
+#if defined(__SNDP_AUDIO_TEST__)
+#define SNDP_AUDIO_TEST_INPUT_PATH_NUM      (1)
+#else
+#define SNDP_AUDIO_TEST_INPUT_PATH_NUM      (0)
+#endif   
+
+#define CFG_HW_AUD_INPUT_PATH_NUM           (6 + SNDP_AUDIO_TEST_INPUT_PATH_NUM)
+
+
 extern const struct AUD_IO_PATH_CFG_T cfg_audio_input_path_cfg[CFG_HW_AUD_INPUT_PATH_NUM];
 
 #if defined(BLE_AUDIO_STEREO_CHAN_OVER_CIS_CNT)

@@ -35,6 +35,10 @@
 #endif
 #include "sndp_comm_ble.h"
 
+#if defined(__SNDP_AUDIO_TEST__)
+#include "sndp_audio_test.h"
+#endif
+
 
 /**************************************************************************************************
 * Constant
@@ -1406,6 +1410,10 @@ void sndp_ui_init(void)
 
 	sndp_ui_check_dev_initial_status();
     sndp_delay_exec_start(300, (uint32_t)sndp_ui_bt_event_exec_after_power_on, 0, 0, 0);
+
+#if defined(__SNDP_AUDIO_TEST__)
+    sndp_delay_exec_start(2000, (uint32_t)sndp_audio_test_switch, 0, 0, 0);
+#endif    
 }
 
 #endif	/* __SNDP_UI__ */
