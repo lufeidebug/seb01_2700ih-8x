@@ -4,7 +4,7 @@ ifeq ($(SNDP_PROJ),1)
 
 KBUILD_CPPFLAGS += -D__SNDP_PROJ__
 
-export HARDWARE_VERSION ?= 0.0
+export HARDWARE_VERSION ?= 1.0
 export SOFTWARE_VERSION ?= 0.0.0.0
 
 # platform macro configuration
