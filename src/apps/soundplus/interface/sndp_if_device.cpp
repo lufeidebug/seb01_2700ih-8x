@@ -1377,7 +1377,7 @@ uint8_t *sndp_dev_get_dev_sn(void)
     sndp_da_field_sn_s field_sn;
 
     memset(sndp_dev_dev_sn, 0, sizeof(sndp_dev_dev_sn));    
-    if(sndp_da_read_field_data_from_backup_param(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), false) == 0) {
+    if(sndp_da_read_field(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), false) == 0) {
         if(field_sn.valid == 0xA1B2C3D4 ) {
             memcpy(sndp_dev_dev_sn, field_sn.sn, SNDP_DEV_DEV_SN_LEN);
         } else {
@@ -1401,9 +1401,9 @@ bool sndp_dev_save_dev_sn(uint8_t *sn, uint16_t sn_len)
     memset(&field_sn.sn, 0, SNDP_DEV_DEV_SN_LEN);
     field_sn.valid = SNDP_SN_VALID_FLAG;
     strncpy((char *)field_sn.sn, (char *)sn, sn_len);
-    if(sndp_da_write_field_data_to_backup_param(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
+    if(sndp_da_write_field(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
         memset(&field_sn, 0, sizeof(sndp_da_field_sn_s));
-        if(sndp_da_read_field_data_from_backup_param(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
+        if(sndp_da_read_field(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
             if(memcmp(sn, field_sn.sn, SNDP_DEV_DEV_SN_LEN) == 0) {
                 SNDP_IF_TRACE(0, "sn saved successfully.");
                 return true;
@@ -1744,7 +1744,7 @@ void sndp_save_app_flag_to_flash(void)
 	// Save the custom EQ parameters to flash, so that it can be loaded and used after power on.
 	sndp_da_field_sleep_app_data_s *sleep_flag_ptr = &sleep_app_data_global;
 
-	sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
+	sndp_da_read_field(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
 	if(memcmp(sleep_flag_ptr->sleep_app_flag, &sleep_flag_flash, sizeof(sndp_sleep_app_flag)) == 0)
 	{
 		SNDP_IF_TRACE(0, "app flag not changed, no need to write to flash");
@@ -1754,7 +1754,7 @@ void sndp_save_app_flag_to_flash(void)
 		memcpy(sleep_flag_ptr->sleep_app_flag, &sleep_flag_flash, sizeof(sndp_sleep_app_flag));
 		sndp_set_crc(&sleep_flag_ptr->data_crc, sleep_flag_ptr->sleep_app_flag, sizeof(sndp_sleep_app_flag));
 		SNDP_IF_TRACE(0, "app flag changed, write to flash %d",sleep_flag_ptr->data_crc);
-		sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
+		sndp_da_write_field(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
 	}
 
 }
@@ -1778,14 +1778,14 @@ void sndp_set_default_flag(void)
 	sleep_flag_run.sleep_prompt_onoff = 1;	
 	sleep_flag_ptr->key = SNDP_DA_PARAM_FIELD_VALID;
 	memcpy(sleep_flag_ptr->sleep_app_flag, &sleep_flag_flash, sizeof(sndp_sleep_app_flag));
-	sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
+	sndp_da_write_field(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
 }
 
 void sndp_load_sleep_app_flag(void)
 {
 	sndp_da_field_sleep_app_data_s* sleep_flag_ptr = &sleep_app_data_global;
 	sndp_sleep_app_flag* default_flag_ptr = NULL;
-	sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_APP_DATA, sleep_flag_ptr,sizeof(sndp_da_field_sleep_app_data_s),false);
+	sndp_da_read_field(SNDP_DA_FIELD_APP_DATA, sleep_flag_ptr,sizeof(sndp_da_field_sleep_app_data_s),false);
 	if(sleep_flag_ptr->key == SNDP_DA_PARAM_FIELD_VALID)
 	{
 		if(sndp_check_crc(sleep_flag_ptr->sleep_app_flag, sleep_flag_ptr->data_crc, sizeof(sndp_sleep_app_flag)))

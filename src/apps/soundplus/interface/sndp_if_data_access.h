@@ -15,22 +15,17 @@ extern "C" {
 typedef enum {
 	SNDP_DA_FIELD_BAT_INFO,
 	SNDP_DA_FIELD_SN,
-	SNDP_DA_FIELD_BT_NAME,
-	SNDP_DA_FIELD_TOUCH_CALIB_DATA,
-#if defined(__SNDP_ALG_MGR__)	
-	SNDP_DA_FIELD_ALG_DATA,
-#endif
-#if defined(__SNDP_ALG_MGR__)	
-	SNDP_DA_FIELD_HR_DATA,
-#endif 
+	SNDP_DA_FIELD_PPG_CALIB_DATA,
+	SNDP_DA_FIELD_ACC_CALIB_DATA,
+
 #if defined(__SNDP_SLEEP_APP__)   
 #if defined(__SNDP_EQ_PARAM_SETTING__)	
 	SNDP_DA_FIELD_EQ_DATA,
 #endif
 	SNDP_DA_FIELD_APP_DATA,
 #endif
-} sndp_da_field_id_e;
 
+} sndp_da_field_id_e;
 
 
 typedef struct {
@@ -53,28 +48,14 @@ typedef struct {
 
 typedef struct {
 	uint32_t key;  /* This key must be defined, but it cannot be modified */
-    uint8_t len;
-	uint8_t name[SNDP_DA_BT_NAME_LEN + 4];
-} sndp_da_field_bt_name_s;
-
+	uint8_t data[64];
+} sndp_da_field_ppg_calib_data_s;
 
 typedef struct {
 	uint32_t key;  /* This key must be defined, but it cannot be modified */
-	uint8_t data[256];
-} sndp_da_field_touch_calib_data_s;
+	uint8_t data[64];
+} sndp_da_field_acc_calib_data_s;
 
-#if defined(__SNDP_ALG_MGR__)
-typedef struct {
-	uint32_t key;  /* This key must be defined, but it cannot be modified */
-	uint8_t data[512];//512
-} sndp_da_field_alg_data_s;
-#endif
-
-
-typedef struct {
-	uint16_t offset;
-	uint16_t size;
-} sndp_da_field_info_s;
 
 #if defined(__SNDP_SLEEP_APP__) 
 #if defined(__SNDP_EQ_PARAM_SETTING__)
@@ -93,48 +74,55 @@ typedef struct {
 }sndp_da_field_sleep_app_data_s;
 #endif
 
+
 typedef struct {
-	sndp_da_field_bat_info_s field_bat_info;
-	sndp_da_field_sn_s field_sn;
-    sndp_da_field_bt_name_s field_bt_name;
-	sndp_da_field_touch_calib_data_s  field_touch_calib_data;
-#if defined(__SNDP_ALG_MGR__)	
-	sndp_da_field_alg_data_s field_alg_data;
-#endif
+	uint32_t offset;
+	uint32_t size;
+} sndp_da_field_info_s;
+
+
+typedef struct {
+    uint32_t struct_ver;
+    uint32_t struct_checksum;
+    uint32_t data_checksum;
+    uint32_t data_start;
+
+    /** Add field below this line. */
+    sndp_da_field_bat_info_s field_bat_info;
 #if defined(__SNDP_SLEEP_APP__) 
 #if defined(__SNDP_EQ_PARAM_SETTING__)
 	sndp_da_field_eq_data_s field_eq_data;
 #endif
 	sndp_da_field_sleep_app_data_s field_sleep_app_data;
 #endif
-} sndp_da_param_s;
+
+    /** Add field above this line. */
+    uint32_t data_end;
+
+} sndp_da_running_param_s;
 
 
 typedef struct {
-	bool inited;
-	
-	uint8_t section_mod_id;
-	uint32_t section_start_addr;
-	uint32_t section_size;
+    uint32_t struct_ver;
+    uint32_t struct_checksum;
+    uint32_t data_checksum;
+    uint32_t data_start;
 
-	uint32_t running_param_start_addr;
-	uint32_t running_param_size;
-	sndp_da_param_s *running_param_cache;
+    /** Add field below this line. */
+	sndp_da_field_sn_s field_sn;
+	sndp_da_field_ppg_calib_data_s  field_ppg_calib_data;
+    sndp_da_field_acc_calib_data_s  field_acc_calib_data;
 
-	uint32_t backup_param_start_addr;
-	uint32_t backup_param_size;
-	sndp_da_param_s *backup_param_cache;
-	
-} sndp_da_ctx_s;
+    /** Add field above this line. */
+    uint32_t data_end;
+
+} sndp_da_backup_param_s;
 
 
-void sndp_da_flush_running_param_to_flash(void);
-int32_t sndp_da_write_field_data_to_running_param(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool save_to_flash);
-int32_t sndp_da_read_field_data_from_running_param(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool read_from_flash);
 
-void sndp_da_flush_backup_param_to_flash(void);
-int32_t sndp_da_write_field_data_to_backup_param(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool save_to_flash);
-int32_t sndp_da_read_field_data_from_backup_param(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool read_from_flash);
+int32_t sndp_da_write_field(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool save_to_flash);
+int32_t sndp_da_read_field(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool read_from_flash);
+void sndp_da_flush_param_to_flash(void);
 
 void sndp_da_init(void);
 

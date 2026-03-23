@@ -115,7 +115,7 @@ void sndp_save_data_before_shutdown(void)
 	sndp_da_field_bat_info_s bat_info;
 	bat_info.bat_per = sndp_get_bat_percentage(false);
 	bat_info.bat_volt = sndp_get_bat_voltage(false);
-	spda_write_field_data_to_running_param(SNDP_DA_FIELD_BAT_INFO, &bat_info, sizeof(sndp_da_field_bat_info_s), true);
+	sndp_da_write_field(SNDP_DA_FIELD_BAT_INFO, &bat_info, sizeof(sndp_da_field_bat_info_s), true);
 #endif
 
 #if defined(__SNDP_SLEEP_APP__)
@@ -1236,7 +1236,7 @@ void sndp_save_eq_param_to_flash(void)
 	// Save the custom EQ parameters to flash, so that it can be loaded and used after power on.
 	sndp_da_field_eq_data_s *eq_data_ptr = &custom_global_eq_data;
 
-	sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),true);
+	sndp_da_read_field(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),true);
 	if(memcmp(eq_data_ptr->data, &custom_eq_global_flash_cfg, sizeof(IIR_CFG_T)) == 0)
 	{
 		SNDP_IF_TRACE(0, "EQ param not changed, no need to write to flash");
@@ -1246,7 +1246,7 @@ void sndp_save_eq_param_to_flash(void)
 		SNDP_IF_TRACE(0, "EQ param changed, write to flash");
 		memcpy(eq_data_ptr->data, &custom_eq_global_flash_cfg, sizeof(IIR_CFG_T));
 		sndp_set_crc(&eq_data_ptr->data_crc, eq_data_ptr->data, sizeof(IIR_CFG_T));
-		sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),true);
+		sndp_da_write_field(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),true);
 	}
 
 }
@@ -1262,7 +1262,7 @@ void sndp_set_default_eq_param(void)
 	memcpy(&custom_eq_global_run_cfg, &audio_eq_hw_dac_iir_custom_mode, sizeof(IIR_CFG_T));
 	eq_data_ptr->key = SNDP_DA_PARAM_FIELD_VALID;
 	memcpy(eq_data_ptr->data, &custom_eq_global_flash_cfg, sizeof(IIR_CFG_T));
-	sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),true);
+	sndp_da_write_field(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),true);
 }
 
 void sndp_load_eq_param(void)
@@ -1270,7 +1270,7 @@ void sndp_load_eq_param(void)
 	// Load default EQ parameters to the running param, so that the UI can read and display them.
 	sndp_da_field_eq_data_s *eq_data_ptr = &custom_global_eq_data;
 	IIR_CFG_T* default_cfg_ptr = NULL;
-	sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),false);
+	sndp_da_read_field(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),false);
 	if(eq_data_ptr->key == SNDP_DA_PARAM_FIELD_VALID)
 	{
 		if(sndp_check_crc(eq_data_ptr->data, eq_data_ptr->data_crc,sizeof(IIR_CFG_T)))

@@ -64,7 +64,7 @@ static sndp_hal_gesture_event_callback  da217e_gesture_event_cb_ptr = NULL;
 POSSIBLY_UNUSED static int32_t da217e_nv_read(uint8_t *ptrData, uint16_t num)
 {
 #if 0    
-    int ret = sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_TOUCH_CALIB_DATA, ptrData, num, true);
+    int ret = sndp_da_read_field(SNDP_DA_FIELD_ACC_CALIB_DATA, ptrData, num, true);
     if(ret){
         DA217E_TRACE(1, "ret=%d", ret);
     }
@@ -75,7 +75,7 @@ POSSIBLY_UNUSED static int32_t da217e_nv_read(uint8_t *ptrData, uint16_t num)
 POSSIBLY_UNUSED static int32_t da217e_nv_write(uint8_t *ptrData, uint16_t num)
 {
 #if 0     
-    int ret = sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_TOUCH_CALIB_DATA, ptrData, num, true);
+    int ret = sndp_da_write_field(SNDP_DA_FIELD_ACC_CALIB_DATA, ptrData, num, true);
     if(ret){
         DA217E_TRACE(1, "ret=%d", ret);
     }

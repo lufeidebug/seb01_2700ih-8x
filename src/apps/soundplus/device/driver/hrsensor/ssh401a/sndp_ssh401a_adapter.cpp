@@ -83,7 +83,7 @@ static int32_t ssh401a_ppg_data[64];
 POSSIBLY_UNUSED static int32_t ssh401a_nv_read(uint8_t *ptrData, uint16_t num)
 {
 #if 0    
-    int ret = sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_TOUCH_CALIB_DATA, ptrData, num, true);
+    int ret = sndp_da_read_running_param(SNDP_DA_FIELD_PPG_CALIB_DATA, ptrData, num, true);
     if(ret){
         SSH401A_TRACE(1, "ret=%d", ret);
     }
@@ -94,7 +94,7 @@ POSSIBLY_UNUSED static int32_t ssh401a_nv_read(uint8_t *ptrData, uint16_t num)
 POSSIBLY_UNUSED static int32_t ssh401a_nv_write(uint8_t *ptrData, uint16_t num)
 {
 #if 0     
-    int ret = sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_TOUCH_CALIB_DATA, ptrData, num, true);
+    int ret = sndp_da_write_running_param(SNDP_DA_FIELD_PPG_CALIB_DATA, ptrData, num, true);
     if(ret){
         SSH401A_TRACE(1, "ret=%d", ret);
     }

@@ -21,69 +21,316 @@
 #define DA_RUNNING_PARAM_SECTION_SIZE		(DA_PARAM_SECTION_SIZE/2)
 #define DA_BACKUP_PARAM_SECTION_SIZE		(DA_PARAM_SECTION_SIZE/2)
 
+#define DA_RUNNING_PARAM_STRUCT_VER         (0xFEFE0001)
+#define DA_BACKUP_PARAM_STRUCT_VER          (0xFEFE0001)
+
 
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
 extern uint32_t __sndp_param_start[];
 
+typedef int32_t (* da_find_field_info_func)(sndp_da_field_id_e field_id, sndp_da_field_info_s *field_info);
+typedef uint16_t (* da_calc_struct_checksum_func)(void);
+typedef uint16_t (* da_calc_data_checksum_func)(void *param_buf);
+typedef void (* da_update_data_checksum_func)(void *param_buf);
+
+
+typedef struct {
+	uint32_t section_offset;
+    uint32_t section_size;
+
+    uint32_t curr_param_struct_ver;
+	uint32_t param_size;
+	uint8_t *param_buf;
+    
+    da_find_field_info_func find_field_info;
+    da_calc_struct_checksum_func calc_struct_checksum;
+    da_calc_data_checksum_func calc_data_checksum;
+    da_update_data_checksum_func update_data_checksum;
+    
+} sndp_da_access_info_s;
+
+
+typedef struct {
+	bool inited;
+	
+	uint8_t section_mod_id;
+	uint32_t section_start_addr;
+	uint32_t section_size;
+
+	sndp_da_access_info_s running_access_info;
+	sndp_da_access_info_s backup_access_info;
+	
+} sndp_da_ctx_s;
+
+
+/**************************************************************************************************
+* Extern
+**************************************************************************************************/
+static void sndp_da_wirte_param_to_flash(sndp_da_access_info_s *info);
+static void sndp_da_read_param_from_flash(sndp_da_access_info_s *info);
+
 
 /**************************************************************************************************
 * Variable
 **************************************************************************************************/
 static sndp_da_ctx_s sndp_da_ctx;
-static sndp_da_param_s sndp_da_running_param;
-static sndp_da_param_s sndp_da_backup_param;
+static sndp_da_running_param_s sndp_da_running_param;
+static sndp_da_backup_param_s sndp_da_backup_param;
 
 
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
-static int32_t sndp_da_find_field_info(sndp_da_field_id_e field_id, sndp_da_field_info_s *field_info)
+static uint16_t sndp_da_calc_crc16(uint16_t crc, const uint8_t *buff, uint32_t start, uint32_t end)
+{
+    ASSERT(buff != NULL, "%s, buff == NULL", __func__);
+    ASSERT(end >= start, "%s, end(%d) < start(%d)", __func__, end, start);
+
+    for(uint32_t i = start; i < end; i++) {
+        crc = (crc >> 8) | (crc << 8);
+        crc ^= buff[i];
+        crc ^= ((uint8_t) crc) >> 4;
+        crc ^= crc << 12;
+        crc ^= (crc & 0xFF) << 5;
+    }
+
+    return crc;    
+}
+
+static uint16_t sndp_da_calc_running_struct_checksum(void)
+{
+    sndp_da_running_param_s *p_param = (sndp_da_running_param_s *)0;
+    uint16_t checksum = 0;
+    uint32_t addr;
+
+    addr = (uint32_t)&p_param->struct_ver;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+    addr = (uint32_t)&p_param->struct_checksum;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+    addr = (uint32_t)&p_param->data_checksum;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+    
+    addr = (uint32_t)&p_param->field_bat_info;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+#if defined(__SNDP_SLEEP_APP__) 
+#if defined(__SNDP_EQ_PARAM_SETTING__)
+    addr = (uint32_t)&p_param->field_eq_data;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+#endif
+
+    addr = (uint32_t)&p_param->field_sleep_app_data;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+#endif    
+
+    addr = (uint32_t)&p_param->data_end;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+    return checksum;
+}
+
+static uint16_t sndp_da_calc_running_data_checksum(void *param)
+{
+    if(param == NULL) {
+        return 0;
+    }
+    
+    sndp_da_running_param_s *p_temp = (sndp_da_running_param_s *)0;
+    sndp_da_running_param_s *running_param = (sndp_da_running_param_s *)param;
+    
+    return sndp_da_calc_crc16(0, (uint8_t *)running_param, (uint32_t)&p_temp->data_start, (uint32_t)&p_temp->data_end);
+}
+
+static void sndp_da_update_running_checksum(void *param)
+{
+    if(param == NULL) {
+        return;
+    }
+    
+    sndp_da_running_param_s *running_param = (sndp_da_running_param_s *)param;
+    running_param->struct_ver = DA_RUNNING_PARAM_STRUCT_VER;
+    running_param->struct_checksum = sndp_da_calc_running_struct_checksum();
+    running_param->data_checksum = sndp_da_calc_running_data_checksum(param);
+
+    SNDP_IF_TRACE(0, "%d, %08X, %08X, %08X ", __LINE__,
+        running_param->struct_ver,
+        running_param->struct_checksum,
+        running_param->data_checksum);
+}
+
+
+static uint16_t sndp_da_calc_backup_struct_checksum(void)
+{
+    sndp_da_backup_param_s *p_param = (sndp_da_backup_param_s *)0;
+    uint16_t checksum = 0;
+    uint32_t addr;
+
+    addr = (uint32_t)&p_param->struct_ver;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+    addr = (uint32_t)&p_param->struct_checksum;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+    
+    addr = (uint32_t)&p_param->data_checksum;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+    
+    addr = (uint32_t)&p_param->data_start;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+    addr = (uint32_t)&p_param->field_sn;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+    
+    addr = (uint32_t)&p_param->field_ppg_calib_data;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+    addr = (uint32_t)&p_param->field_acc_calib_data;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+    addr = (uint32_t)&p_param->data_end;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+    return checksum;
+}
+
+static uint16_t sndp_da_calc_backup_data_checksum(void *param)
+{
+    if(param == NULL) {
+        return 0;
+    }
+
+    sndp_da_backup_param_s *p_temp = (sndp_da_backup_param_s *)0;
+    sndp_da_backup_param_s *backup_param = (sndp_da_backup_param_s *)param;
+    return sndp_da_calc_crc16(0, (uint8_t *)backup_param, (uint32_t)&p_temp->data_start, (uint32_t)&p_temp->data_end);
+}
+
+
+static void sndp_da_update_backup_checksum(void *param)
+{
+    if(param == NULL) {
+        return;
+    }
+    
+    sndp_da_backup_param_s *backup_param = (sndp_da_backup_param_s *)param;
+    backup_param->struct_ver = DA_RUNNING_PARAM_STRUCT_VER;
+    backup_param->struct_checksum = sndp_da_calc_backup_struct_checksum();
+    backup_param->data_checksum = sndp_da_calc_backup_data_checksum(param);
+
+    SNDP_IF_TRACE(0, "%d, %08X, %08X, %08X ", __LINE__,
+        backup_param->struct_ver,
+        backup_param->struct_checksum,
+        backup_param->data_checksum);
+}
+
+static bool sndp_da_check_running_data_validity(sndp_da_access_info_s *info)
+{
+    sndp_da_running_param_s *param;
+    uint32_t struct_checksum;
+    uint32_t data_checksum;
+    
+    if(info == NULL) {
+        SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+        return false;
+    }
+
+    param = (sndp_da_running_param_s *)info->param_buf;
+    if(param == NULL) {
+        SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+        return false;
+    }
+
+    struct_checksum = info->calc_struct_checksum();
+    data_checksum = info->calc_data_checksum(info->param_buf);
+    
+    if((param->struct_ver != info->curr_param_struct_ver)
+        || (param->struct_checksum != struct_checksum)
+        || (param->data_checksum != data_checksum)) {
+
+        SNDP_IF_TRACE(0, "%d, struct_ver: %08X, %08X", __LINE__,
+            param->struct_ver, info->curr_param_struct_ver);
+        
+        SNDP_IF_TRACE(0, "%d, struct_checksum: %08X, %08X", __LINE__,
+            param->struct_checksum, struct_checksum);
+        
+        SNDP_IF_TRACE(0, "%d, data_checksum: %08X, %08X", __LINE__,
+            param->data_checksum, data_checksum);
+        
+        memset(info->param_buf, 0, info->param_size);
+        sndp_da_wirte_param_to_flash(info);
+        
+        return false;
+    }
+
+    return true;
+}
+
+
+static int32_t sndp_da_find_running_field_info(sndp_da_field_id_e field_id, sndp_da_field_info_s *field_info)
 {
 	int32_t ret = 0;
-	
+    sndp_da_running_param_s *p_param = (sndp_da_running_param_s *)0;
+    
 	if(field_info == NULL)
 		return -1;
 	
 	switch(field_id) {
 		case SNDP_DA_FIELD_BAT_INFO:
-			field_info->offset = (uint32_t)(&((sndp_da_param_s *)0)->field_bat_info);
+			field_info->offset = (uint32_t)&p_param->field_bat_info;
 			field_info->size = sizeof(sndp_da_field_bat_info_s);
 			break;
-		case SNDP_DA_FIELD_SN:
-			field_info->offset = (uint32_t)(&((sndp_da_param_s *)0)->field_sn);
-			field_info->size = sizeof(sndp_da_field_sn_s);
-			break;
-        case SNDP_DA_FIELD_BT_NAME:
-			field_info->offset = (uint32_t)(&((sndp_da_param_s *)0)->field_bt_name);
-			field_info->size = sizeof(sndp_da_field_bt_name_s);
-			break;    
-		case SNDP_DA_FIELD_TOUCH_CALIB_DATA:
-			field_info->offset = (uint32_t)(&((sndp_da_param_s *)0)->field_touch_calib_data);
-			field_info->size = sizeof(sndp_da_field_touch_calib_data_s);
-			break;
-#if defined(__SNDP_ALG_MGR__)		
-		case SNDP_DA_FIELD_ALG_DATA:
-			field_info->offset = (uint32_t)(&((sndp_da_param_s *)0)->field_alg_data);
-			field_info->size = sizeof(sndp_da_field_alg_data_s);
-			break;
-#endif	
+ 
 #if defined(__SNDP_SLEEP_APP__)
 #if defined(__SNDP_EQ_PARAM_SETTING__)
 		case SNDP_DA_FIELD_EQ_DATA:
-			field_info->offset = (uint32_t)(&((sndp_da_param_s *)0)->field_eq_data);
+			field_info->offset = (uint32_t)&p_param->field_eq_data;
 			field_info->size = sizeof(sndp_da_field_eq_data_s);
 			break;
 #endif
 		case SNDP_DA_FIELD_APP_DATA:
-			field_info->offset = (uint32_t)(&((sndp_da_param_s *)0)->field_sleep_app_data);
+			field_info->offset = (uint32_t)&p_param->field_sleep_app_data;
 			field_info->size = sizeof(sndp_da_field_sleep_app_data_s);
 			break;		
 #endif
+
 		default:
 			ret = -1;
-			ASSERT(0, "Invalid field_id=%d", field_id);
+            SNDP_IF_TRACE(0, "Invalid field_id=%d", field_id);
+			//ASSERT(0, "Invalid field_id=%d", field_id);
+			break;
+	}
+	
+	return ret;
+}
+
+static int32_t sndp_da_find_backup_field_info(sndp_da_field_id_e field_id, sndp_da_field_info_s *field_info)
+{
+	int32_t ret = 0;
+    sndp_da_backup_param_s *p_param = (sndp_da_backup_param_s *)0;
+    
+	if(field_info == NULL)
+		return -1;
+	
+	switch(field_id) {
+		case SNDP_DA_FIELD_SN:
+			field_info->offset = (uint32_t)&p_param->field_sn;
+			field_info->size = sizeof(sndp_da_field_sn_s);
+			break;  
+		case SNDP_DA_FIELD_PPG_CALIB_DATA:
+			field_info->offset = (uint32_t)&p_param->field_ppg_calib_data;
+			field_info->size = sizeof(sndp_da_field_ppg_calib_data_s);
+			break;
+        case SNDP_DA_FIELD_ACC_CALIB_DATA:
+			field_info->offset = (uint32_t)&p_param->field_acc_calib_data;
+			field_info->size = sizeof(sndp_da_field_acc_calib_data_s);
+			break;
+		default:
+			ret = -1;
+            SNDP_IF_TRACE(0, "Invalid field_id=%d", field_id);
+			//ASSERT(0, "Invalid field_id=%d", field_id);
 			break;
 	}
 	
@@ -91,225 +338,158 @@ static int32_t sndp_da_find_field_info(sndp_da_field_id_e field_id, sndp_da_fiel
 }
 
 
-void sndp_da_flush_running_param_to_flash(void)
+static void sndp_da_wirte_param_to_flash(sndp_da_access_info_s *info)
 {
 	if(!sndp_da_ctx.inited) {
-		SNDP_IF_TRACE(0, "uninitialized, return");
+		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
 		return;
 	}
 
-	SNDP_IF_TRACE(1, "start_addr=%08x", sndp_da_ctx.running_param_start_addr);
+    if(info == NULL) {
+        SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+        return;
+    }
+
+	SNDP_IF_TRACE(1, "addr=%d, size=%d", info->section_offset, info->param_size);
+    
+    info->update_data_checksum(info->param_buf);
+    
 	app_flash_erase((enum NORFLASH_API_MODULE_ID_T)sndp_da_ctx.section_mod_id, 
-				sndp_da_ctx.running_param_start_addr, DA_RUNNING_PARAM_SECTION_SIZE);
+				info->section_offset, 
+				info->section_size);
 	
 	app_flash_program((enum NORFLASH_API_MODULE_ID_T)sndp_da_ctx.section_mod_id, 
-			sndp_da_ctx.running_param_start_addr, 
-			(uint8_t *)sndp_da_ctx.running_param_cache,
-			sndp_da_ctx.running_param_size,
-			false);
+    			info->section_offset, 
+    			(uint8_t *)info->param_buf,
+    			info->param_size,
+    			false);
 	
     app_flash_flush_pending_op((enum NORFLASH_API_MODULE_ID_T)sndp_da_ctx.section_mod_id, NORFLASH_API_ALL);
+    
 }
 
-static void sndp_da_read_running_param_from_flash(uint8_t *data_buf, uint32_t length)
+static void sndp_da_read_param_from_flash(sndp_da_access_info_s *info)
 {
-    SNDP_IF_TRACE(1, "read data, length=%d", length);
-
-	if(length > sndp_da_ctx.running_param_size) {
+    if(!sndp_da_ctx.inited) {
+		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
 		return;
 	}
+
+    if(info == NULL) {
+        SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+        return;
+    }
+
+    SNDP_IF_TRACE(1, "addr=%d, size=%d", info->section_offset, info->param_size);
 
     app_flash_read((enum NORFLASH_API_MODULE_ID_T)sndp_da_ctx.section_mod_id,
-                   sndp_da_ctx.running_param_start_addr,
-                   data_buf,
-                   length);
+                   info->section_offset,
+                   (uint8_t *)info->param_buf,
+                   info->param_size);
+
+   
 }
 
-void sndp_da_flush_backup_param_to_flash(void)
+
+static int32_t sndp_da_write_field_data(sndp_da_access_info_s *access_info, sndp_da_field_info_s field_info, void *field_data, uint16_t data_size, bool save_to_flash)
 {
 	if(!sndp_da_ctx.inited) {
-		SNDP_IF_TRACE(0, "uninitialized, return");
-		return;
-	}
-	
-    SNDP_IF_TRACE(1, "start_addr=%08x", sndp_da_ctx.backup_param_start_addr);
-
-	app_flash_erase((enum NORFLASH_API_MODULE_ID_T)sndp_da_ctx.section_mod_id, 
-				sndp_da_ctx.backup_param_start_addr, DA_BACKUP_PARAM_SECTION_SIZE);
-	
-	app_flash_program((enum NORFLASH_API_MODULE_ID_T)sndp_da_ctx.section_mod_id, 
-			sndp_da_ctx.backup_param_start_addr, 
-			(uint8_t *)sndp_da_ctx.backup_param_cache,
-			sndp_da_ctx.backup_param_size,
-			false);
-	
-    app_flash_flush_pending_op((enum NORFLASH_API_MODULE_ID_T)sndp_da_ctx.section_mod_id, NORFLASH_API_ALL);
-}
-
-static void sndp_da_read_backup_param_from_flash(uint8_t *data_buf, uint32_t length)
-{
-	SNDP_IF_TRACE(1, "read data, length=%d", length);
-
-	if(length > sndp_da_ctx.backup_param_size){
-		return;
-	}
-
-	app_flash_read((enum NORFLASH_API_MODULE_ID_T)sndp_da_ctx.section_mod_id,
-				   sndp_da_ctx.backup_param_start_addr,
-				   data_buf,
-				   length);
-}
-
-
-int32_t sndp_da_write_field_data_to_running_param(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool save_to_flash)
-{
-	uint8_t *buff = (uint8_t *)sndp_da_ctx.running_param_cache;
-	sndp_da_field_info_s field_info;
-
-	if(!sndp_da_ctx.inited) {
-		SNDP_IF_TRACE(0, "uninitialized, return");
+		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
 		return -4;
 	}
 
-	if(field_data == NULL) {
-         SNDP_IF_TRACE(0, "field_data == NULL, return");
+    if(access_info == NULL) {
+        SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
 		return -1;
 	}
 
-	if(sndp_da_find_field_info(field_id, &field_info) != 0) {
-        SNDP_IF_TRACE(0, "find_field_info error, return");
-		return -2;
+	if(field_data == NULL) {
+        SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+		return -1;
 	}
 
-	if(field_size > field_info.size) {
-        SNDP_IF_TRACE(0, "field_size(%d) != field_info.size(%d), return", field_size, field_info.size);
+	if(data_size > field_info.size) {
+        SNDP_IF_TRACE(0, "data_size(%d) > field_size(%d), rtn", data_size, field_info.size);
 		return -3;
 	}
 
-	SNDP_IF_TRACE(3, "field_id=%d, field_size=%d, save_to_flash=%d", field_id, field_size, save_to_flash);
+	SNDP_IF_TRACE(3, "offset=%d, size=%d, data_size=%d, save=%d", field_info.offset, field_info.size, data_size, save_to_flash);
 
 	sndp_da_field_common_s *field_common = (sndp_da_field_common_s *)field_data;
 	field_common->key = SNDP_DA_PARAM_FIELD_VALID;
-	memcpy(buff + field_info.offset, field_data, field_size);
+	memcpy(&access_info->param_buf[field_info.offset], field_data, data_size);
 	
-	if(save_to_flash)
-		sndp_da_flush_running_param_to_flash();
+	if(save_to_flash) {
+		sndp_da_wirte_param_to_flash(access_info);
+	}
 	return 0;
 }
 
-
-int32_t sndp_da_read_field_data_from_running_param(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool read_from_flash)
+static int32_t sndp_da_read_field_data(sndp_da_access_info_s *access_info, sndp_da_field_info_s field_info, void *field_data, uint16_t data_size, bool read_from_flash)
 {
-	uint8_t *buff = (uint8_t *)sndp_da_ctx.running_param_cache;
-	sndp_da_field_info_s field_info;
-
-    
 	if(!sndp_da_ctx.inited) {
-		SNDP_IF_TRACE(0, "uninitialized, return");
+		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
 		return -4;
 	}
 	
-	if(sndp_da_find_field_info(field_id, &field_info) != 0) {
-        SNDP_IF_TRACE(0, "find_field_info error, return");
-		return -1;
-	}
-	
 	if(field_data == NULL) {
-        SNDP_IF_TRACE(0, "field_data == NULL, return");
+        SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
 		return -2;
 	}
 
-	if(field_size > field_info.size) {
-        SNDP_IF_TRACE(0, "field_size(%d) != field_info.size(%d), return", field_size, field_info.size);
+	if(data_size > field_info.size) {
+        SNDP_IF_TRACE(0, "data_size(%d) > field_size(%d), rtn", data_size, field_info.size);
 		return -3;
 	}
 
-	SNDP_IF_TRACE(2, "field_id=%d, field_size=%d", field_id, field_size);
+    SNDP_IF_TRACE(3, "offset=%d, size=%d, data_size=%d, from_flash=%d", field_info.offset, field_info.size, data_size, read_from_flash);
+    
     if(read_from_flash) {
-        memset(buff, 0, sndp_da_ctx.running_param_size);
-        sndp_da_read_running_param_from_flash(buff, sndp_da_ctx.running_param_size);
-        memcpy(field_data, buff + field_info.offset, field_size);
+        memset(access_info->param_buf, 0, access_info->param_size);
+        sndp_da_read_param_from_flash(access_info);
+        memcpy(field_data, &access_info->param_buf[field_info.offset], data_size);
     } else {
-    	memcpy(field_data, buff + field_info.offset, field_size);
+    	memcpy(field_data, &access_info->param_buf[field_info.offset], data_size);
     }
 	
 	return 0;
 }
 
-
-int32_t sndp_da_write_field_data_to_backup_param(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool save_to_flash)
+int32_t sndp_da_write_field(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool save_to_flash)
 {
-	uint8_t *buff = (uint8_t *)sndp_da_ctx.backup_param_cache;
-	sndp_da_field_info_s field_info;
-
-	if(!sndp_da_ctx.inited) {
-		SNDP_IF_TRACE(0, "uninitialized, return");
-		return -4;
-	}
-
-	if(field_data == NULL) {
-        SNDP_IF_TRACE(0, "field_data == NULL, return");
-		return -1;
-	}
-
-	if(sndp_da_find_field_info(field_id, &field_info) != 0) {
-        SNDP_IF_TRACE(0, "find_field_info error, return");
-		return -2;
-	}
-
-	if(field_size > field_info.size) {
-        SNDP_IF_TRACE(0, "field_size(%d) != field_info.size(%d), return", field_size, field_info.size);
-		return -3;
-	}
-
-	SNDP_IF_TRACE(3, "field_id=%d, field_size=%d, save_to_flash=%d", field_id, field_size, save_to_flash);
-	
-	sndp_da_field_common_s *field_common = (sndp_da_field_common_s *)field_data;
-	field_common->key = SNDP_DA_PARAM_FIELD_VALID;
-	memcpy(buff + field_info.offset, field_data, field_size);
-	
-	if(save_to_flash)
-		sndp_da_flush_backup_param_to_flash();
-	return 0;
-}
-
-
-int32_t sndp_da_read_field_data_from_backup_param(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool read_from_flash)
-{
-	uint8_t *buff = (uint8_t *)sndp_da_ctx.backup_param_cache;
-	sndp_da_field_info_s field_info;
-
-	if(!sndp_da_ctx.inited) {
-		SNDP_IF_TRACE(0, "uninitialized, return");
-		return -4;
-	}
-	
-	if(sndp_da_find_field_info(field_id, &field_info) != 0) {
-        SNDP_IF_TRACE(0, "find_field_info error, return");
-		return -1;
-	}
-	
-	if(field_data == NULL) {
-        SNDP_IF_TRACE(0, "field_data == NULL, return");
-		return -2;
-	}
-
-	if(field_size > field_info.size) {
-        SNDP_IF_TRACE(0, "field_size(%d) != field_info.size(%d), return", field_size, field_info.size);
-		return -3;
-	}
-
-	SNDP_IF_TRACE(2, "field_id=%d, field_size=%d", field_id, field_size);
-    if(read_from_flash) {
-        memset(buff, 0, sndp_da_ctx.backup_param_size);
-        sndp_da_read_backup_param_from_flash(buff, sndp_da_ctx.backup_param_size);
-        memcpy(field_data, buff + field_info.offset, field_size);
-    } else {
-    	memcpy(field_data, buff + field_info.offset, field_size);
-    }
+    sndp_da_field_info_s field_info;
     
-	return 0;
+    if(sndp_da_ctx.running_access_info.find_field_info(field_id, &field_info) == 0) {
+	    return sndp_da_write_field_data(&sndp_da_ctx.running_access_info, 
+                    field_info, field_data, field_size, save_to_flash);
+    } else if(sndp_da_ctx.backup_access_info.find_field_info(field_id, &field_info) == 0) {
+	    return sndp_da_write_field_data(&sndp_da_ctx.backup_access_info, 
+                    field_info, field_data, field_size, save_to_flash);
+    }
+
+    return -1;
 }
+
+int32_t sndp_da_read_field(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool read_from_flash)
+{
+    sndp_da_field_info_s field_info;
+    
+    if(sndp_da_ctx.running_access_info.find_field_info(field_id, &field_info) == 0) {
+	    return sndp_da_read_field_data(&sndp_da_ctx.running_access_info, 
+                    field_info, field_data, field_size, read_from_flash);
+    } else if(sndp_da_ctx.backup_access_info.find_field_info(field_id, &field_info) == 0) {
+	    return sndp_da_read_field_data(&sndp_da_ctx.backup_access_info, 
+                    field_info, field_data, field_size, read_from_flash);
+    }
+
+    return -1;
+}
+
+void sndp_da_flush_param_to_flash(void)
+{
+    sndp_da_wirte_param_to_flash(&sndp_da_ctx.running_access_info);
+}
+
 
 static void sndp_da_flash_operate_callback(void *param)
 {
@@ -325,18 +505,44 @@ static void sndp_da_flash_operate_callback(void *param)
 
 void sndp_da_init(void)
 {
-
-	ASSERT(sizeof(sndp_da_param_s) < DA_RUNNING_PARAM_SECTION_SIZE, 
-			"sizeof(sndp_da_param_s)(%d) > RUNNING_PARAM_SECTION_SIZE(%d)", 
-			sizeof(sndp_da_param_s), DA_RUNNING_PARAM_SECTION_SIZE);
-
-	ASSERT(sizeof(sndp_da_param_s) < DA_BACKUP_PARAM_SECTION_SIZE, 
-				"sizeof(sndp_da_param_s)(%d) > BACKUP_PARAM_SECTION_SIZE(%d)", 
-				sizeof(sndp_da_param_s), DA_BACKUP_PARAM_SECTION_SIZE);
-
-
-	
 	memset(&sndp_da_ctx, 0, sizeof(sndp_da_ctx));
+
+    memset(&sndp_da_running_param, 0, sizeof(sndp_da_running_param));
+	sndp_da_ctx.running_access_info.section_offset = 0;
+    sndp_da_ctx.running_access_info.section_size = DA_RUNNING_PARAM_SECTION_SIZE;
+
+    sndp_da_ctx.running_access_info.curr_param_struct_ver = DA_RUNNING_PARAM_STRUCT_VER;
+    sndp_da_ctx.running_access_info.param_size = sizeof(sndp_da_running_param_s);
+    sndp_da_ctx.running_access_info.param_buf = (uint8_t *)&sndp_da_running_param;
+    
+    sndp_da_ctx.running_access_info.find_field_info = sndp_da_find_running_field_info;
+    sndp_da_ctx.running_access_info.calc_struct_checksum = sndp_da_calc_running_struct_checksum;
+    sndp_da_ctx.running_access_info.calc_data_checksum = sndp_da_calc_running_data_checksum;
+    sndp_da_ctx.running_access_info.update_data_checksum = sndp_da_update_running_checksum;
+    
+    ASSERT(sndp_da_ctx.running_access_info.param_size < DA_RUNNING_PARAM_SECTION_SIZE, 
+            "param_size(%d) > RUNNING_PARAM_SECTION_SIZE(%d)", 
+            sndp_da_ctx.running_access_info.param_size, 
+            DA_RUNNING_PARAM_SECTION_SIZE);
+
+	memset(&sndp_da_backup_param, 0, sizeof(sndp_da_backup_param));
+    sndp_da_ctx.backup_access_info.section_offset = DA_RUNNING_PARAM_SECTION_SIZE;
+    sndp_da_ctx.backup_access_info.section_size = DA_BACKUP_PARAM_SECTION_SIZE;
+
+    sndp_da_ctx.backup_access_info.curr_param_struct_ver = DA_BACKUP_PARAM_STRUCT_VER;
+    sndp_da_ctx.backup_access_info.param_size = sizeof(sndp_da_backup_param_s);
+    sndp_da_ctx.backup_access_info.param_buf = (uint8_t *)&sndp_da_backup_param;
+    
+    sndp_da_ctx.backup_access_info.find_field_info = sndp_da_find_backup_field_info;
+    sndp_da_ctx.backup_access_info.calc_struct_checksum = sndp_da_calc_backup_struct_checksum;
+    sndp_da_ctx.backup_access_info.calc_data_checksum = sndp_da_calc_backup_data_checksum;
+    sndp_da_ctx.backup_access_info.update_data_checksum = sndp_da_update_backup_checksum;
+    
+    ASSERT(sndp_da_ctx.backup_access_info.param_size < DA_BACKUP_PARAM_SECTION_SIZE, 
+            "param_size(%d) > BACKUP_PARAM_SECTION_SIZE(%d)", 
+            sndp_da_ctx.backup_access_info.param_size, 
+            DA_BACKUP_PARAM_SECTION_SIZE);
+    
 	sndp_da_ctx.section_mod_id = NORFLASH_API_MODULE_ID_SNDP_PARAM;
 	sndp_da_ctx.section_start_addr = (uint32_t)__sndp_param_start;
 	sndp_da_ctx.section_size = DA_PARAM_SECTION_SIZE;
@@ -348,21 +554,13 @@ void sndp_da_init(void)
                               sndp_da_ctx.section_size,
                               (uint32_t)sndp_da_flash_operate_callback);
 
+    sndp_da_ctx.inited = true;
 	
-	memset(&sndp_da_running_param, 0, sizeof(sndp_da_running_param));
-	sndp_da_ctx.running_param_start_addr = 0;
-	sndp_da_ctx.running_param_size = sizeof(sndp_da_param_s);
-	sndp_da_ctx.running_param_cache = (sndp_da_param_s *)&sndp_da_running_param;
-
-	memset(&sndp_da_backup_param, 0, sizeof(sndp_da_backup_param));
-	sndp_da_ctx.backup_param_start_addr = sndp_da_ctx.running_param_start_addr + DA_RUNNING_PARAM_SECTION_SIZE;
-	sndp_da_ctx.backup_param_size = sizeof(sndp_da_param_s);
-	sndp_da_ctx.backup_param_cache = (sndp_da_param_s *)&sndp_da_backup_param;
+	sndp_da_read_param_from_flash(&sndp_da_ctx.running_access_info);
+    sndp_da_check_running_data_validity(&sndp_da_ctx.running_access_info);
+    
+	sndp_da_read_param_from_flash(&sndp_da_ctx.backup_access_info);
 	
-	sndp_da_read_running_param_from_flash((uint8_t *)sndp_da_ctx.running_param_cache, sndp_da_ctx.running_param_size);
-	sndp_da_read_backup_param_from_flash((uint8_t *)sndp_da_ctx.backup_param_cache, sndp_da_ctx.backup_param_size);
-
-	sndp_da_ctx.inited = true;
 }
 
 
