@@ -274,6 +274,7 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_detect_ntc_control_charge_ena
 #if defined(__SNDP_PROJ__)
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_ear_side_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_ldo_1v8_enable_pin_cfg;
+extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_ldo_3v3_enable_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_dummy_load_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_hall_int_pin_cfg;
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_vmic_enable_pin_cfg;
