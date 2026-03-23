@@ -34,7 +34,6 @@
 #include "sndp_heart_rate.h"
 #endif
 #include "sndp_comm_ble.h"
-#include "app_ble_sndp.h"
 
 
 /**************************************************************************************************
