@@ -17,7 +17,7 @@
 #define __RES_AUDIO_DATA_CN_H
 
 const uint8_t CN_POWER_ON [] = {
-0//#include "res/cn/SOUND_POWER_ON.txt"
+#include "res/cn/SOUND_POWER_ON.txt"
 };
 
 const uint8_t CN_POWER_OFF [] = {

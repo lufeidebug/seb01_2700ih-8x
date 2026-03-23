@@ -19,7 +19,7 @@
 #ifdef MEDIA_PLAYER_SUPPORT
 
 const uint8_t EN_POWER_ON [] = {
-0//#include "res/en/SOUND_POWER_ON.txt"
+#include "res/en/SOUND_POWER_ON.txt"
 };
 
 const uint8_t EN_POWER_OFF [] = {
