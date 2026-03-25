@@ -1262,7 +1262,7 @@ static void sndp_ui_bt_event_exec_after_power_on(void)
                 SPUI_TRACE(0, "no paired record, tws pairing");
                 
                 //sndp_delay_exec_start(300, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
-                //sndp_enter_mobile_pairing_after_tws_connected();
+                sndp_enter_mobile_pairing_after_tws_connected();
             }
         } else {
             SPUI_TRACE(0, "the left and right not bound.");
