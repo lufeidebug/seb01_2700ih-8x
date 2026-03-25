@@ -272,6 +272,7 @@ static int32_t sndp_comm_main_execute_cmd(sndp_comm_cmd_info_s *cmd)
             || (from == SNDP_COMM_DEVICE_LEFT && to == SNDP_COMM_DEVICE_BOX)
             || (path == SNDP_COMM_PATH_TRACE_UART)
             || (path == SNDP_COMM_PATH_POGOPIN)
+            || (path == SNDP_COMM_PATH_MS)
             ) {
             // do not forward
         } else {
@@ -295,6 +296,7 @@ static int32_t sndp_comm_main_execute_cmd(sndp_comm_cmd_info_s *cmd)
             || (from == SNDP_COMM_DEVICE_RIGHT && to == SNDP_COMM_DEVICE_BOX)
             || (path == SNDP_COMM_PATH_TRACE_UART)
             || (path == SNDP_COMM_PATH_POGOPIN)
+            || (path == SNDP_COMM_PATH_MS)
             ) {
             // do not forward
         } else {
