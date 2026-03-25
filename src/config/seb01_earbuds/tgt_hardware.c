@@ -170,7 +170,7 @@ const CODEC_DAC_VOL_T codec_dac_hfp_vol[TGT_VOLUME_LEVEL_QTY] = {
 // Dev mother board VMIC1 <---> CHIP VMIC2
 // Dev mother board VMIC2 <---> CHIP VMIC1
 #ifndef VMIC_MAP_CFG
-#define VMIC_MAP_CFG                        AUD_VMIC_MAP_VMIC1
+#define VMIC_MAP_CFG                        (AUD_VMIC_MAP_VMIC1 | AUD_VMIC_MAP_VMIC2)
 #endif
 
 #if SPEECH_CODEC_CAPTURE_CHANNEL_NUM == 2
