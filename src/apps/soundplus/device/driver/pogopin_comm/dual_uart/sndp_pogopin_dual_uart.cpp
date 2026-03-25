@@ -639,7 +639,6 @@ static void pgp_tx_pin_cfg_uart(void)
 
 static void pgp_comm_en(bool en)
 {
-    return;
     if (pgp_comm_en_pin_cfg.pin != HAL_IOMUX_PIN_NUM){
         if(en) {
             hal_gpio_pin_set((enum HAL_GPIO_PIN_T)pgp_comm_en_pin_cfg.pin);
