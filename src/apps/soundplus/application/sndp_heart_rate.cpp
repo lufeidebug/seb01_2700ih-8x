@@ -107,7 +107,7 @@ static osMutexId acc_raw_data_queue_mutex_id = NULL;
 osMutexDef(acc_raw_data_queue_mutex);
 
 
-#define HR_PROCESS_THREAD_STACK_SIZE 				(1024*10)
+#define HR_PROCESS_THREAD_STACK_SIZE 				(1024*8)
 static void sndp_hr_process_thread(void const *argument);
 osThreadDef(sndp_hr_process_thread, osPriorityNormal, 1, HR_PROCESS_THREAD_STACK_SIZE, "hr_process_thread");
 osThreadId hr_process_thread_tid = NULL;

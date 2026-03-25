@@ -79,12 +79,12 @@ static void sndp_comm_recv_thread(void const *argument);
 osSemaphoreDef(sndp_comm_recv_semaphore);
 osSemaphoreId sndp_comm_recv_semaphore_id;
 
-#define SNDP_COMM_RECV_THREAD_STACK_SIZE 				(1024*3)
+#define SNDP_COMM_RECV_THREAD_STACK_SIZE 				(1024*2)
 osThreadDef(sndp_comm_recv_thread, osPriorityNormal, 1, SNDP_COMM_RECV_THREAD_STACK_SIZE, "sndp_comm_recv_thread");
 osThreadId sndp_comm_recv_thread_tid;
 
 static sndp_comm_path_hdlr_s sndp_comm_path_hdlr_list[SNDP_COMM_PATH_CNT];
-static uint8_t sndp_comm_recv_deal_buf[512];
+static uint8_t sndp_comm_recv_deal_buf[256];
 
 static sndp_comm_cmd_info_s sndp_comm_recv_cmd;
 static sndp_comm_cmd_info_s sndp_comm_send_cmd;

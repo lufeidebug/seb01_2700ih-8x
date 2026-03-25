@@ -22,7 +22,7 @@
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
-#define SNDP_COMM_BLE_SEND_BUF_SIZE			(256)
+#define SNDP_COMM_BLE_SEND_BUF_SIZE			(128)
 
 /**************************************************************************************************
 * Prototype
@@ -54,8 +54,8 @@ static CQueue sndp_comm_ble_send_queue;
 static osMutexId sndp_comm_ble_send_queue_mutex_id = NULL;
 osMutexDef(sndp_comm_ble_send_queue_mutex);
 
-static uint8_t sndp_comm_ble_send_queue_buf[512];
-static uint8_t sndp_comm_ble_send_pop_buf[128];
+static uint8_t sndp_comm_ble_send_queue_buf[128];
+static uint8_t sndp_comm_ble_send_pop_buf[64];
 
 osTimerDef(BLE_SEND_TIMEOUT_TIMER, sndp_comm_ble_send_timeout_timer_handler);
 static osTimerId ble_send_timeout_timer = NULL;
