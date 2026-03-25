@@ -23,7 +23,7 @@
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
-//#define __SNDP_POGOPIN_UART_TRACE__
+#define __SNDP_POGOPIN_UART_TRACE__
         
 #if defined(__SNDP_POGOPIN_UART_TRACE__)
 #define PGP_UART_LOG_TAG				    "[PGP_DUAL_UART]"
@@ -38,8 +38,8 @@
 
 #define PGP_UART_BAUD                      (115200)
 
-#define PGP_UART_DMA                       (0)
-#define PGP_UART_IRQ                       (1)  
+#define PGP_UART_DMA                       (1)
+#define PGP_UART_IRQ                       (0)  
 
 #define PGP_UART_READ_RETRY_CNT            (5)
 
@@ -356,7 +356,7 @@ static void pgp_uart_irq_tx(uint8_t *data, uint32_t data_len)
 		};
     }
 
-    sndp_delay_exec_start(10, (uint32_t) pgp_uart_send_complete, 0, 0, 0);
+    sndp_delay_exec_start(20, (uint32_t) pgp_uart_send_complete, 0, 0, 0);
 }
 
 static void pgp_uart_irq_disable(void)
@@ -415,8 +415,7 @@ static void pgp_uart_dma_rx_stop(void)
 
 static void pgp_uart_dma_rx_handler(uint32_t xfer_size, int dma_error, union HAL_UART_IRQ_T status)
 {
-    uint8_t *p_recv_buf;
-    uint32_t recv_len;
+    pgp_uart_recv_item_s *p_recv_item = &pgp_uart_recv_push_item;
     
     if (dma_error) {
         PGP_UART_TRACE(1, "dma error: xfer_size=%d", xfer_size);
@@ -429,11 +428,11 @@ static void pgp_uart_dma_rx_handler(uint32_t xfer_size, int dma_error, union HAL
     } else if(xfer_size > 0) {
         PGP_UART_TRACE(1, "recv_data, xfer_size=%d", xfer_size);
         pgp_uart_dma_rx_stop();
-        p_recv_buf = p_dma_recv_buf;
-        recv_len = xfer_size;
+        memcpy(p_recv_item->data, p_dma_recv_buf, xfer_size);
+        p_recv_item->len = xfer_size;
         pgp_uart_dma_rx_start();
 
-        pgp_uart_recv_queue_push_data(p_recv_buf, recv_len);
+        pgp_uart_recv_queue_push_data(p_recv_item);
 		if(!pgp_uart_ctx.rx_working){
 	  		sndp_call_func_in_dev_thread((uint32_t)pgp_uart_recv_data, 0, 0, 0);
 		}
@@ -442,6 +441,7 @@ static void pgp_uart_dma_rx_handler(uint32_t xfer_size, int dma_error, union HAL
 
 static void pgp_uart_dma_tx_handler(uint32_t xfer_size, int dma_error)
 {
+#if 0    
     uint32_t delay_ms;
     uint32_t count;
     
@@ -452,8 +452,9 @@ static void pgp_uart_dma_tx_handler(uint32_t xfer_size, int dma_error)
     if(delay_ms < 2) {
         delay_ms = 2;
     }
-    
-    sndp_delay_exec_start(delay_ms, (uint32_t) pgp_uart_send_complete, 0, 0, 0);
+#endif
+
+    sndp_delay_exec_start(20, (uint32_t) pgp_uart_send_complete, 0, 0, 0);
 }
 
 static void pgp_uart_dma_tx(uint8_t *data, uint32_t data_len)
@@ -697,7 +698,8 @@ static int32_t pgp_uart_init(void)
     pgp_uart_ctx.uart_port = HAL_UART_ID_1;
   
     /* mode init */
-    pgp_uart_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_RX);
+    pgp_uart_ctx.pogopin_mode = SNDP_HAL_POGOPIN_MODE_UNKNOWN;
+    pgp_uart_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
     
     pgp_uart_ctx.inited = true;
     PGP_UART_TRACE(0, "done.");
@@ -737,6 +739,8 @@ static int32_t pgp_uart_set_mode(sndp_hal_pogopin_mode_e mode)
             pgp_uart_pin_config(mode);
             pgp_uart_open();
             pgp_uart_rx_stop();
+            break;
+        default:
             break;
 	}
 	
