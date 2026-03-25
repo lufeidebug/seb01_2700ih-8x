@@ -223,7 +223,7 @@ uint8_t dolby_role = -1;
 #ifdef EQ_SET_CUSTOMER_EN
 #include "nvrecord_env.h"
 #endif
-#include "sndp_if_platform.h"
+
 void(*app_bt_stream_ext_sco_playback)(uint8_t *buf, uint32_t len) = NULL;
 uint32_t (*app_bt_stream_ext_sco_capture)(uint8_t *buf, uint32_t len) = NULL;
 void app_bt_stream_set_ext_sco_data_path(void(*playback_cb)(uint8_t *buf, uint32_t len),
