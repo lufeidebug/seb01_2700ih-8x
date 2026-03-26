@@ -167,7 +167,9 @@ extern const struct HAL_KEY_GPIOKEY_CFG_T cfg_hw_gpio_key_cfg[CFG_HW_GPIOKEY_NUM
 extern const uint16_t cfg_hw_adckey_map_table[CFG_HW_ADCKEY_NUMBER];
 extern const struct HAL_IOMUX_PIN_FUNCTION_MAP cfg_hw_pinmux_pwl[CFG_HW_PWL_NUM];
 
-#define BTA_AV_CO_SBC_MAX_BITPOOL  52
+#define BTA_AV_CO_SBC_MAX_BITPOOL   48  //52
+#define MAX_AAC_BITRATE             (192*1024)  //(256*1024)
+
 
 // Notes: the real CFG_ADC_DC_CALIB_CH_NUM need be equal to the real calibrate mic number!!!
 #define CFG_ADC_DC_CALIB_MIC_DEV                (AUD_CHANNEL_MAP_CH0 | AUD_CHANNEL_MAP_CH1)
