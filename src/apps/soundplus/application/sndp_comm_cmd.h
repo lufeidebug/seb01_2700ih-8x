@@ -178,13 +178,13 @@ typedef enum {
                                                             rsp: 2 bytes, error code(1) + result(1). */
     COMM_CMDID_PT_SWITCH_LOG_OUTPUT                 = 0x5D,	/* recv: 1 bytes, en(1). 
                                                             rsp: 2 bytes, error code(1) + result(1). */
-    COMM_CMDID_PT_SWITCH_WEAR_STATUS_REPORT         = 0x5F,	/* recv: 1 bytes. onoff(1)
+    COMM_CMDID_PT_SWITCH_WEAR_STATUS_REPORT         = 0x5E,	/* recv: 1 bytes. onoff(1)
                                                             rsp: 1 bytes, error code(1). */
-    COMM_CMDID_PT_REPORT_WEAR_STATUS                = 0x60,	/* recv: 0 bytes. 
+    COMM_CMDID_PT_REPORT_WEAR_STATUS                = 0x5F,	/* recv: 0 bytes. 
                                                             rsp: 2 bytes, error code(1) + status(1). */                                                         
-    COMM_CMDID_PT_CHECK_EARSIDE                     = 0x61,	/* recv: 0 bytes. 
+    COMM_CMDID_PT_CHECK_EARSIDE                     = 0x60,	/* recv: 0 bytes. 
                                                             rsp: 2 bytes, error code(1) + earsid(1). */
-    COMM_CMDID_PT_READ_HALL_STATUS                  = 0x62,	/* recv: 0 bytes. 
+    COMM_CMDID_PT_READ_HALL_STATUS                  = 0x61,	/* recv: 0 bytes. 
                                                             rsp: 2 bytes, error code(1) + earsid(1). */
 
 
