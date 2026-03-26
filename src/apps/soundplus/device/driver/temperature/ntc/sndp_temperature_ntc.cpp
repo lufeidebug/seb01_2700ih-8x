@@ -22,7 +22,7 @@
 #define SNDP_NTC_REF_VOLTAGE				(1700)	//mV
 #define SNDP_NTC_REF_RESISTENCE			    (10000)	//ohm
 
-#define SNDP_NTC_ADC_CHAN					(HAL_GPADC_CHAN_2)
+#define SNDP_NTC_ADC_CHAN					(HAL_GPADC_CHAN_0)
 
 
 /**************************************************************************************************
