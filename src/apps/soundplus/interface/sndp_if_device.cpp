@@ -868,15 +868,20 @@ void sndp_dev_charger_plug_status_changed(sndp_hal_charger_plug_status_e status)
         sndp_hal_charger_check_curr_status();
 #endif
 
-#if 0//defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)
+#if defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)
         if(charger_plug == SNDP_DEV_CHARGER_PLUG_IN) {
             sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_COLSED);
         } else if(charger_plug == SNDP_DEV_CHARGER_PLUG_OUT) {
+        #if 0
+        
             if(sndp_dev_iobox_is_in_box(false)) {
                 sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_OPENED);
             } else {
                 sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_COLSED);
             }
+        #else
+            sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_OPENED);
+        #endif
         }
 #endif        
     }
