@@ -15,6 +15,8 @@
  ****************************************************************************/
 #ifndef __A2DP_CODEC_AAC_H__
 #define __A2DP_CODEC_AAC_H__
+#include "tgt_hardware.h"
+
 
 #if defined(__cplusplus)
 extern "C" {
