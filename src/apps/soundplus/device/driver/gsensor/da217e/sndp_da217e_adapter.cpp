@@ -26,14 +26,20 @@
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
-#define DA217E_IRQ_DEBOUNCE_REPEAT_MS            (10) //ms
-#define DA217E_IRQ_DEBOUNCE_DELAY_MS             (20) //ms
+#define DA217E_INT1_DEBOUNCE_REPEAT_MS            (5) //ms
+#define DA217E_INT1_DEBOUNCE_DELAY_MS             (10) //ms
+
+#define DA217E_INT2_DEBOUNCE_REPEAT_MS            (5) //ms
+#define DA217E_INT2_DEBOUNCE_DELAY_MS             (10) //ms
+
         
 #define DA217E_I2C_TYPE                          (SNDP_I2C_HW_TASK)
 #define DA217E_I2C_ID                            (HAL_I2C_ID_2)
 
 
 //#define __DA217E_READ_RAW_DATA_MODIS__
+
+//#define __DA217E_IRQ_DEBOUNCE__
 
 
 /**************************************************************************************************
@@ -57,6 +63,18 @@ static sndp_hal_acc_read_raw_data_callback  da217e_acc_read_raw_data_cb_ptr = NU
 #if defined(__SNDP_GESTURE_MGR__)
 static sndp_hal_gesture_event_callback  da217e_gesture_event_cb_ptr = NULL;
 #endif
+
+#if defined(__DA217E_IRQ_DEBOUNCE__)
+static void da217e_int1_debounce_handler(void const *param);
+osTimerDef(DA217_INT1_DEBOUNCE_TIMER, da217e_int1_debounce_handler);
+static osTimerId da217e_int1_debounce_timer = NULL;
+
+static void da217e_int2_debounce_handler(void const *param);
+osTimerDef(DA217_INT2_DEBOUNCE_TIMER, da217e_int2_debounce_handler);
+static osTimerId da217e_int2_debounce_timer = NULL;
+
+#endif
+
 
 /**************************************************************************************************
 * Function
@@ -158,37 +176,83 @@ static void da217e_deal_int2_data(void)
     da217e_drv_deal_fifo_interruption();
 }
 
+#if defined(__DA217E_IRQ_DEBOUNCE__) 
+static void da217e_int1_debounce_handler(void const *param)
+{
+    da217e_deal_int1_data();
+}
+
+static void da217e_int1_debounce(void)
+{
+    DA217E_TRACE(0, "...");
+    osTimerStop(da217e_int1_debounce_timer);
+    osTimerStart(da217e_int1_debounce_timer, DA217E_INT1_DEBOUNCE_DELAY_MS);
+}
+
+static void da217e_int2_debounce_handler(void const *param)
+{
+    da217e_deal_int2_data();
+}
+
+static void da217e_int2_debounce(void)
+{
+    DA217E_TRACE(0, "...");
+    osTimerStop(da217e_int2_debounce_timer);
+    osTimerStart(da217e_int2_debounce_timer, DA217E_INT2_DEBOUNCE_DELAY_MS);
+    
+}
+#endif
 
 static void da217e_int1_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
+#if defined(__DA217E_IRQ_DEBOUNCE__)   
     static uint32_t last_time = 0;
     uint32_t curr_time = hal_sys_timer_get();
     uint32_t passed_ticks = hal_timer_get_passed_ticks(curr_time, last_time);
 
-    //DA217E_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), DA217E_IRQ_DEBOUNCE_REPEAT_MS);
+    //DA217E_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), DA217E_INT1_DEBOUNCE_REPEAT_MS);
     
-    if(TICKS_TO_MS(passed_ticks) >= DA217E_IRQ_DEBOUNCE_REPEAT_MS) {
+    if(TICKS_TO_MS(passed_ticks) >= DA217E_INT1_DEBOUNCE_REPEAT_MS) {
         last_time = hal_sys_timer_get();
-        sndp_call_func_in_app_thread((uint32_t)da217e_deal_int1_data, 0, 0, 0);
+        sndp_call_func_in_app_thread((uint32_t)da217e_int1_debounce, 0, 0, 0);
     }
+#else
+    sndp_call_func_in_app_thread((uint32_t)da217e_deal_int1_data, 0, 0, 0);
+#endif
 }
 
 static void da217e_int2_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
+#if defined(__DA217E_IRQ_DEBOUNCE__)    
     static uint32_t last_time = 0;
     uint32_t curr_time = hal_sys_timer_get();
     uint32_t passed_ticks = hal_timer_get_passed_ticks(curr_time, last_time);
 
-    //DA217E_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), DA217E_IRQ_DEBOUNCE_REPEAT_MS);
+    //DA217E_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), DA217E_INT1_DEBOUNCE_REPEAT_MS);
     
-    if(TICKS_TO_MS(passed_ticks) >= DA217E_IRQ_DEBOUNCE_REPEAT_MS) {
+    if(TICKS_TO_MS(passed_ticks) >= DA217E_INT1_DEBOUNCE_REPEAT_MS) {
         last_time = hal_sys_timer_get();
-        sndp_call_func_in_app_thread((uint32_t)da217e_deal_int2_data, 0, 0, 0);
+        sndp_call_func_in_app_thread((uint32_t)da217e_int2_debounce, 0, 0, 0);
     }
+#else
+    sndp_call_func_in_app_thread((uint32_t)da217e_deal_int2_data, 0, 0, 0);
+#endif
 }
 
 static void da217e_irq_init(void)
 {
+#if defined(__SSH401A_IRQ_DEBOUNCE__)    
+    if (da217e_int1_debounce_timer == NULL) {
+        da217e_int1_debounce_timer = osTimerCreate(osTimer(DA217_INT1_DEBOUNCE_TIMER), osTimerOnce, NULL);
+        ASSERT(da217e_int1_debounce_timer != NULL, "%s, %d", __func__, __LINE__);
+    }
+
+    if (da217e_int2_debounce_timer == NULL) {
+        da217e_int2_debounce_timer = osTimerCreate(osTimer(DA217_INT2_DEBOUNCE_TIMER), osTimerOnce, NULL);
+        ASSERT(da217e_int2_debounce_timer != NULL, "%s, %d", __func__, __LINE__);
+    }
+#endif
+    
     if(app_gsensor_int1_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
         struct HAL_GPIO_IRQ_CFG_T gpiocfg;
         

@@ -30,13 +30,15 @@
 * Constant
 **************************************************************************************************/
 #define SSH401A_IRQ_DEBOUNCE_REPEAT_MS            (5) //ms
-#define SSH401A_IRQ_DEBOUNCE_DELAY_MS             (50) //ms
+#define SSH401A_IRQ_DEBOUNCE_DELAY_MS             (10) //ms
     
 #define SSH401A_I2C_TYPE                          (SNDP_I2C_HW_TASK)
 #define SSH401A_I2C_ID                            (HAL_I2C_ID_3)
 
 
 //#define __SSH401A_READ_RAW_DATA_MODIS__
+
+//#define __SSH401A_IRQ_DEBOUNCE__
 
 
 /**************************************************************************************************
@@ -47,7 +49,6 @@
 /**************************************************************************************************
 * Extern
 **************************************************************************************************/
-static void ssh401a_irq_debounce_delay_handler(void const *param);
 
 
 /**************************************************************************************************
@@ -55,8 +56,11 @@ static void ssh401a_irq_debounce_delay_handler(void const *param);
 **************************************************************************************************/
 static bool ssh401a_inited = false;
 
+#if defined(__SSH401A_IRQ_DEBOUNCE__)
+static void ssh401a_irq_debounce_delay_handler(void const *param);
 osTimerDef(SSH401A_IRQ_DEBOUNCE_TIMER, ssh401a_irq_debounce_delay_handler);
 static osTimerId ssh401a_irq_debounce_timer = NULL;
+#endif
 
 static sndp_hal_hr_read_ppg_callback ssh401a_hr_read_ppg_cb_ptr = NULL;
 static sndp_hal_hr_calib_callback ssh401a_hr_calib_cb_ptr = NULL;
@@ -201,46 +205,48 @@ static void ssh401a_callback_ppg_data(SS_PPG* ppg_data, int cnt)
 }
 
 
-static void ssh401a_deal_irq_data(void)
+#if defined(__SSH401A_IRQ_DEBOUNCE__)
+static void ssh401a_irq_debounce_delay_handler(void const *param)
 {
-    
-}
-
-POSSIBLY_UNUSED static void ssh401a_irq_debounce_delay_handler(void const *param)
-{
-    ssh401a_deal_irq_data();
+    ss_ppg_interrupt_handler();
 }
 
 void ssh401a_irq_debounce(void)
 {
-    //SSH401A_TRACE(1, "...");
-    //osTimerStop(ssh401a_irq_debounce_timer);
-    //osTimerStart(ssh401a_irq_debounce_timer, SSH401A_IRQ_DEBOUNCE_DELAY_MS);
-    ss_ppg_interrupt_handler();
+    SSH401A_TRACE(1, "...");
+    osTimerStop(ssh401a_irq_debounce_timer);
+    osTimerStart(ssh401a_irq_debounce_timer, SSH401A_IRQ_DEBOUNCE_DELAY_MS);
+    
 }
+#endif
 
 static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
+#if defined(__SSH401A_IRQ_DEBOUNCE__)    
     static uint32_t last_time = 0;
     uint32_t curr_time = hal_sys_timer_get();
     uint32_t passed_ticks = hal_timer_get_passed_ticks(curr_time, last_time);
 
-    SSH401A_TRACE(1, "passed=%d, repeat=%d", TICKS_TO_MS(passed_ticks), SSH401A_IRQ_DEBOUNCE_REPEAT_MS);
+    SSH401A_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), SSH401A_IRQ_DEBOUNCE_REPEAT_MS);
     
     if(TICKS_TO_MS(passed_ticks) >= SSH401A_IRQ_DEBOUNCE_REPEAT_MS) {
         last_time = hal_sys_timer_get();
         sndp_call_func_in_app_thread((uint32_t)ssh401a_irq_debounce, 0, 0, 0);
     }
-
+#else
+    sndp_call_func_in_app_thread((uint32_t)ss_ppg_interrupt_handler, 0, 0, 0);
+#endif
 }
 
 static void ssh401a_irq_init(void)
 {
+#if defined(__SSH401A_IRQ_DEBOUNCE__)    
     if (ssh401a_irq_debounce_timer == NULL) {
         ssh401a_irq_debounce_timer = osTimerCreate(osTimer(SSH401A_IRQ_DEBOUNCE_TIMER), osTimerOnce, NULL);
 		ASSERT(ssh401a_irq_debounce_timer != NULL, "%s, %d", __func__, __LINE__);
     }
-    
+#endif
+
     if(app_hrsensor_status_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
         struct HAL_GPIO_IRQ_CFG_T gpiocfg;
         
