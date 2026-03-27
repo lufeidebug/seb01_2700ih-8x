@@ -41,9 +41,15 @@
 #define AUDIO_DUMP_INDEX_LEN            (4)
 #define AUDIO_DUMP_CRC_LEN              (4)
 #define AUDIO_DUMP_DATA_LEN             (4)
+#if defined(__SNDP_PROJ__)
+#define AUDIO_DUMP_MAX_SAMPLE_BYTES     (sizeof(short))
+#define AUDIO_DUMP_MAX_FRAME_LEN        (256)
+#define AUDIO_DUMP_MAX_CHANNEL_NUM      (4)
+#else
 #define AUDIO_DUMP_MAX_SAMPLE_BYTES     (sizeof(int))
 #define AUDIO_DUMP_MAX_FRAME_LEN        (512)
 #define AUDIO_DUMP_MAX_CHANNEL_NUM      (8)
+#endif
 #define AUDIO_DUMP_MAX_DATA_SIZE        (AUDIO_DUMP_MAX_FRAME_LEN * AUDIO_DUMP_MAX_CHANNEL_NUM * AUDIO_DUMP_MAX_SAMPLE_BYTES / sizeof(char))
 #define AUDIO_DUMP_BUFFER_SIZE          (AUDIO_DUMP_HEAD_LEN + AUDIO_DUMP_INDEX_LEN + AUDIO_DUMP_CRC_LEN + AUDIO_DUMP_DATA_LEN + AUDIO_DUMP_MAX_DATA_SIZE)
 
