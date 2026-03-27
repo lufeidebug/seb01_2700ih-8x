@@ -29,7 +29,7 @@
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
-#define SSH401A_IRQ_DEBOUNCE_REPEAT_MS            (20) //ms
+#define SSH401A_IRQ_DEBOUNCE_REPEAT_MS            (5) //ms
 #define SSH401A_IRQ_DEBOUNCE_DELAY_MS             (50) //ms
     
 #define SSH401A_I2C_TYPE                          (SNDP_I2C_HW_TASK)
@@ -225,7 +225,7 @@ static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
     uint32_t curr_time = hal_sys_timer_get();
     uint32_t passed_ticks = hal_timer_get_passed_ticks(curr_time, last_time);
 
-    //SSH401A_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), SSH401A_IRQ_DEBOUNCE_REPEAT_MS);
+    SSH401A_TRACE(1, "passed=%d, repeat=%d", TICKS_TO_MS(passed_ticks), SSH401A_IRQ_DEBOUNCE_REPEAT_MS);
     
     if(TICKS_TO_MS(passed_ticks) >= SSH401A_IRQ_DEBOUNCE_REPEAT_MS) {
         last_time = hal_sys_timer_get();
