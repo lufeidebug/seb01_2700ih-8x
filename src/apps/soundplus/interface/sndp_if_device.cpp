@@ -578,7 +578,7 @@ void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status)
 		sndp_dev_cover_set_status(false, status);
 
 #if defined(__SNDP_COMM_MGR__)    
-        sndp_comm_cmd_send_lr_sync_wear_status(status);
+        sndp_comm_cmd_send_lr_sync_cover_status(status);
 #endif
 
 #if defined(__SNDP_COMM_POGOPIN__)			
