@@ -475,7 +475,7 @@ void sndp_dev_iobox_status_changed_handler(sndp_dev_iobox_status_e status)
         sndp_comm_cmd_send_lr_sync_iobox_status(status);
 #endif
 
-#if defined(__SNDP_COMM_POGOPIN__)			
+#if 0//defined(__SNDP_COMM_POGOPIN__)			
         if(SNDP_DEV_IOBOX_OUT == status) {
     		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
     	} else {
@@ -578,17 +578,8 @@ void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status)
 		sndp_dev_cover_set_status(false, status);
 
 #if defined(__SNDP_COMM_MGR__)    
-        sndp_comm_cmd_send_lr_sync_cover_status(status);
+        sndp_comm_cmd_send_lr_sync_wear_status(status);
 #endif
-
-#if defined(__SNDP_COMM_POGOPIN__)			
-        if(SNDP_DEV_COVER_COLSED == status) {
-    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
-    	} else {
-    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_RX);
-    	}
-#endif
-
 		if(sndp_dev_cover_status_changed_cb_ptr) {
 			sndp_call_func_in_app_thread((uint32_t)sndp_dev_cover_status_changed_cb_ptr, status, 0, 0);
 		}
@@ -867,6 +858,15 @@ void sndp_dev_charger_plug_status_changed(sndp_hal_charger_plug_status_e status)
 #if defined(__SNDP_CHARGER_MGR__)
         sndp_hal_charger_check_curr_status();
 #endif
+
+#if defined(__SNDP_COMM_POGOPIN__)			
+        if(charger_plug == SNDP_DEV_CHARGER_PLUG_IN) {
+    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
+    	} else {
+    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_RX);
+    	}
+#endif
+
 
 #if defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)
         if(charger_plug == SNDP_DEV_CHARGER_PLUG_IN) {
