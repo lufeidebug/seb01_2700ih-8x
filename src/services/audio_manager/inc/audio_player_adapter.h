@@ -102,6 +102,7 @@ typedef enum {
     AUD_ID_TRANSPARENT = 0x43,
     AUD_ID_WORKING_MODE_SLEEP = 0x44,
     AUD_ID_WORKING_MODE_BT = 0x45,
+    AUD_ID_WEAR_ON = 0x46,
 #endif
 
     AUD_ID_ENUM_BOTTOM = 0x10000000,    // AUD_ID_ENUM is uint32_t

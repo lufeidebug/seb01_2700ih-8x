@@ -372,7 +372,7 @@ static void sndp_ui_wear_on_play_tone(void)
 	SPUI_TRACE_ENTER();
 	
 #ifdef MEDIA_PLAYER_SUPPORT
-    //media_PlayAudio_locally(AUD_ID_WEAR_ON, 0);
+    media_PlayAudio_locally(AUD_ID_WEAR_ON, 0);
 #endif
 
 }

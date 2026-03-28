@@ -181,6 +181,11 @@ const uint8_t CN_SOUND_WORKING_MODE_BT[] = {
 0//#include "res/cn/SOUND_WORKING_MODE_BT_16k.txt"
 };
 
+const uint8_t CN_SOUND_WEAR_ON[] = {
+0//#include "res/cn/SOUND_WEAR_ON_16k.txt"
+};
+
+
 #endif
 
 #endif
