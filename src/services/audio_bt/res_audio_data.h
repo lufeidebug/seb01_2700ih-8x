@@ -79,7 +79,7 @@ const uint8_t EN_BT_PAIR_ENABLE[] = {
 };
 
 const uint8_t EN_BT_PAIRING[] = {
-0//#include "res/en/SOUND_PAIRING.txt"
+#include "res/en/SOUND_PAIRING.txt"
 };
 
 const uint8_t EN_BT_PAIRING_FAIL[] = {
