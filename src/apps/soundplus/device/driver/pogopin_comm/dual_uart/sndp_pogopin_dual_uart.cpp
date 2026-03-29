@@ -699,7 +699,7 @@ static int32_t pgp_uart_init(void)
   
     /* mode init */
     pgp_uart_ctx.pogopin_mode = SNDP_HAL_POGOPIN_MODE_UNKNOWN;
-    pgp_uart_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
+    pgp_uart_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_RX);
     
     pgp_uart_ctx.inited = true;
     PGP_UART_TRACE(0, "done.");

@@ -66,6 +66,7 @@ uint32_t sndp_hal_pogopin_comm_init(void)
 
 uint32_t sndp_hal_pogopin_comm_set_mode(sndp_hal_pogopin_mode_e mode)
 {
+    return SNDP_HAL_RET_OK;
 	if((p_pogopin_comm != NULL) && (p_pogopin_comm->set_mode != NULL))
 		return p_pogopin_comm->set_mode(mode);
 	
