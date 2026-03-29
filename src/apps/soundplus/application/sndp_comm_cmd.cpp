@@ -943,10 +943,6 @@ static uint32_t sndp_comm_cmd_recv_pt_test_mic(sndp_comm_cmd_info_s *cmd_info)
     
 	if(cmd_info->data_len == 1) {
         mic_index = cmd_info->data[0];
-		
-		if(mic_index > 3) {
-			err_code = SNDP_COMM_ERROR_PARAM_OUT_RANG;
-		}
 	} else {
 		err_code = SNDP_COMM_ERROR_INVALID_DATA_LEN;
 	}
