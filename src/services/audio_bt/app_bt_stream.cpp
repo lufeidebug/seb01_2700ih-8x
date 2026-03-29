@@ -224,6 +224,12 @@ uint8_t dolby_role = -1;
 #include "nvrecord_env.h"
 #endif
 
+#if defined(__SNDP_UI__)
+#include "sndp_if_common.h"
+#include "sndp_if_device.h"
+#endif
+
+
 void(*app_bt_stream_ext_sco_playback)(uint8_t *buf, uint32_t len) = NULL;
 uint32_t (*app_bt_stream_ext_sco_capture)(uint8_t *buf, uint32_t len) = NULL;
 void app_bt_stream_set_ext_sco_data_path(void(*playback_cb)(uint8_t *buf, uint32_t len),
@@ -1614,6 +1620,12 @@ if (stream_route_info.output_route_info)
     if(app_get_speaker_mute_a2dp_status())
     {
         BESUI_TRACE(0,"[UIA2DP]a2dp mute speaker");
+        memset(buf,0,len);
+    }
+#endif
+
+#if defined(__SNDP_UI__)
+    if(sndp_dev_iobox_is_in_box(false)) {
         memset(buf,0,len);
     }
 #endif
@@ -5370,17 +5382,17 @@ static uint32_t bt_sco_codec_capture_data(uint8_t *buf, uint32_t len)
 #endif
 
 #if defined(ANC_ASSIST_ENABLED)
-        if(app_anc_assist_is_runing()) {
+    if(app_anc_assist_is_runing()) {
 #if defined(ASSIST_LOW_RAM_MOD)
-            //resample  16k->8k
-            integer_resampling_process_q23(anc_assist_resample_inst, (int32_t *)buf, len / sizeof(_PCM_T), (int32_t *)anc_assist_resample_buf);
-            // TODO: Use capture buf
-            app_anc_assist_process(anc_assist_resample_buf, len / 2);
+        //resample  16k->8k
+        integer_resampling_process_q23(anc_assist_resample_inst, (int32_t *)buf, len / sizeof(_PCM_T), (int32_t *)anc_assist_resample_buf);
+        // TODO: Use capture buf
+        app_anc_assist_process(anc_assist_resample_buf, len / 2);
 #else
-            app_anc_assist_process(buf, len);
+        app_anc_assist_process(buf, len);
 #endif
-        }
-        app_anc_assist_parser_app_mic_buf(buf, &len);
+    }
+    app_anc_assist_parser_app_mic_buf(buf, &len);
 #endif
 
 #if defined(BT_BUILD_WITH_CUSTOMER_HOST) || defined(BLE_ONLY_ENABLED)
@@ -5403,11 +5415,11 @@ static uint32_t bt_sco_codec_capture_data(uint8_t *buf, uint32_t len)
     //processing  ping pang flag
     if(buf==capture_buf_codecpcm)
     {
-     pingpang=0;
+        pingpang=0;
     }
     else
     {
-     pingpang=1;
+        pingpang=1;
     }
 
 #ifndef PCM_PRIVATE_DATA_FLAG
@@ -5422,19 +5434,19 @@ static uint32_t bt_sco_codec_capture_data(uint8_t *buf, uint32_t len)
 
 #ifdef TX_RX_PCM_MASK
     //processing btpcm.(It must be from CPU's copy )
-   if(btdrv_is_pcm_mask_enable()==1&&bt_sco_codec_is_msbc())
-   {
-	uint32_t lock;
-	uint32_t i;
-	//must lock the interrupts when exchanging data.
-	lock = int_lock();
-	uint16_t *playback_src=(uint16_t *)(playback_buf_btpcm+(pingpang)*playback_size_btpcm/2);
-	for( i =0; i<playback_size_btpcm_copy; i++)
-	{
-		playback_buf_btpcm_copy[i]=(uint8_t)(playback_src[i]>>8);
-	}
-	int_unlock(lock);
-   }
+    if(btdrv_is_pcm_mask_enable()==1&&bt_sco_codec_is_msbc())
+    {
+        uint32_t lock;
+        uint32_t i;
+        //must lock the interrupts when exchanging data.
+        lock = int_lock();
+        uint16_t *playback_src=(uint16_t *)(playback_buf_btpcm+(pingpang)*playback_size_btpcm/2);
+        for( i =0; i<playback_size_btpcm_copy; i++)
+        {
+            playback_buf_btpcm_copy[i]=(uint8_t)(playback_src[i]>>8);
+        }
+        int_unlock(lock);
+    }
 #endif
 
 #ifdef SPEECH_SIDETONE
