@@ -55,7 +55,7 @@ static sndp_hal_charging_mode_changed_callback charging_mode_changed_cb_ptr;
 * Function
 **************************************************************************************************/
 
-static sndp_hal_charger_mode_e sndp_bes_charger_cover_status(enum CHARGER_CHARGE_STATUE_E status)
+static sndp_hal_charger_mode_e sndp_bes_charger_convert_status(enum CHARGER_CHARGE_STATUE_E status)
 {
     sndp_hal_charger_mode_e mode;
     
@@ -234,7 +234,7 @@ int32_t sndp_bes_charger_check_curr_status(void)
     sndp_hal_charger_mode_e mode;
     
     status = charger_charge_status_get();
-    mode = sndp_bes_charger_cover_status(status);
+    mode = sndp_bes_charger_convert_status(status);
     sndp_bes_charger_report_mode(mode);
 	return SNDP_HAL_RET_OK;
 }
@@ -248,7 +248,7 @@ int32_t sndp_bes_charger_get_charging_status(sndp_hal_charger_mode_e *mode)
     }
     
     status = charger_charge_status_get();
-    *mode = sndp_bes_charger_cover_status(status);
+    *mode = sndp_bes_charger_convert_status(status);
     return SNDP_HAL_RET_OK;
 }
 
