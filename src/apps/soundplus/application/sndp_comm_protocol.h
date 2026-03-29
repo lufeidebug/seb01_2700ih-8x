@@ -40,7 +40,7 @@ extern "C" {
                                                 SNDP_COMM_FRAME_CMDID_LEN + \
                                                 SNDP_COMM_FRAME_DLEN_LEN)
 
-#define SNDP_COMM_FRAME_CMD_DLEN_MAX        (128)
+#define SNDP_COMM_FRAME_CMD_DLEN_MAX        (246)
 #define SNDP_COMM_FRAME_LEN_MAX             (SNDP_COMM_FRAME_HEAD_LEN + SNDP_COMM_FRAME_CMD_DLEN_MAX + SNDP_COMM_FRAME_CRC_LEN)
 
 #define SNDP_COMM_FRAME_FLAG                (0xFE)

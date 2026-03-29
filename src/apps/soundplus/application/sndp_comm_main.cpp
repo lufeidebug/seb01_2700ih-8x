@@ -93,7 +93,7 @@ static uint8_t sndp_comm_send_frame[SNDP_COMM_FRAME_LEN_MAX];
 
 
 #if defined(__SNDP_COMM_TRACE_UART__)
-#define TRACE_UART_RECV_QUEUE_BUF_SIZE			    (256)
+#define TRACE_UART_RECV_QUEUE_BUF_SIZE			    (128)
 
 static CQueue trace_uart_recv_queue;
 static osMutexId trace_uart_recv_queue_mutex_id = NULL;
@@ -105,7 +105,7 @@ static bool trace_uart_inited = false;
 
 #if defined(__SNDP_COMM_POGOPIN__)
 
-#define POGOPIN_RECV_QUEUE_BUF_SIZE			    (256)
+#define POGOPIN_RECV_QUEUE_BUF_SIZE			    (128)
 
 static CQueue pogopin_recv_queue;
 static osMutexId pogopin_recv_queue_mutex_id = NULL;
@@ -130,7 +130,7 @@ static bool ble_inited = false;
 #endif
 
 #if defined(__SNDP_COMM_SPP__)
-#define SPP_RECV_QUEUE_BUF_SIZE			    (256)
+#define SPP_RECV_QUEUE_BUF_SIZE			    (128)
 
 static CQueue spp_recv_queue;
 static osMutexId spp_recv_queue_mutex_id = NULL;
