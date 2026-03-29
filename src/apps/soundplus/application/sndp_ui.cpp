@@ -456,12 +456,16 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
     
 	/* update the ibrt status machine */
 	if(SNDP_DEV_WEAR_ON == wear_status) {
+        sndp_dev_acc_enter_detection_mode();
+    
 		bta_tws_box_event_entry(BTA_TWS_WEAR_UP);
 		//bta_tws_box_event_entry(APP_UI_EV_MOBILE_RECONNECT);	
 		/* play wear prompt tone */
 		sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_play_tone, 0, 0, 0);
 
 	} else {
+        sndp_dev_acc_enter_standby_mode();
+        
 		/* update the ibrt status machine */
 		bta_tws_box_event_entry(BTA_TWS_WEAR_DOWN);
 
@@ -525,6 +529,8 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
     sndp_delay_exec_stop((uint32_t)sndp_ui_outbox_role_switch);
     
     if(inout_status == SNDP_DEV_IOBOX_IN) {
+        sndp_dev_wear_disable_detection();
+        
         bta_tws_box_event_entry(BTA_TWS_DOCK);
 
         sndp_delay_exec_start(300, (uint32_t)sndp_ui_inbox_role_switch, 0, 0, 0);

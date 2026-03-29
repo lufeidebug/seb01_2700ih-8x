@@ -440,11 +440,13 @@ static int32_t ssh401a_check_curr_status()
 
 static int32_t ssh401a_wear_enter_standby_mode(void)
 {
+    ss_ppg_stop_measurement();
     return SNDP_HAL_RET_FAIL;
 }
 
 static int32_t ssh401a_wear_enter_detection_mode(void)
 {
+    ss_ppg_start_measurement();
     return SNDP_HAL_RET_FAIL;
 }
 
