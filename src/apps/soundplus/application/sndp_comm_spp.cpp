@@ -31,11 +31,12 @@
 #else
 #define COMM_SPP_L2CAP_MTU                      (672)
 #endif
-#define COMM_SPP_MAX_PACKET_SIZE                (COMM_SPP_L2CAP_MTU)
+
+#define COMM_SPP_MAX_PACKET_SIZE                (256) //(COMM_SPP_L2CAP_MTU)
 #define COMM_SPP_MAX_PACKET_NUM                 (2)
 
 
-#define COMM_SPP_SEND_PACK_SIZE                 (256)
+#define COMM_SPP_SEND_PACK_SIZE                 (128)
 #define COMM_SPP_SEND_QUEUE_BUF_SIZE            (COMM_SPP_SEND_PACK_SIZE * 2)
 
 /**************************************************************************************************
@@ -117,7 +118,7 @@ static const U8 sndp_comm_spp_profile_desc_list[] = {
     SDP_ATTRIB_HEADER_8BIT(20),
 
     SDP_UUID_128BIT(sndp_comm_spp_uuid_128), /* Uuid128 SPP */
-    
+    SDP_UINT_16BIT(0x0102)          /* As per errata 2239 */
 #else
     SDP_ATTRIB_HEADER_8BIT(8), /* Data element sequence, 8 bytes */
 
@@ -125,17 +126,18 @@ static const U8 sndp_comm_spp_profile_desc_list[] = {
     SDP_ATTRIB_HEADER_8BIT(6),
 
     SDP_UUID_16BIT(SC_SERIAL_PORT), /* Uuid16 SPP */
+    SDP_UINT_16BIT(0x0102)          /* As per errata 2239 */
 #endif
 
-    SDP_UINT_16BIT(0x0102)          /* As per errata 2239 */
+    
 };
 
 /*
  * * OPTIONAL *  ServiceName
  */
 static const U8 sndp_comm_spp_service_name[] = {
-    SDP_TEXT_8BIT(5), /* Null terminated text string */
-    'S', 'N', 'D', 'P', '\0'};
+    SDP_TEXT_8BIT(7), /* Null terminated text string */
+    'P', 'T', 'T', 'E', 'S', 'T', '\0'};
 
 /* SPP attributes.
  *
@@ -196,12 +198,12 @@ static void sndp_comm_spp_send_data_timeout(void)
 
 static void sndp_comm_spp_send_data_exec(void)
 {
-    bt_status_t ret = BT_STS_SUCCESS;
+    bool ret;
     int32_t queue_len;
     int32_t send_len;
     
 	if(!comm_spp_ctx.is_connected) {
-		COMM_SPP_TRACE(0, "SPP not connected, return");
+		COMM_SPP_TRACE(0, "SPP not connected, rtn");
 		return;
 	}
 
@@ -224,17 +226,16 @@ static void sndp_comm_spp_send_data_exec(void)
     }
 
     sndp_comm_spp_send_queue_pop_data(comm_spp_send_buf, send_len);
-    
-    COMM_SPP_TRACE(1, "send_len:%d", send_len);
-    ret = bta_spp_write(comm_spp_ctx.pSppDevice->rfcomm_handle, comm_spp_send_buf, send_len);
+    COMM_SPP_TRACE(1, "sending, len=%d", send_len);
 
-    if (BT_STS_SUCCESS != ret) {
-        COMM_SPP_TRACE(0, "fail");
-        sndp_delay_exec_start((uint32_t)100, (uint32_t)sndp_comm_spp_send_data_exec, 0, 0, 0);
+    comm_spp_ctx.is_sending = true;
+    ret = bta_spp_send_data(comm_spp_ctx.pSppDevice->rfcomm_handle, comm_spp_send_buf, send_len);
+    if (ret) {
+        //COMM_SPP_TRACE(0, "success");
+        sndp_delay_exec_start(100, (uint32_t)sndp_comm_spp_send_data_timeout, 0, 0, 0);
     } else {
-        COMM_SPP_TRACE(0, "sending...");
-        comm_spp_ctx.is_sending = true;
-        sndp_delay_exec_start((uint32_t)500, (uint32_t)sndp_comm_spp_send_data_timeout, 0, 0, 0);
+        COMM_SPP_TRACE(0, "fail");
+        sndp_delay_exec_start(10, (uint32_t)sndp_comm_spp_send_data_exec, 0, 0, 0);
     }
 }
 
@@ -245,7 +246,7 @@ int32_t sndp_comm_spp_send_data(uint8_t *data, uint16_t data_len)
     }
     
 	if(!comm_spp_ctx.is_connected) {
-		COMM_SPP_TRACE(0, "SPP not connected, return");
+		COMM_SPP_TRACE(0, "SPP not connected, rtn");
 		return -2;
 	}
 	
@@ -260,7 +261,7 @@ static int32_t sndp_comm_spp_recv_data(const bt_bdaddr_t *remote, bt_spp_callbac
         return -1;
     }
         
-    COMM_SPP_TRACE(2, "recv data, pData:%p length=%d", param->rx_data_ptr, param->rx_data_len);
+    COMM_SPP_TRACE(2, "len=%d", param->rx_data_len);
     DUMP8("0x%02x ", param->rx_data_ptr, (param->rx_data_len > 16) ? 16 : param->rx_data_len);
     sndp_comm_main_recv_queue_push_data(SNDP_COMM_PATH_SPP, (uint8_t *)param->rx_data_ptr, param->rx_data_len);
     return 0;
@@ -281,7 +282,7 @@ static int sndp_comm_spp_server_callback(const bt_bdaddr_t *remote, bt_spp_event
     switch (event)
     {
     case BT_SPP_EVENT_OPENED:
-        COMM_SPP_TRACE(0, "::BT_SPP_EVENT_OPENED");
+        COMM_SPP_TRACE(0, "OPENED");
         for (uint8_t i = 0; i < BT_DEVICE_NUM; ++i){
             curr_device = app_bt_get_device(i);
             mobile_addr = &curr_device->remote;
@@ -300,7 +301,7 @@ static int sndp_comm_spp_server_callback(const bt_bdaddr_t *remote, bt_spp_event
         break;
         
     case BT_SPP_EVENT_CLOSED:
-        COMM_SPP_TRACE(0, "::BT_SPP_EVENT_CLOSED");
+        COMM_SPP_TRACE(0, "CLOSED");
         for (uint8_t i = 0; i < BT_DEVICE_NUM; ++i) {
             curr_device = app_bt_get_device(i);
             mobile_addr = &curr_device->remote;
@@ -318,12 +319,13 @@ static int sndp_comm_spp_server_callback(const bt_bdaddr_t *remote, bt_spp_event
         break;
         
     case BT_SPP_EVENT_TX_DONE:
-        COMM_SPP_TRACE(0, "::BT_SPP_EVENT_TX_DONE");
-        sndp_delay_exec_start((uint32_t)100, (uint32_t)sndp_comm_spp_send_data_exec, 0, 0, 0);
+        COMM_SPP_TRACE(0, "TX_DONE");
+        sndp_delay_exec_stop((uint32_t)sndp_comm_spp_send_data_timeout);
+        sndp_delay_exec_start(10, (uint32_t)sndp_comm_spp_send_data_exec, 0, 0, 0);
         break;
     
     case BT_SPP_EVENT_RX_DATA:
-        //COMM_SPP_TRACE(0, "::BT_SPP_EVENT_RX_DATA");
+        //COMM_SPP_TRACE(0, "RX_DATA");
         sndp_comm_spp_recv_data(remote, param);
         break;
     default:
@@ -336,7 +338,7 @@ static int sndp_comm_spp_server_callback(const bt_bdaddr_t *remote, bt_spp_event
 int32_t sndp_comm_spp_init(void)
 {
     comm_spp_send_queue_mutex_id = osMutexCreate(osMutex(comm_spp_send_queue_mutex));
-    ASSERT(comm_spp_send_queue_mutex_id != NULL, "%s, comm_spp_send_queue_mutex_id == NULL", __func__);
+    ASSERT(comm_spp_send_queue_mutex_id != NULL, "%s, %d", __func__, __LINE__);
 
     osMutexWait(comm_spp_send_queue_mutex_id, osWaitForever);
     InitCQueue(&comm_spp_send_queue, sizeof(comm_spp_send_queue_buf), comm_spp_send_queue_buf);
