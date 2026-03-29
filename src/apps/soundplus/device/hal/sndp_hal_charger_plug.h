@@ -9,9 +9,8 @@ extern "C" {
 
 
 typedef enum {
+    SNDP_HAL_CHARGER_PLUGOUT,
 	SNDP_HAL_CHARGER_PLUGIN,
-	SNDP_HAL_CHARGER_PLUGOUT,
-
 	SNDP_HAL_CHARGER_UNKNOWN,
 } sndp_hal_charger_plug_status_e;
 

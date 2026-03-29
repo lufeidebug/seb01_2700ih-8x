@@ -72,8 +72,8 @@ typedef enum {
 } sndp_dev_iobox_status_e;
 
 typedef enum {
+    SNDP_DEV_CHARGER_PLUG_OUT,
 	SNDP_DEV_CHARGER_PLUG_IN,
-	SNDP_DEV_CHARGER_PLUG_OUT,
 	SNDP_DEV_CHARGER_PLUG_UNKNOWN,
 } sndp_dev_charger_plug_e;
 
