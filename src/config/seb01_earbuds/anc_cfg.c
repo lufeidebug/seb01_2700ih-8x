@@ -21,116 +21,96 @@
 
 static const struct_anc_cfg POSSIBLY_UNUSED AncFirCoef_50p7k_mode0 = {
     .anc_cfg_ff_l = {
-        .total_gain = 512*2,
-        .iir_bypass_flag=0,
-        .iir_counter=IIR_COUNTER_FF_L,
-
-        .iir_coef[0].coef_b={0x8000000,0,0},
-        .iir_coef[0].coef_a={0x8000000,0,0},
-
-        .iir_coef[1].coef_b={0x8000000,0,0},
-        .iir_coef[1].coef_a={0x8000000,0,0},
-
-        .iir_coef[2].coef_b={0x8000000,0,0},
-        .iir_coef[2].coef_a={0x8000000,0,0},
-        // .iir_coef[2].coef_b={133132833, -265460650, 132663529},//3k
-        // .iir_coef[2].coef_a={134217728, -265460650, 131578634},
-
-        .iir_coef[3].coef_b={0x8000000,0,0},
-        .iir_coef[3].coef_a={0x8000000,0,0},
-
-        .iir_coef[4].coef_b={0x8000000,0,0},
-        .iir_coef[4].coef_a={0x8000000,0,0},
-
-        .iir_coef[5].coef_b={0x8000000,0,0},
-        .iir_coef[5].coef_a={0x8000000,0,0},
-
-        .dac_gain_offset=0,
-        .adc_gain_offset=(0)*4,
+        .total_gain = 512,
+        .iir_bypass_flag = 0,
+        .iir_counter = 8,
+        .iir_coef[0].coef_b = {0x08fa53ed,0xee0df650,0x08f7b661},
+        .iir_coef[0].coef_a = {0x08000000,0xf0018f12,0x07fe712d},
+        .iir_coef[1].coef_b = {0x080176ef,0xf006a0aa,0x07f7f5a1},
+        .iir_coef[1].coef_a = {0x08000000,0xf006a0aa,0x07f96c90},
+        .iir_coef[2].coef_b = {0x07ff4a84,0xf00e7f14,0x07f24ddf},
+        .iir_coef[2].coef_a = {0x08000000,0xf00e7f14,0x07f19863},
+        .iir_coef[3].coef_b = {0x08015e14,0xf006e729,0x07f800b8},
+        .iir_coef[3].coef_a = {0x08000000,0xf006e729,0x07f95ecd},
+        .iir_coef[4].coef_b = {0x07f84877,0xf027221e,0x07e18bd6},
+        .iir_coef[4].coef_a = {0x08000000,0xf027221e,0x07d9d44d},
+        .iir_coef[5].coef_b = {0x2c3d768a,0xa895e713,0x2b3597e7},
+        .iir_coef[5].coef_a = {0x08000000,0xf0783b62,0x0790ba22},
+        .iir_coef[6].coef_b = {0x07a1710a,0xf0f98a51,0x07788993},
+        .iir_coef[6].coef_a = {0x08000000,0xf0f98a51,0x0719fa9d},
+        .iir_coef[7].coef_b = {0x056721d8,0xf5d562be,0x0517e66f},
+        .iir_coef[7].coef_a = {0x08000000,0xf5d562be,0x027f0848},
+        .dac_gain_offset = 0,
+        .adc_gain_offset = -24,
     },
     .anc_cfg_fb_l = {
-        .total_gain = 512/2,
-        .iir_bypass_flag=0,
-        .iir_counter=IIR_COUNTER_FB_L,
-
-        .iir_coef[0].coef_b={0x8000000,0,0},
-        .iir_coef[0].coef_a={0x8000000,0,0},
-
-        .iir_coef[1].coef_b={0x8000000,0,0},
-        .iir_coef[1].coef_a={0x8000000,0,0},
-
-        .iir_coef[2].coef_b={0x8000000,0,0},
-        .iir_coef[2].coef_a={0x8000000,0,0},
-        // .iir_coef[2].coef_b={133853574, -267512069, 133696049},//1k
-        // .iir_coef[2].coef_a={134217728, -267512069, 133331895},
-
-        .iir_coef[3].coef_b={0x8000000,0,0},
-        .iir_coef[3].coef_a={0x8000000,0,0},
-
-        .iir_coef[4].coef_b={0x8000000,0,0},
-        .iir_coef[4].coef_a={0x8000000,0,0},
-
-        .iir_coef[5].coef_b={0x8000000,0,0},
-        .iir_coef[5].coef_a={0x8000000,0,0},
-
-        .dac_gain_offset=0,
-        .adc_gain_offset=(0)*4,
+        .total_gain = 512,
+        .iir_bypass_flag = 0,
+        .iir_counter = 5,
+        .iir_coef[0].coef_b = {0x08a63e28,0xeedf402a,0x08820e96},
+        .iir_coef[0].coef_a = {0x08000000,0xf0bc1689,0x074aa42c},
+        .iir_coef[1].coef_b = {0x08147903,0xf00272b0,0x07e9166c},
+        .iir_coef[1].coef_a = {0x08000000,0xf00272b0,0x07fd8f6e},
+        .iir_coef[2].coef_b = {0x06eb6087,0xf30c734f,0x0673b71c},
+        .iir_coef[2].coef_a = {0x08000000,0xf30c734f,0x055f17a2},
+        .iir_coef[3].coef_b = {0x08066949,0xf010976a,0x07e91cfd},
+        .iir_coef[3].coef_a = {0x08000000,0xf010976a,0x07ef8646},
+        .iir_coef[4].coef_b = {0x08f97201,0xee1c3d64,0x08ea888a},
+        .iir_coef[4].coef_a = {0x08000000,0xf00e4bdb,0x07f1ec14},
+        .iir_coef[5].coef_b = {0,0,0},
+        .iir_coef[5].coef_a = {0,0,0},
+        .iir_coef[6].coef_b = {0,0,0},
+        .iir_coef[6].coef_a = {0,0,0},
+        .iir_coef[7].coef_b = {0,0,0},
+        .iir_coef[7].coef_a = {0,0,0},
+        .dac_gain_offset = 0,
+        .adc_gain_offset = -24,
     },
     .anc_cfg_tt_l = {
-        .total_gain = 512/2,
-        .iir_bypass_flag=0,
-        .iir_counter=IIR_COUNTER_FF_L,
-
-        .iir_coef[0].coef_b={0x8000000,0,0},
-        .iir_coef[0].coef_a={0x8000000,0,0},
-
-        .iir_coef[1].coef_b={0x8000000,0,0},
-        .iir_coef[1].coef_a={0x8000000,0,0},
-
-        .iir_coef[2].coef_b={0x8000000,0,0},
-        .iir_coef[2].coef_a={0x8000000,0,0},
-        // .iir_coef[2].coef_b={130003803,    -257605108,    128180940}, //4k test code
-        // .iir_coef[2].coef_a={134217728,    -257605108,    123967016},
-
-        .iir_coef[3].coef_b={0x8000000,0,0},
-        .iir_coef[3].coef_a={0x8000000,0,0},
-
-        .iir_coef[4].coef_b={0x8000000,0,0},
-        .iir_coef[4].coef_a={0x8000000,0,0},
-
-        .iir_coef[5].coef_b={0x8000000,0,0},
-        .iir_coef[5].coef_a={0x8000000,0,0},
-
-        .dac_gain_offset=0,
-        .adc_gain_offset=(0)*4,
+        .total_gain = 0,
+        .iir_bypass_flag = 0,
+        .iir_counter = 1,
+        .iir_coef[0].coef_b = {0x08000000,0xf022991b,0x07ddf8db},
+        .iir_coef[0].coef_a = {0x08000000,0xf022991b,0x07ddf8db},
+        .iir_coef[1].coef_b = {0,0,0},
+        .iir_coef[1].coef_a = {0,0,0},
+        .iir_coef[2].coef_b = {0,0,0},
+        .iir_coef[2].coef_a = {0,0,0},
+        .iir_coef[3].coef_b = {0,0,0},
+        .iir_coef[3].coef_a = {0,0,0},
+        .iir_coef[4].coef_b = {0,0,0},
+        .iir_coef[4].coef_a = {0,0,0},
+        .iir_coef[5].coef_b = {0,0,0},
+        .iir_coef[5].coef_a = {0,0,0},
+        .iir_coef[6].coef_b = {0,0,0},
+        .iir_coef[6].coef_a = {0,0,0},
+        .iir_coef[7].coef_b = {0,0,0},
+        .iir_coef[7].coef_a = {0,0,0},
+        .dac_gain_offset = 0,
+        .adc_gain_offset = -24,
     },
     .anc_cfg_mc_l = {
-        .total_gain = 512/2,
-        .iir_bypass_flag=0,
-        .iir_counter=IIR_COUNTER_FB_L,
-
-        .iir_coef[0].coef_b={0x8000000,0,0},
-        .iir_coef[0].coef_a={0x8000000,0,0},
-
-        .iir_coef[1].coef_b={0x8000000,0,0},
-        .iir_coef[1].coef_a={0x8000000,0,0},
-
-        .iir_coef[2].coef_b={0x8000000,0,0},
-        .iir_coef[2].coef_a={0x8000000,0,0},
-        // .iir_coef[2].coef_b={131723630,    -260565855,    130644731},  //7K
-        // .iir_coef[2].coef_a={134217728,    -260565855,    128150634},
-
-        .iir_coef[3].coef_b={0x8000000,0,0},
-        .iir_coef[3].coef_a={0x8000000,0,0},
-
-        .iir_coef[4].coef_b={0x8000000,0,0},
-        .iir_coef[4].coef_a={0x8000000,0,0},
-
-        .iir_coef[5].coef_b={0x8000000,0,0},
-        .iir_coef[5].coef_a={0x8000000,0,0},
-
-        .dac_gain_offset=0,
-        .adc_gain_offset=(0)*4,
+        .total_gain = 0,
+        .iir_bypass_flag = 0,
+        .iir_counter = 1,
+        .iir_coef[0].coef_b = {0x08000000,0xf022991b,0x07ddf8db},
+        .iir_coef[0].coef_a = {0x08000000,0xf022991b,0x07ddf8db},
+        .iir_coef[1].coef_b = {0,0,0},
+        .iir_coef[1].coef_a = {0,0,0},
+        .iir_coef[2].coef_b = {0,0,0},
+        .iir_coef[2].coef_a = {0,0,0},
+        .iir_coef[3].coef_b = {0,0,0},
+        .iir_coef[3].coef_a = {0,0,0},
+        .iir_coef[4].coef_b = {0,0,0},
+        .iir_coef[4].coef_a = {0,0,0},
+        .iir_coef[5].coef_b = {0,0,0},
+        .iir_coef[5].coef_a = {0,0,0},
+        .iir_coef[6].coef_b = {0,0,0},
+        .iir_coef[6].coef_a = {0,0,0},
+        .iir_coef[7].coef_b = {0,0,0},
+        .iir_coef[7].coef_a = {0,0,0},
+        .dac_gain_offset = 0,
+        .adc_gain_offset = 0,
     },
 };
 
