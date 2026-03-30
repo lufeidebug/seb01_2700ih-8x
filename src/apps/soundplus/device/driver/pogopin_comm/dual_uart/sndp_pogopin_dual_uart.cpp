@@ -351,7 +351,8 @@ static void pgp_uart_irq_tx(uint8_t *data, uint32_t data_len)
         hal_uart_blocked_putc(pgp_uart_ctx.uart_port, data[i]);
 		//osDelay(5);
 		//hal_uart_flush(pgp_uart_ctx.uart_port, 0);
-		while (!hal_uart_get_flag(pgp_uart_ctx.uart_port).TXFE || hal_uart_get_flag(pgp_uart_ctx.uart_port).BUSY){
+		while (!hal_uart_get_flag(pgp_uart_ctx.uart_port).TXFE || hal_uart_get_flag(pgp_uart_ctx.uart_port).BUSY){
+
 		    osThreadYield();
 		};
     }
@@ -497,7 +498,8 @@ static void pgp_uart_send_hdlr(void)
     if(pgp_uart_ctx.tx_working) {
         sndp_delay_exec_start(50, (uint32_t)pgp_uart_send_hdlr, 0, 0, 0);
         return;
-    }
+    
+}
 
     memset(p_send_item, 0, sizeof(pgp_uart_send_item_s));
     if(pgp_uart_send_queue_pop_data(p_send_item) == 0) {

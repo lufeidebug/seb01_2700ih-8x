@@ -149,7 +149,7 @@ const uint8_t CN_SOUND_CUSTOM_LEAK_DETECT [] = {
 0//#include "res/ld/SOUND_PROMPT_CUSTOM_LEAK.txt"
 };
 
-#ifdef __INTERACTION__
+#if defined(__INTERACTION__)||defined(__SNDP_FINDME__)
 const uint8_t CN_BT_FINDME[] = {
 0//#include "res/cn/SOUND_FINDME.txt"
 };

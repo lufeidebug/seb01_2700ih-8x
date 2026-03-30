@@ -91,24 +91,27 @@ typedef enum {
                                                              * recv: 1 bytes, event(1)
                                                              * rsp : 0 bytes */
 #if defined(__SNDP_SLEEP_APP__)
-    COMM_CMDID_LR_SYNC_EQ_INDEX                     = 0x2A, /* desc: 左右耳同步提示音开关指令。
+    COMM_CMDID_LR_SYNC_EQ_INDEX                     = 0x2A, /* desc: 左右耳同步EQ模式指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_ANC_MODE                     = 0x2B, /* desc: 左右耳同步提示音开关指令。
+    COMM_CMDID_LR_SYNC_ANC_MODE                     = 0x2B, /* desc: 左右耳同步ANC模式指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
     COMM_CMDID_LR_SYNC_PROMPT_ONOFF                 = 0x2C, /* desc: 左右耳同步提示音开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_GESTRUE_ONOFF                = 0x2D, /* desc: 左右耳同步提示音开关指令。
+    COMM_CMDID_LR_SYNC_GESTRUE_ONOFF                = 0x2D, /* desc: 左右耳同步按键手势开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF             = 0x2E, /* desc: 左右耳同步更新按键映射指令。
+    COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF             = 0x2E, /* desc: 左右耳同步开关smart play/pause。
                                                              * recv: 2 bytes, key behavior(1) + key function(1)
                                                              * rsp : 0 bytes */       
     COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x2F, /* desc: 左右耳同步手势使能开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */    
+    COMM_CMDID_LR_SYNC_FINDME_ONOFF                 = 0x2F, /* desc: 左右耳同步开关findme提示音。
+                                                             * recv: 1 bytes, onoff(1)
+                                                             * rsp : 0 bytes */ 
 #endif                                                                   
     COMM_CMDID_LR_SYNC_ALL_DEV_STATUS               = 0x2D, /* desc: 左右耳同步所有设备状态指令。
                                                              * recv: n bytes, 
@@ -297,6 +300,7 @@ typedef enum {
                                                     rsp: 1 bytes, error code(1). */
 } sleep_app_cmd_id_e;
 
+uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, uint8_t resulcode);
 #endif
 #ifdef __cplusplus
 }

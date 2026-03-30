@@ -76,7 +76,7 @@ typedef enum {
     AUDIO_ID_BT_GSOUND_NC = 0x24,
     AUDIO_ID_BT_MUTE = 0x25,
     AUD_ID_RING_WARNING = 0x26,
-#ifdef __INTERACTION__
+#if defined(__INTERACTION__)||defined(__SNDP_FINDME__)
     AUD_ID_BT_FINDME = 0x27,
 #endif
     AUD_ID_ANC_PROMPT = 0x28,

@@ -41,6 +41,7 @@
 **************************************************************************************************/
 #if defined(__SNDP_SLEEP_APP__)
 static sleep_app_comm_cmd_info_s sndp_sleep_comm_recv_cmd;
+static sleep_app_comm_cmd_info_s sndp_sleep_comm_send_cmd;
 inline void SleepAppFlagGet(uint32_t *flagaddr, uint8_t *dataaddr)
 {
     ((uint8_t*)flagaddr)[2] = dataaddr[0];
@@ -642,6 +643,20 @@ int32_t sleep_app_comm_main_send_cmd(sleep_app_comm_cmd_info_s *cmd)
         }
 #endif    
     sndp_comm_main_send_data(send_path, sndp_comm_send_frame, SLEEP_APP_COMM_HEAD_LEN + cmd->data_len);
+    return 0;
+}
+int32_t sleep_app_comm_main_send_cmd_by_id(sleep_app_cmd_id_e cmd_id, uint8_t datalen, uint8_t *cmd_data)
+{
+    sleep_app_comm_cmd_info_s *cmd = &sndp_sleep_comm_send_cmd;
+    
+    cmd->flag = AppFlag;
+    cmd->data_len = datalen;
+    cmd->cmd = cmd_id;
+    if(datalen > 0 && datalen < SLEEP_APP_COMM_DATA_LEN_MAX && cmd_data != NULL) {
+        memcpy(cmd->value, cmd_data, datalen);
+    }
+
+    sleep_app_comm_main_send_cmd(cmd);
     return 0;
 }
 #endif

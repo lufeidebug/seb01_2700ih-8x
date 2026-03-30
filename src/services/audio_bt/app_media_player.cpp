@@ -137,6 +137,8 @@
 
 #ifdef __INTERACTION__
 uint8_t g_findme_fadein_vol = TGT_VOLUME_LEVEL_1;
+#elif defined(__SNDP_FINDME__)
+uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_1;
 #endif
 #include "sbc_api.h"
 #include "sbc_error_code.h"
@@ -342,7 +344,7 @@ enum sound_id {
     RES_AUD_RING_SAMPRATE_16000,
 #endif
 
-#ifdef __INTERACTION__
+#if defined(__INTERACTION__)||defined(__SNDP_FINDME__)
     BT_FINDME,
 #endif
 
@@ -441,7 +443,7 @@ static const media_sound_map_t media_sound_map_cn[] =
     SOUND_ITEM_DEF(CN_, RES_AUD_RING_SAMPRATE_16000),
 #endif
 
-#ifdef __INTERACTION__
+#if defined(__INTERACTION__)||defined(__SNDP_FINDME__)
     SOUND_ITEM_DEF(CN_, BT_FINDME),
 #endif
 #if defined(__SNDP_UI__)
@@ -505,7 +507,7 @@ static const media_sound_map_t media_sound_map_en[] =
     SOUND_ITEM_DEF(EN_, RES_AUD_RING_SAMPRATE_16000),
 #endif
 
-#ifdef __INTERACTION__
+#if defined(__INTERACTION__)||defined(__SNDP_FINDME__)
     SOUND_ITEM_DEF(EN_, BT_FINDME),
 #endif
 
@@ -594,7 +596,7 @@ static const char * const aud_id_str[] =
     "[BT_GSOUND_NC]",
     "[BT_MUTE]",
     "[RING_WARNING]",
-#ifdef __INTERACTION__
+#if defined(__INTERACTION__)||defined(__SNDP_FINDME__)
     "[BT_FINDME]",
 #else
     "[UNKNOWN]",
@@ -1855,7 +1857,7 @@ void media_runtime_audio_prompt_update(uint16_t id, uint8_t** ptr, uint32_t* len
         get_sound_id_info(RES_AUD_RING_SAMPRATE_16000, &sound_data, &length);
         break;
 #endif
-#ifdef __INTERACTION__
+#if defined(__INTERACTION__)||defined(__SNDP_FINDME__)
     case AUD_ID_BT_FINDME:
         get_sound_id_info(BT_FINDME, &sound_data, &length);
         break;
@@ -3020,6 +3022,12 @@ int app_play_audio_onoff(bool onoff, APP_AUDIO_STATUS* status)
         if(aud_id == AUD_ID_BT_FINDME)
         {
             stream_cfg.vol = g_findme_fadein_vol;
+        }
+        else
+#elif defined(__SNDP_FINDME__)
+        if(aud_id == AUD_ID_BT_FINDME)
+        {
+            stream_cfg.vol = sndp_findme_fadein_vol;
         }
         else
 #endif
