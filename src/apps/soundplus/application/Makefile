@@ -133,4 +133,5 @@ endif
 
 ifeq ($(SNDP_HR_ALGO_SLEEPSENSE),1)
 ccflags-y += -Iapps/soundplus/algorithm/hr/SleepSense
+subdir-ccflags-y += -Iapps/soundplus/algorithm/hr/SleepSense
 endif	

@@ -43,7 +43,12 @@
 #include "sndp_cover_switch_box_notify.h"
 #endif
 
-
+#if defined(__SNDP_HEART_RATE_MGR__)
+#include "sndp_heart_rate.h"
+#if defined(__SNDP_HR_ALGO__)
+#include "sleepsense.h"
+#endif
+#endif
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
@@ -585,6 +590,10 @@ uint32_t sndp_comm_cmd_send_lr_sync_splaypause_onoff(uint8_t onoff)
 
 static uint32_t sndp_comm_cmd_recv_lr_sync_splaypause_onoff(sndp_comm_cmd_info_s *cmd_info)
 {
+    if(cmd_info->data_len == 1) {
+     sndp_dev_splaypause_onoff(false, cmd_info->data[0], true);
+    }
+   
     return 0;
 }
 
@@ -606,6 +615,22 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_update_mapping(sndp_comm_cmd_info_s *
 
     }
 #endif
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_lr_sync_findme_onoff(uint8_t onoff)
+{
+    uint8_t data = onoff;
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_FINDME_ONOFF, &data, 1);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_findme_onoff(sndp_comm_cmd_info_s *cmd_info)
+{
+    if(cmd_info->data_len == 1) {
+      sndp_call_func_in_app_thread((uint32_t)sndp_play_findme,0,0,0);
+    }
+   
     return 0;
 }
 #endif
@@ -1199,6 +1224,7 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_LR_SYNC_GESTRUE_ONOFF           , "LR_SYNC_GESTRUE_ONOFF"    , sndp_comm_cmd_recv_lr_sync_gesture_onoff           },
     { COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF          , "LR_SYNC_SPLAYPAUSE_ONOFF"   , sndp_comm_cmd_recv_lr_sync_splaypause_onoff          },
     { COMM_CMDID_LR_SYNC_UPDATE_MAPPING         , "LR_SYNC_UPDATE_MAPPING"  , sndp_comm_cmd_recv_lr_sync_update_mapping         },
+    { COMM_CMDID_LR_SYNC_FINDME_ONOFF           , "LR_SYNC_UPDATE_FINEDME"  , sndp_comm_cmd_recv_lr_sync_findme_onoff         },
 #endif
     { COMM_CMDID_LR_SYNC_ALL_DEV_STATUS         , "LR_SYNC_ALL_DEV_STATUS"  , sndp_comm_cmd_recv_lr_sync_all_dev_status         },
     { COMM_CMDID_LR_SYNC_BT_ONOFF               , "LR_SYNC_BT_ONOFF"        , sndp_comm_cmd_recv_lr_sync_bt_onoff               },
@@ -1277,6 +1303,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_mode(sleep_app_co
 {
     COMM_CMD_TRACE(1, "eq mode=%d", cmd_info->value[0]);
     sndp_set_eq_index(false, cmd_info->value[0], true);
+    sndp_comm_cmd_send_lr_sync_eq_set(cmd_info->value[0]);
     cmd_info->value[0] = 0; // success
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -1337,6 +1364,18 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_param(sleep_app_c
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_find_my_earphone(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    COMM_CMD_TRACE(0, "findme earphone = %d",cmd_info->value[0]);
+    if(cmd_info->value[0]) 
+    {
+        //stop findme
+    }
+    else
+    {
+        sndp_call_func_in_app_thread((uint32_t)sndp_play_findme,0,0,0);
+    }
+
+    cmd_info->value[0] = 0;
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
@@ -1344,7 +1383,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
 {
     COMM_CMD_TRACE(1, "anc mode=%d", cmd_info->value[0]);
     sndp_sleep_app_anc_mode_set(false, (sndp_anc_mode_e)cmd_info->value[0], 1);
-
+    sndp_comm_cmd_send_lr_sync_anc_mode(cmd_info->value[0]);
     cmd_info->value[0] = 0; // success
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -1481,7 +1520,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_smart_play_pause(sle
 {   
     uint8_t smart_playpause = cmd_info->value[0];
     sndp_dev_splaypause_onoff(false, smart_playpause, true);
-
+    sndp_comm_cmd_send_lr_sync_splaypause_onoff(smart_playpause);
     cmd_info->value[0] = 0; // success
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -1525,16 +1564,18 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_ppg_auto_led_enable_disa
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    return 0;
-}
-
-POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_heartrate_measuring(sleep_app_comm_cmd_info_s *cmd_info)
-{
+    uint8_t sampling_rate = cmd_info->value[0];
+    uint8_t dump_data = cmd_info->value[1];
+    sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_start, sampling_rate, dump_data, 0);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_stop, 0, 0, 0);
+    cmd_info->value[0] = 0; // success
+
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
@@ -1551,6 +1592,27 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_comm_cmd_info_s *cmd_info)
 {
     return 0;
+}
+
+uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, uint8_t resulcode)
+{	
+    uint8_t sendvalue[16];
+    uint8_t sendlen = 0;
+    memset(sendvalue, 0, sizeof(sendvalue));
+#if defined(__SNDP_HR_ALGO__)
+    memcpy(sendvalue, sendhr, sizeof(HrvIndices));
+    sendlen += sizeof(HrvIndices);
+#else
+    memcpy(sendvalue, "Noalgo", sizeof("Noalgo"));
+    sendlen += sizeof("Noalgo");
+#endif
+    sendvalue[sendlen] = sendhrcount;
+    sendlen++;
+    sendvalue[sendlen] = resulcode;
+    sendlen++;
+
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING, sendlen, sendvalue);
+	return 0;
 }
 
 static const sndp_sleep_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
@@ -1577,7 +1639,6 @@ static const sndp_sleep_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
     { SLEEP_APP_CMDID_EARBUDS_STATUS_LED , "APP_EARBUDS_STATUS_LED_CONTROL"  , sleep_comm_cmd_recv_app_earbuds_status_led_control           },
     { SLEEP_APP_CMDID_PPG_AUTO_LED_ENABLE_DISABLE , "APP_PPG_AUTO_LED_ENABLE_DISABLE"  , sleep_comm_cmd_recv_app_ppg_auto_led_enable_disable           },
     { SLEEP_APP_CMDID_START_HEARTRATE , "APP_START_HEARTRATE"  , sleep_comm_cmd_recv_app_start_heartrate           },
-    { SLEEP_APP_CMDID_HEARTRATE_MEASURING, "APP_HEARTRATE_MEASURING"  , sleep_comm_cmd_recv_app_heartrate_measuring           },
     { SLEEP_APP_CMDID_STOP_HEARTRATE , "APP_STOP_HEARTRATE"  , sleep_comm_cmd_recv_app_stop_heartrate           },
     { SLEEP_APP_CMDID_START_SLEEP, "APP_START_SLEEP"  , sleep_comm_cmd_recv_app_start_sleep           },
     { SLEEP_APP_CMDID_SLEEP_TRACKING, "APP_SLEEP_TRACKING"  , sleep_comm_cmd_recv_app_sleep_tracking           },

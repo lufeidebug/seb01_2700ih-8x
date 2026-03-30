@@ -154,7 +154,7 @@ const uint8_t EN_BT_GSOUND_NC[] = {
 0//#include "res/en/SOUND_GSOUND_NC.txt"
 };
 
-#ifdef __INTERACTION__
+#if defined(__INTERACTION__)||defined(__SNDP_FINDME__)
 const uint8_t EN_BT_FINDME[] = {
 0//#include "res/en/SOUND_FINDME.txt"
 };

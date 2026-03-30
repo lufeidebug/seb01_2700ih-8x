@@ -31,7 +31,7 @@
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
 #include "sndp_hal_hr.h"
 #endif
-
+#include "sndp_comm_cmd.h"
 
 /**************************************************************************************************
 * 1、创建心率处理线程。
@@ -220,6 +220,7 @@ static void sndp_hr_process_thread(void const *argument)
     // Return results
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)    
     POSSIBLY_UNUSED struct HrvIndices hrv;
+    POSSIBLY_UNUSED uint8_t* hrv_ptr = (uint8_t*)&hrv;
 #endif
     POSSIBLY_UNUSED int16_t result_code;
     POSSIBLY_UNUSED int8_t count;
@@ -334,7 +335,7 @@ static void sndp_hr_process_thread(void const *argument)
 
         // hr_setp_10: Report results
         if(hr_ctx.hr_running) {
-
+            sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_report_hr, (uint32_t)hrv_ptr, count, result_code);
         }
         
         if(hr_ctx.sleep_running) {
@@ -364,7 +365,7 @@ static void sndp_hr_process_thread(void const *argument)
 void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
-
+    // SNDP_TRACE(0,"sndp_hr_mearsuring_start");
 #if defined(__SNDP_HR_PPG_DUMP__)
     audio_dump_init(64, 4, 1);    
 #endif

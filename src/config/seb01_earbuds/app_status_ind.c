@@ -59,7 +59,7 @@ static const char * const app_status_indication_str[] =
     "[TESTMODE]",
     "[TESTMODE1]",
     "[RING_WARNING]",
-#ifdef __INTERACTION__	
+#if defined(__INTERACTION__)||defined(__SNDP_FINDME__)
     "[FINDME]",
 #endif	
     "[MY_BUDS_FIND]",

@@ -1465,7 +1465,11 @@ void sndp_bt_switch(bool onoff, bool sync)
     }
 }
 
-
+/*****************************************tools function *******************************************/
+void sndp_play_findme(void)
+{
+	media_PlayAudio(AUD_ID_BT_FINDME, 0);
+}
 #endif	/* __SNDP_PROJ__ */
 
 
