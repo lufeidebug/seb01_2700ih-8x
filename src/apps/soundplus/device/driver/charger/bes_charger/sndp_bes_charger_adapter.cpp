@@ -170,7 +170,7 @@ int32_t sndp_bes_charger_init(void)
 
     charge_cfg.prechg_volt = CHARGER_CHARGE_PRECHARGE_VOLTAGE_2800MV;
     charge_cfg.prechg_current = CHARGER_CHARGE_PRECHARGE_CURRENT_10MA;
-    charge_cfg.cc_current = CHARGER_CHARGE_CONSTANT_CURRENT_40MA;
+    charge_cfg.cc_current = CHARGER_CHARGE_CONSTANT_CURRENT_60MA;
     charge_cfg.stop_current = CHARGER_CHARGE_STOP_CURRENT_4MA;
     charge_cfg.cv_volt = CHARGER_CHARGE_CONSTANT_VOLTAGE_4200MV;
     charge_cfg.rechg_volt = CHARGER_CHARGE_RECHARGE_VOLTAGE_150MV;
