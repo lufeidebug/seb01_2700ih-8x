@@ -535,6 +535,7 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         return;
     }   
     
+    status = inout_status;
     SPUI_TRACE(1, "%s", (SNDP_DEV_IOBOX_IN == inout_status) ? "IN_BOX" : "OUT_BOX");
 
     sndp_delay_exec_stop((uint32_t)sndp_ui_inbox_role_switch);
@@ -546,6 +547,8 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         bta_tws_box_event_entry(BTA_TWS_DOCK);
 
         sndp_delay_exec_start(300, (uint32_t)sndp_ui_inbox_role_switch, 0, 0, 0);
+
+        sndp_delay_exec_start(100, (uint32_t)sndp_dev_io_pmu_check_cover, 0, 0, 0);
     
     } else {
         bta_tws_box_event_entry(BTA_TWS_UNDOCK);
@@ -811,6 +814,10 @@ void sndp_ui_charger_plug_status_changed(sndp_dev_charger_plug_e plug_status)
 
     if(SNDP_DEV_CHARGER_PLUG_OUT == plug_status) {
         sndp_delay_exec_start(100, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
+    }
+
+    if(SNDP_DEV_CHARGER_PLUG_UNKNOWN != plug_status) {
+        sndp_delay_exec_start(100, (uint32_t)sndp_dev_io_pmu_check_cover, 0, 0, 0);
     }
 }
 

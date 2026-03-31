@@ -281,7 +281,7 @@ void sndp_dev_cover_check_curr_status(void);
 void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status);
 void sndp_dev_cover_set_status_changed_callback(sndp_dev_cover_status_changed_cb callback);
 void sndp_dev_cover_init(sndp_dev_cover_status_changed_cb callback);
-
+void sndp_dev_io_pmu_check_cover(void);
 /************************************************** Cover Switch Info End **************************************************/
 
 
