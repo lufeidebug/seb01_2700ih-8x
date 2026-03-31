@@ -63,8 +63,6 @@
 #define SPUI_CLOSE_DISCHARGE_MAX				(60*1)		//seconds
 
 
-//#define __SPUI_UI_PPG_TEST__
-
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -369,12 +367,11 @@ static POSSIBLY_UNUSED void sndp_ui_wear_off_close_anc(void)
 	
 }
 
-#if defined(__SPUI_UI_PPG_TEST__)
 static POSSIBLY_UNUSED void sndp_ui_wear_on_start_hr(void)
 {
 	SPUI_TRACE(0, "starting");
 #if defined(__SNDP_HEART_RATE_MGR__)            
-    sndp_hr_mearsuring_start(1, 0);
+    //sndp_hr_mearsuring_start(1, 0);
     //sndp_sleep_analysis_start(0);
 #endif    
 }
@@ -383,12 +380,11 @@ static POSSIBLY_UNUSED void sndp_ui_wear_off_stop_hr(void)
 {
 #if defined(__SNDP_HEART_RATE_MGR__)            
     sndp_hr_mearsuring_stop();
-    //sndp_sleep_analysis_start(0);
+    sndp_sleep_analysis_start(0);
 #endif
 
 	SPUI_TRACE(0, "stopped");
 }
-#endif
 
 static void sndp_ui_wear_on_play_tone(void) 
 {
@@ -408,17 +404,13 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 		if(SNDP_DEV_WEAR_ON == wear_action) {	
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds, 0, 0, 0);
             sndp_delay_exec_start(300, (uint32_t)sndp_ui_wear_on_play_music, 0, 0, 0);
-			sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_role_switch, 0, 0, 0);
-#if defined(__SPUI_UI_PPG_TEST__)            
-            sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_start_hr, 0, 0, 0);
-#endif            
+			sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_role_switch, 0, 0, 0);          
+            //sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_start_hr, 0, 0, 0);           
 	    } else if(SNDP_DEV_WEAR_OFF == wear_action) {
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_off_tone_switch_to_phone, 0, 0, 0);
 			sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_off_stop_music, 0, 0, 0);	
-            sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_off_role_switch, 0, 0, 0);
-#if defined(__SPUI_UI_PPG_TEST__)            
+            sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_off_role_switch, 0, 0, 0);           
             sndp_ui_wear_off_stop_hr();
-#endif
 		}
 
         
@@ -444,10 +436,8 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds);
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_tone_switch_to_phone);
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_role_switch);
-    sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_role_switch);
-#if defined(__SPUI_UI_PPG_TEST__)    
+    sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_role_switch);  
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_start_hr);
-#endif
 
     if(sndp_ui_pairing_type_is(SNDP_PAIRING_FREEMAN)) {
         SPUI_TRACE(0, "freeman pairing return.");
@@ -546,6 +536,10 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         
         bta_tws_box_event_entry(BTA_TWS_DOCK);
 
+        if(sndp_anc_is_on()) {
+            sndp_anc_mode_set_locally(SNDP_ANC_MODE_OFF);
+        } 
+
         sndp_delay_exec_start(300, (uint32_t)sndp_ui_inbox_role_switch, 0, 0, 0);
 
         sndp_delay_exec_start(100, (uint32_t)sndp_dev_io_pmu_check_cover, 0, 0, 0);
@@ -612,10 +606,6 @@ void sndp_ui_gesture_3click_hdlr(bool remote)
         } 
         
     } else {
-#if defined(__SPUI_UI_PPG_TEST__)
-        media_PlayAudio(AUD_ID_BT_PAIRING, 0);
-        sndp_enter_freeman_pairing(); 
-#else
 #if 0
         if(sndp_dev_is_left_earphone()) {
             sndp_ui_anc_switch();
@@ -624,7 +614,6 @@ void sndp_ui_gesture_3click_hdlr(bool remote)
         }        
 #else
         sndp_ui_anc_switch();
-#endif
 #endif
     }
     
