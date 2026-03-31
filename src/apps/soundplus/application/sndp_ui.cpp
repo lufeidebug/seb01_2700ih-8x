@@ -477,6 +477,12 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 //---------------------------------------- cover ctrl --------------------------------------------
 static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 {
+    static sndp_dev_cover_status_e status = SNDP_DEV_COVER_UNKNOWN;
+
+    if(cover_status == status) {
+        return;
+    }
+    
     struct nvrecord_env_t *nvrecord_env;
     nv_record_env_get(&nvrecord_env);   
 
@@ -523,6 +529,12 @@ static void sndp_ui_outbox_role_switch(void)
 
 static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
 {
+    static sndp_dev_iobox_status_e status = SNDP_DEV_IOBOX_UNKNOWN;
+
+    if(inout_status == status) {
+        return;
+    }   
+    
     SPUI_TRACE(1, "%s", (SNDP_DEV_IOBOX_IN == inout_status) ? "IN_BOX" : "OUT_BOX");
 
     sndp_delay_exec_stop((uint32_t)sndp_ui_inbox_role_switch);
