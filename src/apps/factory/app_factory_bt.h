@@ -65,6 +65,12 @@ void app_factory_tota_nonsignalingtest_handler(void);
 uint8_t bt_test_mode_dut_get(void);
 #endif
 
+#if defined(__SNDP_PROJ__)
+uint8_t bt_is_in_dut_test_mode(void);
+#endif
+
+
+
 #ifdef __cplusplus
 }
 #endif

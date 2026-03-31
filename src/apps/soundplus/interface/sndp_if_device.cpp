@@ -11,6 +11,7 @@
 #include "factory_section.h"
 #include "fir_process.h"
 #include "iir_process.h"
+#include "app_factory_bt.h"
 
 #include "sndp_if_common.h"
 #include "sndp_if_device.h"
@@ -877,6 +878,13 @@ void sndp_dev_charger_plug_status_changed(sndp_hal_charger_plug_status_e status)
 #if defined(__SNDP_CHARGER_MGR__)
         sndp_hal_charger_check_curr_status();
 #endif
+
+        if(charger_plug == SNDP_DEV_CHARGER_PLUG_IN) {
+    		if(bt_is_in_dut_test_mode()){
+                sndp_pmu_reboot(0);
+    		}
+    	}
+
 
 #if defined(__SNDP_COMM_POGOPIN__)			
         if(charger_plug == SNDP_DEV_CHARGER_PLUG_IN) {

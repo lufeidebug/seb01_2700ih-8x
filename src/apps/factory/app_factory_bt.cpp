@@ -86,6 +86,13 @@ uint8_t bt_test_mode_dut_get(void)
 }
 #endif
 
+#if defined(__SNDP_PROJ__)
+uint8_t bt_is_in_dut_test_mode(void)
+{
+    return test_mode_type;
+}
+#endif
+
 #ifdef SLIM_BTC_ONLY
 extern "C" void uart_send_data_teset(void);
 extern "C" int bt_notify_bridge_data(uint32_t msg);
