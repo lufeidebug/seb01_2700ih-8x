@@ -802,6 +802,11 @@ static void sndp_ui_gesture_event_generated(sndp_dev_gesture_event_e gesture_eve
     bool peerProcess = false;
 
     SPUI_TRACE(0, "event=%d", gesture_event);
+
+    if(!sndp_dev_wear_is_worn(false)) {
+        SPUI_TRACE(0, "not worn, rtn");
+        return;
+    }
     
     if(peerProcess) {
         sndp_ui_gesture_event_sent_to_peer(gesture_event);
