@@ -482,7 +482,7 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
     if(cover_status == status) {
         return;
     }
-    
+    status = cover_status;
     struct nvrecord_env_t *nvrecord_env;
     nv_record_env_get(&nvrecord_env);   
 
@@ -616,11 +616,15 @@ void sndp_ui_gesture_3click_hdlr(bool remote)
         media_PlayAudio(AUD_ID_BT_PAIRING, 0);
         sndp_enter_freeman_pairing(); 
 #else
+#if 0
         if(sndp_dev_is_left_earphone()) {
             sndp_ui_anc_switch();
         } else {
             sndp_ui_working_mode_switch();
         }        
+#else
+        sndp_ui_anc_switch();
+#endif
 #endif
     }
     
