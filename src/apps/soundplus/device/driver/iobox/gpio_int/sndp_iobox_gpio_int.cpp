@@ -20,7 +20,7 @@
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
-#define IOBOX_INT_DEBOUNCE_REPEAT_MS			(50)
+#define IOBOX_INT_DEBOUNCE_REPEAT_MS			(70)
 #define IOBOX_INT_INBOX_DEBOUNCE_DELAYE_MS		(100)
 #define IOBOX_INT_OUTBOX_DEBOUNCE_DELAYE_MS		(200)
 

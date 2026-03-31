@@ -134,6 +134,7 @@ static const char *sndp_dev_dev_model_name = "EAGLEPLUS\0";    //SNDP_BT_NAME;
  static sndp_sleep_app_flag sleep_flag_run;
  static sndp_sleep_app_flag sleep_flag_flash;
 #endif
+static void sndp_dev_io_pmu_check_cover(void);
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
@@ -483,6 +484,10 @@ void sndp_dev_iobox_status_changed_handler(sndp_dev_iobox_status_e status)
     	}
 #endif
 
+		if(SNDP_DEV_IOBOX_IN == status) {
+				sndp_delay_exec_start(100, (uint32_t)sndp_dev_io_pmu_check_cover, 0, 0, 0);
+		}
+		
 		if(sndp_dev_iobox_status_changed_cb_ptr) {
             sndp_call_func_in_app_thread((uint32_t)sndp_dev_iobox_status_changed_cb_ptr, status, 0, 0);
 		}
@@ -526,6 +531,25 @@ void sndp_dev_iobox_init(void)
 
 
 /************************************************** Cover Switch Info Start **************************************************/
+POSSIBLY_UNUSED static void sndp_dev_io_pmu_check_cover(void)
+{
+		sndp_dev_cover_status_e cover_status = SNDP_DEV_COVER_UNKNOWN;
+		
+		SNDP_IF_TRACE(0, "io: %d CG_plugin:%d", sndp_dev_iobox_get_status(false), sndp_dev_charger_is_plugin(false));	
+		
+		if(sndp_dev_iobox_get_status(false) == SNDP_DEV_IOBOX_IN && sndp_dev_charger_is_plugin(false)){
+
+				cover_status = SNDP_DEV_COVER_COLSED;
+
+		} else if(sndp_dev_iobox_get_status(false) == SNDP_DEV_IOBOX_IN) {
+
+				cover_status = SNDP_DEV_COVER_OPENED;
+			
+		} else if(sndp_dev_charger_is_plugin(false))  {
+
+		}
+		sndp_dev_cover_status_changed_handler(cover_status);
+}
 
 bool sndp_dev_cover_is_opened(bool peer)
 {
@@ -884,6 +908,7 @@ void sndp_dev_charger_plug_status_changed(sndp_hal_charger_plug_status_e status)
         #endif
         }
 #endif        
+					sndp_delay_exec_start(100, (uint32_t)sndp_dev_io_pmu_check_cover, 0, 0, 0);
     }
 }
 #endif 
