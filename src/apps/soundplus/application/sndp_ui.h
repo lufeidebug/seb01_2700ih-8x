@@ -57,8 +57,6 @@ bool sndp_ui_is_prompt_playing(void);
 int sndp_ui_prompt_finish_cb(int aud_id);
 int sndp_ui_prompt_start_cb(int aud_id);
 
-void sndp_ui_bt_enter_mobile_pairing(bool play_tone);
-
 
 void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len);
 

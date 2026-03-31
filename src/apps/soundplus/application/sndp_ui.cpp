@@ -764,10 +764,10 @@ void sndp_ui_gesture_event_peer_hdlr(sndp_dev_gesture_event_e gesture_event)
             sndp_ui_gesture_1click_hdlr(true);
             break;
         case SNDP_DEV_GESTURE_EVENT_2_CLICK:
-            sndp_ui_gesture_1click_hdlr(true);
+            sndp_ui_gesture_2click_hdlr(true);
             break;
         case SNDP_DEV_GESTURE_EVENT_3_CLICK:
-            sndp_ui_gesture_1click_hdlr(true);
+            sndp_ui_gesture_3click_hdlr(true);
             break;
         default:
             break;
@@ -1182,18 +1182,18 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 #ifdef MEDIA_PLAYER_SUPPORT            
             media_PlayAudio(AUD_ID_BT_DIS_CONNECT, 0);
 #endif
+            SPUI_TRACE(0, "mobile con_cnt=%d, con_sta=%d", 
+                    sndp_get_connected_mobile_count(), 
+                    sndp_is_master_mobile_link_connected());
 
-            if(sndp_get_connected_mobile_count() == 0) { 
-    			if(reason == 0x13) { 
-    			    //REMOTE_USER_TERMINATED         
-    				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
-			
-    			} else { 
-    				//other reason, shutdown time is set to 15 minutes
-                    sndp_enter_mobile_reconnect();
-    			}			
-
-            }
+			if(reason == 0x13) { 
+			    //REMOTE_USER_TERMINATED         
+				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+		
+			} else { 
+				//other reason, shutdown time is set to 15 minutes
+                sndp_enter_mobile_reconnect();
+			}
 			break;
             
 		case SNDP_BT_CONN_STATUS_MOBILE_CONNECTED:
