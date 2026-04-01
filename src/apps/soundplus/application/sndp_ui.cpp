@@ -198,7 +198,27 @@ void sndp_ui_volume_dec(uint8_t type, uint8_t level)
 static void sndp_ui_anc_switch(void) 
 {
 	SPUI_TRACE(1, "status=%d, mode=%d", sndp_ui_ctx.anc_status, sndp_ui_ctx.anc_mode);
-	
+
+#if 1
+    if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_OFF) {
+        sndp_ui_ctx.anc_status = SNDP_ANC_STA_ON;
+        
+#ifdef MEDIA_PLAYER_SUPPORT        
+		media_PlayAudio(AUD_ID_ANC_ON, 0);
+#endif
+		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_ui_ctx.anc_mode, 0, 0);
+
+	} else if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_ON) {
+        sndp_ui_ctx.anc_status = SNDP_ANC_STA_OFF;
+        
+		sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+#ifdef MEDIA_PLAYER_SUPPORT        
+		media_PlayAudio(AUD_ID_ANC_OFF, 0);
+#endif           
+		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE_OFF, 0, 0);
+
+	}
+#else
 	if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_OFF) {
         sndp_ui_ctx.anc_status = SNDP_ANC_STA_ON;
         
@@ -222,9 +242,11 @@ static void sndp_ui_anc_switch(void)
 	    sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_OFF, 0);
-#endif  
+#endif
 
 	}
+#endif
+
 }
 
 
@@ -592,12 +614,17 @@ void sndp_ui_gesture_3click_hdlr(bool remote)
     SPUI_TRACE(0, "remote=%d", remote);
     
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
+#if 0        
         if(sndp_dev_is_left_earphone()) {
             sndp_ui_anc_switch();
         } else {
             sndp_ui_working_mode_switch();
         }
-        
+#else
+        sndp_ui_anc_switch();
+
+#endif
+
     } else if(sndp_call_is_active()) {
         if(sndp_call_is_threeway_incoming()) {
             sndp_call_ctrl(SNDP_CALL_CTRL_THREEWAY_REJECT);
@@ -606,11 +633,16 @@ void sndp_ui_gesture_3click_hdlr(bool remote)
         } 
         
     } else {
+#if 0        
         if(sndp_dev_is_left_earphone()) {
             sndp_ui_anc_switch();
         } else {
             sndp_ui_working_mode_switch();
         }
+#else
+        sndp_ui_anc_switch();
+#endif
+
     }
     
 }
