@@ -31,15 +31,15 @@ extern "C" {
 
 
 typedef enum {
-    SNDP_PAIRING_NONE,
-    SNDP_PAIRING_TWS,
-    SNDP_PAIRING_FREEMAN,
+    SNDP_UI_PAIRING_NONE,
+    SNDP_UI_PAIRING_TWS,
+    SNDP_UI_PAIRING_FREEMAN,
     
-} sndp_pairing_type_e;
+} sndp_ui_pairing_type_e;
 
 
-void sndp_ui_pairing_type_set(sndp_pairing_type_e type);
-bool sndp_ui_pairing_type_is(sndp_pairing_type_e type);
+void sndp_ui_pairing_type_set(sndp_ui_pairing_type_e type);
+bool sndp_ui_pairing_type_is(sndp_ui_pairing_type_e type);
 
 
 void sndp_ui_volume_set(uint8_t type, uint8_t level);

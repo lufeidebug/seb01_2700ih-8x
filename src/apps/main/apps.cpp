@@ -2425,10 +2425,10 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #if defined(__SNDP_REBOOT_FORCE_PAIRING__)
     if (hal_sw_bootmode_get() & HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT){
         hal_sw_bootmode_clear(HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT);
-        sndp_ui_pairing_type_set(SNDP_PAIRING_FREEMAN);
+        sndp_ui_pairing_type_set(SNDP_UI_PAIRING_FREEMAN);
     } else if (hal_sw_bootmode_get() & HAL_SW_BOOTMODE_CUSTOM_OP2_AFTER_REBOOT){
         hal_sw_bootmode_clear(HAL_SW_BOOTMODE_CUSTOM_OP2_AFTER_REBOOT);
-        sndp_ui_pairing_type_set(SNDP_PAIRING_TWS);
+        sndp_ui_pairing_type_set(SNDP_UI_PAIRING_TWS);
     }
 #endif
 

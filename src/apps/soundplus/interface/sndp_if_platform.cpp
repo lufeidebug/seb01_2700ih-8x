@@ -86,6 +86,9 @@ static sndp_bt_conn_status_changed_callback sndp_bt_conn_status_changed_cb_ptr =
 
 static uint8_t sndp_call_in_out = 0; // 0:none, 1:incoming, 2:outgoing
 
+static sndp_pairing_type_e sndp_pairing_type = SNDP_PAIRING_NONE; // 0:未配对，1：对耳配对，2：单耳配对。
+static sndp_pairing_state_e sndp_pairing_status = SNDP_PAIR_STA_NONE; //0:未配对，1：配对中，2：配对成功，3：配对超时。
+
 
 /**************************************************************************************************
 * Function
@@ -224,13 +227,31 @@ void sndp_enter_restore_factory_setting(void)
     app_reset();
 }
 
+uint8_t sndp_get_pairing_type(void)
+{
+    return sndp_pairing_type;
+}
+
+uint8_t sndp_get_pairing_status(void)
+{
+    return sndp_pairing_status;
+}
+
 
 void sndp_enter_freeman_pairing(void)
 {
     SNDP_IF_TRACE(0, "...");
+
+    sndp_pairing_type = SNDP_PAIRING_FREEMAN;
+    sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
     bta_tws_box_event_entry(BTA_TWS_OPEN);
 	bta_tws_enable_freeman_mode(true); 
     bta_tws_enable_pairing_mode(true);
+    
+#if defined(__BTIF_AUTOPOWEROFF__)
+    app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+    app_start_10_second_timer(APP_PAIR_TIMER_ID);   //5minute pairing
+#endif    
 }
 
 void sndp_start_freeman_pairing(void)
@@ -304,6 +325,7 @@ void sndp_enter_mobile_reconnect(void)
 void sndp_mobile_pairing_timeout(void)
 {
     SNDP_IF_TRACE(0, ".");
+    sndp_pairing_status = SNDP_PAIR_STA_TIMEOUT;
     app_stop_10_second_timer(APP_PAIR_TIMER_ID);
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
     
@@ -313,6 +335,8 @@ void sndp_mobile_pairing_timeout(void)
 void sndp_mobile_pairing_sccessful(void)
 {
     SNDP_IF_TRACE(0, ".");
+    sndp_pairing_status = SNDP_PAIR_STA_SUCCESS;
+        
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_PAIR_TIMER_ID);
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
@@ -322,6 +346,10 @@ void sndp_mobile_pairing_sccessful(void)
 void sndp_enter_mobile_pairing_after_tws_connected(void)
 {
     SNDP_IF_TRACE(0, "enter");
+
+    sndp_pairing_type = SNDP_PAIRING_TWS;
+    sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
+        
     bta_tws_box_event_entry(BTA_TWS_OPEN);
     bta_tws_enable_pairing_mode(true);
 

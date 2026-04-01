@@ -209,6 +209,7 @@ static uint32_t sndp_comm_cmd_recv_eb_query_pairing_status(sndp_comm_cmd_info_s 
 	uint8_t *data = cmd_info->data;
     uint8_t err_code = SNDP_COMM_ERROR_NONE;
 
+#if 0
     data_len = 0;
 	data[data_len++] = err_code;
 	data[data_len++] = sndp_is_tws_link_connected() ? 0x01 : 0x00;
@@ -219,6 +220,12 @@ static uint32_t sndp_comm_cmd_recv_eb_query_pairing_status(sndp_comm_cmd_info_s 
     } else {
         data[data_len++] = sndp_is_master_mobile_link_connected() ? 0x01 : 0x00;
     }
+#else
+    data_len = 0;
+	data[data_len++] = err_code;
+	data[data_len++] = sndp_get_pairing_type();
+    data[data_len++] = sndp_get_pairing_status();
+#endif
 
 	cmd_info->data_len = data_len;
 	sndp_comm_main_rsp_cmd(cmd_info);

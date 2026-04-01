@@ -110,10 +110,21 @@ typedef enum {
 } sndp_eq_mode_e;
 #endif
 
+
+
 typedef enum {
-	SNDP_PAIRING_SUCCESS = 0,
-	SNDP_PAIRING_TIMEOUT = 1,
-	SNDP_PAIRING_START   = 2,
+    SNDP_PAIRING_NONE,
+    SNDP_PAIRING_TWS,
+    SNDP_PAIRING_FREEMAN,
+    
+} sndp_pairing_type_e;
+
+
+typedef enum {
+    SNDP_PAIR_STA_NONE       = 0,
+    SNDP_PAIR_STA_PAIRING    = 1,
+	SNDP_PAIR_STA_SUCCESS    = 2,
+	SNDP_PAIR_STA_TIMEOUT    = 3,
 	
 } sndp_pairing_state_e;
 
@@ -147,6 +158,8 @@ void sndp_enter_shipmode(void);
 void sndp_enter_restore_factory_setting(void);
 
 
+uint8_t sndp_get_pairing_type(void);
+uint8_t sndp_get_pairing_status(void);
 void sndp_enter_freeman_pairing(void);
 void sndp_start_freeman_pairing(void);
 void sndp_start_tws_pairing(void);

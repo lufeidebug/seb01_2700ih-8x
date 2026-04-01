@@ -108,7 +108,7 @@ static void sndp_ui_all_status_sync_send(void);
 **************************************************************************************************/
 static sndp_ui_ctx_s sndp_ui_ctx;
 
-static sndp_pairing_type_e sndp_pairing_type = SNDP_PAIRING_NONE;  //0:none, 1:tws pairing, 2:freeman pairing
+static sndp_ui_pairing_type_e sndp_ui_pairing_type = SNDP_UI_PAIRING_NONE;  //0:none, 1:tws pairing, 2:freeman pairing
 
 
 /**************************************************************************************************
@@ -164,14 +164,14 @@ void sndp_ui_working_mode_switch(void)
 }
 
 
-void sndp_ui_pairing_type_set(sndp_pairing_type_e type)
+void sndp_ui_pairing_type_set(sndp_ui_pairing_type_e type)
 {
-     sndp_pairing_type = type;
+     sndp_ui_pairing_type = type;
 }
 
-bool sndp_ui_pairing_type_is(sndp_pairing_type_e type)
+bool sndp_ui_pairing_type_is(sndp_ui_pairing_type_e type)
 {
-    return (sndp_pairing_type == type);
+    return (sndp_ui_pairing_type == type);
 }
 
 
@@ -439,7 +439,7 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_role_switch);  
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_start_hr);
 
-    if(sndp_ui_pairing_type_is(SNDP_PAIRING_FREEMAN)) {
+    if(sndp_ui_pairing_type_is(SNDP_UI_PAIRING_FREEMAN)) {
         SPUI_TRACE(0, "freeman pairing return.");
         return;
     } 
@@ -1296,17 +1296,17 @@ static void sndp_ui_bt_event_exec_after_power_on(void)
         return;
     }
     
-    if(sndp_ui_pairing_type_is(SNDP_PAIRING_FREEMAN)) {
+    if(sndp_ui_pairing_type_is(SNDP_UI_PAIRING_FREEMAN)) {
         SPUI_TRACE(0, "force freeman pairing");
 
-        sndp_ui_pairing_type_set(SNDP_PAIRING_NONE);
+        sndp_ui_pairing_type_set(SNDP_UI_PAIRING_NONE);
         sndp_enter_freeman_pairing();
         sndp_delay_exec_start(100, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
        
-    } else if (sndp_ui_pairing_type_is(SNDP_PAIRING_TWS)) {
+    } else if (sndp_ui_pairing_type_is(SNDP_UI_PAIRING_TWS)) {
         SPUI_TRACE(0, "force tws pairing");
         
-        sndp_ui_pairing_type_set(SNDP_PAIRING_NONE);
+        sndp_ui_pairing_type_set(SNDP_UI_PAIRING_NONE);
         sndp_enter_mobile_pairing_after_tws_connected();
         sndp_delay_exec_start(300, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
         
