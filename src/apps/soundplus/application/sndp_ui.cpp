@@ -124,7 +124,7 @@ void sndp_ui_working_mode_switch(void)
 
         //Close sleep analysis, save data.
 #if defined(__SNDP_HEART_RATE_MGR__)        
-        sndp_sleep_analysis_stop();
+        //sndp_sleep_analysis_stop();
 #endif
 
         //Set the working mode to BT mode.
@@ -157,7 +157,7 @@ void sndp_ui_working_mode_switch(void)
 
         //Open sleep analysis.
 #if defined(__SNDP_HEART_RATE_MGR__)        
-        sndp_sleep_analysis_start(0);
+        //sndp_sleep_analysis_start(0);
 #endif
 
     }
@@ -606,15 +606,11 @@ void sndp_ui_gesture_3click_hdlr(bool remote)
         } 
         
     } else {
-#if 0
         if(sndp_dev_is_left_earphone()) {
             sndp_ui_anc_switch();
         } else {
             sndp_ui_working_mode_switch();
-        }        
-#else
-        sndp_ui_anc_switch();
-#endif
+        }
     }
     
 }
