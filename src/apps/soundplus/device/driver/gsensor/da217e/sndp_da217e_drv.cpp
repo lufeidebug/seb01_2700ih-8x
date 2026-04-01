@@ -89,6 +89,9 @@
 static da217e_drv_if_s da217e_drv_if;
 static uint8_t da217e_tap_cnt = 0;
 
+static void da217_tap_timer_handler(void const *param);
+osTimerDef(DA217_TAP_TIMER, da217_tap_timer_handler);
+static osTimerId da217_tap_timer = NULL;
 
 /**************************************************************************************************
 * Function
@@ -346,7 +349,7 @@ int32_t da217e_close_fifo_int(void)
 	return ret;
 }
 
-static void da217e_drv_tap_handler(void)
+POSSIBLY_UNUSED static void da217e_drv_tap_handler(void)
 {
     if(da217e_drv_if.tap_event_cb) {
         da217e_drv_if.tap_event_cb(da217e_tap_cnt);
@@ -354,6 +357,16 @@ static void da217e_drv_tap_handler(void)
 
     da217e_tap_cnt = 0;
 }
+
+static void da217_tap_timer_handler(void const *param)
+{
+	if(da217e_drv_if.tap_event_cb) {
+        da217e_drv_if.tap_event_cb(da217e_tap_cnt);
+    }
+
+    da217e_tap_cnt = 0;
+}
+
 
 void da217e_drv_deal_tap_interruption(void)
 {
@@ -370,8 +383,10 @@ void da217e_drv_deal_tap_interruption(void)
             z_tap = tap_staus & 0x10;
             //if(first_tap) {
                 da217e_tap_cnt++;
-                sndp_delay_exec_stop((uint32_t)da217e_drv_tap_handler);
-                sndp_delay_exec_start(600, (uint32_t)da217e_drv_tap_handler, 0, 0, 0);
+                osTimerStop(da217_tap_timer);
+                osTimerStart(da217_tap_timer, 600);
+                //sndp_delay_exec_stop((uint32_t)da217e_drv_tap_handler);
+                //sndp_delay_exec_start(600, (uint32_t)da217e_drv_tap_handler, 0, 0, 0);
             //}
         }
     }
@@ -391,6 +406,8 @@ void da217e_drv_deal_fifo_interruption(void)
 }
 
 
+
+
 int32_t da217e_drv_init(da217e_drv_if_s * drv_if)
 {
     int32_t ret = 0;
@@ -398,7 +415,12 @@ int32_t da217e_drv_init(da217e_drv_if_s * drv_if)
     uint8_t retry;
     
     ASSERT(drv_if != NULL, "%s, %d", __func__, __LINE__);
-    
+
+     if(da217_tap_timer == NULL) {
+        da217_tap_timer = osTimerCreate (osTimer(DA217_TAP_TIMER), osTimerOnce, NULL);
+        ASSERT(da217_tap_timer != NULL, "%s, da217_tap_timer == NULL", __func__);
+	}
+     
     memcpy(&da217e_drv_if, drv_if, sizeof(da217e_drv_if_s));
 
     retry = 0;
