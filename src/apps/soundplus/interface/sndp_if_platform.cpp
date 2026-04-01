@@ -1406,6 +1406,13 @@ uint8_t sndp_bt_audio_updata_eq_for_anc(void)
 	return 0;
 
 }
+
+/*****************************************tools function *******************************************/
+void sndp_play_findme(void)
+{
+	media_PlayAudio(AUD_ID_BT_FINDME, 0);
+}
+
 #endif
 /******************************************* Voice Assistant Interface ****************************************/
 extern int app_hfp_siri_voice(bool en);
@@ -1493,11 +1500,6 @@ void sndp_bt_switch(bool onoff, bool sync)
     }
 }
 
-/*****************************************tools function *******************************************/
-void sndp_play_findme(void)
-{
-	media_PlayAudio(AUD_ID_BT_FINDME, 0);
-}
 #endif	/* __SNDP_PROJ__ */
 
 
