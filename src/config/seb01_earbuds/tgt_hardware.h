@@ -216,7 +216,7 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP cfg_hw_pinmux_pwl[CFG_HW_PWL_NUM]
 #define ANC_REF_MIC_CH_L                    AUD_CHANNEL_MAP_ECMIC_CH0
 #define ANC_REF_MIC_CH_R                    0
 
-#define ANC_VMIC_CFG                        (AUD_VMIC_MAP_VMIC1)
+#define ANC_VMIC_CFG                        (AUD_VMIC_MAP_VMIC1|AUD_VMIC_MAP_VMIC2)
 
 // audio codec
 #if defined(__SNDP_AUDIO_TEST__)
