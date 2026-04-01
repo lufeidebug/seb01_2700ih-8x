@@ -117,6 +117,7 @@ static sndp_ui_pairing_type_e sndp_ui_pairing_type = SNDP_UI_PAIRING_NONE;  //0:
 
 void sndp_ui_working_mode_switch(void)
 {
+#if 0
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
         SPUI_TRACE(0, "BT_MODE");
         //Close ANC
@@ -161,6 +162,41 @@ void sndp_ui_working_mode_switch(void)
 #endif
 
     }
+#else
+    if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
+        SPUI_TRACE(0, "BT_MODE");
+        
+        //Set the working mode to BT mode.
+        sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_BT);
+
+        //Play prompt sound.
+#ifdef MEDIA_PLAYER_SUPPORT            
+        media_PlayAudio(AUD_ID_WORKING_MODE_BT, 0);
+#endif
+
+#if defined(__SNDP_HEART_RATE_MGR__)        
+        sndp_hr_mearsuring_stop();
+        //sndp_sleep_analysis_start(0);
+#endif
+        
+    } else {
+        SPUI_TRACE(0, "SLEEP_MODE");
+        
+        //set the working mode to Sleep mode.
+        sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_SLEEP);
+
+        //Play prompt sound.
+#ifdef MEDIA_PLAYER_SUPPORT            
+        media_PlayAudio(AUD_ID_WORKING_MODE_SLEEP, 0);
+#endif
+        //Open sleep analysis.
+#if defined(__SNDP_HEART_RATE_MGR__)        
+        sndp_hr_mearsuring_start(1, 0);
+        //sndp_sleep_analysis_start(0);
+#endif
+
+    }
+#endif    
 }
 
 
@@ -578,7 +614,7 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
 void sndp_ui_gesture_1click_hdlr(bool remote)
 {
     SPUI_TRACE(0, "remote=%d", remote);
-    
+    sndp_ui_working_mode_switch();
     
 }
 
