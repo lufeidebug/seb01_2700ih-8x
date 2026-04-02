@@ -469,6 +469,7 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 			sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_off_stop_music, 0, 0, 0);	
             sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_off_role_switch, 0, 0, 0);           
             sndp_ui_wear_off_stop_hr();
+            sndp_ui_wear_off_close_anc();
 		}
 
         
@@ -594,6 +595,7 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
     
     if(inout_status == SNDP_DEV_IOBOX_IN) {
         sndp_dev_wear_disable_detection();
+        sndp_dev_wear_set_status(false, SNDP_DEV_WEAR_UNKNOWN);
         
         bta_tws_box_event_entry(BTA_TWS_DOCK);
 
