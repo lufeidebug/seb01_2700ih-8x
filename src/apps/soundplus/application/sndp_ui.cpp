@@ -523,6 +523,12 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 }
 
 //---------------------------------------- cover ctrl --------------------------------------------
+
+static void sndp_ui_cover_close_shutdown(void)
+{
+    sndp_app_shutdown(SNDP_SHUTDOWN_REASON_NONE);
+}
+
 static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 {
     static sndp_dev_cover_status_e status = SNDP_DEV_COVER_UNKNOWN;
@@ -535,10 +541,14 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
     nv_record_env_get(&nvrecord_env);   
 
     SPUI_TRACE(1, "BOX_%s", (SNDP_DEV_COVER_COLSED == cover_status) ? "CLOSED" : "OPENED");
+
+    sndp_delay_exec_stop((uint32_t)sndp_ui_cover_close_shutdown);
     
     if(SNDP_DEV_COVER_COLSED == cover_status) {
         sndp_dev_wear_disable_detection();
         bta_tws_box_event_entry(BTA_TWS_CLOSE);
+
+        sndp_delay_exec_start(3000, (uint32_t)sndp_ui_cover_close_shutdown, 0, 0, 0);
         
     } else {
         //sndp_dev_wear_enable_detection();

@@ -158,9 +158,11 @@ static uint32_t sndp_comm_cmd_recv_eb_freeman_pairing(sndp_comm_cmd_info_s *cmd_
 {
     uint8_t err_code = SNDP_COMM_ERROR_NONE;
 
+#if 0
 	if(sndp_is_tws_link_connected()) {
 		err_code = SNDP_COMM_ERROR_TWS_DISCONNECTED;
 	}
+#endif
 
     sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
 

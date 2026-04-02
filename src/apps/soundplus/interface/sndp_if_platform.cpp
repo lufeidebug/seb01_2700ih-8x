@@ -257,6 +257,10 @@ void sndp_enter_freeman_pairing(void)
 void sndp_start_freeman_pairing(void)
 {
     SNDP_IF_TRACE(0, "...");
+    
+    sndp_pairing_type = SNDP_PAIRING_FREEMAN;
+    sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
+    
     //sndp_clear_mobile_pairing_list();
     
 #if 0//defined(__SNDP_REBOOT_FORCE_PAIRING__)
@@ -271,6 +275,10 @@ void sndp_start_freeman_pairing(void)
 void sndp_start_tws_pairing(void)
 {
     SNDP_IF_TRACE(0, "...");
+    
+    sndp_pairing_type = SNDP_PAIRING_TWS;
+    sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
+    
     sndp_disconnect_all_mobile_link();
     sndp_clear_mobile_pairing_list();
     
@@ -366,6 +374,9 @@ void sndp_tws_pairing_config(uint8_t *addr, uint8_t len)
 	uint8_t local_addr[6] = {0};
 
 	SNDP_IF_TRACE_ENTER();
+
+    sndp_pairing_type = SNDP_PAIRING_TWS;
+    sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
 	
     if(addr == NULL || len != 6) {
 		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
