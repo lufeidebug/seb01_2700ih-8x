@@ -404,6 +404,11 @@ int32_t ssh401a_exec_self_calib(void)
     return SNDP_HAL_RET_FAIL;
 }
 
+int32_t ssh401a_ppg_read_proximity_value(unsigned short* value)
+{
+    return ss_ppg_read_proximity_value(value);
+}
+
 extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .init                           = ssh401a_init,
     .enter_standby_mode             = ssh401a_enter_standby_mode,
@@ -414,6 +419,7 @@ extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .set_calib_callback             = ssh401a_set_calib_callback,
     .exec_calib                     = ssh401a_exec_calib,
     .exec_self_calib                = ssh401a_exec_self_calib,
+    .read_proximity_value           = ssh401a_ppg_read_proximity_value,
 
 };
 
