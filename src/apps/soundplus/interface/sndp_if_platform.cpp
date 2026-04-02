@@ -227,6 +227,11 @@ void sndp_enter_restore_factory_setting(void)
     app_reset();
 }
 
+void sndp_bt_set_access_mode(SNDP_bt_access_mode_t access_mode)
+{
+	app_bt_set_access_mode(access_mode);
+}
+
 uint8_t sndp_get_pairing_type(void)
 {
     return sndp_pairing_type;

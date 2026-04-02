@@ -145,6 +145,14 @@ typedef enum {
 } SNDP_shutdown_reason_e;
 
 
+typedef enum{
+	  SNDP_BT_NOT_ACCESSIBEL     = 0x00,
+		SNDP_BT_DISCOVERABLE_ONLY  = 0x01,
+		SNDP_BT_CONNECTABLE_ONLY   = 0x02,
+		SNDP_BT_GENERAL_ACCESSIBLE = 0x03,
+		SNDP_BT_LIMITED_ACCESSIBLE = 0x13,
+}SNDP_bt_access_mode_t;
+
 typedef void (*sndp_bt_conn_status_changed_callback)(sndp_bt_conn_status_e conn_status, uint8_t reason);
 
 void sndp_save_data_before_shutdown(void);
@@ -156,7 +164,7 @@ void sndp_enter_dut_mode(void);
 void sndp_enter_single_dld_mode(void);
 void sndp_enter_shipmode(void);
 void sndp_enter_restore_factory_setting(void);
-
+void sndp_bt_set_access_mode(SNDP_bt_access_mode_t access_mode);
 
 uint8_t sndp_get_pairing_type(void);
 uint8_t sndp_get_pairing_status(void);
