@@ -49,6 +49,11 @@
 #include "sleepsense.h"
 #endif
 #endif
+
+#if defined(__SNDP_HEART_RATE_MGR__)
+#include "sndp_hal_hr.h"
+#endif
+
 /**************************************************************************************************
 * Constant
 **************************************************************************************************/
@@ -1139,6 +1144,42 @@ static uint32_t sndp_comm_cmd_recv_pt_read_hall_status(sndp_comm_cmd_info_s *cmd
     return 0;
 }
 
+static uint32_t sndp_comm_cmd_recv_pt_read_proximity_value(sndp_comm_cmd_info_s *cmd_info)
+{
+    uint16_t value = 0;
+
+    sndp_hal_hr_read_proximity_value(&value);
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((value>>8)&0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(value&0xff);
+    sndp_comm_main_rsp_cmd(cmd_info);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_write_proximity_thresold(sndp_comm_cmd_info_s *cmd_info)
+{
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+    uint16_t high_threshold;
+    uint16_t low_threshold;
+
+    if(cmd_info->data_len == 4) {
+        high_threshold = (cmd_info->data[0]<<8) | cmd_info->data[1];
+        low_threshold = (cmd_info->data[2]<<8) | cmd_info->data[3];
+        COMM_CMD_TRACE(1, "h=%d, l=%d", high_threshold, low_threshold);
+
+        sndp_hal_hr_write_proximity_threshold(high_threshold, low_threshold);
+    } else {
+        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+    }
+    
+	sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
+   
+    return 0;
+}
+
+
+
 
 /*--------------------------------------------- APP Command Start-----------------------------------------------------*/
 static uint32_t sndp_comm_cmd_recv_app_query_dev_info(sndp_comm_cmd_info_s *cmd_info)
@@ -1271,8 +1312,10 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_PT_SWITCH_WEAR_STATUS_REPORT   , "PT_S_WEAR_STA_RPT"       , sndp_comm_cmd_recv_pt_switch_wear_status_report   },
     { COMM_CMDID_PT_CHECK_EARSIDE               , "PT_C_EARSIDE"            , sndp_comm_cmd_recv_pt_check_earside               },
     { COMM_CMDID_PT_READ_HALL_STATUS            , "PT_R_HALL_STA"           , sndp_comm_cmd_recv_pt_read_hall_status            },
-    
+    { COMM_CMDID_PT_READ_PROXIMITY_VALUE        , "PT_R_PROX_VALUE"         , sndp_comm_cmd_recv_pt_read_proximity_value        },
+    { COMM_CMDID_PT_WRITE_PROXIMITY_THRESHOLD   , "PT_W_PROX_THRESHOLD"     , sndp_comm_cmd_recv_pt_write_proximity_thresold    },
 #endif
+    
 
     /***** 与APP交互指令 *****/
     { COMM_CMDID_APP_QUERY_DEV_INFO             , "APP_Q_DEV_INFO"      , sndp_comm_cmd_recv_app_query_dev_info                 },

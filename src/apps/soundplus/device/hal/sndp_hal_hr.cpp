@@ -116,5 +116,13 @@ int32_t sndp_hal_hr_read_proximity_value(unsigned short* value)
 	return SNDP_HAL_RET_FAIL;
 }
 
+int32_t sndp_hal_hr_write_proximity_threshold(uint16_t high_threshold, uint16_t low_threshold)
+{
+	if((p_hal_hr != NULL) && (p_hal_hr->write_proximity_threshold != NULL))
+		return p_hal_hr->write_proximity_threshold(high_threshold, low_threshold);
+	return SNDP_HAL_RET_FAIL;
+}
+
+
 #endif	/* __SNDP_HRSENSOR_SUPPORT__ */
 

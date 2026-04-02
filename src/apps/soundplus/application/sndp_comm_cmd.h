@@ -189,8 +189,11 @@ typedef enum {
                                                             rsp: 2 bytes, error code(1) + earsid(1). */
     COMM_CMDID_PT_READ_HALL_STATUS                  = 0x61,	/* recv: 0 bytes. 
                                                             rsp: 2 bytes, error code(1) + earsid(1). */
-
-
+    COMM_CMDID_PT_READ_PROXIMITY_VALUE              = 0x62,	/* recv: 0 bytes. 
+                                                            rsp: 3 bytes, error code(1) + value(2). */
+    COMM_CMDID_PT_WRITE_PROXIMITY_THRESHOLD         = 0x63,	/* recv: 4 bytes, high(2) +  low(2). 
+                                                            rsp: 1 bytes, error code(1). */
+                                                            
     /***** 与APP交互指令 *****/
     COMM_CMDID_APP_QUERY_DEV_INFO                   = 0x81,
 	COMM_CMDID_APP_QUERY_DEV_STATUS                 = 0x82,
