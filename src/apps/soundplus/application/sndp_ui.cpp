@@ -619,7 +619,7 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
 void sndp_ui_gesture_1click_hdlr(bool remote)
 {
     SPUI_TRACE(0, "remote=%d", remote);
-    sndp_ui_working_mode_switch();
+    //sndp_ui_working_mode_switch();
     
 }
 
