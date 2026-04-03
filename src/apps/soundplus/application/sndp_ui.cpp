@@ -100,6 +100,7 @@ typedef struct {
 * Extern
 **************************************************************************************************/
 static void sndp_ui_all_status_sync_send(void);
+static void sndp_ui_bt_event_exec_after_power_on(void);
 
 
 
@@ -551,7 +552,11 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 #endif
 
         /* update the ibrt status machine */
+#if 0
         bta_tws_box_event_entry(BTA_TWS_OPEN);
+#else
+        sndp_ui_bt_event_exec_after_power_on();
+#endif
     }
     
 }
@@ -1255,18 +1260,20 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
                     sndp_get_connected_mobile_count(), 
                     sndp_is_master_mobile_link_connected());
 
+            if(sndp_dev_cover_is_opened(false)) {
 #if 0
-			if(reason == 0x13) { 
-			    //REMOTE_USER_TERMINATED         
-				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
-		
-			} else { 
-				//other reason, shutdown time is set to 15 minutes
-                sndp_enter_mobile_reconnect();
-			}
+    			if(reason == 0x13) { 
+    			    //REMOTE_USER_TERMINATED         
+    				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+    		
+    			} else { 
+    				//other reason, shutdown time is set to 15 minutes
+                    sndp_enter_mobile_reconnect();
+    			}
 #else
-            sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+                sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
 #endif
+            }
 			break;
             
 		case SNDP_BT_CONN_STATUS_MOBILE_CONNECTED:
@@ -1279,14 +1286,20 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			break;
 	
 		case SNDP_BT_CONN_STATUS_IBRT_DISCONNECTED:
-            if(reason == 0x13) { 
-			    //REMOTE_USER_TERMINATED         
-				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
-		
-			} else { 
-				//other reason, shutdown time is set to 15 minutes
-                sndp_enter_mobile_reconnect();
-			}	
+            if(sndp_dev_cover_is_opened(false)) {
+#if 0
+    			if(reason == 0x13) { 
+    			    //REMOTE_USER_TERMINATED         
+    				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+    		
+    			} else { 
+    				//other reason, shutdown time is set to 15 minutes
+                    sndp_enter_mobile_reconnect();
+    			}
+#else
+                sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+#endif
+            }	
 			break;
         
 		case SNDP_BT_CONN_STATUS_IBRT_CONNECTED:
@@ -1384,22 +1397,17 @@ static void sndp_ui_bt_event_exec_after_power_on(void)
         sndp_delay_exec_start(300, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
         
     } else {
-        if(sndp_is_left_right_bound()) {
-            if(sndp_get_mobile_pairing_count() > 0) {
-                SPUI_TRACE(0, "mobile reconnecting");
-                
-                sndp_enter_mobile_reconnect();
+        if(sndp_get_mobile_pairing_count() > 0) {
+            SPUI_TRACE(0, "mobile reconnecting");
             
-            } else {
-                SPUI_TRACE(0, "no paired record, tws pairing");
-                
-                //sndp_delay_exec_start(300, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
-                sndp_enter_mobile_pairing_after_tws_connected();
-            }
+            sndp_enter_mobile_reconnect();
+        
         } else {
-            SPUI_TRACE(0, "the left and right not bound.");
+            SPUI_TRACE(0, "no paired record, tws pairing");
+            
+            //sndp_delay_exec_start(300, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
+            sndp_enter_mobile_pairing_after_tws_connected();
         }
-
     }
 }
 
@@ -1541,7 +1549,7 @@ void sndp_ui_init(void)
 #endif
 
 	sndp_ui_check_dev_initial_status();
-    sndp_delay_exec_start(300, (uint32_t)sndp_ui_bt_event_exec_after_power_on, 0, 0, 0);
+    //sndp_delay_exec_start(300, (uint32_t)sndp_ui_bt_event_exec_after_power_on, 0, 0, 0);
 
 #if defined(__SNDP_AUDIO_TEST__)
     sndp_delay_exec_start(2000, (uint32_t)sndp_audio_test_switch, 0, 0, 0);

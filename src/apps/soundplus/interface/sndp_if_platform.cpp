@@ -328,6 +328,7 @@ void sndp_mobile_reconnect_sccessful(void)
 
 void sndp_enter_mobile_reconnect(void)
 {
+    bta_tws_box_event_entry(BTA_TWS_OPEN);
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
     app_start_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
@@ -699,6 +700,7 @@ void sndp_disconnect_all_mobile_link(void)
 void sndp_clear_mobile_pairing_list(void)
 {
 	app_ibrt_if_nvrecord_delete_all_mobile_record();
+    sndp_get_mobile_pairing_count();
 }
 
 uint8_t sndp_get_mobile_pairing_count(void)
