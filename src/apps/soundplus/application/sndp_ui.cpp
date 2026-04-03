@@ -613,6 +613,8 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         sndp_delay_exec_start(100, (uint32_t)sndp_dev_io_pmu_check_cover, 0, 0, 0);
     
     } else {
+        sndp_dev_io_pmu_check_cover();
+        
         bta_tws_box_event_entry(BTA_TWS_UNDOCK);
         sndp_dev_wear_enable_detection();
         //spif_wear_detection_exec_calibration_self_calib();

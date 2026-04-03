@@ -529,22 +529,23 @@ void sndp_dev_iobox_init(void)
 /************************************************** Cover Switch Info Start **************************************************/
 void sndp_dev_io_pmu_check_cover(void)
 {
-		sndp_dev_cover_status_e cover_status = SNDP_DEV_COVER_UNKNOWN;
+	sndp_dev_cover_status_e cover_status = SNDP_DEV_COVER_UNKNOWN;
+	
+	SNDP_IF_TRACE(0, "io: %d CG_plugin:%d", sndp_dev_iobox_get_status(false), sndp_dev_charger_is_plugin(false));	
+	
+	if(sndp_dev_iobox_is_in_box(false) && sndp_dev_charger_is_plugin(false)){
+
+        cover_status = SNDP_DEV_COVER_COLSED;
+
+	} else if(sndp_dev_iobox_is_in_box(false)) {
+
+        cover_status = SNDP_DEV_COVER_OPENED;
 		
-		SNDP_IF_TRACE(0, "io: %d CG_plugin:%d", sndp_dev_iobox_get_status(false), sndp_dev_charger_is_plugin(false));	
-		
-		if(sndp_dev_iobox_get_status(false) == SNDP_DEV_IOBOX_IN && sndp_dev_charger_is_plugin(false)){
-
-				cover_status = SNDP_DEV_COVER_COLSED;
-
-		} else if(sndp_dev_iobox_get_status(false) == SNDP_DEV_IOBOX_IN) {
-
-				cover_status = SNDP_DEV_COVER_OPENED;
-			
-		} else if(sndp_dev_charger_is_plugin(false))  {
-
-		}
-		sndp_dev_cover_status_changed_handler(cover_status);
+	} else if(sndp_dev_iobox_is_out_box(false) && !sndp_dev_charger_is_plugin(false))  {
+        cover_status = SNDP_DEV_COVER_OPENED;
+	}
+    
+	sndp_dev_cover_status_changed_handler(cover_status);
 }
 
 bool sndp_dev_cover_is_opened(bool peer)
@@ -907,7 +908,7 @@ void sndp_dev_charger_plug_status_changed(sndp_hal_charger_plug_status_e status)
                 sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_COLSED);
             }
         #else
-            sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_OPENED);
+            sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_OPENED);dddd
         #endif
         }
 #endif        
