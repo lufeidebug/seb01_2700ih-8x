@@ -1255,6 +1255,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
                     sndp_get_connected_mobile_count(), 
                     sndp_is_master_mobile_link_connected());
 
+#if 0
 			if(reason == 0x13) { 
 			    //REMOTE_USER_TERMINATED         
 				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
@@ -1263,6 +1264,9 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 				//other reason, shutdown time is set to 15 minutes
                 sndp_enter_mobile_reconnect();
 			}
+#else
+            sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+#endif
 			break;
             
 		case SNDP_BT_CONN_STATUS_MOBILE_CONNECTED:
