@@ -90,13 +90,6 @@ typedef enum {
 	SNDP_ANC_MODE_QTY,
 } sndp_anc_mode_e;
 
-typedef enum {
-	SNDP_ANC_STA_OFF = 0,
-	SNDP_ANC_STA_ON  = 1,
-	SNDP_ANC_STA_TRANSPARENT = 2,
-	
-} sndp_anc_status_e;
-
 
 #if defined(__SNDP_SLEEP_APP__)
 typedef enum {
@@ -228,7 +221,11 @@ bool spfi_call_is_hfp_audio_on(void);
 void sndp_call_ctrl(sndp_call_ctrl_event_e event);
 uint8_t sndp_get_call_volume(void);
 
+
+bool sndp_anc_is_off(void);
 bool sndp_anc_is_on(void);
+bool sndp_anc_is_transparent(void);
+sndp_anc_mode_e sndp_anc_get_mode_index(void);
 void sndp_anc_mode_set(sndp_anc_mode_e anc_mode);
 void sndp_anc_mode_set_locally(sndp_anc_mode_e anc_mode);
 sndp_anc_mode_e sndp_anc_get_curr_mode(void);

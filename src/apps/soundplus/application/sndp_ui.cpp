@@ -81,9 +81,6 @@ typedef struct {
     uint16_t temperature_exp_shutdown_time; 
 
     bool wear_play_music_allowed;
-
-    sndp_anc_status_e anc_status;
-    sndp_anc_mode_e anc_mode;
     
 } sndp_ui_ctx_s;
 
@@ -155,7 +152,7 @@ void sndp_ui_working_mode_switch(void)
 #endif
 
         //Open ANC.
-        sndp_anc_mode_set(sndp_ui_ctx.anc_mode);
+        sndp_anc_mode_set(sndp_anc_get_mode_index());
 
         //Open sleep analysis.
 #if defined(__SNDP_HEART_RATE_MGR__)        
@@ -234,49 +231,45 @@ void sndp_ui_volume_dec(uint8_t type, uint8_t level)
 
 static void sndp_ui_anc_switch(void) 
 {
-	SPUI_TRACE(1, "status=%d, mode=%d", sndp_ui_ctx.anc_status, sndp_ui_ctx.anc_mode);
+    sndp_delay_exec_stop((uint32_t)sndp_anc_mode_set);
+    
+#if 0
+    if(sndp_anc_is_off()) {
 
-#if 1
-    if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_OFF) {
-        sndp_ui_ctx.anc_status = SNDP_ANC_STA_ON;
-        
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_ON, 0);
 #endif
-		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_ui_ctx.anc_mode, 0, 0);
+		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
 
-	} else if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_ON) {
-        sndp_ui_ctx.anc_status = SNDP_ANC_STA_OFF;
-        
+	} else if(sndp_anc_is_on()) {
+
 		sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+        
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_OFF, 0);
 #endif           
-		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE_OFF, 0, 0);
-
-	}
-#else
-	if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_OFF) {
-        sndp_ui_ctx.anc_status = SNDP_ANC_STA_ON;
         
+	}
+    
+#else
+
+	if(sndp_anc_is_off()) {
+
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_ON, 0);
 #endif
-		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_ui_ctx.anc_mode, 0, 0);
+		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
 
-	} else if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_ON) {
-        sndp_ui_ctx.anc_status = SNDP_ANC_STA_TRANSPARENT;
-        
-		sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+	} else if(sndp_anc_is_on()) {
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_ON, 0);
 #endif           
 		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE_TRANSPARENT, 0, 0);
 
-	} else if(sndp_ui_ctx.anc_status == SNDP_ANC_STA_TRANSPARENT) {
-        sndp_ui_ctx.anc_status = SNDP_ANC_STA_OFF;
+	} else if(sndp_anc_is_transparent()) {
         
 	    sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+        
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_OFF, 0);
 #endif
@@ -401,12 +394,8 @@ static POSSIBLY_UNUSED void sndp_ui_wear_on_open_anc(void)
 	SPUI_TRACE(0, "starting...");
 	if(sndp_is_tws_link_connected()) {
 		if(sndp_dev_wear_is_worn(false) && sndp_dev_wear_is_worn(true)) {
-			sndp_anc_mode_set(sndp_ui_ctx.anc_mode);
-		} else {
-			sndp_anc_mode_set_locally(sndp_ui_ctx.anc_mode);
+			sndp_anc_mode_set(sndp_anc_get_mode_index());
 		}
-	} else {
-		sndp_anc_mode_set_locally(sndp_ui_ctx.anc_mode);
 	}
 }
 
@@ -417,12 +406,8 @@ static POSSIBLY_UNUSED void sndp_ui_wear_off_close_anc(void)
 		return;
 	} 
 
-	SPUI_TRACE(0, "stopping...");
-#if 0		
+	SPUI_TRACE(0, "stopping...");	
 	sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
-#else
-	sndp_anc_mode_set_locally(SNDP_ANC_MODE_OFF);
-#endif
 	
 }
 
@@ -605,7 +590,7 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         bta_tws_box_event_entry(BTA_TWS_DOCK);
 
         if(sndp_anc_is_on()) {
-            sndp_anc_mode_set_locally(SNDP_ANC_MODE_OFF);
+            sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
         } 
 
         sndp_delay_exec_start(300, (uint32_t)sndp_ui_inbox_role_switch, 0, 0, 0);
@@ -1534,9 +1519,6 @@ void sndp_ui_init_pre(void)
 	SPUI_TRACE_ENTER();
     
 	memset(&sndp_ui_ctx, 0, sizeof(sndp_ui_ctx));
-    sndp_ui_ctx.anc_status = SNDP_ANC_STA_OFF;
-    sndp_ui_ctx.anc_mode = SNDP_ANC_MODE_1; //need init from flash.
-        
     sndp_set_bt_conn_status_changed_callback(sndp_ui_bt_conn_status_changed);
 	app_prompt_start_callback_register(sndp_ui_prompt_start_cb);
 	app_prompt_finish_callback_register(sndp_ui_prompt_finish_cb);

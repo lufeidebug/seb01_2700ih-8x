@@ -1719,6 +1719,7 @@ uint8_t sndp_sleep_app_anc_mode_get(bool peer)
 	else
 		return sndp_dev_ctx.local.sleep_app_flag.sleep_anc_mode;
 }
+
 /**************************************************set eq mode end************************************************/
 void sndp_dev_gesture_onoff(bool peer, uint8_t onoff, bool sava)
 {
@@ -1856,6 +1857,7 @@ void sndp_load_sleep_app_param(void)
 	sndp_dev_splaypause_onoff(false,sleep_flag_run.sleep_splaypause_onoff, false);
 }
 #endif
+
 void sndp_dev_init(void)
 {
 	//SPUI_TRACE_ENTER();
