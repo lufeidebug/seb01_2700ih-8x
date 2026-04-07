@@ -1363,7 +1363,11 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 
 		case SNDP_BT_CONN_STATUS_HFP_CALL_IND:
 			break;
-            
+        case SNDP_BT_CONN_ROLE_ROLE_CHANGED:
+#if defined(__SNDP_SLEEP_APP__)
+            sndp_comm_cmd_sleepapp_proximity_role_switch_update();
+#endif
+            break;
 		default:
 			break;
 

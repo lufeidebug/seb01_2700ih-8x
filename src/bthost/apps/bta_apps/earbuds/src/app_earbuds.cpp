@@ -194,6 +194,9 @@ static void bt_link_state_changed_handler(const bt_bdaddr_t *addr, bta_tws_bt_li
 #endif            
         break;
         case BTA_TWS_IBRT_ROLE_CHANGED_EVENT:
+#if defined(__SNDP_PROJ__)
+        sndp_bt_conn_status_changed(SNDP_BT_CONN_ROLE_ROLE_CHANGED, reason);
+#endif          
         break;
     }
 }

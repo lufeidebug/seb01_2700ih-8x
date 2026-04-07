@@ -1571,6 +1571,13 @@ void sndp_dev_hr_enter_detection_mode(void)
 #endif
 }
 
+void sndp_dev_hr_read_proximity_value(unsigned short *proximity_value)
+{
+	SNDP_IF_TRACE_ENTER();
+#if defined(__SNDP_HEART_RATE_MGR__)	
+	sndp_hal_hr_read_proximity_value(proximity_value);
+#endif
+}
 
 void sndp_dev_hr_init(void)
 {
@@ -1649,7 +1656,7 @@ bool sndp_dev_get_prompt_onoff(bool peer)
 
 /************************************************** prompt end **************************************************/
 /**************************************************set eq mode **************************************************/
-void sndp_set_eq_index(bool peer, uint8_t index, bool save_data)
+void sndp_dev_set_eq_index(bool peer, uint8_t index, bool save_data)
 {
 	SNDP_IF_TRACE(1, "index=%d", index);
 	if(index > SNDP_EQ_MODE_RELAXED && index != SNDP_EQ_MODE_CUSTOM_MODE) 
@@ -1721,7 +1728,7 @@ uint8_t sndp_sleep_app_anc_mode_get(bool peer)
 }
 
 /**************************************************set eq mode end************************************************/
-void sndp_dev_gesture_onoff(bool peer, uint8_t onoff, bool sava)
+void sndp_dev_set_gesture_onoff(bool peer, uint8_t onoff, bool sava)
 {
 	SNDP_IF_TRACE(0, "enter");
 	if(peer) {
@@ -1747,7 +1754,7 @@ bool sndp_dev_get_gesture_onoff(bool peer)
 	}
 }
 
-void sndp_dev_splaypause_onoff(bool peer, uint8_t onoff, bool sava)
+void sndp_dev_set_splaypause_onoff(bool peer, uint8_t onoff, bool sava)
 {
 	SNDP_IF_TRACE(0, "enter");
 	if(peer) {
@@ -1771,6 +1778,54 @@ uint8_t sndp_dev_get_splaypause_onoff(bool peer)
 	} else {
 		return sndp_dev_ctx.local.sleep_app_flag.sleep_splaypause_onoff;
 	}
+}
+
+uint8_t sndp_dev_set_proximity_onoff(bool peer, uint8_t onoff, bool sava)
+{
+	SNDP_IF_TRACE(0, "enter");
+	if(peer) {
+		sndp_dev_ctx.peer.sleep_app_flag.sleep_proximity_onoff = onoff;
+	} else {
+		sndp_dev_ctx.local.sleep_app_flag.sleep_proximity_onoff = onoff;
+	}
+
+	sleep_flag_run.sleep_proximity_onoff = onoff;
+	if(sava)
+	{
+		sleep_flag_flash.sleep_proximity_onoff = onoff;
+		sndp_save_app_flag_to_flash();		
+	}
+
+	return 0;
+}
+
+uint8_t sndp_dev_get_proximity_onoff(bool peer)
+{
+	if(peer) {
+		return sndp_dev_ctx.peer.sleep_app_flag.sleep_proximity_onoff;
+	} else {
+		return sndp_dev_ctx.local.sleep_app_flag.sleep_proximity_onoff;
+	}
+}
+
+unsigned short sndp_dev_get_proximity_data(bool peer)
+{
+	if(peer) {
+		return sndp_dev_ctx.peer.sleep_proximity_data;
+	} else {
+		return sndp_dev_ctx.local.sleep_proximity_data;
+	}
+}
+
+uint8_t sndp_dev_set_proximity_data(bool peer, unsigned short data)
+{
+	if(peer) {
+		sndp_dev_ctx.peer.sleep_proximity_data = data;
+	} else {
+		sndp_dev_ctx.local.sleep_proximity_data = data;
+	}
+
+	return 0;
 }
 
 void sndp_save_app_flag_to_flash(void)
@@ -1851,10 +1906,11 @@ void sndp_load_sleep_app_param(void)
 #endif
 	sndp_dev_set_prompt_onoff(false, sleep_flag_run.sleep_prompt_onoff, false);
 #if defined(__SNDP_GESTURE_MAP__)
-	sndp_dev_gesture_onoff(false, sleep_flag_run.sleep_gesture_onoff, false);
+	sndp_dev_set_gesture_onoff(false, sleep_flag_run.sleep_gesture_onoff, false);
 #endif
-	sndp_set_eq_index(false,sleep_flag_run.sleep_eq_index, false);
-	sndp_dev_splaypause_onoff(false,sleep_flag_run.sleep_splaypause_onoff, false);
+	sndp_dev_set_eq_index(false, sleep_flag_run.sleep_eq_index, false);
+	sndp_dev_set_splaypause_onoff(false, sleep_flag_run.sleep_splaypause_onoff, false);
+	sndp_dev_set_proximity_onoff(false, sleep_flag_run.sleep_proximity_onoff, false);
 }
 #endif
 
