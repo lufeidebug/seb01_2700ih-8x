@@ -409,7 +409,7 @@ static POSSIBLY_UNUSED void sndp_ui_wear_off_stop_hr(void)
 {
 #if defined(__SNDP_HEART_RATE_MGR__)            
     sndp_hr_mearsuring_stop();
-    sndp_sleep_analysis_start(0);
+    sndp_sleep_analysis_stop();
 #endif
 
 	SPUI_TRACE(0, "stopped");
