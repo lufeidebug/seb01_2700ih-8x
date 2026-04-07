@@ -81,6 +81,8 @@ typedef struct {
     uint16_t temperature_exp_shutdown_time; 
 
     bool wear_play_music_allowed;
+
+    bool gesture_en;
     
 } sndp_ui_ctx_s;
 
@@ -415,6 +417,18 @@ static POSSIBLY_UNUSED void sndp_ui_wear_off_stop_hr(void)
 	SPUI_TRACE(0, "stopped");
 }
 
+static POSSIBLY_UNUSED void sndp_ui_wear_on_enable_gesture(void)
+{
+    sndp_ui_ctx.gesture_en = true;   
+}
+
+static POSSIBLY_UNUSED void sndp_ui_wear_off_disable_gesture(void)
+{
+    sndp_ui_ctx.gesture_en = false;
+}
+
+
+
 static void sndp_ui_wear_on_play_tone(void) 
 {
 	SPUI_TRACE_ENTER();
@@ -434,13 +448,16 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds, 0, 0, 0);
             sndp_delay_exec_start(300, (uint32_t)sndp_ui_wear_on_play_music, 0, 0, 0);
 			sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_role_switch, 0, 0, 0);          
-            //sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_start_hr, 0, 0, 0);           
+            //sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_start_hr, 0, 0, 0);   
+            sndp_delay_exec_start(2000, (uint32_t)sndp_ui_wear_on_enable_gesture, 0, 0, 0);
+            
 	    } else if(SNDP_DEV_WEAR_OFF == wear_action) {
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_off_tone_switch_to_phone, 0, 0, 0);
 			sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_off_stop_music, 0, 0, 0);	
             sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_off_role_switch, 0, 0, 0);           
             sndp_ui_wear_off_stop_hr();
             sndp_ui_wear_off_close_anc();
+            sndp_ui_wear_off_disable_gesture();
 		}
 
         
@@ -485,6 +502,7 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 
 	} else {
         sndp_dev_acc_enter_standby_mode();
+        sndp_ui_ctx.gesture_en = false;
         
 		/* update the ibrt status machine */
 		bta_tws_box_event_entry(BTA_TWS_WEAR_DOWN);
@@ -840,6 +858,11 @@ static void sndp_ui_gesture_event_generated(sndp_dev_gesture_event_e gesture_eve
 
     if(!sndp_dev_wear_is_worn(false)) {
         SPUI_TRACE(0, "not worn, rtn");
+        return;
+    }
+
+    if(!sndp_ui_ctx.gesture_en) {
+        SPUI_TRACE(0, "not reaching 2s after wearing, rtn");
         return;
     }
     
