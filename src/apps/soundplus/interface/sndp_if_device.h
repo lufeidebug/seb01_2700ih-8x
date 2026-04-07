@@ -158,6 +158,7 @@ typedef struct
 	uint8_t sleep_prompt_onoff;
 	uint8_t sleep_gesture_onoff;
 	uint8_t sleep_splaypause_onoff;
+	uint8_t sleep_proximity_onoff;
 }sndp_sleep_app_flag;
 
 #endif
@@ -191,6 +192,7 @@ typedef struct {
 	sndp_dev_gesture_mapper_t gesture_mapper;
 #endif
 	sndp_sleep_app_flag sleep_app_flag;
+	unsigned short sleep_proximity_data;
 #endif
 } sndp_dev_earbuds_param_s;
 
@@ -374,6 +376,7 @@ bool sndp_dev_is_working_mode(sndp_dev_working_mode_e mode);
 /************************************************** Heart rate Start **************************************************/
 void sndp_dev_hr_enter_standby_mode(void);
 void sndp_dev_hr_enter_detection_mode(void);
+void sndp_dev_hr_read_proximity_value(unsigned short *proximity_value);
 void sndp_dev_hr_init(void);
 /**************************************************  Heart rate Start **************************************************/
 
@@ -386,17 +389,21 @@ void sndp_dev_acc_init(void);
 
 /************************************************** prompt start **************************************************/
 #if defined(__SNDP_SLEEP_APP__)
-void sndp_set_eq_index(bool peer, uint8_t index, bool save_data);
+void sndp_dev_set_eq_index(bool peer, uint8_t index, bool save_data);
 uint8_t sndp_get_eq_index(bool peer);
 void sndp_dev_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_data);
 bool sndp_dev_get_prompt_onoff(bool peer);
 void sndp_save_app_flag_to_flash(void);
 void sndp_sleep_app_anc_mode_set(bool peer,uint8_t anc_mode,bool sava_data);
 uint8_t sndp_sleep_app_anc_mode_get(bool peer);
-void sndp_dev_gesture_onoff(bool peer, uint8_t onoff, bool sava);
+void sndp_dev_set_gesture_onoff(bool peer, uint8_t onoff, bool sava);
 bool sndp_dev_get_gesture_onoff(bool peer);
-void sndp_dev_splaypause_onoff(bool peer, uint8_t onoff, bool sava);
+void sndp_dev_set_splaypause_onoff(bool peer, uint8_t onoff, bool sava);
 uint8_t sndp_dev_get_splaypause_onoff(bool peer);
+uint8_t sndp_dev_set_proximity_onoff(bool peer, uint8_t onoff, bool sava);
+uint8_t sndp_dev_get_proximity_onoff(bool peer);
+unsigned short sndp_dev_get_proximity_data(bool peer);
+uint8_t sndp_dev_set_proximity_data(bool peer, unsigned short data);
 #endif
 /************************************************** prompt end **************************************************/
 
