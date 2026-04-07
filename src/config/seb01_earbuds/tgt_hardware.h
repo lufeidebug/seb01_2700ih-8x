@@ -207,10 +207,10 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP cfg_hw_pinmux_pwl[CFG_HW_PWL_NUM]
  *  1. TT can work with FF, which means two FF channels.
  *  2. PSAP use TT channel, which means PSAP can not work with TT
  **/
-#define ANC_TT_MIC_CH_L                     AUD_CHANNEL_MAP_CH2
+#define ANC_TT_MIC_CH_L                     AUD_CHANNEL_MAP_CH1
 #define ANC_TT_MIC_CH_R                     0  //5 ADC, need reuse, same with ff r
 
-#define ANC_TALK_MIC_CH_L                     AUD_CHANNEL_MAP_CH0
+#define ANC_TALK_MIC_CH_L                   AUD_CHANNEL_MAP_CH1
 #define ANC_TALK_MIC_CH_R                   0
 
 #define ANC_REF_MIC_CH_L                    AUD_CHANNEL_MAP_ECMIC_CH0

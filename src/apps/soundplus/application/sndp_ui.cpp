@@ -233,40 +233,26 @@ static void sndp_ui_anc_switch(void)
 {
     sndp_delay_exec_stop((uint32_t)sndp_anc_mode_set);
     
-#if 0
-    if(sndp_anc_is_off()) {
-
-#ifdef MEDIA_PLAYER_SUPPORT        
-		media_PlayAudio(AUD_ID_ANC_ON, 0);
-#endif
-		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
-
-	} else if(sndp_anc_is_on()) {
-
-		sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
-        
-#ifdef MEDIA_PLAYER_SUPPORT        
-		media_PlayAudio(AUD_ID_ANC_OFF, 0);
-#endif           
-        
-	}
-    
-#else
-
 	if(sndp_anc_is_off()) {
-
+        SPUI_TRACE(0, "ANC_ON");
+        
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_ON, 0);
 #endif
-		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
+		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
 
 	} else if(sndp_anc_is_on()) {
+        SPUI_TRACE(0, "ANC_TT");
+
+        sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+        
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_ON, 0);
 #endif           
-		sndp_delay_exec_start(1000, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE_TRANSPARENT, 0, 0);
+		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE_TRANSPARENT, 0, 0);
 
 	} else if(sndp_anc_is_transparent()) {
+        SPUI_TRACE(0, "ANC_OFF");
         
 	    sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
         
@@ -275,7 +261,6 @@ static void sndp_ui_anc_switch(void)
 #endif
 
 	}
-#endif
 
 }
 

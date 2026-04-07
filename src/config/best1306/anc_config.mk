@@ -13,7 +13,7 @@ export AUDIO_ANC_FB_ADJ_MC  ?= 0
 export AUDIO_SECTION_SUPPT  ?= 1
 export AUDIO_ANC_SPKCALIB_HW ?= 0
 export AUDIO_ANC_FIR_HW     ?= 0
-export AUDIO_ANC_TT_HW      ?= 0
+export AUDIO_ANC_TT_HW      ?= 1
 ##### ANC DEFINE END ######
 
 export AUDIO_ADJ_EQ ?= 0

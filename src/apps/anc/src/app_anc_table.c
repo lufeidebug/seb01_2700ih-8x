@@ -25,6 +25,19 @@
 
 static const app_anc_coef_index_cfg_t app_anc_coef_index_cfg[APP_ANC_MODE_QTY] = {
   /*  FF ,  FB , PSAP, SPK ,  TT , SW PSAP, Custom */
+#if defined(__SNDP_ANC__)
+    {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_OFF},        // APP_ANC_MODE_OFF
+    {0x00, 0x00, XXXX, XXXX, 0x00, XXXX, ANC_CUSTOM_MODE_ANC},        // 1, Production calibration
+    {0x01, 0x01, XXXX, XXXX, 0x01, XXXX, ANC_CUSTOM_MODE_FIR_ANC},    // 2, Default Depth
+    {0x02, 0x02, XXXX, XXXX, 0x02, XXXX, ANC_CUSTOM_MODE_ANC},        // 3, Default Moderate
+    {0x03, 0x03, XXXX, XXXX, 0x03, XXXX, ANC_CUSTOM_MODE_ANC},        // 4, Default Mild
+    {XXXX, XXXX, XXXX, XXXX, 0x04, XXXX, ANC_CUSTOM_MODE_TT},         // 5, TRANSPARENCY
+    {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_FIR_TT},     // 6, Weak TRANSPARENCY
+    {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 7, APP_ANC_MODE1
+    {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 8, APP_ANC_MODE2
+    {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 9, APP_ANC_MODE3
+    {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 10, APP_ANC_MODE4
+#else
     #ifdef VOICE_ASSIST_ADA_IIR
     #ifndef ONLY_FF_IN_IIR
     {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, XXXX},   // APP_ANC_MODE_OFF
@@ -54,6 +67,7 @@ static const app_anc_coef_index_cfg_t app_anc_coef_index_cfg[APP_ANC_MODE_QTY] =
     {XXXX, 0x08, XXXX, XXXX, 0x08, XXXX, ANC_CUSTOM_MODE_ANC},        // 9, APP_ANC_MODE3
     {XXXX, 0x09, XXXX, XXXX, 0x09, XXXX, ANC_CUSTOM_MODE_ANC},        // 10, APP_ANC_MODE4
     #endif
+#endif    
 };
 
 int32_t app_anc_table_init(void)
