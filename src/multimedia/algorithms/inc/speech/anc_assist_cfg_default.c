@@ -33,8 +33,8 @@ AncAssistConfig anc_assist_cfg = {
     .wind_debug_en = 0,
     .noise_debug_en = 0,
 
-    .ff_howling_en  = 0,
-    .fb_howling_en  = 0,
+    .ff_howling_en  = true,
+    .fb_howling_en  = true,
     .noise_en   = 0,
     .noise_classify_en  = 0,
     .wind_en    = 0,
