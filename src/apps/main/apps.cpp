@@ -624,7 +624,13 @@ static int app_bth_event_callback(const bt_bdaddr_t *bd_addr, BT_EVENT_T event, 
 #endif
             if (active_cons == 0)
             {
+#if defined(__SNDP_UI__)
+                if(sndp_dev_cover_is_opened(false)) {
+                    app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
+                }
+#else
                 app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
+#endif
             }
             else
             {
@@ -2822,7 +2828,7 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #endif
 
 #if defined(APP_10_SECOND_TIMER_EN) && defined(__BTIF_AUTOPOWEROFF__)
-#ifndef BESUI_TWS_EN
+#if !defined(BESUI_TWS_EN) && !defined(__SNDP_UI__) 
         app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
 #endif
 #endif
@@ -3079,7 +3085,7 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #endif
 
 #if defined(APP_10_SECOND_TIMER_EN) && defined(__BTIF_AUTOPOWEROFF__)
-#ifndef BESUI_TWS_EN
+#if !defined(BESUI_TWS_EN) && !defined(__SNDP_UI__) 
             app_start_10_second_timer(APP_POWEROFF_TIMER_ID);
 #endif
 #endif

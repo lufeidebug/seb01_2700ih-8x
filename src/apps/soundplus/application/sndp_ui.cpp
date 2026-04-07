@@ -1281,6 +1281,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			break;
 	
 		case SNDP_BT_CONN_STATUS_IBRT_DISCONNECTED:
+#if 0            
             if(sndp_dev_cover_is_opened(false)) {
 #if 0
     			if(reason == 0x13) { 
@@ -1292,9 +1293,13 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
                     sndp_enter_mobile_reconnect();
     			}
 #else
-                sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+                if(!sndp_is_tws_master_mode() && !sndp_is_master_mobile_link_connected()) {
+                    sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+                }
 #endif
+
             }	
+#endif            
 			break;
         
 		case SNDP_BT_CONN_STATUS_IBRT_CONNECTED:
