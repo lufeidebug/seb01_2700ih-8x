@@ -89,7 +89,7 @@ static uint8_t sndp_call_in_out = 0; // 0:none, 1:incoming, 2:outgoing
 static sndp_pairing_type_e sndp_pairing_type = SNDP_PAIRING_NONE; // 0:未配对，1：对耳配对，2：单耳配对。
 static sndp_pairing_state_e sndp_pairing_status = SNDP_PAIR_STA_NONE; //0:未配对，1：配对中，2：配对成功，3：配对超时。
 
-
+ 
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
@@ -227,6 +227,11 @@ void sndp_enter_restore_factory_setting(void)
     app_reset();
 }
 
+void sndp_bt_set_access_mode(SNDP_bt_access_mode_t access_mode)
+{
+	app_bt_set_access_mode(access_mode);
+}
+
 uint8_t sndp_get_pairing_type(void)
 {
     return sndp_pairing_type;
@@ -323,6 +328,7 @@ void sndp_mobile_reconnect_sccessful(void)
 
 void sndp_enter_mobile_reconnect(void)
 {
+    bta_tws_box_event_entry(BTA_TWS_OPEN);
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
     app_start_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
@@ -694,6 +700,7 @@ void sndp_disconnect_all_mobile_link(void)
 void sndp_clear_mobile_pairing_list(void)
 {
 	app_ibrt_if_nvrecord_delete_all_mobile_record();
+    sndp_get_mobile_pairing_count();
 }
 
 uint8_t sndp_get_mobile_pairing_count(void)
@@ -1192,15 +1199,35 @@ uint8_t sndp_get_hfp_volume(void)
 }
 
 /******************************************* ANC Contrl Interface ****************************************/
+
+bool sndp_anc_is_off(void)
+{
+    app_anc_mode_t anc_mode = app_anc_get_curr_mode();
+
+    return (APP_ANC_MODE_OFF == anc_mode);
+}
+
 bool sndp_anc_is_on(void)
 {
     app_anc_mode_t anc_mode = app_anc_get_curr_mode();
 
-    if(APP_ANC_MODE_OFF == anc_mode) {
-        return false;   
-    } else {
-		return true;
+    if(anc_mode >= APP_ANC_MODE1 && anc_mode <= APP_ANC_MODE4) {
+        return true;   
     }
+
+    return false;
+}
+
+bool sndp_anc_is_transparent(void)
+{
+    app_anc_mode_t anc_mode = app_anc_get_curr_mode();
+
+    return (APP_ANC_MODE5 == anc_mode);
+}
+
+sndp_anc_mode_e sndp_anc_get_mode_index(void)
+{
+    return SNDP_ANC_MODE_1;
 }
 
 void sndp_anc_mode_set(sndp_anc_mode_e anc_mode)
@@ -1216,8 +1243,9 @@ void sndp_anc_mode_set_locally(sndp_anc_mode_e anc_mode)
 sndp_anc_mode_e sndp_anc_get_curr_mode(void)
 {
     app_anc_mode_t anc_mode = app_anc_get_curr_mode();
-	
+    
 	SNDP_IF_TRACE(1, "mode=%d", anc_mode);
+    
     return (sndp_anc_mode_e)anc_mode;
 }
 

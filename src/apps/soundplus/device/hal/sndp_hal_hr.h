@@ -59,6 +59,16 @@ typedef struct {
      */
     int32_t (* exec_self_calib)(void);
 
+    /** 
+     * return: 0 no error.
+     */
+    int32_t (* read_proximity_value)(unsigned short* value);
+
+    /** 
+     * return: 0 no error.
+     */
+    int32_t (* write_proximity_threshold)(uint16_t high_threshold, uint16_t low_threshold);
+
 } sndp_hal_hr_s;
 
 
@@ -73,7 +83,8 @@ int32_t sndp_hal_hr_stop_reading_ppg(void);
 int32_t sndp_hal_hr_set_calib_callback(sndp_hal_hr_calib_callback callback);
 int32_t sndp_hal_hr_exec_calib(uint8_t *data, uint16_t data_len);
 int32_t sndp_hal_hr_exec_self_calib(void);
-
+int32_t sndp_hal_hr_read_proximity_value(unsigned short* value);
+int32_t sndp_hal_hr_write_proximity_threshold(uint16_t high_threshold, uint16_t low_threshold);
 
 
 #ifdef __cplusplus

@@ -142,7 +142,7 @@ int ss_ppg_example_use_proximity(void)
     if (ret != SS_SUCCESS)
         return ret;
 
-    ret = ss_ppg_proximity_threshold(20000, 10000); //[High] DC>=20000, [Low] DC<=10000
+    ret = ss_ppg_proximity_threshold(23000, 18000); //[High] DC>=20000, [Low] DC<=10000
     if (ret != SS_SUCCESS)
         return ret;
 

@@ -19,6 +19,7 @@
 #if defined(__SNDP_WEAR_DETECT_MGR__)
 #include "sndp_hal_wear_detect.h"
 #endif
+#include "sndp_if_data_access.h"
 
 #include "ss_os_api.h"
 #include "ss_ppg.h"
@@ -44,6 +45,10 @@
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
+typedef struct {
+    uint16_t proxmity_high_threshold;
+    uint16_t proxmity_low_threshold;
+} ssh401a_nv_data_s;
 
 
 /**************************************************************************************************
@@ -84,25 +89,33 @@ static int32_t ssh401a_ppg_data[64];
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
-POSSIBLY_UNUSED static int32_t ssh401a_nv_read(uint8_t *ptrData, uint16_t num)
+POSSIBLY_UNUSED static int32_t ssh401a_nv_read(ssh401a_nv_data_s *nv_data)
 {
-#if 0    
-    int ret = sndp_da_read_running_param(SNDP_DA_FIELD_PPG_CALIB_DATA, ptrData, num, true);
-    if(ret){
-        SSH401A_TRACE(1, "ret=%d", ret);
+    sndp_da_field_ppg_calib_data_s field_ppg_calib_data;
+
+    int ret = sndp_da_read_field(SNDP_DA_FIELD_PPG_CALIB_DATA, &field_ppg_calib_data, sizeof(sndp_da_field_ppg_calib_data_s), true);
+    if(!ret){
+        if(field_ppg_calib_data.key == SNDP_DA_PARAM_FIELD_VALID) {
+            memcpy(nv_data, &field_ppg_calib_data.data, sizeof(ssh401a_nv_data_s));
+            return 0;
+        }
     }
-#endif    
-    return 0;
+
+    SSH401A_TRACE(1, "ret=%d", ret);
+    return -1;
 }
 
-POSSIBLY_UNUSED static int32_t ssh401a_nv_write(uint8_t *ptrData, uint16_t num)
+POSSIBLY_UNUSED static int32_t ssh401a_nv_write(ssh401a_nv_data_s *nv_data)
 {
-#if 0     
-    int ret = sndp_da_write_running_param(SNDP_DA_FIELD_PPG_CALIB_DATA, ptrData, num, true);
+    sndp_da_field_ppg_calib_data_s field_ppg_calib_data;
+
+    memcpy(&field_ppg_calib_data.data, nv_data, sizeof(ssh401a_nv_data_s));
+    
+    int ret = sndp_da_write_field(SNDP_DA_FIELD_PPG_CALIB_DATA, &field_ppg_calib_data, sizeof(sndp_da_field_ppg_calib_data_s), true);
     if(ret){
         SSH401A_TRACE(1, "ret=%d", ret);
     }
-#endif    
+
     return 0;
 }
 
@@ -404,6 +417,17 @@ int32_t ssh401a_exec_self_calib(void)
     return SNDP_HAL_RET_FAIL;
 }
 
+int32_t ssh401a_ppg_read_proximity_value(unsigned short* value)
+{
+    return ss_ppg_read_proximity_value(value);
+}
+
+int32_t ssh401a_ppg_write_proximity_threshold(uint16_t high_threshold, uint16_t low_threshold)
+{
+    return ss_ppg_proximity_threshold(high_threshold, low_threshold);
+}
+
+
 extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .init                           = ssh401a_init,
     .enter_standby_mode             = ssh401a_enter_standby_mode,
@@ -414,7 +438,8 @@ extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .set_calib_callback             = ssh401a_set_calib_callback,
     .exec_calib                     = ssh401a_exec_calib,
     .exec_self_calib                = ssh401a_exec_self_calib,
-
+    .read_proximity_value           = ssh401a_ppg_read_proximity_value,
+    .write_proximity_threshold      = ssh401a_ppg_write_proximity_threshold,
 };
 
 

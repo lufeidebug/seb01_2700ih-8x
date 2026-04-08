@@ -207,7 +207,7 @@ int32_t da217e_close_double_tap_interrupt(void)
 	return ret;
 }
 
-//open double tap interrupt 0x05-0x1f
+//open single tap interrupt 0x05-0x1f
 int32_t da217e_open_single_tap_interrupt(uint8_t th)
 {
 	int32_t ret = 0;
@@ -370,25 +370,33 @@ static void da217_tap_timer_handler(void const *param)
 
 void da217e_drv_deal_tap_interruption(void)
 {
-    uint8_t motion_flag;
-    uint8_t tap_staus;
+    uint8_t motion_flag = 0;
+    uint8_t tap_staus = 0;
     POSSIBLY_UNUSED uint8_t first_tap;
     POSSIBLY_UNUSED uint8_t z_tap;
+
+    da217e_reg_read(DA217E_REG_MOTION_FLAG, &motion_flag);
+    da217e_reg_read(DA217E_REG_TAP_ACTIVE_STATUS, &tap_staus);
+
+    DA217E_TRACE(1, "motion_flag=%02X, tap_staus=%02X", motion_flag, tap_staus);
+
+    if(motion_flag&0x20) { //S_tap_int
+#if 0
     
-    if(!da217e_reg_read(DA217E_REG_MOTION_FLAG, &motion_flag)) {
-        //DA217E_TRACE(1, "motion_flag=%02X", motion_flag);
-        if(!da217e_reg_read(DA217E_REG_TAP_ACTIVE_STATUS, &tap_staus)) {
-            DA217E_TRACE(1, "tap_staus=%02X", tap_staus);
-            first_tap = tap_staus & 0x80;
-            z_tap = tap_staus & 0x10;
-            //if(first_tap) {
-                da217e_tap_cnt++;
-                osTimerStop(da217_tap_timer);
-                osTimerStart(da217_tap_timer, 600);
-                //sndp_delay_exec_stop((uint32_t)da217e_drv_tap_handler);
-                //sndp_delay_exec_start(600, (uint32_t)da217e_drv_tap_handler, 0, 0, 0);
-            //}
-        }
+        //first_tap = tap_staus & 0x80;
+        //z_tap = tap_staus & 0x10;
+        
+        //if(z_tap) {
+            da217e_tap_cnt++;
+            osTimerStop(da217_tap_timer);
+            osTimerStart(da217_tap_timer, 600);
+        //}
+#else
+        da217e_tap_cnt++;
+        osTimerStop(da217_tap_timer);
+        osTimerStart(da217_tap_timer, 600);
+#endif
+
     }
 }
 
@@ -404,8 +412,6 @@ void da217e_drv_deal_fifo_interruption(void)
         }
     }
 }
-
-
 
 
 int32_t da217e_drv_init(da217e_drv_if_s * drv_if)

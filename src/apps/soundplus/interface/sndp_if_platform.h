@@ -44,6 +44,7 @@ typedef enum {
 	SNDP_BT_CONN_STATUS_HFP_CALL_IND 			= 21,
 
 	SNDP_BT_CONN_AVRCP_PLAYBACK_STATUS_CHANGED  = 22,
+	SNDP_BT_CONN_ROLE_ROLE_CHANGED                     = 23,
 	
 } sndp_bt_conn_status_e;
 
@@ -89,13 +90,6 @@ typedef enum {
 	
 	SNDP_ANC_MODE_QTY,
 } sndp_anc_mode_e;
-
-typedef enum {
-	SNDP_ANC_STA_OFF = 0,
-	SNDP_ANC_STA_ON  = 1,
-	SNDP_ANC_STA_TRANSPARENT = 2,
-	
-} sndp_anc_status_e;
 
 
 #if defined(__SNDP_SLEEP_APP__)
@@ -145,6 +139,14 @@ typedef enum {
 } SNDP_shutdown_reason_e;
 
 
+typedef enum{
+	  SNDP_BT_NOT_ACCESSIBEL     = 0x00,
+		SNDP_BT_DISCOVERABLE_ONLY  = 0x01,
+		SNDP_BT_CONNECTABLE_ONLY   = 0x02,
+		SNDP_BT_GENERAL_ACCESSIBLE = 0x03,
+		SNDP_BT_LIMITED_ACCESSIBLE = 0x13,
+}SNDP_bt_access_mode_t;
+
 typedef void (*sndp_bt_conn_status_changed_callback)(sndp_bt_conn_status_e conn_status, uint8_t reason);
 
 void sndp_save_data_before_shutdown(void);
@@ -156,7 +158,7 @@ void sndp_enter_dut_mode(void);
 void sndp_enter_single_dld_mode(void);
 void sndp_enter_shipmode(void);
 void sndp_enter_restore_factory_setting(void);
-
+void sndp_bt_set_access_mode(SNDP_bt_access_mode_t access_mode);
 
 uint8_t sndp_get_pairing_type(void);
 uint8_t sndp_get_pairing_status(void);
@@ -220,7 +222,11 @@ bool spfi_call_is_hfp_audio_on(void);
 void sndp_call_ctrl(sndp_call_ctrl_event_e event);
 uint8_t sndp_get_call_volume(void);
 
+
+bool sndp_anc_is_off(void);
 bool sndp_anc_is_on(void);
+bool sndp_anc_is_transparent(void);
+sndp_anc_mode_e sndp_anc_get_mode_index(void);
 void sndp_anc_mode_set(sndp_anc_mode_e anc_mode);
 void sndp_anc_mode_set_locally(sndp_anc_mode_e anc_mode);
 sndp_anc_mode_e sndp_anc_get_curr_mode(void);

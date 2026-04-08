@@ -5,7 +5,7 @@ ifeq ($(SNDP_PROJ),1)
 KBUILD_CPPFLAGS += -D__SNDP_PROJ__
 
 export HARDWARE_VERSION ?= 1.0
-export SOFTWARE_VERSION ?= 0.0.0.5
+export SOFTWARE_VERSION ?= 0.0.0.8
 
 # platform macro configuration
 export TRACE_BAUD_RATE 							:= 1152000
@@ -63,7 +63,7 @@ export SNDP_CHARGER_PLUG_MGR                    := 1
 export SNDP_BATTERY_MGR                         := 1
 export SNDP_CHARGER_MGR                         := 1
 export SNDP_TEMPERATURE_MGR                     := 1
-export SNDP_COVER_SWITCH_MGR                    := 1
+export SNDP_COVER_SWITCH_MGR                    := 0
 export SNDP_IOBOX_MGR                           := 1
 export SNDP_WEAR_DETECT_MGR                     := 1
 export SNDP_GESTURE_MGR                         := 1

@@ -100,18 +100,24 @@ typedef enum {
     COMM_CMDID_LR_SYNC_PROMPT_ONOFF                 = 0x2C, /* desc: 左右耳同步提示音开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_GESTRUE_ONOFF                = 0x2D, /* desc: 左右耳同步按键手势开关指令。
+    COMM_CMDID_LR_SYNC_GESTRUE_ONOFF                = 0x30, /* desc: 左右耳同步按键手势开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF             = 0x2E, /* desc: 左右耳同步开关smart play/pause。
+    COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF             = 0x31, /* desc: 左右耳同步开关smart play/pause。
                                                              * recv: 2 bytes, key behavior(1) + key function(1)
                                                              * rsp : 0 bytes */       
-    COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x2F, /* desc: 左右耳同步手势使能开关指令。
+    COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x32, /* desc: 左右耳同步手势使能开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */    
-    COMM_CMDID_LR_SYNC_FINDME_ONOFF                 = 0x2F, /* desc: 左右耳同步开关findme提示音。
+    COMM_CMDID_LR_SYNC_FINDME_ONOFF                 = 0x33, /* desc: 左右耳同步开关findme提示音。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */ 
+    COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF = 0x34, /* desc: 左右耳同步 proximity 上报开关。
+                                                             * recv: 1 bytes, onoff(1)
+                                                             * rsp : 0 bytes */ 
+    COMM_CMDID_LR_SYNC_Proximity_Notification_DATA  = 0x35, /* desc: 左右耳同步 proximity 数据。
+                                                             * recv: 2 bytes, proximity value(2)
+                                                             * rsp : 0 bytes */
 #endif                                                                   
     COMM_CMDID_LR_SYNC_ALL_DEV_STATUS               = 0x2D, /* desc: 左右耳同步所有设备状态指令。
                                                              * recv: n bytes, 
@@ -189,8 +195,11 @@ typedef enum {
                                                             rsp: 2 bytes, error code(1) + earsid(1). */
     COMM_CMDID_PT_READ_HALL_STATUS                  = 0x61,	/* recv: 0 bytes. 
                                                             rsp: 2 bytes, error code(1) + earsid(1). */
-
-
+    COMM_CMDID_PT_READ_PROXIMITY_VALUE              = 0x62,	/* recv: 0 bytes. 
+                                                            rsp: 3 bytes, error code(1) + value(2). */
+    COMM_CMDID_PT_WRITE_PROXIMITY_THRESHOLD         = 0x63,	/* recv: 4 bytes, high(2) +  low(2). 
+                                                            rsp: 1 bytes, error code(1). */
+                                                            
     /***** 与APP交互指令 *****/
     COMM_CMDID_APP_QUERY_DEV_INFO                   = 0x81,
 	COMM_CMDID_APP_QUERY_DEV_STATUS                 = 0x82,
@@ -256,6 +265,8 @@ typedef enum {
                                                     rsp: 2 bytes, error code(1) + anc mode(1). */
     SLEEP_APP_CMDID_PPG_SETING = 0x0A, /* recv: 1 bytes, ppg setting(1). 
                                                     rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_PPG_NOTIFICATION = 0x0B, /* recv: 1 bytes, ppg notification(1). 
+                                                    rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION = 0x0C, /* recv: 0 bytes. 
                                                     rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_GET_BATTERY_STATUS = 0x0E, /* recv: 0 bytes. 
@@ -301,6 +312,7 @@ typedef enum {
 } sleep_app_cmd_id_e;
 
 uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, uint8_t resulcode);
+uint32_t sndp_comm_cmd_sleepapp_proximity_role_switch_update(void);
 #endif
 #ifdef __cplusplus
 }
