@@ -54,8 +54,8 @@ static CQueue sndp_comm_ble_send_queue;
 static osMutexId sndp_comm_ble_send_queue_mutex_id = NULL;
 osMutexDef(sndp_comm_ble_send_queue_mutex);
 
-static uint8_t sndp_comm_ble_send_queue_buf[128];
-static uint8_t sndp_comm_ble_send_pop_buf[64];
+static uint8_t sndp_comm_ble_send_queue_buf[SNDP_COMM_BLE_SEND_BUF_SIZE];
+static uint8_t sndp_comm_ble_send_pop_buf[SNDP_COMM_BLE_SEND_BUF_SIZE];
 
 osTimerDef(BLE_SEND_TIMEOUT_TIMER, sndp_comm_ble_send_timeout_timer_handler);
 static osTimerId ble_send_timeout_timer = NULL;
@@ -193,7 +193,11 @@ POSSIBLY_UNUSED static void sndp_comm_ble_connected_done(uint8_t conidx)
 POSSIBLY_UNUSED static void sndp_comm_ble_mtuexchanged_done(uint8_t conidx, uint16_t mtu)
 {
 	COMM_BLE_TRACE(1, "mute=%d", mtu);
-	//sndp_comm_ble_ctx.mtu = mtu;
+    if(mtu > SNDP_COMM_BLE_SEND_BUF_SIZE){
+        sndp_comm_ble_ctx.mtu = SNDP_COMM_BLE_SEND_BUF_SIZE;
+    } else {
+        sndp_comm_ble_ctx.mtu = mtu;
+    }
 	
     sndp_comm_ble_ctx.conidx = conidx;
     sndp_comm_ble_ctx.conn_status = SNDP_COMM_BLE_CONNECTED;

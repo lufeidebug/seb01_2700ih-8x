@@ -311,6 +311,13 @@ typedef enum {
                                                     rsp: 1 bytes, error code(1). */
 } sleep_app_cmd_id_e;
 
+typedef enum {
+    DEVICE_INFO_TAG_BT_NAME = 0x01,
+    DEVICE_INFO_TAG_SN      = 0x02,
+    DEVICE_INFO_TAG_FW_VER  = 0x03,
+    DEVICE_INFO_TAG_HW_VER  = 0x04,
+} device_info_tag_e;
+
 uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, uint8_t resulcode);
 uint32_t sndp_comm_cmd_sleepapp_proximity_role_switch_update(void);
 #endif
