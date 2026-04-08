@@ -1733,24 +1733,55 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_battery_status(sleep
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    uint8_t value_len = 0;
+    uint8_t *p = cmd_info->value;
     char *bt_name = (char *)sndp_dev_get_bt_name();
     char *sn = (char *)sndp_dev_get_dev_sn();
     char *hw_ver = (char *)sndp_dev_get_hw_ver(false);
     char *fw_ver = (char *)sndp_dev_get_fw_ver(false);
     
     memset(cmd_info->value, 0, sizeof(cmd_info->value));
-    memcpy(&cmd_info->value[0], bt_name, strlen(bt_name));
-    value_len += strlen(bt_name);
-    memcpy(&cmd_info->value[value_len], sn, strlen(sn));
-    value_len += strlen(sn);
-    memcpy(&cmd_info->value[value_len], hw_ver, strlen(hw_ver));
-    value_len += strlen(hw_ver);
-    memcpy(&cmd_info->value[value_len], fw_ver, strlen(fw_ver));
-    value_len += strlen(fw_ver);
-    cmd_info->data_len = value_len;
 
-    COMM_CMD_TRACE(0,"value_len:%d",value_len);
+    // BT Name
+    {
+        uint8_t len = strlen(bt_name);
+        *p++ = len + 1; // Length = 1 (tag) + value_len
+        *p++ = DEVICE_INFO_TAG_BT_NAME;
+        memcpy(p, bt_name, len);
+        p += len;
+    }
+
+    // SN
+    {
+        uint8_t len = strlen(sn);
+        *p++ = len + 1;
+        *p++ = DEVICE_INFO_TAG_SN;
+        memcpy(p, sn, len);
+        p += len;
+    }
+
+    // FW Ver
+    {
+        uint8_t len = 4;
+        *p++ = len + 1;
+        *p++ = DEVICE_INFO_TAG_FW_VER;
+        memcpy(p, fw_ver, len);
+        p += len;
+    }
+
+    // HW Ver
+    {
+        uint8_t len = 2;
+        *p++ = len + 1;
+        *p++ = DEVICE_INFO_TAG_HW_VER;
+        memcpy(p, hw_ver, len);
+        p += len;
+    }
+
+
+
+    cmd_info->data_len = p - cmd_info->value;
+
+    COMM_CMD_TRACE(0,"data_len:%d", cmd_info->data_len);
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
