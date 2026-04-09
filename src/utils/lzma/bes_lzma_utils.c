@@ -260,6 +260,16 @@ bool ota_copy_compressed_image(uint32_t srcFlashOffset, uint32_t dstFlashOffset,
         LZMA_TRACE(0,"bes_lzma_dec_buf ret=%d",ret);
         bes_lzma_free(srcbuf);
 
+        // add by lzw 20260409 start
+        if(ret) {
+            pmu_flash_read_config();
+            int_unlock(lock);
+
+            update_magic_number(NORMAL_BOOT);
+            return false;
+        }
+        // add by lzw 20260409 end
+        
         if (0 == wrtieOffset)
         {
             memcpy(&bakup_hdr,(const void *)decompressed,sizeof(bakup_hdr));
@@ -311,7 +321,7 @@ bool ota_copy_compressed_image(uint32_t srcFlashOffset, uint32_t dstFlashOffset,
                 sanityCrc32 |= (asciiToHex(crcString[index]) << (28 - 4 * index));
             }
             crcValue_dcom = crc_update(crcValue_dcom, (const unsigned char*)decompressed, sanity_crc_location+ strlen(image_info_sanity_crc_key_word));
-            LZMA_TRACE(2,"sanityCrc32 is 0x%x, crcValue_dcom is 0x%x", sanityCrc32,crcValue_dcom);
+            LZMA_TRACE(2,"sanityCrc32 is 0x%x, crcValue_dcom is 0x%x", sanityCrc32,crcValue_dcom);ddd
 #endif
             break;
         }
