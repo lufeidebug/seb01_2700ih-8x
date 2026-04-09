@@ -12,5 +12,5 @@ export VOICE_ASSIST_NOISE_CLASSIFY ?= 0
 export VOICE_ASSIST_ADA_IIR ?= 0
 export POWER_KEY_IN_IIR ?= 0
 export DEBUG_TEST_ADA_IIR ?= 0
-export ASSIST_LOW_RAM_MOD   ?= 0
+export ASSIST_LOW_RAM_MOD   ?= 1
 ##### ANC ASSIST DEFINE END ######
