@@ -207,7 +207,7 @@ void sndp_dev_wear_status_changed_handler(sndp_dev_wear_status_e status)
 	curr_status = sndp_dev_wear_get_status(false);
 	SNDP_IF_TRACE(1, "curr_status=%d, new_status=%d", curr_status, status);
 
-	if(status != curr_status) {
+	if(status != SNDP_DEV_WEAR_UNKNOWN) {
 		sndp_dev_wear_set_status(false, status);
 
  #if defined(__SNDP_COMM_MGR__)        

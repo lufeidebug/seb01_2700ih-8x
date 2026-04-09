@@ -460,7 +460,12 @@ static int32_t ssh401a_get_curr_status(sndp_hal_wear_status_e *status)
 
 static int32_t ssh401a_check_curr_status()
 {
-    return SNDP_HAL_RET_FAIL;
+#if defined(__SNDP_WEAR_DETECT_MGR__)   
+    if(ssh401a_wear_status_changed_cb_ptr) {
+        sndp_call_func_in_app_thread((uint32_t)ssh401a_wear_status_changed_cb_ptr, (uint32_t) ssh401a_wear_status, 0, 0);
+    }
+#endif
+    return SNDP_HAL_RET_OK;
 }
 
 static int32_t ssh401a_wear_enter_standby_mode(void)
