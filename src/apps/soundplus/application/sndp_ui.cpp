@@ -527,12 +527,16 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 
     SPUI_TRACE(1, "BOX_%s", (SNDP_DEV_COVER_COLSED == cover_status) ? "CLOSED" : "OPENED");
 
-    
     if(SNDP_DEV_COVER_COLSED == cover_status) {
         sndp_dev_wear_disable_detection();
         bta_tws_box_event_entry(BTA_TWS_CLOSE);
         sndp_bt_set_access_mode(SNDP_BT_NOT_ACCESSIBEL);
         
+ #if defined(__BTIF_EARPHONE__)
+        app_stop_10_second_timer(APP_PAIR_TIMER_ID);
+        app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+#endif
+
     } else {
         //sndp_dev_wear_enable_detection();
 #if defined(__BTIF_EARPHONE__)
