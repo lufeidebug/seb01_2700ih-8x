@@ -105,41 +105,37 @@ static void sndp_bes_charger_irq_handler(uint32_t status)
     
     BESCHG_TRACE(0, "%d", status);
     
-    if(status&(1<<CHG_IRQ_MOD_AC_ON_DET_IN)) {
-        //BESCHG_TRACE(0, "CHG_IRQ_MOD_AC_ON_DET_IN");
-        
+    if(status&CHARGER_IRQ_CAUSE_AC_ON_DET_IN) {
         mode = SNDP_HAL_CHARGER_MODE_CC_CHARGING;
         
-    } else if(status&(1<<CHG_IRQ_MOD_AC_ON_DET_OUT)) {
-        //BESCHG_TRACE(0, "CHG_IRQ_MOD_AC_ON_DET_OUT");
-        
+    } else if(status&CHARGER_IRQ_CAUSE_AC_ON_DET_OUT) {
         mode = SNDP_HAL_CHARGER_MODE_NOT_CHARGING;
         
-    } else if(status&(1<<CHG_IRQ_MOD_TRIPRE_TIMEOUT)) {
+    } else if(status&CHARGER_IRQ_CAUSE_TRIPRE_TIMEOUT) {
         mode = SNDP_HAL_CHARGER_MODE_CC_CHARGING;
         
-    } else if(status&(1<<CHG_IRQ_MOD_FAST_TIMEOUT)) {
+    } else if(status&CHARGER_IRQ_CAUSE_FAST_TIMEOUT) {
         mode = SNDP_HAL_CHARGER_MODE_CV_CHARGING;
         
-    } else if(status&(1<<CHG_IRQ_MOD_ACIN_OV)) {
+    } else if(status&CHARGER_IRQ_CAUSE_ACIN_OV) {
         mode = SNDP_HAL_CHARGER_MODE_NOT_CHARGING;
         
-    } else if(status&(1<<CHG_IRQ_MOD_OTP)) {
+    } else if(status&CHARGER_IRQ_CAUSE_OTP) {
         mode = SNDP_HAL_CHARGER_MODE_NOT_CHARGING;
         
-    } else if(status&(1<<CHG_IRQ_MOD_CHRG_TRICKLE)) {
+    } else if(status&CHARGER_IRQ_CAUSE_CHARGE_TRICKLE) {
         mode = SNDP_HAL_CHARGER_MODE_TRICKLE_CHARGING;
         
-    } else if(status&(1<<CHG_IRQ_MOD_CHRG_PRE)) {
+    } else if(status&CHARGER_IRQ_CAUSE_CHARGE_PRE) {
         mode = SNDP_HAL_CHARGER_MODE_TRICKLE_CHARGING;
         
-    } else if(status&(1<<CHG_IRQ_MOD_CHRG_FAST)) {
+    } else if(status&CHARGER_IRQ_CAUSE_CHARGE_FAST) {
         mode = SNDP_HAL_CHARGER_MODE_CC_CHARGING;
         
-    } else if(status&(1<<CHG_IRQ_MOD_CHRG_OFF)) {
+    } else if(status&CHARGER_IRQ_CAUSE_CHARGE_OFF) {
         mode = SNDP_HAL_CHARGER_MODE_NOT_CHARGING;
         
-    } else if(status&(1<<CHG_IRQ_MOD_CHRG_DONE)) {
+    } else if(status&CHARGER_IRQ_CAUSE_CHARGE_DONE) {
         mode = SNDP_HAL_CHARGER_MODE_FULL_CHARGING;
         
     } else {

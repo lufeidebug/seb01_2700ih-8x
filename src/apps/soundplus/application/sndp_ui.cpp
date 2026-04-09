@@ -46,7 +46,7 @@
 #define SPUI_TIME_TODO_INTERVAL					(10)	//seconds
 
 #define SPUI_CHARGING_TIME_MAX					(3600*2)	//seconds
-#define SPUI_CHARGING_FULL_TIME_MAX				(60*1)		//seconds
+#define SPUI_CHARGING_FULL_TIME_MAX				(10*1)		//seconds
 
 #define SPUI_LOWPWR_WARNING_PERCENTAGE			(20)
 #define SPUI_LOWPWR_WARNING_INTERVAL			(60*5)	//seconds
