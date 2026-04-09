@@ -615,7 +615,6 @@ void sndp_ui_gesture_1click_hdlr(bool remote)
 {
     SPUI_TRACE(0, "remote=%d", remote);
     //sndp_ui_working_mode_switch();
-    sndp_app_shutdown(SNDP_SHUTDOWN_REASON_NONE);
 }
 
 void sndp_ui_gesture_2click_hdlr(bool remote)
