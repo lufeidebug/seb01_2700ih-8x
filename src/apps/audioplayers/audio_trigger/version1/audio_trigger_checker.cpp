@@ -117,3 +117,7 @@ int app_bt_stream_trigger_checker_stop(void)
     return 0;
 }
 
+bool app_bt_get_trigger_protect_flag(void)
+{
+    return app_bt_stream_trigger_enable;
+}

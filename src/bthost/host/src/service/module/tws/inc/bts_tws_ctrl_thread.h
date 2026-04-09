@@ -60,6 +60,7 @@ int bts_tws_ctrl_send_cmd(uint32_t cmd_code, uint8_t *p_buff, uint16_t length);
 int bts_tws_ctrl_send_rsp(uint16_t rsp_code, uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
 void bts_tws_ctrl_free_cmd(uint32_t cmd_code);
 void bts_tws_ctrl_mailbox_clear(osMailQId tws_mailbox);
+void bts_tws_ctrl_rsp_timer_stop(void);
 int bts_tws_ctrl_mailbox_free(osMailQId tws_mailbox, TWS_MSG_BLOCK* msg_p);
 uint32_t bts_tws_ctrl_get_mtu_size(void);
 bool bts_tws_curr_thread_is_tws_ctrl(void);

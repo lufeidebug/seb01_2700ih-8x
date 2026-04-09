@@ -25,6 +25,15 @@ extern "C" {
 
 /**
  ****************************************************************************************
+ * @brief       Enable/disable default accessory name for IAP2 service
+ * @param[in]   enable: True to enable default accessory name, false to disable
+ * @return      None
+ ****************************************************************************************
+ */
+void bts_iap2_service_enable_default_accessory_name(bool enable);
+
+/**
+ ****************************************************************************************
  * @brief       Enable/disable default reconnect feature for IAP2 service
  * @param[in]   enable: True to enable default reconnect, false to disable
  * @return      None

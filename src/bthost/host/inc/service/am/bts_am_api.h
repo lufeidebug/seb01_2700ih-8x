@@ -70,7 +70,7 @@ uint8_t bts_am_get_another_hfp_device_for_user_action(uint8_t curr_device_id);
 
 void bts_am_switch_streaming_a2dp(void);
 
-void bts_am_switch_streaming_a2dp_handler(uint32_t btclk, uint8_t error_code, bt_bdaddr_t* remote = NULL);
+void bts_am_switch_streaming_a2dp_handler(uint32_t btclk, uint8_t error_code);
 
 void bts_am_check_switch_streaming_a2dp(void);
 
@@ -89,6 +89,14 @@ uint32_t bts_am_trigger_switch_mute_streaming_sco(uint32_t btclk);
 void bts_am_play_a2dp_stream(uint8_t device_id);
 
 void bts_am_pause_a2dp_stream(uint8_t device_id);
+
+void bts_am_resume_a2dp_music_player(uint8_t device_id);
+
+uint8_t bts_am_lea_get_active_conlid(void);
+
+uint8_t bts_am_lea_get_curr_playing_conlid(void);
+
+uint8_t bts_am_lea_get_music_streaming_conlid(void);
 
 #ifdef __cplusplus
 }

@@ -12,7 +12,7 @@ endif
 
 export BLE_EXT_ADV_TX_PWR_INDEPEND ?= 0
 
-export AFH_ASSESS ?= 0
+export AFH_ASSESS ?= 1
 
 export HW_AGC ?= 0
 

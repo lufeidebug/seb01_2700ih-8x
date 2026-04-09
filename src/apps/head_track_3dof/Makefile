@@ -9,6 +9,8 @@ obj-y := $(obj_c:.c=.o) $(obj_s:.S=.o) $(obj_cpp:.cpp=.o)
 ccflags-y +=  \
 	-Iplatform/hal \
 	-Iplatform/drivers/sensor/st \
+	-Iplatform/drivers/bt \
 	-Iapps/common \
-	-Imultimedia/algorithms/src/audio/process/head_track \
-	-Iservices/audio_bt
+	-Imultimedia/algorithms/inc/audio/process/head_track \
+	-Iservices/audio_bt \
+	-Iapps/dsp_m55 \

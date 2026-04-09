@@ -27,6 +27,7 @@
 #include "analog.h"
 #include "hal_sleep.h"
 #include "tgt_hardware_capsensor.h"
+#include "cmsis_os.h"
 
 #define CAP_REG(r)                                  (((r) & 0xFFF) | 0x0000)
 
@@ -676,7 +677,7 @@ int capsensor_get_raw_data(struct capsensor_sample_data *sample, int num)
         do {
             capsensor_write_pointer_position(&write_addr);
             if (write_addr <= num) {
-                hal_sys_timer_delay(MS_TO_TICKS(1));
+                osDelay(1);
             }
         } while(write_addr <= num && ++count < 15);
 

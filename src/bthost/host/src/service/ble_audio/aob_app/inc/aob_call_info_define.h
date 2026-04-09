@@ -157,16 +157,6 @@ typedef struct
     uint8_t         terminate_reason;
 } AOB_CALL_SRV_TERMINATE_IND_T;
 
-typedef struct
-{
-    uint8_t         con_lid;
-    uint8_t         bearer_id;
-    uint8_t         call_id;
-    uint8_t         action_opcode;
-    uint8_t         result;
-} AOB_CALL_CLI_ACTION_RESULT_IND_T;
-
-
 /* union of all event datatypes */
 typedef union
 {

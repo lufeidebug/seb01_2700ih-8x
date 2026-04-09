@@ -293,8 +293,6 @@ typedef struct {
 }app_ibrt_profiles_hook_cb;
 
 typedef struct {
-    void (*profile_evt_callback)(const bt_bdaddr_t *addr, uint8_t device_id, uint64_t profile, uint8_t event, uint8_t param);
-    void (*dev_acl_disconnect_callback)(void);
     bool (*io_capbility_request)(const bt_bdaddr_t *addr, uint8_t local_initiate);
 }bts_bt_to_gfps_cbs_t;
 

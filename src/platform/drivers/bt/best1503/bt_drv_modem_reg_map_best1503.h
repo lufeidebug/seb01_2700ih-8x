@@ -83,12 +83,30 @@ __STATIC_FORCEINLINE void besmdm_bw_2m_rc_ch_step_setf(uint32_t bw2mrcchstep)
  * <pre>
  *   Bits           Field Name   Reset Value
  *  -----   ------------------   -----------
+ *  05:04     adc_clk_sel_bw4m   0x0
+ *  03:02     adc_clk_sel_bw2m   0x0
  *  01:00    RX_ADC_CLOCK_RATE   0x0
  * </pre>
  */
-#define BESMDM_RX_ADC_ADDR              0xD035015C
+#define BESMDM_RX_ADC_ADDR   0xD035015C
+#define BESMDM_ADC_CLK_SEL_BW_4M_MASK   ((uint32_t)0x00000030)
+#define BESMDM_ADC_CLK_SEL_BW_4M_LSB    4
+#define BESMDM_ADC_CLK_SEL_BW_2M_MASK   ((uint32_t)0x0000000C)
+#define BESMDM_ADC_CLK_SEL_BW_2M_LSB    2
 #define BESMDM_RX_ADC_CLOCK_RATE_MASK   ((uint32_t)0x00000003)
 #define BESMDM_RX_ADC_CLOCK_RATE_LSB    0
+__STATIC_FORCEINLINE void besmdm_adc_clk_sel_bw_4m_setf(uint8_t adcclkselbw4m)
+{
+    ASSERT_ERR((((uint32_t)adcclkselbw4m << 4) & ~((uint32_t)0x00000030)) == 0);
+    REG_RPL_WR(BESMDM_RX_ADC_ADDR, BESMDM_ADC_CLK_SEL_BW_4M_MASK, BESMDM_ADC_CLK_SEL_BW_4M_LSB, adcclkselbw4m);
+}
+
+__STATIC_FORCEINLINE void besmdm_adc_clk_sel_bw_2m_setf(uint8_t adcclkselbw2m)
+{
+    ASSERT_ERR((((uint32_t)adcclkselbw2m << 2) & ~((uint32_t)0x0000000C)) == 0);
+    REG_RPL_WR(BESMDM_RX_ADC_ADDR, BESMDM_ADC_CLK_SEL_BW_2M_MASK, BESMDM_ADC_CLK_SEL_BW_2M_LSB, adcclkselbw2m);
+}
+
 __STATIC_FORCEINLINE void besmdm_rx_adc_clock_rate_setf(uint8_t rxadcclockrate)
 {
     ASSERT_ERR((((uint32_t)rxadcclockrate << 0) & ~((uint32_t)0x00000003)) == 0);
@@ -701,15 +719,24 @@ __STATIC_FORCEINLINE void besmdm_err_sum_max_th_setf(uint32_t errsummaxth)
  *   Bits           Field Name   Reset Value
  *  -----   ------------------   -----------
  *  31:16            rx_pwr_th   0x0
+ *     00          corr_new_en   0
  * </pre>
  */
 #define BESMDM_SYNC_PARAMETER_9_ADDR   0xD0350230
 #define BESMDM_RX_PWR_TH_MASK   ((uint32_t)0xFFFF0000)
 #define BESMDM_RX_PWR_TH_LSB    16
+#define CORR_NEW_EN_POS    0
+#define CORR_NEW_EN_MASK   ((uint32_t)0x00000001)
 __STATIC_FORCEINLINE void besmdm_rx_pwr_th_setf(uint16_t rxpwrth)
 {
     ASSERT_ERR((((uint32_t)rxpwrth << 16) & ~((uint32_t)0xFFFF0000)) == 0);
     REG_RPL_WR(BESMDM_SYNC_PARAMETER_9_ADDR, BESMDM_RX_PWR_TH_MASK, BESMDM_RX_PWR_TH_LSB, rxpwrth);
+}
+
+__STATIC_FORCEINLINE void rf_corr_new_en_setf(uint8_t param0)
+{
+    ASSERT_ERR( (((uint32_t)param0 << CORR_NEW_EN_POS) & ~((uint32_t)CORR_NEW_EN_MASK)) == 0 );  //assert if the value expire the bits' right position
+    REG_PL_WR(BESMDM_SYNC_PARAMETER_9_ADDR, (REG_BT_RD(BESMDM_SYNC_PARAMETER_9_ADDR) & ~((uint32_t)CORR_NEW_EN_MASK)) | (((uint32_t)param0)<<CORR_NEW_EN_POS));
 }
 
 /**

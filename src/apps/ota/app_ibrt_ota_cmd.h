@@ -16,6 +16,8 @@
 #ifndef __APP_IBRT_OTA_CMD__
 #define __APP_IBRT_OTA_CMD__
 
+#include "plat_types.h"
+
 #define RESEND_TIME 2
 
 #ifndef OTA_TWS_INFO_SIZE

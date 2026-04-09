@@ -840,9 +840,9 @@
 #define GATT_SERVICE_END_HANDLE                                     (0x3F)
 
 #define GATT_PRF_NONE                                               (0x00)
-#define GATT_PRF_LAST_ID                                            (0x7E)
-#define GATT_PRF_ID_MASK                                            (0x7F)
-#define GATT_PRF_NOT_RPT                                            (0x80)
+#define GATT_PRF_LAST_ID                                            (0x20) // Max 32 prf client [1, 32]
+#define GATT_PRF_ID_MASK                                            (0x3F)
+#define GATT_PRF_NOT_RPT                                            (0x40)
 #define GATT_PRF_INVALID                                            (0xFF)
 
 #define GATT_SRV_USR_NONE                                           (0x00)
@@ -857,8 +857,9 @@
 #define GATT_VALID_HANDLE_MIN                                       (0x0001)
 #define GATT_VALID_HANDLE_MAX                                       (0xFFFF)
 
-#define GATT_MAX_BLOB_VAL_SIZE_LIMIT                                (1024)
-#define GATT_MAX_ATT_PREP_QUEUE_SIZE                                (16)
+#define GATT_DEFAULT_BLOB_VAL_SIZE_LIMIT                            (1024)
+#define GATT_DEFAULT_ATT_PREP_QUEUE_SIZE                            (16)
+#define GATT_DEFAULT_PROC_REQ_QUEUE_SIZE                            (6)
 
 #define GATT_SAME_UUID_CHAR_CNT_MAX                                 (64)
 #define GATT_SAME_UUID_SRVC_CNT_MAX                                 (64)
@@ -1493,6 +1494,8 @@ typedef struct
     const uint32_t *dummy;
 } gatt_server_indicate_cfm_t;
 
+typedef gatt_server_indicate_cfm_t gatt_server_ntf_tx_done_t;
+
 typedef struct
 {
     gap_conn_item_t *conn;
@@ -1529,6 +1532,7 @@ typedef union
     gatt_server_desc_read_t *desc_read;
     gatt_server_char_write_t *char_write;
     gatt_server_desc_write_t *desc_write;
+    gatt_server_ntf_tx_done_t *ntf_tx_done;
     gatt_server_indicate_cfm_t *confirm;
     gatt_server_mtu_changed_t *mtu_changed;
     gatt_server_conn_updated_t *conn_updated;
@@ -1910,6 +1914,8 @@ typedef struct gatt_config
     uint16_t read_blob_value_len_max;
     /// Max size of ATT prep write req recv queue
     uint16_t recv_prep_wr_q_size_max;
+    /// Max size of GATT NTF/WR CMD procedure queue
+    uint16_t gatt_ntf_cmd_q_size_max;
 } gatt_config_t;
 
 #ifdef __cplusplus
@@ -2613,18 +2619,6 @@ bt_status_t gattc_write_descriptor_value(gatt_prf_t *prf, gatt_peer_character_t 
                                          const uint8_t *data, uint16_t len);
 
 /**
- * @brief Start write characteristic cudd value
- *
- * @param[in] prf      GATT client profile pointer
- * @param[in] c        Peer character pointer
- * @param[in] data     Data need to be written to peer
- * @param[in] len      Length of data
- *
- * @return bt_status_t Start write characteristic cudd status
- */
-bt_status_t gattc_write_cudd_descriptor(gatt_prf_t *prf, gatt_peer_character_t *c, const uint8_t *data, uint16_t len);
-
-/**
  * @brief Start write characteristic cccd value
  *
  * @param[in] prf      GATT client profile pointer
@@ -2637,18 +2631,6 @@ bt_status_t gattc_write_cudd_descriptor(gatt_prf_t *prf, gatt_peer_character_t *
 bt_status_t gattc_write_cccd_descriptor(gatt_prf_t *prf, gatt_peer_character_t *c, bool notify, bool indicate);
 
 /**
- * @brief Start write characteristic sccd value
- *
- * @param[in] prf      GATT client profile pointer
- * @param[in] c        Peer character pointer
- * @param[in] broadcast
- *                     Register broadcast
- *
- * @return bt_status_t Start write characteristic sccd value status
- */
-bt_status_t gattc_write_sccd_descriptor(gatt_prf_t *prf, gatt_peer_character_t *c, bool broadcast);
-
-/**
  * @brief Start read characteristic descriptor value specified by 16 bits uuid
  *
  * @param[in] prf      GATT client profile pointer
@@ -2659,66 +2641,6 @@ bt_status_t gattc_write_sccd_descriptor(gatt_prf_t *prf, gatt_peer_character_t *
  * @return bt_status_t Start read characteristic descriptor value status
  */
 bt_status_t gattc_read_descriptor_value(gatt_prf_t *prf, gatt_peer_character_t *c, uint16_t desc_uuid);
-
-/**
- * @brief Start read characteristic cepd value
- *
- * @param[in] prf      GATT client profile pointer
- * @param[in] c        Peer character pointer
- *
- * @return bt_status_t Start read characteristic cepd value status
- */
-bt_status_t gattc_read_cepd_descriptor(gatt_prf_t *prf, gatt_peer_character_t *c);
-
-/**
- * @brief Start read characteristic cudd value
- *
- * @param[in] prf      GATT client profile pointer
- * @param[in] c        Peer character pointer
- *
- * @return bt_status_t Start read characteristic cepd value status
- */
-bt_status_t gattc_read_cudd_descriptor(gatt_prf_t *prf, gatt_peer_character_t *c);
-
-/**
- * @brief Start read characteristic errd value
- *
- * @param[in] prf      GATT client profile pointer
- * @param[in] c        Peer character pointer
- *
- * @return bt_status_t Start read characteristic errd value status
- */
-bt_status_t gattc_read_errd_descriptor(gatt_prf_t *prf, gatt_peer_character_t *c);
-
-/**
- * @brief Start read characteristic rrcd value
- *
- * @param[in] prf      GATT client profile pointer
- * @param[in] c        Peer character pointer
- *
- * @return bt_status_t Start read characteristic rrcd value status
- */
-bt_status_t gattc_read_rrcd_descriptor(gatt_prf_t *prf, gatt_peer_character_t *c);
-
-/**
- * @brief Start read characteristic cpfd value
- *
- * @param[in] prf      GATT client profile pointer
- * @param[in] c        Peer character pointer
- *
- * @return bt_status_t Start read characteristic cpfd value status
- */
-bt_status_t gattc_read_cpfd_descriptor(gatt_prf_t *prf, gatt_peer_character_t *c);
-
-/**
- * @brief Start read characteristic cafd value
- *
- * @param[in] prf      GATT client profile pointer
- * @param[in] c        Peer character pointer
- *
- * @return bt_status_t Start read characteristic cafd value
- */
-bt_status_t gattc_read_cafd_descriptor(gatt_prf_t *prf, gatt_peer_character_t *c);
 
 /**
  * @brief Start read characteristic cpfd value specified by cpfd handle

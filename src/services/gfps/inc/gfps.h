@@ -334,6 +334,7 @@ typedef struct
     bool       findPeer;
     uint8_t    ringMode;
     uint8_t    findState;
+    bool       JustAcceptRetro;
     GFPS_KEY_INFO_T                    keyInfo;
     FpCapabilitiesEnv_t                fpCap;
     gfps_enter_pairing_mode_cb         enterPairingMode;
@@ -438,6 +439,27 @@ void gfps_send_ble_disconnect_cmd_to_slave(uint8_t *buf, uint16_t length);
 void gfps_send_streaming_state_to_master(bt_bdaddr_t *addr, uint8_t state);
 
 void gfps_rec_peer_streaming_state_handler(uint8_t *p_buff, uint16_t length);
+
+
+/**
+ ****************************************************************************************
+ *  GFPS BTA Adapter
+ ****************************************************************************************
+ */
+
+uint8_t gfps_bta_get_device_num_max(void);
+void gfps_bta_set_device_num_max(uint8_t device_num_max, const bt_bdaddr_t reserved_hint[], uint8_t reserved_hint_count);
+
+void gfps_bta_connect_bt_device(const bt_bdaddr_t *addr, uint8_t page_count);
+void gfps_bta_remove_bt_device(const bt_bdaddr_t *addr);
+
+bool gfps_bta_is_tws_connected(void);
+
+uint8_t gfps_bta_get_bt_connected_link_num(void);
+uint8_t gfps_bta_get_lea_connected_link_num(void);
+
+void gfps_bta_switch_streaming_a2dp(void);
+void gfps_bta_toggle_a2dp_cis(void);
 
 #ifdef __cplusplus
 }

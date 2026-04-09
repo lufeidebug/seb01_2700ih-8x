@@ -123,11 +123,11 @@ typedef enum
     /// Playing
     BT_LEA_MCP_PLAYBACK_STATE_PLAYING,
     /// Paused
-    BTS_LEA_MCP_PLAYBACK_STATE_PAUSED,
+    BT_LEA_MCP_PLAYBACK_STATE_PAUSED,
     /// Seeking
-    BTS_LEA_MCP_PLAYBACK_STATE_SEEKING,
+    BT_LEA_MCP_PLAYBACK_STATE_SEEKING,
 
-    BTS_LEA_MCP_PLAYBACK_STATE_MAX,
+    BT_LEA_MCP_PLAYBACK_STATE_MAX,
 } bt_lea_mcp_playback_state_t;
 
 typedef enum
@@ -390,7 +390,7 @@ typedef struct
     /// Codec ID
     bt_lea_codec_id_t codec_id;
     /// Pointer to Codec Configuration structure
-    bt_lea_codec_cfg_t *p_cfg;
+    const bt_lea_codec_cfg_t *p_cfg;
     /// QoS Requirements
     bt_lea_qos_req_t qos_req;
     /// CIG ID
@@ -402,7 +402,7 @@ typedef struct
     /// QoS Configuration structure
     bt_lea_qos_cfg_t qos_cfg;
     /// Pointer to Metadata structure
-    bt_lea_metadata_t *p_metadata;
+    const bt_lea_metadata_t *p_metadata;
     /// CIG sync delay in us
     uint32_t cig_sync_delay;
     /// CIS sync delay in us
@@ -419,19 +419,53 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_acl_state_t                 acl_state;
+    /// Bearer local index, reserve value is 0xFF
+    uint8_t bearer_lid;
+    /// Signal strength in dbm
+    uint8_t signal_strength;
+    /// Call flags
+    uint8_t outgoing_call_flag:1;
+    uint8_t withheld_server_flag:1;
+    uint8_t withheld_network_flag:1;
+    /// Call index, reserve value is 0x00
+    uint8_t call_id;
+    /// Call state
+    uint8_t state;
+    /// Length of Incoming or Outgoing Call URI value
+    uint8_t uri_len;
+    /// Remote Call URI value
+    const uint8_t *p_uri;
+} bt_lea_call_info_t;
+
+typedef struct
+{
+    /// Connection local index
+    uint8_t con_lid;
+    /// Bearer local index, reserve value is 0xFF
+    uint8_t bearer_lid;
+    /// Call index, reserve value is 0x00
+    uint8_t call_id;
+    /// Call action opcode
+    uint8_t action_opcode;
+    /// Call action result
+    uint8_t result;
+} bt_lea_call_action_ret_t;
+
+typedef struct
+{
+    bt_lea_acl_state_t                  acl_state;
     uint8_t                             err_code;
 } bt_lea_conn_state_t;
 
 typedef struct
 {
-    bt_lea_evt_t                       type;
+    bt_lea_evt_t                        type;
     uint8_t                             length;
 } bt_lea_evt_header_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     bt_lea_adv_state_t                  adv_state;
     bt_lea_adv_type_t                   adv_type;
     uint8_t                             err_code;
@@ -439,8 +473,8 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
-    bt_lea_conn_state_t                state;
+    bt_lea_evt_header_t                 header;
+    bt_lea_conn_state_t                 state;
     uint32_t                            evt_type;
     uint8_t                             conidx;
     ble_bdaddr_t                        peer_bdaddr;
@@ -448,7 +482,7 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             volume;
     uint8_t                             mute;
@@ -458,43 +492,44 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     int16_t                             offset;
     uint8_t                             output_lid;
 } bt_lea_evt_vocs_offset_changed_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             output_lid;
     uint8_t                             cli_cfg_bf;
 } bt_lea_evt_vocs_bond_data_changed_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             media_lid;
 } bt_lea_evt_media_track_changed_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             ase_lid;
-    bt_lea_ascs_ase_state_t            prev_state;
-    bt_lea_ascs_ase_state_t            curr_state;
+    bt_lea_ascs_ase_state_t             prev_state;
+    bt_lea_ascs_ase_state_t             curr_state;
 } bt_lea_evt_stream_status_changed_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
-    uint8_t                            con_lid;
+    bt_lea_evt_header_t                 header;
+    uint8_t                             con_lid;
+    uint8_t                             media_lid;
 } bt_lea_evt_mcp_mcc_svc_changed_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             media_lid;
     uint8_t                             char_type;
@@ -504,84 +539,91 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             mute;
 } bt_lea_evt_mic_state_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
-    bt_lea_iso_link_quality_info_t     param;
+    bt_lea_evt_header_t                 header;
+    bt_lea_iso_link_quality_info_t      param;
 } bt_lea_evt_iso_link_quality_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
 } bt_lea_evt_pacs_cccd_written_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
-    void                                *param;
+    const bt_lea_call_info_t            *param;
 } bt_lea_evt_call_state_change_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
     uint8_t                             value;
 } bt_lea_evt_call_srv_sig_strength_value_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
     bool                                inband_ring;
     bool                                silent_mode;
 } bt_lea_evt_call_status_flags_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
     bool                                local_hold_op_supported;
     bool                                join_op_supported;
 } bt_lea_evt_call_ccp_opt_supported_opcode_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
     uint8_t                             call_id;
     uint8_t                             reason;
 } bt_lea_evt_call_terminate_reason_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
+    uint8_t                             call_id;
     uint8_t                             url_len;
-    uint8_t                             *url;
+    const uint8_t                       *p_url;
 } bt_lea_evt_call_incoming_num_inf_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
 } bt_lea_evt_call_svc_changed_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
-    void                                *param;
+    const bt_lea_call_action_ret_t      *p_ret;
 } bt_lea_evt_call_action_result_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             bearer_lid;
     uint8_t                             char_type;
@@ -590,13 +632,13 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     const bt_lea_cis_info_t            *p_cis_estb;
 } bt_lea_evt_cis_established_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             cig_id;
     uint8_t                             cis_id;
@@ -605,14 +647,14 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint16_t                            con_hdl;
     uint8_t                             error;
 } bt_lea_evt_cis_rejected_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             cig_id;
     uint8_t                             group_lid;
     uint8_t                             stream_lid;
@@ -621,7 +663,7 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             opcode;
     uint8_t                             nb_ases;
     uint8_t                             ase_lid;
@@ -631,35 +673,35 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             ase_lid;
-    bt_lea_codec_id_t                  codec_id;
+    bt_lea_codec_id_t                   codec_id;
     uint8_t                             tgt_latency;
-    bt_lea_codec_cfg_t                 codec_cfg_req;
-    bt_lea_qos_req_t                   ntf_qos_req;
+    bt_lea_codec_cfg_t                  codec_cfg_req;
+    bt_lea_qos_req_t                    ntf_qos_req;
 } bt_lea_evt_ase_codec_cfg_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             ase_lid;
-    void                                *param;
+    const void                          *param;
 } bt_lea_evt_ase_enable_req_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             ase_lid;
-    void                                *param;
+    const void                           *param;
     uint8_t                             state;
 } bt_lea_evt_ase_metadata_update_ind_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             grp_lid;
     uint8_t                             state;
     uint32_t                            stream_pos_bf;
@@ -667,31 +709,31 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             grp_lid;
 } bt_lea_evt_bis_sink_enable_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             grp_lid;
 } bt_lea_evt_bis_sink_disable_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             grp_lid;
 } bt_lea_evt_bis_sink_stream_start_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             grp_lid;
 } bt_lea_evt_bis_sink_stream_stop_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             src_lid;
     uint8_t                             con_lid;
     uint8_t                             pa_syn_req;
@@ -699,14 +741,14 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             src_lid;
     uint8_t                             con_lid;
 } bt_lea_evt_bis_deleg_source_rm_t;
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             src_lid;
     uint8_t                             con_lid;
     uint8_t                             pa_syn_req;
@@ -714,7 +756,7 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             media_lid;
     uint8_t                             char_type;
@@ -723,7 +765,7 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             char_type;
     bool                                ntf_enable;
@@ -731,7 +773,7 @@ typedef struct
 
 typedef struct
 {
-    bt_lea_evt_header_t                header;
+    bt_lea_evt_header_t                 header;
     uint8_t                             con_lid;
     uint8_t                             err_code;
     uint16_t                            role_bf;

@@ -196,7 +196,53 @@ __STATIC_FORCEINLINE void bt_cmu_mcu_2bt_data_1_msk_setf(uint8_t mcu2btdata1msks
 #define BT_REG_CLKNCNT_CAP7_REG_ADDR   (BT_CORE_BASE_ADDR + 0xE4C)
 #define BT_BES_FINECNT_CAP7_REG_ADDR   (BT_CORE_BASE_ADDR + 0xE50)
 
+/**
+ * @brief TRIG_CNTL6 register definition
+ * <pre>
+ *   Bits           Field Name   Reset Value
+ *  -----   ------------------   -----------
+ *  20:18              et_mode   0x0
+ *  17:13         dm_cs_format   0x0
+ *  12:07         trig_on_flag   0x0
+ * </pre>
+ */
+#define BT_TRIG_CNTL6_ADDR     (BT_CORE_BASE_ADDR + 0xE60)
 
+__STATIC_FORCEINLINE uint8_t bt_trig_cntl6_et_mode_getf(void)
+{
+    uint32_t localVal = REG_BT_RD(BT_TRIG_CNTL6_ADDR);
+    return ((localVal & ((uint32_t)0x001C0000)) >> 18);
+}
+
+__STATIC_FORCEINLINE void bt_trig_cntl6_et_mode_setf(uint8_t etmode)
+{
+    ASSERT_ERR((((uint32_t)etmode << 18) & ~((uint32_t)0x001C0000)) == 0);
+    REG_BT_WR(BT_TRIG_CNTL6_ADDR, (REG_BT_RD(BT_TRIG_CNTL6_ADDR) & ~((uint32_t)0x001C0000)) | ((uint32_t)etmode << 18));
+}
+
+__STATIC_FORCEINLINE uint8_t bt_trig_cntl6_dm_cs_format_getf(void)
+{
+    uint32_t localVal = REG_BT_RD(BT_TRIG_CNTL6_ADDR);
+    return ((localVal & ((uint32_t)0x0003E000)) >> 13);
+}
+
+__STATIC_FORCEINLINE void bt_trig_cntl6_dm_cs_format_setf(uint8_t dmcsformat)
+{
+    ASSERT_ERR((((uint32_t)dmcsformat << 13) & ~((uint32_t)0x0003E000)) == 0);
+    REG_BT_WR(BT_TRIG_CNTL6_ADDR, (REG_BT_RD(BT_TRIG_CNTL6_ADDR) & ~((uint32_t)0x0003E000)) | ((uint32_t)dmcsformat << 13));
+}
+
+__STATIC_FORCEINLINE uint8_t bt_trig_cntl6_trig_on_flag_getf(void)
+{
+    uint32_t localVal = REG_BT_RD(BT_TRIG_CNTL6_ADDR);
+    return ((localVal & ((uint32_t)0x00001F80)) >> 7);
+}
+
+__STATIC_FORCEINLINE void bt_trig_cntl6_trig_on_flag_setf(uint8_t trigonflag)
+{
+    ASSERT_ERR((((uint32_t)trigonflag << 7) & ~((uint32_t)0x00001F80)) == 0);
+    REG_BT_WR(BT_TRIG_CNTL6_ADDR, (REG_BT_RD(BT_TRIG_CNTL6_ADDR) & ~((uint32_t)0x00001F80)) | ((uint32_t)trigonflag << 7));
+}
 /**
  * @brief BES_TESTMODE register definition
  * <pre>

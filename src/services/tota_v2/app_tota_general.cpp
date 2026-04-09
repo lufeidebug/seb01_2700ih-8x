@@ -1943,10 +1943,14 @@ static void __get_general_info()
     TOTA_V2_TRACE(4,"firmware version = %d.%d.%d.%d",general_info.fw_version[0],general_info.fw_version[1],general_info.fw_version[2],general_info.fw_version[3]);
 #endif
 
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     /* get ear location info */
     if ( bts_tws_if_is_local_right_side() )      general_info.ear_location = BT_LOCATION_RIGHT;
     else if ( bts_tws_if_is_local_left_side() )  general_info.ear_location = BT_LOCATION_LEFT;
     else                                general_info.ear_location = BT_LOCATION_UNKNOWN;
+#else
+    general_info.ear_location = 0; // BT_LOCATION_UNKNOWN;
+#endif
 
     general_info.rssi[0] = app_tota_get_rssi_value();
     general_info.rssi_len = 1;

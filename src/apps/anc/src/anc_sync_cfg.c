@@ -313,6 +313,7 @@ int32_t anc_assist_tws_sync_info(anc_assist_sync_info_t info)
 #endif
 
 
+#if defined(_TWS_SYNC_INFO_ENABLED)
 int32_t anc_assist_tws_force_sync_info(anc_assist_sync_info_t info)
 {
     // ANC_TRACE(2, "[%s] ff_gain_coef: %d", __func__, (uint32_t)(info.ff_gain_coef * 100));
@@ -323,6 +324,7 @@ int32_t anc_assist_tws_force_sync_info(anc_assist_sync_info_t info)
     anc_assist_tws_sync_info_impl(info);
     return 0;
 }
+#endif
 
 int32_t anc_assist_tws_sync_set_anc_gain_coef(uint32_t *ff_gain_changed, anc_assist_algo_id_t *ff_id, float *ff_gain_coef, uint8_t ff_ch_num,
                                               uint32_t *fb_gain_changed, anc_assist_algo_id_t *fb_id, float *fb_gain_coef, uint8_t fb_ch_num)
@@ -334,7 +336,7 @@ int32_t anc_assist_tws_sync_set_anc_gain_coef(uint32_t *ff_gain_changed, anc_ass
     // Diff algo set different anc channel
     if (any_of_algo_id(fb_id, fb_ch_num, ANC_ASSIST_ALGO_ID_NOISE) ||
         any_of_algo_id(ff_id, ff_ch_num, ANC_ASSIST_ALGO_ID_WIND)) {
-        // Both Master and Slave can make a decision 
+        // Both Master and Slave can make a decision
 #if defined(_TWS_SYNC_INFO_ENABLED)
         tws_sync = true;
 #endif
@@ -417,7 +419,7 @@ int32_t anc_assist_tws_sync_set_anc_curve(anc_assist_algo_id_t id, uint32_t inde
         if (_get_tws_role() == _TWS_ROLE_SLAVE)
         {
             ANC_TRACE(1, "[%s] SLAVE has not access to change anc curve!", __func__);
-        } 
+        }
         else
         {    // _TWS_ROLE_MASTER or _TWS_ROLE_UNKNOWN
             g_opt_info.anc_curve_index = index;

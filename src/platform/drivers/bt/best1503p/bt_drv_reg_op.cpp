@@ -2272,6 +2272,7 @@ uint32_t btdrv_reg_op_syn_get_cis_curr_time(void)
 void btdrv_syn_clr_trigger(uint8_t trig_route)
 {
     BT_DRV_REG_OP_CLK_ENB();
+    DRIVERS_TRACE(2,"[%s] trig status=0x%x,trig_route=%x",__func__,bt_trig_cntl6_trig_on_flag_getf(),trig_route);
     switch(trig_route)
     {
         case 0:

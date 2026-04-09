@@ -36,6 +36,11 @@
 
 #ifdef FINDMY_ENABLED
 #include "findmy_internal.h"
+#ifdef CHIP_BEST1307P
+#include "app_ble.h"
+#else
+#include "app_ble_adv.h"
+#endif
 #endif
 
 extern void srand (unsigned int seed);
@@ -156,6 +161,30 @@ static uint8_t blerec_specific_value_prepare(const BleDevicePairingInfo *param_r
     {
         if (BLE_RECORD_NUM == dest_ptr->saved_list_num)
         {
+#ifdef FINDMY_ENABLED
+            if (dest_ptr->ble_nv[BLE_RECORD_NUM - 1].pairingInfo.isFindMy)
+            {
+                uint8_t dropRecord = BLE_RECORD_NUM - 1;
+                bool isAnyOtherFindMy = false;
+                for (uint8_t k = 0; k < BLE_RECORD_NUM - 1; k++)
+                {
+                    if (!dest_ptr->ble_nv[k].pairingInfo.isFindMy) {
+                        dropRecord = k;
+                    } else {
+                        //drop the oldest findmy record
+                        isAnyOtherFindMy = true;
+                        break;
+                    }
+                }
+
+                if (!isAnyOtherFindMy) {
+                    memcpy(&(dest_ptr->ble_nv[dropRecord]),
+                        &(dest_ptr->ble_nv[BLE_RECORD_NUM - 1]),
+                        sizeof(BleDeviceinfo));
+                }
+            }
+#endif
+
             // [0,1,2,3,4] -> [x,0,1,2,3]
             for (uint8_t k = 0; k < BLE_RECORD_NUM - 1; k++)
             {
@@ -255,22 +284,24 @@ bool nv_record_get_ble_pairing_info_through_list_index(uint8_t listIndex, BleDev
     return true;
 }
 
-bool nv_record_update_ltk_through_addr(uint8_t *pBdAddr, uint8_t *ltk)
+#ifdef FINDMY_ENABLED
+bool nv_record_update_ltk_through_addr(uint8_t *pBdAddr, uint8_t *ltk, bool isFindMy)
 {
     if (NULL == pBdAddr || NULL == ltk)
     {
-        NV_SECTION_TRACE(0, "%s Bad input !!!", __func__);
+        TRACE(0, "%s Bad input !!!", __func__);
         return false;
     }
     uint8_t nv_ble_list_num = nvrecord_ble_p->saved_list_num;
     if (0 == nv_ble_list_num)
     {
-        NV_SECTION_TRACE(0, "%s Record is NULL !!!", __func__);
+        TRACE(0, "%s Record is NULL !!!", __func__);
         return false;
     }
     for (uint8_t i = 0; i < nv_ble_list_num; ++i)
     {
-        if (!memcmp(nvrecord_ble_p->ble_nv[i].pairingInfo.peer_addr.addr, pBdAddr, BLE_ADDR_SIZE))
+        if (!memcmp(nvrecord_ble_p->ble_nv[i].pairingInfo.peer_addr.addr, pBdAddr, BLE_ADDR_SIZE)
+            && (isFindMy == nvrecord_ble_p->ble_nv[i].pairingInfo.isFindMy))
         {
             uint32_t lock = nv_record_pre_write_operation();
             memcpy(nvrecord_ble_p->ble_nv[i].pairingInfo.LTK, ltk, BLE_LTK_SIZE);
@@ -281,9 +312,10 @@ bool nv_record_update_ltk_through_addr(uint8_t *pBdAddr, uint8_t *ltk)
             return true;
         }
     }
-    NV_SECTION_TRACE(0, "%s No such record !!!", __func__);
+    TRACE(0, "%s No such record !!!", __func__);
     return false;
 }
+#endif
 
 void nv_record_blerec_get_local_irk(uint8_t *pIrk)
 {
@@ -436,7 +468,11 @@ void nv_recored_blerec_dump()
     for (uint8_t k = 0; k < nvrecord_ble_p->saved_list_num; k++)
     {
         NV_SECTION_TRACE(0,"=========================================");
-        NV_SECTION_TRACE(1,"Num %d BLE record:", k);
+#ifdef FINDMY_ENABLED
+        NV_SECTION_TRACE(0,"Num %d BLE record isFindMy? %d", k, nvrecord_ble_p->ble_nv[k].pairingInfo.isFindMy);
+#else
+        NV_SECTION_TRACE(0,"Num %d BLE record", k);
+#endif
         NV_SECTION_TRACE(0,"BLE addr:");
         NV_SECTION_DUMP8("%02x ", ( uint8_t * )nvrecord_ble_p->ble_nv[k].pairingInfo.peer_addr.addr, BT_ADDR_OUTPUT_PRINT_NUM);
         NV_SECTION_TRACE(1,"BLE addr type %d", nvrecord_ble_p->ble_nv[k].pairingInfo.peer_addr.addr_type);
@@ -772,6 +808,72 @@ bool nv_record_ble_record_find_ltk(uint8_t *pBdAddr, uint8_t *ltk, uint16_t ediv
     for (uint32_t find_index = 0; find_index < find_ptr->saved_list_num; find_index++)
     {
         BleDevicePairingInfo *pairingInfo = &find_ptr->ble_nv[find_index].pairingInfo;
+        if (!memcmp(pairingInfo->peer_addr.addr, pBdAddr, BLE_ADDR_SIZE))
+        {
+            if ((ediv == 0) || ((ediv != 0) && (pairingInfo->EDIV == ediv))) {
+                pFoundLtk = pairingInfo->LTK;
+            } else if (pairingInfo->LOCAL_EDIV == ediv) {
+                pFoundLtk = pairingInfo->LOCAL_LTK;
+            }
+
+            if (pFoundLtk != NULL) {
+                break;
+            }
+        }
+    }
+
+#ifdef FINDMY_ENABLED
+    if (pFoundLtk == NULL && ediv == 0) 
+    {
+        uint8_t invalidLTK[BLE_LTK_SIZE] = {0};
+        pFoundLtk = findmy_get_curr_ltk();
+        if (!memcmp(pFoundLtk, invalidLTK, BLE_LTK_SIZE))
+        {
+            pFoundLtk = NULL;
+        }
+    }
+#endif
+
+    if (pFoundLtk != NULL) {
+        NV_SECTION_TRACE(2,"%s FIND LTK IN NV SUCCESS", __func__);
+        NV_SECTION_DUMP8("%02x ", pFoundLtk, BLE_LTK_SIZE);
+        memcpy(ltk, pFoundLtk, BLE_LTK_SIZE);
+        ret = true;
+    }
+
+    return ret;
+}
+
+bool nv_record_ble_record_find_ltk_with_adv_handle(uint8_t *pBdAddr, uint8_t *ltk, uint16_t ediv, uint8_t advHandle)
+{
+    NV_RECORD_PAIRED_BLE_DEV_INFO_T *find_ptr = nvrecord_ble_p;
+    uint8_t *pFoundLtk = NULL;
+    bool ret = false;
+
+    if(NULL == find_ptr)
+    {
+        NV_SECTION_TRACE(1, "%s", __func__);
+        return false;
+    }
+
+    if (0 == find_ptr->saved_list_num)
+    {
+        NV_SECTION_TRACE(3,"%s find LTK failed, ptr:%p, list_num:%d", __func__,
+            find_ptr, find_ptr->saved_list_num);
+        return false;
+    }
+
+    for (uint32_t find_index = 0; find_index < find_ptr->saved_list_num; find_index++)
+    {
+        BleDevicePairingInfo *pairingInfo = &find_ptr->ble_nv[find_index].pairingInfo;
+#ifdef FINDMY_ENABLED
+        bool isFindMy = (advHandle == BLE_FINDMY_ADV_HANDLE) ? true : false;
+        if (isFindMy != pairingInfo->isFindMy)
+        {
+            TRACE(3, "%s find %d is FindMy %d", __func__, find_index, advHandle);
+            continue;
+        }
+#endif
 
         if (!memcmp(pairingInfo->peer_addr.addr, pBdAddr, BLE_ADDR_SIZE))
         {
@@ -788,9 +890,14 @@ bool nv_record_ble_record_find_ltk(uint8_t *pBdAddr, uint8_t *ltk, uint16_t ediv
     }
 
 #ifdef FINDMY_ENABLED
-    if (pFoundLtk == NULL && ediv == 0)
+    if (pFoundLtk == NULL && ediv == 0) 
     {
+        uint8_t invalidLTK[BLE_LTK_SIZE] = {0};
         pFoundLtk = findmy_get_curr_ltk();
+        if (!memcmp(pFoundLtk, invalidLTK, BLE_LTK_SIZE))
+        {
+            pFoundLtk = NULL;
+        }
     }
 #endif
 
@@ -1034,6 +1141,34 @@ void nv_record_ble_delete_all_entry(void)
     nv_record_post_write_operation(lock);
 
 }
+
+#ifdef FINDMY_ENABLED
+void nv_record_ble_delete_findmy_record(void)
+{
+    NV_RECORD_PAIRED_BLE_DEV_INFO_T *find_ptr = nvrecord_ble_p;
+
+    if ((NULL == find_ptr) || (0 == find_ptr->saved_list_num))
+    {
+        return;
+    }
+
+    int8_t indexToDelete = -1;
+
+    for (uint8_t find_index = 0; find_index < find_ptr->saved_list_num; find_index++)
+    {
+        if (find_ptr->ble_nv[find_index].pairingInfo.isFindMy)
+        {
+            indexToDelete = find_index;
+            break;
+        }
+    }
+
+    if (indexToDelete >= 0)
+    {
+        nv_record_ble_delete_entry_by_index(indexToDelete);
+    }
+}
+#endif
 
 #ifdef BT_SVC_MODULE_TWS_ENABLED
 static bool tws_use_same_ble_addr(uint8_t *peer_ble_addr)

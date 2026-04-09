@@ -28,6 +28,7 @@
 #include "bt_drv_1307_internal.h"
 #include "bt_drv_1307_config.h"
 #include CHIP_SPECIFIC_HDR(bt_drv_modem_reg_map)
+#define XTAL_FCAP_MAX_STEP                      (0x40)
 #define XTAL_FCAP_NORMAL_SHIFT                  0
 #define XTAL_FCAP_NORMAL_MASK                   (0x1FF << XTAL_FCAP_NORMAL_SHIFT)
 #define XTAL_FCAP_NORMAL(n)                     BITFIELD_VAL(XTAL_FCAP_NORMAL, n)
@@ -416,10 +417,24 @@ void bt_drv_rf_set_afh_monitor_gain(void)
 #endif
 }
 
+static void  bt_drv_rf_set_xtal_fcap_real(int current_val)
+{
+    uint16_t val;
+
+    btdrv_read_rf_reg(RF_REG_XTAL_FCAP, &val);
+    val = (val & ~XTAL_FCAP_NORMAL_MASK) |
+          ((current_val << XTAL_FCAP_NORMAL_SHIFT) & XTAL_FCAP_NORMAL_MASK);
+    btdrv_write_rf_reg(RF_REG_XTAL_FCAP, val);
+}
+
 void btdrv_rf_init_xtal_fcap(uint32_t fcap)
 {
-    xtal_fcap = SET_BITFIELD(xtal_fcap, XTAL_FCAP_NORMAL, fcap);
-    btdrv_write_rf_reg(RF_REG_XTAL_FCAP, xtal_fcap);
+    uint16_t val = 0;
+
+    btdrv_read_rf_reg(RF_REG_XTAL_FCAP, &val);
+    val &= XTAL_FCAP_NORMAL_MASK;
+    bt_drv_rf_set_xtal_fcap(val, fcap, XTAL_FCAP_MAX_STEP, bt_drv_rf_set_xtal_fcap_real);
+    xtal_fcap = fcap;
     init_xtal_fcap = xtal_fcap;
 }
 
@@ -642,30 +657,31 @@ void bt_drv_tx_pwr_init(void)
 
 void bt_drv_rf_init_xtal_fcap(void)
 {
-    uint16_t xtal_fcap_temp = DEFAULT_XTAL_FCAP;
+    unsigned int xtal_fcap_temp = DEFAULT_XTAL_FCAP;
+
     if(btdrv_rf_customer_config.config_xtal_en == true)
     {
         xtal_fcap_temp = btdrv_rf_customer_config.xtal_cap_val;
-        DRIVERS_TRACE(1,"btdrv customer set xtal fcap=0x%x", xtal_fcap_temp);
-        btdrv_rf_init_xtal_fcap(xtal_fcap_temp);
+        BT_DRV_TRACE(1,"btdrv customer set xtal fcap=0x%x", xtal_fcap_temp);
     }
     else
     {
 #ifdef __RF_INIT_XTAL_CAP_FROM_NV__
-        unsigned int xtal_fcap;
-        if (!nvrec_dev_get_xtal_fcap(&xtal_fcap))
+        if (!nvrec_dev_get_xtal_fcap(&xtal_fcap_temp))
         {
-            btdrv_rf_init_xtal_fcap(xtal_fcap);
-            btdrv_delay(1);
-            DRIVERS_TRACE(2,"%s,cap val=0x%x", __func__, xtal_fcap);
+            BT_DRV_TRACE(2,"%s xtal cap=0x%x", __func__, xtal_fcap_temp);
         }
         else
 #endif
         {
-            btdrv_rf_init_xtal_fcap(DEFAULT_XTAL_FCAP);
-            DRIVERS_TRACE(1,"%s failed", __func__);
+            xtal_fcap_temp = DEFAULT_XTAL_FCAP;
+            BT_DRV_TRACE(1,"%s failed", __func__);
         }
     }
+
+    BT_DRV_TRACE(1,"%s val: 0x%x", __func__, xtal_fcap_temp);
+
+    btdrv_rf_init_xtal_fcap(xtal_fcap_temp);
 }
 
 void bt_drv_ble_adv_txpwr_via_advhdl(uint8_t adv_hdl, uint8_t idx, int8_t txpwr_dbm)

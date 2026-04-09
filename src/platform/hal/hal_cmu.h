@@ -74,6 +74,11 @@ enum HAL_CMU_RST_STATUS_T {
     HAL_CMU_RST_CLR,
 };
 
+enum HAL_CMU_TIMER_CLOCK_T {
+    HAL_CMU_TIMER_CLOCK_SLOW,
+    HAL_CMU_TIMER_CLOCK_FAST,
+};
+
 enum HAL_CMU_TIMER_ID_T {
     HAL_CMU_TIMER_ID_00,
     HAL_CMU_TIMER_ID_01,
@@ -220,7 +225,11 @@ enum HAL_CMU_RST_STATUS_T hal_cmu_reset_get_status(enum HAL_CMU_MOD_ID_T id);
 
 int hal_cmu_reset_pulse(enum HAL_CMU_MOD_ID_T id);
 
+#ifdef CHIP_BEST1307PH
+int hal_cmu_timer_set_div(uint32_t timer_base, uint32_t sub_id, uint32_t div);
+#else
 int hal_cmu_timer_set_div(enum HAL_CMU_TIMER_ID_T id, uint32_t div);
+#endif
 
 void hal_cmu_timer0_select_fast(void);
 
@@ -300,7 +309,11 @@ int hal_cmu_flash1_set_freq(enum HAL_CMU_FREQ_T freq);
 
 int hal_cmu_flash2_set_freq(enum HAL_CMU_FREQ_T freq);
 
+#ifdef CHIP_BEST1307PH
+int hal_cmu_mem_set_freq(uint32_t freq);
+#else
 int hal_cmu_mem_set_freq(enum HAL_CMU_FREQ_T freq);
+#endif
 
 int hal_cmu_sys_set_freq(enum HAL_CMU_FREQ_T freq);
 
@@ -552,7 +565,11 @@ void hal_cmu_apb_init_div(void);
 
 void hal_cmu_rom_clock_init(void);
 
+#ifdef CHIP_BEST1307PH
+void hal_cmu_init_chip_feature(uint32_t feature);
+#else
 void hal_cmu_init_chip_feature(uint16_t feature);
+#endif
 
 void hal_cmu_osc_x2_enable(void);
 

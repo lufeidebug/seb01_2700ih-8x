@@ -31,9 +31,9 @@ BT_DRV_UART_BRIDGE_FLAGS += -DDEBUG_PORT=$(DEBUG_PORT)
 endif
 
 export BT_DRV_FLAGS :=
-ifeq ($(NO_SLEEP),1)
-BT_DRV_FLAGS += -DNO_SLEEP
-endif
+# ifeq ($(NO_SLEEP),1)
+# BT_DRV_FLAGS += -DNO_SLEEP
+# endif
 
 export BT_DRV_CONFIG_FLAGS :=
 ifeq ($(INTERSYS_NO_THREAD),1)

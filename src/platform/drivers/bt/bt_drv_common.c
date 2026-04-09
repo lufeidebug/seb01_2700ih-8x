@@ -1542,6 +1542,42 @@ void bt_tester_cmd_receive_evt_analyze(const unsigned char *data, unsigned int l
     }
 }
 
+void  bt_drv_rf_set_xtal_fcap(uint16_t start_val, uint16_t target_val, uint16_t max_step, XtalSetCallback set_xtal_fcap)
+{
+    if (set_xtal_fcap == NULL || max_step == 0) {
+        return;
+    }
+
+    if (start_val == target_val) {
+        return;
+    }
+
+    uint16_t current_val = start_val;
+    int16_t total_adjust = target_val - current_val;
+    uint16_t abs_adjust = (total_adjust < 0) ? -total_adjust : total_adjust;
+    int n = (abs_adjust + max_step - 1) / max_step;
+    uint16_t last_step;
+
+    if (total_adjust > 0) {
+        last_step = total_adjust - (n - 1) * max_step;
+        for (int i = 1; i < n; i++) {
+            current_val += max_step;
+            set_xtal_fcap(current_val);
+
+        }
+        current_val += last_step;
+        set_xtal_fcap(current_val);
+    } else {
+        last_step = total_adjust + (n - 1) * max_step;
+        for (int i = 1; i < n; i++) {
+            current_val -= max_step;
+            set_xtal_fcap(current_val);
+        }
+        current_val += last_step;
+        set_xtal_fcap(current_val);
+    }
+}
+
 #ifdef MCU_WAKEUP_BT_V2
 static volatile uint32_t intersys1_tx_done_flag = INTERSYS_TX_DONE;
 

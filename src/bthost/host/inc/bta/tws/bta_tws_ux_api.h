@@ -609,6 +609,26 @@ bool bta_tws_is_tws_addr(const bt_bdaddr_t *addr);
  */
 int bta_tws_reconfig_ux_attribute(bta_tws_ui_attribute_id_t attribute_id, uint32_t pragma);
 
+
+/**
+ ****************************************************************************************
+ * @brief Get the connected device address list.
+ *
+ * @param[in] p_dev_addr_l device address list
+ * @return uint8_t the number of address entries
+ *
+ * Examples:
+ *
+ *
+ * ```
+ * bt_bdaddr_list_t dev_addr_l = { 0 };
+ * uint8_t count = bta_tws_find_all_connected_bt_device(&dev_addr_l); // * `dev_addr_l` will be filled with connected address, `count` is the number of address entries
+ * count = bta_tws_find_all_connected_bt_device(NULL); // * only the connected bt device device count will be got
+ * ```
+ ****************************************************************************************
+ */
+uint8_t bta_tws_find_all_connected_bt_device(bt_bdaddr_list_t *p_dev_addr_l);
+
 #ifdef __cplusplus
 }
 #endif

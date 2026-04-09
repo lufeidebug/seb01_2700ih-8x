@@ -160,9 +160,12 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP cfg_hw_pinmux_pwl[CFG_HW_PWL_NUM]
 #if defined(FREEMAN_ENABLED_STERO)
 #define ANC_REF_MIC_CH_L                    AUD_CHANNEL_MAP_ECMIC_CH0
 #define ANC_REF_MIC_CH_R                    AUD_CHANNEL_MAP_ECMIC_CH1
-#else
+#elif defined(VOICE_ASSIST_FF_FIR_LMS) || defined(VOICE_ASSIST_FF_IIR_LMS)
 #define ANC_REF_MIC_CH_L                    AUD_CHANNEL_MAP_ECMIC_CH1
 #define ANC_REF_MIC_CH_R                    AUD_CHANNEL_MAP_ECMIC_CH0
+#else
+#define ANC_REF_MIC_CH_L                    AUD_CHANNEL_MAP_ECMIC_CH0
+#define ANC_REF_MIC_CH_R                    0
 #endif
 
 #define ANC_VMIC_CFG                        (AUD_VMIC_MAP_VMIC2)

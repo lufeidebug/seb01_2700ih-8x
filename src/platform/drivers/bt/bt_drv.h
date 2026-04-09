@@ -153,6 +153,7 @@ extern "C" {
 
 #define BT_DRV_DEBUG  1
 #if BT_DRV_DEBUG
+#define BT_DRV_TRACE(n, fmt, ...) TRACE(n, fmt, ##__VA_ARGS__)
 #define BT_DRV_DUMP(s,buff,len) DRIVERS_DUMP8(s,buff,len)
 #ifndef TOTA_CRASH_DUMP_TOOL_ENABLE
 #define BT_TRACE_CRASH_DUMP(n, fmt, ...)  DRIVERS_TRACE(n, fmt, ##__VA_ARGS__)
@@ -160,6 +161,7 @@ extern "C" {
 #define BT_TRACE_CRASH_DUMP(n, fmt, ...)  REL_TRACE_IMM(n, fmt, ##__VA_ARGS__)
 #endif
 #else
+#define BT_DRV_TRACE(n, fmt, ...) TRACE(n, fmt, ##__VA_ARGS__)
 #define BT_DRV_DUMP(s,buff,len)
 #define BT_TRACE_CRASH_DUMP(n, fmt, ...) hal_trace_dummy(NULL, ##__VA_ARGS__)
 #endif

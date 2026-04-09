@@ -113,6 +113,11 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP cfg_hw_pinmux_pwl[CFG_HW_PWL_NUM]
 #define ANC_COEF_LIST_NUM                   (2)
 #endif
 
+#define IIR_FF_COUNTER                      (14)
+#define IIR_TT_COUNTER                      (0)
+#define IIR_FB_COUNTER                      (7)
+#define IIR_MC_COUNTER                      (7)
+
 #define ANC_FF_MIC_CH_L                     AUD_CHANNEL_MAP_CH0
 #define ANC_FF_MIC_CH_R                     0
 #define ANC_FB_MIC_CH_L                     AUD_CHANNEL_MAP_CH2

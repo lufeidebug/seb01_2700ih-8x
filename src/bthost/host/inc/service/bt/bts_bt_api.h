@@ -122,12 +122,6 @@ bts_status_t bts_bt_get_remote_name(const bt_bdaddr_t *address);
 
 bts_status_t bts_bt_get_class_of_device(const bt_bdaddr_t *address, uint8_t *cod);
 
-bts_status_t bts_bt_enter_sniff_mode(const bt_bdaddr_t *address, const bt_sniff_info_t *info);
-
-bts_status_t bts_bt_exit_sniff_mode(const bt_bdaddr_t *address);
-
-bts_status_t bts_bt_keep_active_mode(const bt_bdaddr_t *address, bts_keep_active_mode_user_t user, bool keep_active_mode);
-
 bts_status_t bts_bt_get_remote_version(const bt_bdaddr_t *address, bt_remote_version_t *remote_version);
 
 void bts_bt_request_exit_mhdt_mode(const bt_bdaddr_t *bdaddr);

@@ -186,6 +186,9 @@ extern "C" {
 #define TRACE_FLUSH()                       NORM_LOG_FLUSH()
 #define FUNC_ENTRY_TRACE()                  TR_INFO(1, "%s", __FUNCTION__)
 
+#define TRACE(attr, str, ...)               TR_INFO(attr, str, ##__VA_ARGS__)
+#define TRACE_IMM(attr, str, ...)           TR_INFO((attr) | TR_ATTR_IMM, str, ##__VA_ARGS__)
+
 #if !defined(BES_CRASH_DUMP)
 #if defined(__NuttX__) && (!defined(__NuttX_Compile_Only__))
 #include <syslog.h>

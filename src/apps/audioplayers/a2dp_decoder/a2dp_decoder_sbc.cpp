@@ -24,7 +24,7 @@
 #include "a2dp_decoder_internal.h"
 #include "hal_timer.h"
 #include "cmsis_os.h"
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
 #include "app_tws_ibrt_audio_analysis.h"
 #endif
 
@@ -185,7 +185,7 @@ static int a2dp_cp_sbc_mcu_decode(uint8_t *buffer, uint32_t buffer_bytes)
     }
 #else
     node = a2dp_audio_list_begin(list);
-    while (node) 
+    while (node)
     {
         sbc_decoder_frame = (a2dp_audio_sbc_decoder_frame_t *)a2dp_audio_list_node(node);
         list_node_t *next = a2dp_audio_list_next(node);
@@ -372,6 +372,13 @@ static int a2dp_cp_sbc_cp_decode(void)
     pcm_data->buffer_size = dec_len;
     error = 0;
 
+#if defined(A2DP_SBC_PLC_ENABLED)
+    sbc_decoder_channel_select_e chnl_sel = (sbc_decoder_channel_select_e)a2dp_audio_context_p->chnl_sel;
+    if(sbc_chnl_mode_mono){
+        chnl_sel = SBC_DECODER_CHANNEL_SELECT_LCHNL;
+    }
+#endif
+
 #ifndef A2DP_NO_CPINCACHE
     while (pcm_data->valid_size < dec_len && error == 0) {
         ret = a2dp_cp_get_in_frame((void **)&in_buf, &in_len);
@@ -498,9 +505,9 @@ static int a2dp_cp_sbc_cp_decode(void)
 
 #if defined(A2DP_SBC_PLC_ENABLED)
         if (p_in_info.timestamp != UINT32_MAX)
-#else   
+#else
         if (1)
-#endif  
+#endif
         {
             sbc_frame_t sbc_data;
             sbc_data.sbc_data = sbc_decoder_frame_p->header.ptrData,
@@ -522,7 +529,7 @@ static int a2dp_cp_sbc_cp_decode(void)
                     }
                     // AUDIOPLAYERS_TRACE(0,"[%s] PLC good frame len %d %d", __func__, pcm_data->valid_size, decoded_offset);
                 }
-#endif  
+#endif
                 break;
             case BT_STS_NO_RESOURCES:
                 error = 1;
@@ -551,11 +558,11 @@ static int a2dp_cp_sbc_cp_decode(void)
             bad_end_ticks = hal_fast_sys_timer_get();
             bad_used_us = FAST_TICKS_TO_US(bad_end_ticks - bad_start_ticks);
             AUDIOPLAYERS_TRACE(0,"[%s] plc bad frame period = %d", __func__, bad_used_us);
-#endif  
+#endif
             AUDIOPLAYERS_TRACE(0,"[%s] PLC bad frame len %d", __func__, frame_len);
             pcm_data->valid_size += frame_len;
         }
-#endif  
+#endif
         sbc_stream_info_t info;
         sbc_decoder_get_stream_info(sbc_decoder, &info);
         p_out_info->in_info.sequenceNumber = p_in_info.sequenceNumber;
@@ -645,7 +652,7 @@ int a2dp_audio_sbc_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
 #ifdef A2DP_CP_ACCEL
     int ret;
     cp_codec_reset = true;
-    ret = a2dp_cp_init(a2dp_cp_sbc_cp_decode, CP_PROC_DELAY_2_FRAMES);
+    ret = a2dp_cp_init(a2dp_cp_sbc_cp_decode, CP_PROC_DELAY_1_FRAME);
     ASSERT_A2DP_DECODER(ret == 0, "%s: a2dp_cp_init() failed: ret=%d", __func__, ret);
     uint32_t cp_buffer_frames_max = 0;
     uint32_t out_frame_len;
@@ -989,7 +996,7 @@ int a2dp_audio_sbc_packet_adjust(a2dp_audio_sbc_decoder_frame_t *sbc_decoder_fra
     a2dp_audio_sbc_decoder_frame_t *frame_p2 = NULL;
     int8_t refill_subframes = 0;
 
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     refill_subframes = app_tws_ibrt_audio_analysis_get_refill_frames();
     app_tws_ibrt_audio_analysis_update_refill_frames(-refill_subframes);
 #endif

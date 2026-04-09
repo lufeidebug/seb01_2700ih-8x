@@ -23,6 +23,7 @@
 #include "audio_process.h"
 #include "arm_math_ex.h"
 #include "signal_generator.h"
+#include "af_stream_sw_gain.h"
 
 #define FORCE_BIS_PLAYBACK_24BITS
 
@@ -129,6 +130,10 @@ int32_t gaf_bis_stream_process_playback_open(struct AF_STREAM_CONFIG_T *stream_c
 #endif
     void app_le_set_dac_eq(void);
     app_le_set_dac_eq();
+
+#if defined(AUDIO_OUTPUT_SW_GAIN) && defined(AUDIO_OUTPUT_SW_GAIN_BEFORE_DRC)
+    af_stream_sw_gain_set_position(AUD_STREAM_ID_0, AUD_STREAM_PLAYBACK, AF_STREAM_SW_GAIN_POS_ALT);
+#endif
 
     return 0;
 }

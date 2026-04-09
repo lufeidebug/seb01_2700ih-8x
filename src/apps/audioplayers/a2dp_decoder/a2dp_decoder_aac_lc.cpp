@@ -22,7 +22,7 @@
 #include "hal_timer.h"
 #include "a2dp_decoder_internal.h"
 #include "cmsis_os.h"
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
 #include "app_tws_ibrt_audio_analysis.h"
 #endif
 #include "heap_api.h"
@@ -218,7 +218,7 @@ static int a2dp_cp_aac_lc_mcu_decode(uint8_t *buffer, uint32_t buffer_bytes)
 
     out_frame_len = sizeof(*p_out_info) + buffer_bytes;
 #ifndef A2DP_NO_CPINCACHE
-    while ((node = a2dp_audio_list_begin(list)) != NULL) 
+    while ((node = a2dp_audio_list_begin(list)) != NULL)
     {
         aac_decoder_frame_p = (a2dp_audio_aac_decoder_frame_t *)a2dp_audio_list_node(node);
         if(aac_decoder_frame_p)
@@ -241,7 +241,7 @@ static int a2dp_cp_aac_lc_mcu_decode(uint8_t *buffer, uint32_t buffer_bytes)
     }
 #else
     node = a2dp_audio_list_begin(list);
-    while (node) 
+    while (node)
     {
         aac_decoder_frame_p = (a2dp_audio_aac_decoder_frame_t *)a2dp_audio_list_node(node);
         list_node_t *next = a2dp_audio_list_next(node);
@@ -647,13 +647,13 @@ int a2dp_audio_aac_lc_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
     int ret;
 
     cp_codec_reset = true;
-    ret = a2dp_cp_init(a2dp_cp_aac_lc_cp_decode, CP_PROC_DELAY_2_FRAMES);
+    ret = a2dp_cp_init(a2dp_cp_aac_lc_cp_decode, CP_PROC_DELAY_1_FRAME);
     ASSERT_A2DP_DECODER(ret == 0, "%s: a2dp_cp_init() failed: ret=%d", __func__, ret);
 
     uint32_t cnt=0;
     while(is_cp_init_done() == false) {
         hal_sys_timer_delay_us(100);
-        
+
         cnt++;
         if (cnt % 10 == 0) {
             if (cnt == 10 * 200) {     // 200ms
@@ -663,7 +663,7 @@ int a2dp_audio_aac_lc_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
             }
         }
     }
-    
+
     uint32_t cp_buffer_frames_max = 0;
     uint32_t out_frame_len;
     cp_buffer_frames_max = app_bt_stream_get_dma_buffer_samples()/2;
@@ -946,7 +946,7 @@ int a2dp_audio_aac_lc_packet_recover_proc(a2dp_audio_aac_decoder_frame_t *aac_de
 #if AAC_MUTE_FRAME
             a2dp_audio_aac_decoder_frame_t *aac_decoder_frame_p = (a2dp_audio_aac_decoder_frame_t *)a2dp_audio_aac_lc_frame_malloc(AAC_MUTE_FRAME_MAX);
             aac_decoder_frame_p->header.sequenceNumber = aac_decoder_last_valid_frame.header.sequenceNumber + i + 1;
-            aac_decoder_frame_p->header.timestamp = UINT32_MAX;	
+            aac_decoder_frame_p->header.timestamp = UINT32_MAX;
 			A2DP_AUDIO_OUTPUT_CONFIG_T*info=&a2dp_audio_aac_lastframe_info.stream_info;
             aac_decoder_frame_p->header.dataLen = aac_get_mute_frame(aac_decoder_frame_p->header.ptrData
                 ,info->sample_rate, info->num_channels, AAC_PACKAGE_MCP1);
@@ -988,7 +988,7 @@ int a2dp_audio_aac_lc_packet_adjust(uint32_t buffer_bytes, a2dp_audio_aac_decode
     a2dp_audio_aac_decoder_frame_t *aac_decoder_frame_p = NULL;
     int8_t refill_subframes = 0;
 
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     refill_subframes = app_tws_ibrt_audio_analysis_get_refill_frames();
     app_tws_ibrt_audio_analysis_update_refill_frames(-refill_subframes);
 #endif

@@ -28,6 +28,7 @@ uint8_t* nvrecord_find_arbitrary_peer_ble_device_address(void);
 void nv_record_blerec_set_change_unaware(void);
 void nv_record_blerec_update_database_hash(const uint8_t *hash);
 bool nv_record_ble_record_find_ltk(uint8_t *pBdAddr, uint8_t *ltk, uint16_t ediv);
+bool nv_record_ble_record_find_ltk_with_adv_handle(uint8_t *pBdAddr, uint8_t *ltk, uint16_t ediv, uint8_t advHandle);
 uint8_t *nv_record_ble_record_find_device_security_info_through_static_bd_addr(uint8_t* pBdAddr);
 bool nv_record_ble_record_Once_a_device_has_been_bonded(void);
 bool nv_record_ble_read_addr_resolv_supp_via_bdaddr(uint8_t *pBdAddr, bool *issupport);
@@ -54,7 +55,6 @@ const gattc_nv_cache_t *nv_record_ble_gatt_cache_get(const BLE_ADDR_INFO_T *p_ad
 int nv_record_ble_server_cache_add(const BLE_ADDR_INFO_T *p_addr, const void *server_cache);
 int nv_record_ble_server_cache_del(const BLE_ADDR_INFO_T *p_addr);
 const gattc_server_cache_t *nv_record_ble_server_cache_get(const BLE_ADDR_INFO_T *p_addr);
-bool nv_record_update_ltk_through_addr(uint8_t *pBdAddr, uint8_t *ltk);
 int nv_record_blerec_add(const BleDevicePairingInfo *param_rec);
 
 #if BLE_AUDIO_ENABLED
@@ -73,6 +73,10 @@ uint8_t *nv_record_tws_get_self_ble_info(void);
 void nv_record_blerec_crash_dump(void);
 #endif
 
+#ifdef FINDMY_ENABLED
+void nv_record_ble_delete_findmy_record(void);
+bool nv_record_update_ltk_through_addr(uint8_t *pBdAddr, uint8_t *ltk, bool isFindMy);
+#endif
 
 #ifdef CTKD_ENABLE
 #define TMP1LEN          (4)

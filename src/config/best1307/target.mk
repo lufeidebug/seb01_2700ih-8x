@@ -299,9 +299,6 @@ export GFPS_ENABLE ?= 0
 
 export HAS_BT_SYNC ?= 1
 
-#For free tws pairing feature
-export FREE_TWS_PAIRING_ENABLED ?= 0
-
 export APP_UART_MODULE ?= 0
 
 export APP_CHIP_BRIDGE_MODULE ?= 0

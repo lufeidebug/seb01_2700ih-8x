@@ -23,3 +23,7 @@ ifeq ($(A2DP_LDAC_BCO),1)
 ccflags-y += -DA2DP_LDAC_BCO
 endif
 endif
+
+ifeq ($(DECREASE_INITIAL_JITTER_BUF_LEN_ENABLE),1)
+ccflags-y += -DDECREASE_INITIAL_JITTER_BUF_LEN_ENABLE
+endif

@@ -82,7 +82,8 @@ ccflags-y +=  \
     -Imultimedia/inc \
     $(AUDIO_ALGORITHMS_INCLUDES) \
     -Iapps/earbuds/conn \
-    -Ibthost/apps/bta_apps/earbuds/inc
+    -Ibthost/apps/bta_apps/earbuds/inc \
+    -Ibthost/apps/bta_apps/headset/inc
 
 ifeq ($(UTILS_ESHELL_EN),1)
 ccflags-y += \
@@ -290,7 +291,7 @@ ccflags-y += -Ithirdparty/ios-find-my/inc \
 endif
 
 ifeq ($(BESUI_APP_EN),1)
-subdir-ccflags-y += -Iservices/tota_v2 
+subdir-ccflags-y += -Iservices/tota_v2
 endif
 
 ifeq ($(BESUI_TWS_EN),1)

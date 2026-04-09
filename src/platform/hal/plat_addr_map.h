@@ -35,6 +35,8 @@ extern "C" {
 #define CHIP_ID_LITERAL                         best1307
 #elif defined(CHIP_BEST1307P)
 #define CHIP_ID_LITERAL                         best1307p
+#elif defined(CHIP_BEST1307PH)
+#define CHIP_ID_LITERAL                         best1307ph
 #elif defined(CHIP_BEST1400) || defined(CHIP_BEST1402)
 #define CHIP_ID_LITERAL                         best1400
 #elif defined(CHIP_BEST1501)

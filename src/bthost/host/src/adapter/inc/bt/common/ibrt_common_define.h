@@ -134,6 +134,7 @@ typedef struct ibrt_hfp_status_t
     uint8_t callsetup_state;
     uint8_t call_state;
     uint8_t callhold_state;
+    uint8_t codec_type;
 } __attribute__((packed)) ibrt_hfp_status_t;
 
 #ifdef __cplusplus

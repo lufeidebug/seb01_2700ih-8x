@@ -42,6 +42,8 @@ typedef enum
 
 typedef void (*media_info_report_t)(const bt_bdaddr_t *addr, const avrcp_adv_rsp_parms_t *mediaPkt);
 
+typedef void (*media_play_pos_report_t)(const bt_bdaddr_t *addr, uint32_t position);
+
 const char* avrcp_get_track_element_name(uint32_t element_id);
 
 void app_a2dp_register_custom_allow_receive_steam(bool (*cb)(void));
@@ -49,6 +51,8 @@ void app_a2dp_register_custom_allow_receive_steam(bool (*cb)(void));
 uint8_t app_bt_a2dp_adjust_volume(uint8_t device_id, bool up, bool adjust_local_vol_level);
 
 void app_avrcp_reg_media_info_report_callback(media_info_report_t cb);
+
+void app_avrcp_reg_media_play_pos_callback(media_play_pos_report_t cb);
 
 void avrcp_callback_CT(uint8_t device_id, btif_avrcp_channel_t* btif_avrcp, const avrcp_callback_parms_t* parms);
 

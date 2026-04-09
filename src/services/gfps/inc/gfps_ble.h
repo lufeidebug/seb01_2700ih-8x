@@ -35,6 +35,9 @@
  * DEFINES
  ****************************************************************************************
  */
+
+#include "ble_core_common.h"
+
 #define BLE_FASTPAIR_NORMAL_ADVERTISING_INTERVAL (160)
 #define BLE_FASTPAIR_FAST_ADVERTISING_INTERVAL (48)
 #define BLE_FASTPAIR_SPOT_ADVERTISING_INTERVAL (1000)
@@ -439,6 +442,10 @@ struct gfps_ble_env_tag
     bool gfps_flag;
     uint8_t passkey[GFPS_PASSKEY_LEN];
     uint8_t addition_passkey[GFPS_PASSKEY_LEN];
+    bool isBTUserConfirm;
+    bool isBLEConfirm;
+    uint16_t connectionHandle;
+    bool isDecryptedSuccessful[BLE_CONNECTION_MAX];
 };
 
 /*
@@ -479,6 +486,10 @@ uint8_t* gfps_get_additional_passkey();
 void gfps_set_additional_pass_key(uint8_t *p_buff, uint16_t length);
 void gfps_ble_get_addr(uint8_t *addr);
 bool gfps_is_in_subsequent_pair_mode(void);
+void gfps_process_ble_user_confirmation(ble_event_t* ble_event, void* output);
+bool gfps_get_if_just_accept_retroative_connect();
+void gfps_set_if_just_accept_retroactive(bool value);
+bool gfps_ble_get_if_keybase_isDecryptedSuccessful(uint8_t condix);
 #ifdef SPOT_ENABLED
 bool gfps_ble_get_spot_get_mode(void);
 uint8_t* gfps_ble_get_EID(void);

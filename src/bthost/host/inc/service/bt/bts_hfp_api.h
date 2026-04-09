@@ -331,6 +331,10 @@ bt_hfp_callsetup_state_t bts_hfp_hf_get_ciev_callsetup_state(const bt_bdaddr_t *
 
 bt_hfp_callheld_state_t bts_hfp_hf_get_ciev_callheld_state(const bt_bdaddr_t *address);
 
+uint8_t bts_hfp_hf_get_reject_dev(void);
+
+void bts_hfp_hf_set_reject_dev(uint8_t device_id);
+
 /**
  ****************************************************************************************
  *    _   _ _____ ____          _    ____

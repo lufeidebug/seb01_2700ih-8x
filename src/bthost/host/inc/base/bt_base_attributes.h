@@ -70,6 +70,7 @@ typedef struct
     bool auto_resume_stream_when_focus_empty;
     bool sco_reject_connect_frist_and_disconnet_later;
     bool delay_abandon_a2dp_focus_depends_hfp_status;
+    bool bt_update_active_device_when_incoming_call;
 } bt_am_attributes_t;
 
 enum app_bt_base_event_t {

@@ -734,7 +734,17 @@ typedef union
 typedef struct
 {
     uint8_t data[BT_BLE_GAP_KEY_LEN];
-} __attribute__((__packed__)) bt_ble_gap_irk_t;
+} bt_ble_gap_irk_t;
+
+typedef struct
+{
+    /// Peer Address
+    ble_bdaddr_t peer_addr;
+    /// Peer irk
+    bt_ble_gap_irk_t peer_irk;
+    /// Device or Network privacy mode
+    bool device_privacy_mode;
+} bt_ble_resolving_item_t;
 
 typedef struct
 {

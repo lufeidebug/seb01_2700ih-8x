@@ -29,6 +29,8 @@ extern "C" {
 #define audsec_tag  "audsec_tag"
 
 #define AUD_COEF_LEN        (500)
+
+#ifndef AUD_IIR_NUM
 #if (AUD_SECTION_STRUCT_VERSION == 1)
 #define AUD_IIR_NUM         (6)
 #elif (AUD_SECTION_STRUCT_VERSION == 2)
@@ -39,6 +41,7 @@ extern "C" {
 #define AUD_IIR_NUM         (13)
 #else
 #error "Can not support this version!!!"
+#endif
 #endif
 
 #define AUD_SECTION_MAX_USER (32)

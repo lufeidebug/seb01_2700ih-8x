@@ -65,9 +65,11 @@ set -e
 # ./tools/com_sdk/cust/build_pro_1502p_0007.sh best1502p
 ################################### var define ###################################
 APP_CUSTOMER_CFG="IGNORE_POWER_ON_KEY_DURING_BOOT_UP=1 IS_AUTOPOWEROFF_ENABLED=0 APP_TRACE_RX_ENABLE=1 APP_RX_API_ENABLE=1 AUDIO_DEBUG_CMD=0 \
-                 TRACE_BUF_SIZE=20*1024 USE_TRACE_ID=0 RECORDING_USE_OPUS=1"
+                 TRACE_BUF_SIZE=20*1024 USE_TRACE_ID=0\
+                 CTKD_ENABLE=1\
+                 OPUS_UNSUPPORT=1"
 
-OTA_CFG="BES_OTA=1 OTA_BIN_COMPRESSED=0"
+OTA_CFG="BES_OTA=1 OTA_BIN_COMPRESSED=1"
 
 BLE_CFG="BLE=1 GATT_OVER_BR_EDR=0"
 
@@ -91,7 +93,7 @@ BES_LIB_DIR="BES_LIB_DIR=lib/bes/best1502p/PRO_0007"
 ################################### end of var define ###################################
 
 build_app_cmd="make T=$TARGET_LIST $APP_CUSTOMER_CFG $BLE_CFG $OTA_CFG $TWS_CFG $SPEECH_CFG $DECODE_DECODER_CFG $SYS_CFG $ANC_CFG $ROM_CFG $SPEECH_2MIC_CFG $BES_LIB_DIR -j64"
-build_ota_cmd="make T=prod_test/ota_copy CHIP=$CHIPID $ROM_CFG OTA_BIN_COMPRESSED=0 DEBUG=1 -j64"
+build_ota_cmd="make T=prod_test/ota_copy CHIP=$CHIPID $ROM_CFG OTA_BIN_COMPRESSED=1 DEBUG=1 -j64"
 
 if [[ "$COMMAND" == "clean" ]];
 then

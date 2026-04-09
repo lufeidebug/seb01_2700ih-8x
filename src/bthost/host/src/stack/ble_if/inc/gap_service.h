@@ -1971,6 +1971,8 @@ typedef struct
     uint16_t read_blob_value_len_max;
     /// Max size of ATT prep write req recv queue
     uint16_t recv_prep_wr_q_size_max;
+    /// Max size of Notify GATT procedure queue
+    uint16_t gatt_ntf_cmd_q_size_max;
 } gap_config_t;
 
 typedef struct

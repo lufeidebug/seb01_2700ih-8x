@@ -853,7 +853,7 @@ static int app_media_store_sbc_buffer(uint8_t device_id, unsigned char *buf, uns
     return nRet;
 }
 
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
 
 #define PENDING_SYNC_PROMPT_BUFFER_CNT  8
 // cleared when tws is disconnected
@@ -926,16 +926,16 @@ void trigger_media_stop(AUD_ID_ENUM id, uint8_t device_id)
         app_play_sbc_stop_proc_cnt = 1;
 }
 
-#if defined(IBRT)
 static bool isProcessCache = false;
-void cache_prompt_flag(bool isProcess)
-{
-    isProcessCache = isProcess;
-}
-
 bool is_cache_prompt_in_processing(void)
 {
     return isProcessCache;
+}
+
+#if defined(IBRT)
+void cache_prompt_flag(bool isProcess)
+{
+    isProcessCache = isProcess;
 }
 
 static bool is_prompt_playing_handling_locally(AUD_ID_ENUM promptId, bool iscached)
@@ -1205,7 +1205,7 @@ void media_PlayAudio(AUD_ID_ENUM id,uint8_t device_id)
     if(uictl.poweroff_start_flag)
     {
         AUDIO_BT_TRACE(1,"[UIAPP]%s, uictl.poweroff_start_flag = %d",__func__, uictl.poweroff_start_flag);
-        return;        
+        return;
     }
 #endif
 #ifdef BESUI_TWS_EN
@@ -1213,7 +1213,7 @@ void media_PlayAudio(AUD_ID_ENUM id,uint8_t device_id)
     if(id == AUD_ID_BT_PAIR_ENABLE && conn_devices)
     {
         AUDIO_BT_TRACE(1,"[UIAPP]%s, conn_devices = %d",__func__, conn_devices);
-        return;   
+        return;
     }
     if(!app_current_box_status_open_status())
     {
@@ -1303,7 +1303,7 @@ static bool media_PlayAudio_standalone_handler(AUD_ID_ENUM id, uint8_t device_id
 void media_PlayAudio_standalone(AUD_ID_ENUM id, uint8_t device_id)
 {
     osMutexWait(promptMutexId, osWaitForever);
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     bool isToBeProcessed = media_playAudio_pre_processing(id, device_id, media_PlayAudio);
     if (!isToBeProcessed)
     {
@@ -1332,7 +1332,7 @@ void media_PlayAudio_standalone(AUD_ID_ENUM id, uint8_t device_id)
 
     bool isLocalPlaying = true;
 
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     isLocalPlaying = is_prompt_playing_handling_locally(id, false);
 
     if (bts_tws_if_is_tws_link_connected()&&(!isLocalPlaying))
@@ -1438,7 +1438,7 @@ static bool media_PlayAudio_locally_handler(AUD_ID_ENUM id, uint8_t device_id, b
 void media_PlayAudio_locally(AUD_ID_ENUM id, uint8_t device_id)
 {
     osMutexWait(promptMutexId, osWaitForever);
-#ifdef BT_SERVICE_ENABLE
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     bool isToBeProcessed = media_playAudio_pre_processing(id, device_id, media_PlayAudio);
     if (!isToBeProcessed)
     {
@@ -1483,7 +1483,7 @@ void media_PlayAudio_standalone_locally(AUD_ID_ENUM id, uint8_t device_id)
     if(uictl.poweroff_start_flag)
     {
         AUDIO_BT_TRACE(1,"[UIAPP]%s, uictl.poweroff_start_flag = %d",__func__, uictl.poweroff_start_flag);
-        return;        
+        return;
     }
 #endif
     osMutexWait(promptMutexId, osWaitForever);
@@ -1890,7 +1890,7 @@ void media_runtime_audio_prompt_update(uint16_t id, uint8_t** ptr, uint32_t* len
         break;
     case AUD_ID_WEAR_DETECT:
         get_sound_id_info(BT_WEAR_DETECT, &sound_data, &length);
-        break;        
+        break;
     case AUD_ID_SIGNATURE:
         get_sound_id_info(BT_SIGNATURE, &sound_data, &length);
         break;
@@ -2433,7 +2433,7 @@ uint32_t app_play_sbc_more_data(uint8_t *buf, uint32_t len)
 #endif
             } else if (MEDIA_PLAYER_CHANNEL_NUM == AUD_CHANNEL_NUM_1) {
                 if (IS_PROMPT_CHNLSEl_ALL(g_prompt_chnlsel)
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
                     || app_ibrt_voice_report_is_me(PROMPT_CHNLSEl_FROM_ID_VALUE(g_prompt_chnlsel))
 #endif
                     ) {
@@ -2738,7 +2738,7 @@ static uint32_t audio_mc_data_playback_media(uint8_t *buf, uint32_t mc_len_bytes
 
 void app_audio_playback_done(void)
 {
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     app_tws_sync_prompt_check();
 #endif
 }

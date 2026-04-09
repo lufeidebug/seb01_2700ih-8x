@@ -185,7 +185,7 @@ void app_bt_audio_register_toggle_a2dp_cis_cmp_cb(void (*cb)(uint8_t device_id))
 
 void app_bt_audio_switch_streaming_a2dp();
 
-void app_bt_audio_switch_streaming_a2dp_handler(uint32_t btclk, uint8_t error_code,  bt_bdaddr_t* remote)
+void app_bt_audio_switch_streaming_a2dp_handler(uint32_t btclk, uint8_t error_code);
 
 void app_bt_audio_check_switch_streaming_a2dp(void);
 
@@ -267,6 +267,8 @@ uint8_t app_bt_audio_select_another_call_setup_hfp(uint8_t curr_device_id);
 uint8_t app_bt_audio_select_another_device_to_create_sco(uint8_t curr_device_id);
 
 uint8_t app_bt_audio_get_another_hfp_device_for_user_action(uint8_t curr_device_id);
+
+void app_bt_audio_restart_sco_player(uint8_t device_id);
 #endif /* BT_HFP_SUPPORT */
 
 #ifdef __cplusplus

@@ -1775,12 +1775,13 @@ int audio_process_open(enum AUD_SAMPRATE_T sample_rate, enum AUD_BITS_T sample_b
 
 #ifdef __HW_DAC_IIR_LIMITER__
     hw_dac_limiter_open(CODEC_OUTPUT_DEV);
-    hw_dac_limiter_enable();
 #ifdef HW_DAC_IIR_LIMITER_UPDATE_CFG
     hw_dac_limiter_set_cfg(&audio_process.hw_dac_limiter_cfg);
 #else
     hw_dac_limiter_set_cfg(audio_eq_limiter_cfg_list[0]);
 #endif
+    hw_dac_limiter_disable();
+    hw_dac_limiter_enable();
 #endif
 
 #ifdef __HW_IIR_EQ_PROCESS__

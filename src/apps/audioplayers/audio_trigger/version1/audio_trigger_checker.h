@@ -22,7 +22,7 @@ int app_bt_stream_trigger_checker_set_cb(APP_BT_STREAM_TRIGGER_CHECKER_TRIGOK_CB
 int app_bt_stream_trigger_checker_init(void);
 int app_bt_stream_trigger_checker_start(void);
 int app_bt_stream_trigger_checker_stop(void);
-
+bool app_bt_get_trigger_protect_flag(void);
 #ifdef __cplusplus
 }
 #endif

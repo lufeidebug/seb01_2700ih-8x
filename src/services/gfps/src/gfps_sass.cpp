@@ -31,43 +31,37 @@
 #include "cmsis.h"
 #include "cmsis_os.h"
 #include "hal_trace.h"
-#include "app_bt.h"
-#include "app_bt_func.h"
-#ifdef IBRT
-#include "bts_bt_if.h"
-#include "app_tws_ibrt.h"
-#include "bts_core_if.h"
-#include "bts_tws_api.h"
-#include "bta_tws_ux_api.h"
-#include "bta_bt_api.h"
-#include "bta_tws_audio_api.h"
-#endif
-#include "bluetooth.h"
+
 #include "app_media_player.h"
+#include "app_bt_media_manager.h"
+
+#include "gfps.h"
 #include "gfps_crypto.h"
 #include "gfps_sass.h"
 #include "gfps_ble.h"
-#include "bluetooth_ble_api.h"
-#include "app_hfp.h"
-#include "app_bt_media_manager.h"
 #include "gfps_rfcomm.h"
+
 #include "../../utils/encrypt/aes.h"
 #include "nvrecord_fp_account_key.h"
 #include "bts_am_api.h"
-#include "app_audio_control.h"
-#include "gfps.h"
 
-#if BLE_AUDIO_ENABLED
-#include "ble_aob_common.h"
-#include "aob_mgr_gaf_evt.h"
-#include "aob_media_api.h"
-#include "ble_audio_core_api.h"
-#include "ble_audio_earphone_info.h"
 #include "app_ibrt_keyboard.h"
-#include "app_audio_active_device_manager.h"
-#include "aob_media_api.h"
-#include "aob_stream_handler.h"
+
+#include "bts_api.h"
+
+#include "bta_bt_api.h"
+
+#include "bta_ble_api.h"
+
+#ifndef BT_SVC_MODULE_IBRT_ENABLED
+#include "bta_normal_audio_api.h"
+#include "bta_normal_ux_api.h"
+#else
+#include "bts_tws_api.h"
+#include "bta_tws_ux_api.h"
+#include "bta_tws_audio_api.h"
 #endif
+
 
 SassConnInfo sassInfo;
 SassStateInfo sassAdv;
@@ -94,6 +88,24 @@ void gfps_sass_set_resume_dev(uint8_t devId, bool isMusic);
 uint8_t gfps_sass_get_resume_dev(void);
 bool gfps_sass_is_dev_streaming(uint8_t devId);
 uint8_t gfps_sass_get_last_active_dev(void);
+
+
+uint8_t gfps_sass_hfp_hf_get_reject_dev(void)
+{
+#ifdef BT_HFP_SUPPORT
+    return bts_hfp_hf_get_reject_dev();
+#else
+    return BT_INVALID_DEVICE_ID;
+#endif
+}
+
+void gfps_sass_hfp_hf_set_reject_dev(uint8_t device_id)
+{
+#ifdef BT_HFP_SUPPORT
+    bts_hfp_hf_set_reject_dev(device_id);
+#endif
+}
+
 
 void gfps_sass_init(void)
 {
@@ -126,24 +138,29 @@ void gfps_sass_init(void)
     for(int i = 0; i < SASS_MAX_DEVICE_NUM; i++)
     {
         memset(&slaveStreamingstate[i].devAddr, 0, sizeof(bt_bdaddr_t));
-        slaveStreamingstate[i].state = AOB_MGR_STREAM_STATE_IDLE;
+        slaveStreamingstate[i].state = BT_LEA_ASCS_ASE_STATE_IDLE;
     }
 
+#ifdef BT_SVC_MODULE_TWS_ENABLED
     bta_tws_ui_policy_callbacks_t ui_policy =
     {
         .accept_connection_request_callback = gfps_sass_select_disconnect_device,
     };
     bta_tws_set_ui_policy_callbacks(&ui_policy);
+#else
+    bta_set_accept_connection_callback(gfps_sass_select_disconnect_device);
+#endif
+
     bts_am_register_switch_streaming_a2dp_cmp_cb(gfps_sass_switched_callback);
 #if BLE_AUDIO_ENABLED
     bts_am_register_toggle_a2dp_cis_cmp_cb(gfps_sass_a2dp_cis_switched_callback);
-    app_ble_audio_switch_cis_cmp_register(gfps_sass_cis_switched_callback);
+    bts_lea_audio_switch_uc_foucs_cmp_register(gfps_sass_cis_switched_callback);
 #endif
 
     GFPS_TRACE(1, "%s", __func__);
 }
 
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
 void gfps_sass_get_sync_info(uint8_t *buf, uint16_t *len)
 {
     SassConnInfo *info = (SassConnInfo *)buf;
@@ -198,14 +215,14 @@ void gfps_sass_sync_info(void)
     SassConnInfo info = {0};
     uint16_t len = 0;
     gfps_sass_get_sync_info((uint8_t *)&info, &len);
-    tws_ctrl_send_cmd(APP_TWS_CMD_SEND_SASS_INFO, (uint8_t *)&info, len);
+    bta_tws_send_cmd(APP_TWS_CMD_SEND_SASS_INFO, (uint8_t *)&info, len);
 
     GFPS_TRACE(2, "%s len:%d", __func__, len);
 }
 
 void gfps_sass_role_switch_prepare(void)
 {
-    if (BT_IBRT_SLAVE != bts_core_get_ui_role()&& bts_tws_if_get_init_done_state())
+    if (BT_IBRT_SLAVE != bta_tws_get_ui_role()&& bts_tws_if_get_init_done_state())
     {
         gfps_sass_sync_info();
     }
@@ -684,19 +701,19 @@ void gfps_sass_set_multi_status(const bt_bdaddr_t *addr, bool isMulti)
 {
     SassEvtParam evtParam;
     SASS_CONN_AVAIL_E availstate;
-    uint8_t num = bts_bt_if_get_dev_acl_connected_count();
+    uint8_t num = gfps_bta_get_bt_connected_link_num();
     uint8_t total = isMulti ? SASS_MAX_DEVICE_NUM : 1;
     GFPS_TRACE(3, "%s num:%d, total:%d", __func__, num, total);
     sassInfo.isMulti = isMulti;
     if (addr)
     {
-        evtParam.devId = SET_BT_ID(app_bt_get_device_id_byaddr((bt_bdaddr_t *)addr));
+        evtParam.devId = SET_BT_ID(bta_get_device_id_by_addr((bt_bdaddr_t *)addr));
     }
     else
     {
         evtParam.devId = 0;
     }
-    
+
     evtParam.event = SASS_EVT_UPDATE_MULTI_STATE;
     if (num >= total)
     {
@@ -719,23 +736,26 @@ void gfps_sass_switch_max_link(uint8_t device_id, uint8_t type)  //need to chang
 {
     if(IS_BT_DEVICE(device_id))
     {
-        bt_bdaddr_t *mobile_addr = &(app_bt_get_device(GET_BT_ID(device_id))->remote);
+        bt_bdaddr_t mobile_addr;
+
         GFPS_TRACE(3,"%s, type:%d, id:%d", __func__, type, GET_BT_ID(device_id));
-        if ((type == SASS_LINK_SWITCH_TO_SINGLE_POINT) && (bts_bt_if_get_dev_acl_connected_count()> 1))
+
+        bta_get_addr_by_device_id(GET_BT_ID(device_id), &mobile_addr);
+
+        if ((type == SASS_LINK_SWITCH_TO_SINGLE_POINT) && (gfps_bta_get_bt_connected_link_num()> 1))
         {
-            struct BT_DEVICE_T *revDevice = NULL;
+            bt_bdaddr_t revBtAddr;
             for(int i = 0; i < SASS_MAX_DEVICE_NUM; i++)
             {
-                revDevice = app_bt_get_device(i);
-                if (revDevice->acl_is_connected)
+                if (bta_get_addr_by_device_id(i, &revBtAddr))
                 {
                     bta_call_status_t callState;
                     bta_a2dp_state_t a2dpState;
-                    bta_get_a2dp_state(&(revDevice->remote), &a2dpState);
-                    bta_hf_get_hfp_call_status(&(revDevice->remote), &callState);
+                    bta_get_a2dp_state(&revBtAddr, &a2dpState);
+                    bta_hf_get_hfp_call_status(&revBtAddr, &callState);
                     if ((callState != BTA_NO_CALL) || (a2dpState == BTA_A2DP_STREAMING))
                     {
-                        mobile_addr = &(revDevice->remote);
+                        memcpy(&mobile_addr, &revBtAddr, sizeof(bt_bdaddr_t));
                         break;
                     }
                 }
@@ -744,11 +764,11 @@ void gfps_sass_switch_max_link(uint8_t device_id, uint8_t type)  //need to chang
 
         if (type == SASS_LINK_SWITCH_TO_MULTI_POINT)
         {
-            bta_tws_set_device_num_max(2, mobile_addr, 1);
+            gfps_bta_set_device_num_max(2, &mobile_addr, 1);
         }
         else
         {
-            bta_tws_set_device_num_max(1, mobile_addr, 1);
+            gfps_bta_set_device_num_max(1, &mobile_addr, 1);
         }
     }
     else
@@ -756,7 +776,7 @@ void gfps_sass_switch_max_link(uint8_t device_id, uint8_t type)  //need to chang
         //BLE_AUDIO_SINK_DEVICE_T *device = app_ble_audio_get_device(device_id);
   /*      bt_bdaddr_t *mobile_addr = &(app_ble_audio_get_device(device_id)->address.addr);
         GFPS_TRACE(3,"%s, type:%d, id:%d", __func__, type, device_id);
-        if ((type == SASS_LINK_SWITCH_TO_SINGLE_POINT) && (bts_bt_if_get_dev_acl_connected_count() + ble_audio_get_mobile_connected_dev_lids() > 1))
+        if ((type == SASS_LINK_SWITCH_TO_SINGLE_POINT) && (gfps_bta_get_bt_connected_link_num() + bta_ui_get_lea_connected_link_num() > 1))
         {
             struct BT_DEVICE_T *revDevice = NULL;
             for(int i = 0; i < SASS_MAX_DEVICE_NUM; i++)
@@ -1049,9 +1069,9 @@ void gfps_sass_get_last_dev(bt_bdaddr_t *lastAddr)
 
 void gfps_sass_clear_reject_hf_dev(uint8_t devId)
 {
-    if(app_bt_hf_get_reject_dev() == devId)
+    if(gfps_sass_hfp_hf_get_reject_dev() == devId)
     {
-        app_bt_hf_set_reject_dev(SASS_INVALID_DEV_ID);
+        gfps_sass_hfp_hf_set_reject_dev(SASS_INVALID_DEV_ID);
     }
 }
 
@@ -1213,7 +1233,12 @@ void gfps_sass_clear_pending_proc(void)
 void gfps_sass_send_pause(SassBtInfo *sInfo)
 {
     GFPS_TRACE(3, "%s %p waitPausedone:%d", __func__, sInfo, sInfo ? sInfo->waitPauseDone : 0);
-    if (!sInfo || (BT_IBRT_SLAVE == bts_core_get_ui_role()))
+
+    if (!sInfo
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+     || (BT_IBRT_SLAVE == bta_tws_get_ui_role())
+#endif
+    )
     {
         GFPS_TRACE(2, "%s slave cannot exe sass switch", __func__);
         return;
@@ -1230,7 +1255,9 @@ void gfps_sass_send_pause(SassBtInfo *sInfo)
 #if BLE_AUDIO_ENABLED
     else
     {
-        bes_ble_aob_media_pause(sInfo->connId);
+        ble_bdaddr_t bleAddr;
+        bta_ble_get_addr_by_conidx(sInfo->connId, &bleAddr);
+        bts_lea_mcp_media_pause(&bleAddr);
     }
 #endif
 }
@@ -1238,12 +1265,12 @@ void gfps_sass_send_pause(SassBtInfo *sInfo)
 bool gfps_sass_is_profile_exchanged(SassBtInfo *sInfo)
 {
     bool ret = true;
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-    if (bts_tws_if_is_tws_link_connected())
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    if (bta_tws_get_sync_state() != BTA_TWS_DISCONNECTED)
     {
         if (IS_BT_DEVICE(sInfo->connId))
         {
-            ret = bts_ibrt_if_is_profile_exchanged(&(sInfo->btAddr));
+            ret = bta_tws_is_profile_exchanged(&(sInfo->btAddr));
         }
 #if BLE_AUDIO_ENABLED
         else
@@ -1344,12 +1371,16 @@ bool gfps_sass_is_dev_streaming(uint8_t devId)
     bool ret = false;
     if (IS_BT_DEVICE(devId))
     {
-        ret = app_bt_is_a2dp_streaming(GET_BT_ID(devId));
+        bt_bdaddr_t btAddr;
+        bta_get_addr_by_device_id(GET_BT_ID(devId), &btAddr);
+        ret = bta_a2dp_is_streaming(&btAddr);
     }
 #if BLE_AUDIO_ENABLED
     else
     {
-        ret = aob_media_is_device_any_ase_in_streamimg_state(devId);
+        ble_bdaddr_t bleAddr;
+        bta_ble_get_addr_by_conidx(devId, &bleAddr);
+        ret = bts_lea_is_device_ase_in_streaming_state(&bleAddr);
     }
 #endif
     return ret;
@@ -1371,11 +1402,13 @@ void gfps_sass_switch_media(uint8_t awayId, uint8_t destId, bool update)
         return;
     }
 
-    if (BT_IBRT_SLAVE == bts_core_get_ui_role())
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    if (BT_IBRT_SLAVE == bta_tws_get_ui_role())
     {
         GFPS_TRACE(1, "%s sass error:: slave cannot exe sass switch", __func__);
         return;
     }
+#endif
 
     if(IS_BT_DEVICE(destId))
     {
@@ -1383,13 +1416,13 @@ void gfps_sass_switch_media(uint8_t awayId, uint8_t destId, bool update)
         if(IS_BT_DEVICE(awayId))
         {
             //a2dp to a2dp
-            bta_tws_switch_streaming_a2dp();
+            gfps_bta_switch_streaming_a2dp();
         }
 #if BLE_AUDIO_ENABLED
         else
         {
             //lea to a2dp
-            bta_tws_toggle_a2dp_cis();
+            gfps_bta_toggle_a2dp_cis();
         }
 #endif
     }
@@ -1400,12 +1433,12 @@ void gfps_sass_switch_media(uint8_t awayId, uint8_t destId, bool update)
         if(IS_BT_DEVICE(awayId))
         {
             //a2dp to lea
-            bta_tws_toggle_a2dp_cis();
+            gfps_bta_toggle_a2dp_cis();
         }
         else
         {
             //lea to lea
-            app_ble_audio_switch_focus(BLE_AUDIO_TWS_MASTER);
+            bts_lea_audio_switch_focus(0); // BLE_AUDIO_TWS_MASTER
         }
     }
 #endif
@@ -1436,7 +1469,7 @@ void gfps_sass_set_slave_streaming_state(bt_bdaddr_t *addr, uint8_t state)
 }
 uint8_t gfps_sass_get_slave_streaming_state(bt_bdaddr_t *addr)
 {
-    uint8_t slaveStreamstate = AOB_MGR_STREAM_STATE_IDLE;
+    uint8_t slaveStreamstate = BT_LEA_ASCS_ASE_STATE_IDLE;
     for(int i = 0; i < SASS_MAX_DEVICE_NUM; i++)
     {
         if(!memcmp(addr, &slaveStreamingstate[i].devAddr, sizeof(bt_bdaddr_t)))
@@ -1451,17 +1484,20 @@ uint8_t gfps_sass_get_slave_streaming_state(bt_bdaddr_t *addr)
 void gfps_sass_exe_pending_switch_media(uint8_t devId)
 {
     SassPendingProc pending;
-    if (BT_IBRT_SLAVE == bts_core_get_ui_role())
+
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    if (BT_IBRT_SLAVE == bta_tws_get_ui_role())
     {
         GFPS_TRACE(2, "%s slave cannot exe sass switch", __func__);
         return;
     }
+#endif
 
     uint8_t currId = SET_BT_ID(bts_am_get_curr_playing_a2dp());
 #if BLE_AUDIO_ENABLED
-    if(currId == BT_DEVICE_INVALID_ID)
+    if(currId == BT_INVALID_DEVICE_ID)
     {
-        currId = app_audio_adm_get_le_audio_active_device();
+        currId = bts_am_lea_get_active_conlid();
     }
 #endif
     gfps_sass_get_pending_proc(&pending);
@@ -1507,7 +1543,7 @@ void gfps_sass_set_peer_streaming_state(bt_bdaddr_t *addr, uint8_t state)
     if (sInfo)
     {
         GFPS_TRACE(0,"%s, d(%d) slave state is %d", __func__, sInfo->connId, state);
-        if (state == AOB_MGR_STREAM_STATE_STREAMING)
+        if (state == BT_LEA_ASCS_ASE_STATE_STREAMING)
         {
             gfps_sass_set_profile_exchanged(sInfo->connId, true);
         }
@@ -1530,9 +1566,13 @@ void gfps_sass_switched_callback(uint8_t selectedId)
 {
     SassBtInfo *otherInfo = gfps_sass_get_other_connected_dev(SET_BT_ID(selectedId));
     SassBtInfo *sInfo = gfps_sass_get_connected_dev(SET_BT_ID(selectedId));
+    bt_bdaddr_t btAddr;
+
+    bta_get_addr_by_device_id(GET_BT_ID(otherInfo->connId), &btAddr);
+
     if (otherInfo && (otherInfo->connId != SASS_INVALID_DEV_ID) && \
         GET_PROFILE_STATE(otherInfo->audState, AUDIO, A2DP) && \
-        app_bt_is_a2dp_streaming(GET_BT_ID(otherInfo->connId)))
+        bta_a2dp_is_streaming(&btAddr))
     {
        //app_ibrt_if_a2dp_send_pause(otherInfo->connId);
        gfps_sass_send_pause(otherInfo);
@@ -1551,6 +1591,17 @@ void gfps_sass_a2dp_cis_switched_callback(uint8_t selectedId)
     GFPS_TRACE(2,"%s,id is %d ", __func__, selectedId);
     SassBtInfo *otherInfo = gfps_sass_get_other_connected_dev(selectedId);
     SassBtInfo *sInfo = gfps_sass_get_connected_dev(selectedId);
+    bt_bdaddr_t bdAddr;
+    ble_bdaddr_t bleAddr;
+
+    if (IS_BT_DEVICE(otherInfo->connId))
+    {
+        bta_get_addr_by_device_id(GET_BT_ID(otherInfo->connId), &bdAddr);
+    }
+    else
+    {
+        bta_ble_get_addr_by_conidx(otherInfo->connId, &bleAddr);
+    }
 
     if (IS_BT_DEVICE(selectedId))
     {
@@ -1559,7 +1610,7 @@ void gfps_sass_a2dp_cis_switched_callback(uint8_t selectedId)
             if(IS_BT_DEVICE(otherInfo->connId))
             {
                 if(GET_PROFILE_STATE(otherInfo->audState, AUDIO, A2DP) && \
-                    app_bt_is_a2dp_streaming(GET_BT_ID(otherInfo->connId)))
+                    bta_a2dp_is_streaming(&bdAddr))
                 {
                     gfps_sass_send_pause(otherInfo);
                 }
@@ -1567,7 +1618,7 @@ void gfps_sass_a2dp_cis_switched_callback(uint8_t selectedId)
             else
             {
                 if((GET_PROFILE_STATE(otherInfo->audState, MUSIC, LEA) || GET_PROFILE_STATE(otherInfo->audState, GAME, LEA)) && \
-                   aob_media_is_device_any_ase_in_streamimg_state(otherInfo->connId))
+                   bts_lea_is_device_ase_in_streaming_state(&bleAddr))
                    {
                        gfps_sass_send_pause(otherInfo);
                    }
@@ -1587,7 +1638,7 @@ void gfps_sass_a2dp_cis_switched_callback(uint8_t selectedId)
             if(IS_BT_DEVICE(otherInfo->connId))
             {
                 if(GET_PROFILE_STATE(otherInfo->audState, AUDIO, A2DP) && \
-                    app_bt_is_a2dp_streaming(GET_BT_ID(otherInfo->connId)))
+                    bta_a2dp_is_streaming(&bdAddr))
                 {
                     gfps_sass_send_pause(otherInfo);
                 }
@@ -1595,7 +1646,7 @@ void gfps_sass_a2dp_cis_switched_callback(uint8_t selectedId)
             else
             {
                 if((GET_PROFILE_STATE(otherInfo->audState, MUSIC, LEA) || GET_PROFILE_STATE(otherInfo->audState, GAME, LEA)) && \
-                   aob_media_is_device_any_ase_in_streamimg_state(otherInfo->connId))
+                   bts_lea_is_device_ase_in_streaming_state(&bleAddr))
                    {
                        gfps_sass_send_pause(otherInfo);
                    }
@@ -1604,7 +1655,8 @@ void gfps_sass_a2dp_cis_switched_callback(uint8_t selectedId)
 
         if (sInfo && sInfo->isNeedResume && (!GET_PROFILE_STATE(sInfo->audState, MUSIC, LEA)))
         {
-            bes_ble_aob_media_play(selectedId);
+            bta_ble_get_addr_by_conidx(selectedId, &bleAddr);
+            bts_lea_mcp_media_play(&bleAddr);
             sInfo->isNeedResume = false;
         }
     }
@@ -1615,10 +1667,13 @@ void gfps_sass_cis_switched_callback(uint8_t selectedId)
     GFPS_TRACE(2,"%s,id is %d ", __func__, selectedId);
     SassBtInfo *otherInfo = gfps_sass_get_other_connected_dev(selectedId);
     SassBtInfo *sInfo = gfps_sass_get_connected_dev(selectedId);
+
     if (otherInfo && (otherInfo->connId != SASS_INVALID_DEV_ID))
     {
+        ble_bdaddr_t bleAddr;
+        bta_ble_get_addr_by_conidx(otherInfo->connId, &bleAddr);
         if((GET_PROFILE_STATE(otherInfo->audState, MUSIC, LEA) || GET_PROFILE_STATE(otherInfo->audState, GAME, LEA)) && \
-            aob_media_is_device_any_ase_in_streamimg_state(otherInfo->connId))
+            bts_lea_is_device_ase_in_streaming_state(&bleAddr))
         {
             gfps_sass_send_pause(otherInfo);
         }
@@ -1626,7 +1681,9 @@ void gfps_sass_cis_switched_callback(uint8_t selectedId)
 
     if (sInfo && sInfo->isNeedResume && (!GET_PROFILE_STATE(sInfo->audState, MUSIC, LEA)))
     {
-        bes_ble_aob_media_play(selectedId);
+        ble_bdaddr_t bleAddr;
+        bta_ble_get_addr_by_conidx(selectedId, &bleAddr);
+        bts_lea_mcp_media_play(&bleAddr);
         sInfo->isNeedResume = false;
     }
 }
@@ -1848,18 +1905,18 @@ void gfps_sass_check_if_need_reconnect(uint8_t devId)
 {
     uint8_t invalidAddr[6] = {0};
     bt_bdaddr_t *reconnAddr = &(sassInfo.reconnInfo.reconnAddr);
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-    if (BT_IBRT_SLAVE != bts_core_get_ui_role())
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    if (BT_IBRT_SLAVE != bta_tws_get_ui_role())
 #endif
     {
         if(IS_BT_DEVICE(devId))
         {
             if (memcmp(reconnAddr->address, invalidAddr, sizeof(bt_bdaddr_t)) && \
-                !app_bt_is_acl_connected_byaddr(reconnAddr))
+                !bts_bt_is_connected(reconnAddr))
             {
                 GFPS_TRACE(1, "%s try to reconnect dev", __func__);
                 GFPS_DUMP8("%02x ", reconnAddr->address, 6);
-                bta_tws_connect_bt_device((bt_bdaddr_t *)&(sassInfo.reconnInfo.reconnAddr), SASS_CONNECT_COUNT);
+                gfps_bta_connect_bt_device((bt_bdaddr_t *)&(sassInfo.reconnInfo.reconnAddr), SASS_CONNECT_COUNT);
             }
         }
     }
@@ -1991,8 +2048,8 @@ void gfps_sass_set_capability(uint8_t devId,uint8_t *data)
     }    
     else
     {
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-        if (BT_IBRT_MASTER == bts_core_get_ui_role())
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+        if (BT_IBRT_MASTER == bta_tws_get_ui_role())
         {
             gfps_sass_sync_info();
         }
@@ -2291,9 +2348,9 @@ void gfps_sass_check_nonsass_switch(uint8_t devId)
     SassPendingProc pending;
     uint8_t currId = SET_BT_ID(bts_am_get_curr_playing_a2dp());
 #if BLE_AUDIO_ENABLED
-    if(currId == BT_DEVICE_INVALID_ID)
+    if(currId == BT_INVALID_DEVICE_ID)
     {
-        currId = app_audio_adm_get_le_audio_music_stream_device();
+        currId = bts_am_lea_get_music_streaming_conlid();
     }
 #endif
     gfps_sass_get_pending_proc(&pending);
@@ -2367,9 +2424,9 @@ void gfps_sass_check_if_switch_media(SassBtInfo *sInfo, bool devIssass, SassBtIn
     devId = sInfo->connId;
     currId = SET_BT_ID(bts_am_get_curr_playing_a2dp());
 #if BLE_AUDIO_ENABLED
-    if(currId == BT_DEVICE_INVALID_ID)
+    if(currId == BT_INVALID_DEVICE_ID)
     {
-        currId = app_audio_get_curr_playing_le_devid();
+        currId = bts_am_lea_get_curr_playing_conlid();
     }
 #endif
 
@@ -2416,7 +2473,7 @@ void gfps_sass_check_if_switch_media(SassBtInfo *sInfo, bool devIssass, SassBtIn
         {
             gfps_sass_send_pause(sInfo);
         }
-        else if ((currId != BT_DEVICE_INVALID_ID) && (currId != devId))
+        else if ((currId != BT_INVALID_DEVICE_ID) && (currId != devId))
         {
             if (devIssass && otherIssass)
             {
@@ -2540,8 +2597,9 @@ bool gfps_sass_is_dev_playing_state(SassBtInfo *sInfo)
 #if BLE_AUDIO_ENABLED
     else
     {
-        AOB_MEDIA_INFO_T *p_media_info = ble_audio_earphone_info_get_media_info(sInfo->connId);
-        if (p_media_info && (p_media_info->media_state == AOB_MGR_PLAYBACK_STATE_PLAYING) && \
+        ble_bdaddr_t bleAddr;
+        bta_ble_get_addr_by_conidx(sInfo->connId, &bleAddr);
+        if ((bta_lea_mcp_get_media_state(&bleAddr) == BT_LEA_MCP_PLAYBACK_STATE_PLAYING) && \
           (GET_PROFILE_STATE(sInfo->audState, MUSIC, LEA) || GET_PROFILE_STATE(sInfo->audState, GAME, LEA)))
         {
             ret = true;
@@ -2560,7 +2618,9 @@ void gfps_sass_send_play(SassBtInfo *sInfo)
 #if BLE_AUDIO_ENABLED
     else
     {
-        bes_ble_aob_media_play(sInfo->connId);
+        ble_bdaddr_t bleAddr;
+        bta_ble_get_addr_by_conidx(sInfo->connId, &bleAddr);
+        bts_lea_mcp_media_play(&bleAddr);
     }
 #endif
     return;
@@ -2662,12 +2722,15 @@ void gfps_sass_lea_release_media(uint8_t conidx)
 {
     uint8_t ase_lid_list[4] = {0};
     uint8_t nb_ase = 0;
+    ble_bdaddr_t bleAddr;
 
-    nb_ase = aob_media_get_ready_for_stream_ase_lid_list(conidx, ase_lid_list);
+    bta_ble_get_addr_by_conidx(conidx, &bleAddr);
+
+    nb_ase = bts_lea_get_stream_ready_ase_lid_list(&bleAddr, ase_lid_list);
     for (int i = 0; i < nb_ase; i++)
     {
-        aob_media_release_stream(ase_lid_list[i]);
-        //aob_media_disable_stream(ase_lid_list[i]);
+        //aob_media_release_stream(ase_lid_list[i]);
+        bts_lea_ascs_disable_ase(ase_lid_list[i]);
     }
 }
 
@@ -2768,7 +2831,7 @@ void gfps_sass_lea_call_disconnect_handler(SassBtInfo *sInfo, SassBtInfo* otherI
 }
 #endif
 
-void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *btAddr, 
+void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *p_btAddr, 
                                                    uint8_t event, uint8_t *param)
 {
     bool needUpdate = true;
@@ -2784,10 +2847,10 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
     bt_bdaddr_t invalid_bdaddr = {{0xFF}};
     bool isAddrMatch = true, isAddrValid = false;
 
-    if (btAddr && memcmp(btAddr->address, zero_bdaddr.address, 6) &&
-        memcmp(btAddr->address, invalid_bdaddr.address, 6))
+    if (p_btAddr && memcmp(p_btAddr->address, zero_bdaddr.address, 6) &&
+        memcmp(p_btAddr->address, invalid_bdaddr.address, 6))
     {
-        sInfo = gfps_sass_get_connected_dev_by_addr(btAddr);
+        sInfo = gfps_sass_get_connected_dev_by_addr(p_btAddr);
         isAddrValid = true;
     }
 
@@ -2798,7 +2861,7 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
         sInfo = gfps_sass_get_connected_dev(devId);
         if (!sInfo) //for profile event comes first before connection event
         {
-            gfps_sass_connect_handler(devId, (bt_bdaddr_t *)btAddr);
+            gfps_sass_connect_handler(devId, (bt_bdaddr_t *)p_btAddr);
             gfps_sass_send_session_nonce(devId);
             gfps_sass_ntf_conn_status(devId, true, NULL);
         }
@@ -2813,12 +2876,12 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
     {
         if (isAddrValid && !isAddrMatch)
         {
-            memcpy(sInfo->btAddr.address, btAddr->address, 6);
+            memcpy(sInfo->btAddr.address, p_btAddr->address, 6);
         }
     }
 
     GFPS_TRACE(0,"sass_profile_event sInfo:%p, id:%d event:%d pro:%d avtiveId:%d, btAddr:%0x:%0x",
-          sInfo, devId, event, pro, oldActive, btAddr->address[0], btAddr->address[5]);
+          sInfo, devId, event, pro, oldActive, p_btAddr->address[0], p_btAddr->address[5]);
 
     SassBtInfo *otherInfo = gfps_sass_get_other_connected_dev(devId);
     if (otherInfo)
@@ -2833,8 +2896,12 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
         //SassBtInfo *otherInfo = NULL;
         switch(event)
         {
-            case BTIF_A2DP_EVENT_STREAM_OPEN:
-            case BTIF_A2DP_EVENT_STREAM_OPEN_MOCK:
+        case BT_A2DP_SINK_CB_TYPE_CONNECTION:
+        {
+            switch (param[0])
+            {
+            case BT_A2DP_CONN_STATE_CONNECTED:
+            {
                 SET_PROFILE_STATE(sInfo->audState, CONNECTION, A2DP, 1);
                 if (gfps_sass_get_active_dev() == SASS_INVALID_DEV_ID || \
                     (otherInfo && !GET_PROFILE_STATE(otherInfo->audState, AUDIO, A2DP) && \
@@ -2843,38 +2910,55 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
                 {
                     //gfps_sass_set_active_dev(devId);
                 }
-                break;
-
-            case BTIF_A2DP_EVENT_STREAM_CLOSED:
-                SET_PROFILE_STATE(sInfo->audState, AUDIO, A2DP, 0);
-                SET_PROFILE_STATE(sInfo->audState, CONNECTION, A2DP, 0);
-                gfps_sass_get_pending_proc(&pending);
-                if (pending.activeId == devId)
+            }
+            break;
+            case BT_A2DP_CONN_STATE_DISCONNECTED:
+            default:
+            {
+            }
+            break;
+            }
+        }
+        break;
+        case BT_A2DP_SINK_CB_TYPE_AUDIO_STATE:
+        {
+            switch (param[0])
+            {
+            case BT_A2DP_AUDIO_STATE_CLOSED:
+            {
+                if(!bta_a2dp_is_connected(p_btAddr))
                 {
-                    gfps_sass_clear_pending_proc();
-                }
+                    SET_PROFILE_STATE(sInfo->audState, AUDIO, A2DP, 0);
+                    SET_PROFILE_STATE(sInfo->audState, CONNECTION, A2DP, 0);
+                    gfps_sass_get_pending_proc(&pending);
+                    if (pending.activeId == devId)
+                    {
+                        gfps_sass_clear_pending_proc();
+                    }
 
-                if (oldActive == devId)
-                {
-                    gfps_sass_set_active_dev(SASS_INVALID_DEV_ID);
-                }
+                    if (oldActive == devId)
+                    {
+                        gfps_sass_set_active_dev(SASS_INVALID_DEV_ID);
+                    }
 
-                if (gfps_sass_get_resume_dev() == devId)
-                {
-                    gfps_sass_set_resume_dev(SASS_INVALID_DEV_ID, false);
+                    if (gfps_sass_get_resume_dev() == devId)
+                    {
+                        gfps_sass_set_resume_dev(SASS_INVALID_DEV_ID, false);
+                    }
                 }
-                break;
-
-            case BTIF_A2DP_EVENT_STREAM_STARTED:
-            case BTIF_A2DP_EVENT_STREAM_STARTED_MOCK:
+            }
+            break;
+            case BT_A2DP_AUDIO_STATE_STARTED:
+            {
                 if(!GET_PROFILE_STATE(sInfo->audState, AUDIO, A2DP))
                 {
                     SET_PROFILE_STATE(sInfo->audState, AUDIO, A2DP, 1);
                     gfps_sass_check_if_switch_media(sInfo, devIssass, otherInfo, otherIssass);
                 }
-                break;
-
-            case BTIF_A2DP_EVENT_STREAM_SUSPENDED:
+            }
+            break;
+            case BT_A2DP_AUDIO_STATE_SUSPEND:
+            {
                 if((GET_PROFILE_STATE(sInfo->audState, AUDIO, A2DP)) & \
                         (!GET_PROFILE_STATE(sInfo->audState, AUDIO, AVRCP)))
                  {
@@ -2886,21 +2970,41 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
                 {
                     gfps_sass_clear_pending_proc();
                 }
-                if (oldActive == devId)
+#if BLE_AUDIO_ENABLED
+                if (otherInfo && (GET_PROFILE_STATE(otherInfo->audState, AUDIO, A2DP) || \
+                    GET_PROFILE_STATE(otherInfo->audState, GAME, LEA)))
+#else
+                if (otherInfo && GET_PROFILE_STATE(otherInfo->audState, AUDIO, A2DP))
+#endif
                 {
-                    gfps_sass_set_active_dev(SASS_INVALID_DEV_ID);
+                    gfps_sass_set_active_dev(otherInfo->connId);
                 }
-                break;
-            default:
-                needUpdate = false;
-                break;
+                else
+                {
+                    if (oldActive == devId)
+                    {
+                        gfps_sass_set_active_dev(SASS_INVALID_DEV_ID);
+                    }
+                }
+            }
+            break;
+            }
+        }
+        break;
+        default:
+        {
+            needUpdate = false;
+        }
+        break;
         }
     }
     else if (pro == SASS_PROFILE_HFP)
     {
         switch(event)
         {
-            case BTIF_HF_EVENT_CALLSETUP_IND:
+        case BT_HFP_HF_CB_TYPE_CALLSETUP_STATUS:
+        {
+            {
                 GFPS_TRACE(2, "%s hfp state:%d", __func__, param ? param[0] : 0);
                 if (!param)
                 {
@@ -2922,28 +3026,45 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
                         gfps_sass_hf_disconnect_handler(sInfo, otherInfo);
                     }
                 }
-                break;
-
-            case BTIF_HF_EVENT_AUDIO_CONNECTED:
+            }
+        }
+        break;
+        case BT_HFP_HF_CB_TYPE_AUDIO_STATUS:
+        {
+            switch (param[0])
+            {
+            case BT_HFP_AUDIO_STATE_DISCONNECTED:
+            {
+                gfps_sass_hf_disconnect_handler(sInfo, otherInfo);
+            }
+            break;
+            case BT_HFP_AUDIO_STATE_CONNECTED:
+            {
                 sInfo->isCallsetup = false;
                 gfps_sass_hf_connect_handler(sInfo, otherInfo);
+            }
+            default:
+            break;
+            }
+        }
+        break;
+        case BT_HFP_HF_CB_TYPE_CALL_STATUS:
+        {
+            sInfo->isCallInd = param[0];
+            if (sInfo->isCallInd)
+            {
+                needUpdate = false;
                 break;
-
-            case BTIF_HF_EVENT_CALL_IND:
-            case BTIF_HF_EVENT_AUDIO_DISCONNECTED:
-                if (event == BTIF_HF_EVENT_CALL_IND && param)
-                {
-                    sInfo->isCallInd = param[0];
-                    if (param[0])
-                    {
-                        needUpdate = false;
-                        break;
-                    }
-                }
-                gfps_sass_hf_disconnect_handler(sInfo, otherInfo);
-                break;
-
-            case BTIF_HF_EVENT_SERVICE_DISCONNECTED:
+            }
+            gfps_sass_hf_disconnect_handler(sInfo, otherInfo);
+        }
+        break;
+        case BT_HFP_HF_CB_TYPE_CONNECTION_STATE:
+        {
+            switch (param[0])
+            {
+            case BT_HFP_CONN_STATE_DISCONNECTED:
+            {
                 SET_PROFILE_STATE(sInfo->audState, CONNECTION, HFP, 0);
                 if (oldActive == devId)
                 {
@@ -2952,61 +3073,89 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
                 gfps_sass_clear_reject_hf_dev(devId);
                 sInfo->isCallsetup = false;
                 sInfo->isCallInd = false;
-                break;
-
-            case BTIF_HF_EVENT_SERVICE_CONNECTED:
-            case BTIF_HF_EVENT_SERVICE_MOCK_CONNECTED:
+            }
+            break;
+            case BT_HFP_CONN_STATE_CONNECTED:
+            {
                 SET_PROFILE_STATE(sInfo->audState, CONNECTION, HFP, 1);
                 sInfo->isCallsetup = false;
                 sInfo->isCallInd = false;
-                break;
-
+            }
             default:
-            needUpdate = false;
             break;
+            }
+        }
+        break;
+        default:
+        {
+            needUpdate = false;
+        }
+        break;
         }
     }
     else if (pro == SASS_PROFILE_AVRCP)
     {
         switch(event)
         {
-            case BTIF_AVCTP_CONNECT_EVENT:
-            case BTIF_AVCTP_CONNECT_EVENT_MOCK:
+        case BT_AVRCP_CB_TYPE_CONNECTION:
+        {
+            switch (param[0])
+            {
+            case BT_AVRCP_CONN_STATE_CONNECTED:
+            {
                 SET_PROFILE_STATE(sInfo->audState, CONNECTION, AVRCP, 1);
                 sInfo->waitPauseDone = false;
                 sInfo->isNeedResume = false;
-                break;
-
-            case BTIF_AVCTP_DISCONNECT_EVENT:
+            }
+            break;
+            case BT_AVRCP_CONN_STATE_DISCONNECTED:
+            {
                 SET_PROFILE_STATE(sInfo->audState, CONNECTION, AVRCP, 0);
                 SET_PROFILE_STATE(sInfo->audState, AUDIO, AVRCP, 0);
                 sInfo->waitPauseDone = false;
                 sInfo->isNeedResume = false;
-                break;
-
-            case BTIF_AVRCP_EVENT_ADV_NOTIFY:
-            case BTIF_AVRCP_EVENT_ADV_RESPONSE:
-                GFPS_TRACE(2, "%s avrcp state:%d", __func__, *param);
-                if (*param == BTIF_AVRCP_MEDIA_PLAYING) {
+            }
+            break;
+            }
+        }
+        break;
+        case BT_AVRCP_CB_TYPE_RECV_REGISTER_NTF_RSP:
+        {
+            GFPS_TRACE(2, "%s avrcp state:%d", __func__, *param);
+            switch (param[0])
+            {
+                case BT_AVRCP_PLAYSTATUS_PLAYING:
+                {
                     if (!GET_PROFILE_STATE(sInfo->audState, AUDIO, AVRCP))
                     {
-                        SET_PROFILE_STATE(sInfo->audState, AUDIO, AVRCP, 1);             
+                        SET_PROFILE_STATE(sInfo->audState, AUDIO, AVRCP, 1);
                         gfps_sass_check_if_switch_media(sInfo, devIssass, otherInfo, otherIssass);
                     }
                     sInfo->waitPauseDone = false;
                     sInfo->isNeedResume = false;
-                } else if ((*param == BTIF_AVRCP_MEDIA_PAUSED || *param == BTIF_AVRCP_MEDIA_STOPPED)) {
+                }
+                break;
+                case BT_AVRCP_PLAYSTATUS_STOPPED:
+                case BT_AVRCP_PLAYSTATUS_PAUSED:
+                {
                     SET_PROFILE_STATE(sInfo->audState, AUDIO, AVRCP, 0);
                     sInfo->waitPauseDone = false;
                     sInfo->isNeedResume = false;
-                } else {
+                }
+                break;
+                default:
+                {
                     needUpdate = false;
                 }
                 break;
-
-            default:
-                needUpdate = false;
-                break;
+            }
+        }
+        break;
+        default:
+        {
+            needUpdate = false;
+        }
+        break;
         }
     }
 #if BLE_AUDIO_ENABLED
@@ -3014,14 +3163,18 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
     {
         SassLeaParam *leaParam = (SassLeaParam *)param;
         uint16_t contextType = 0x0000;
+        ble_bdaddr_t bleAddr;
+
+        bta_ble_get_addr_by_conidx(leaParam->conLid, &bleAddr);
+
         if(event == SASS_EVENT_LEA_METADATA_UPDATA_STATE || event == SASS_EVENT_LEA_STREAM_STATE)
         {
-            contextType = aob_media_get_cur_context_type_by_ase_lid(leaParam->aseLid);
+            contextType = bta_lea_get_curr_context_bf_by_ase_lid(leaParam->aseLid);
         }
         else
         {
-            leaParam->aseLid = aob_media_get_cur_streaming_ase_lid(leaParam->conLid, AOB_MGR_DIRECTION_SINK);
-            contextType = aob_media_get_cur_context_type_by_ase_lid(leaParam->aseLid);
+            leaParam->aseLid = bts_lea_get_curr_streaming_ase_lid(&bleAddr, BT_LEA_DIRECTION_SINK);
+            contextType = bta_lea_get_curr_context_bf_by_ase_lid(leaParam->aseLid);
         }
         GFPS_TRACE(5, "%s event %d,leaParam->state:%d aseId:%d type 0x%0x", __func__, event,
                 leaParam->state, leaParam->aseLid, contextType);
@@ -3030,13 +3183,13 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
             case SASS_EVENT_LEA_PLAYBACK_STATE:
                 sInfo->waitPauseDone = false;
                 sInfo->isNeedResume = false;
-                if (leaParam->state == AOB_MGR_PLAYBACK_STATE_PLAYING)
+                if (leaParam->state == BT_LEA_MCP_PLAYBACK_STATE_PLAYING)
                 {
-                    //if(AOB_AUDIO_CONTEXT_TYPE_MEDIA & contextType)
+                    //if(BTS_LEA_CONTEXT_TYPE_MEDIA_BIT & contextType)
                     {
                         SET_PROFILE_STATE(sInfo->audState, MUSIC, LEA, 1);
                         SET_PROFILE_STATE(sInfo->audState, CONNECTION, LEA, 1);
-                        if(aob_media_get_cur_streaming_ase_lid(devId,AOB_MGR_DIRECTION_SINK) != SASS_INVALID_DEV_ID)
+                        if(bts_lea_get_curr_streaming_ase_lid(&bleAddr, BT_LEA_DIRECTION_SINK) != SASS_INVALID_DEV_ID)
                         {
                              gfps_sass_check_if_switch_media(sInfo, devIssass, otherInfo, otherIssass);
                         }
@@ -3044,7 +3197,7 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
                 }
                 else
                 {
-                    if(AOB_AUDIO_CONTEXT_TYPE_MEDIA & contextType)
+                    if(BTS_LEA_CONTEXT_TYPE_MEDIA_BIT & contextType)
                     {
                         SET_PROFILE_STATE(sInfo->audState, MUSIC, LEA, 0);
                         SET_PROFILE_STATE(sInfo->audState, CONNECTION, LEA, 1);
@@ -3059,56 +3212,56 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
 
             case SASS_EVENT_LEA_METADATA_UPDATA_STATE:
             case SASS_EVENT_LEA_STREAM_STATE:
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-                if ((event == SASS_EVENT_LEA_STREAM_STATE) &&
-                    (leaParam->state == AOB_MGR_STREAM_STATE_STREAMING ||
-                     leaParam->state == AOB_MGR_STREAM_STATE_DISABLING ||
-                     leaParam->state == AOB_MGR_STREAM_STATE_RELEASING) &&
-                    (BT_IBRT_SLAVE == bts_core_get_ui_role()))
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+                if ((leaParam->state == BT_LEA_ASCS_ASE_STATE_STREAMING ||
+                     leaParam->state == BT_LEA_ASCS_ASE_STATE_DISABLING ||
+                     leaParam->state == BT_LEA_ASCS_ASE_STATE_RELEASING) &&
+                    (BT_IBRT_SLAVE == bta_tws_get_ui_role()) &&
+                    !((BT_LEA_CONTEXT_TYPE_SOUND_EFFECTS_BIT == contextType) || (BT_LEA_CONTEXT_TYPE_UNSPECIFIED_BIT == contextType)))
                 {
                     gfps_send_streaming_state_to_master(&(sInfo->btAddr), leaParam->state);
                 }
 #endif
-                if (leaParam->state == AOB_MGR_STREAM_STATE_STREAMING && \
-                    ((AOB_AUDIO_CONTEXT_TYPE_GAME | AOB_AUDIO_CONTEXT_TYPE_LIVE | \
-                      AOB_AUDIO_CONTEXT_TYPE_IMMEDIATE_ALERT | AOB_AUDIO_CONTEXT_TYPE_INSTRUCTIONAL) & \
+                if (leaParam->state == BT_LEA_ASCS_ASE_STATE_STREAMING && \
+                    ((BT_LEA_CONTEXT_TYPE_GAME_BIT | BT_LEA_CONTEXT_TYPE_LIVE_BIT | \
+                      BT_LEA_CONTEXT_TYPE_IMMEDIATE_ALERT_BIT | BT_LEA_CONTEXT_TYPE_INSTRUCTIONAL_BIT) & \
                      contextType))
                 {
                     SET_PROFILE_STATE(sInfo->audState, GAME, LEA, 1);
                     SET_PROFILE_STATE(sInfo->audState, CONNECTION, LEA, 1);
                     gfps_sass_check_if_switch_media(sInfo, devIssass, otherInfo, otherIssass);
                 }
-                else if(leaParam->state == AOB_MGR_STREAM_STATE_STREAMING && \
-                    (AOB_AUDIO_CONTEXT_TYPE_CONVERSATIONAL & contextType || \
-                     AOB_AUDIO_CONTEXT_TYPE_EMERGENCY_ALERT & contextType || \
-                     AOB_AUDIO_CONTEXT_TYPE_MAN_MACHINE & contextType))
+                else if(leaParam->state == BT_LEA_ASCS_ASE_STATE_STREAMING && \
+                    (BT_LEA_CONTEXT_TYPE_CONVERSATIONAL_BIT & contextType || \
+                     BT_LEA_CONTEXT_TYPE_EMERGENCY_ALERT_BIT & contextType || \
+                     BT_LEA_CONTEXT_TYPE_MAN_MACHINE_BIT & contextType))
                 {
                     gfps_sass_lea_call_connect_handler(sInfo, otherInfo);
                 }
-                else if(leaParam->state == AOB_MGR_STREAM_STATE_STREAMING && \
-                    (AOB_AUDIO_CONTEXT_TYPE_MEDIA & contextType))
+                else if(leaParam->state == BT_LEA_ASCS_ASE_STATE_STREAMING && \
+                    (BTS_LEA_CONTEXT_TYPE_MEDIA_BIT & contextType))
                 {
                     SET_PROFILE_STATE(sInfo->audState, MUSIC, LEA, 1);
                     SET_PROFILE_STATE(sInfo->audState, CONNECTION, LEA, 1);
                     gfps_sass_check_if_switch_media(sInfo, devIssass, otherInfo, otherIssass);
                 }
-                else if(leaParam->state == AOB_MGR_STREAM_STATE_STREAMING && \
-                    (AOB_AUDIO_CONTEXT_TYPE_SOUND_EFFECT == contextType || \
-                     AOB_AUDIO_CONTEXT_TYPE_ATTENTION_SEEKING == contextType ))
+                else if(leaParam->state == BT_LEA_ASCS_ASE_STATE_STREAMING && \
+                    (BT_LEA_CONTEXT_TYPE_SOUND_EFFECTS_BIT == contextType || \
+                     BT_LEA_CONTEXT_TYPE_ATTENTION_SEEKING_BIT == contextType ))
                 {
                     needUpdate = false;
                 }
-                else if(leaParam->state == AOB_MGR_STREAM_STATE_STREAMING && \
+                else if(leaParam->state == BT_LEA_ASCS_ASE_STATE_STREAMING && \
                         GET_PROFILE_STATE(sInfo->audState, CALL, LEA) && \
-                    ((AOB_AUDIO_CONTEXT_TYPE_CONVERSATIONAL & contextType) == 0))
+                    ((BT_LEA_CONTEXT_TYPE_CONVERSATIONAL_BIT & contextType) == 0))
                 {
                     needUpdate = false;
                 }
-                else if(leaParam->state == AOB_MGR_STREAM_STATE_DISABLING || \
-                        leaParam->state == AOB_MGR_STREAM_STATE_RELEASING)
+                else if(leaParam->state == BT_LEA_ASCS_ASE_STATE_DISABLING || \
+                        leaParam->state == BT_LEA_ASCS_ASE_STATE_RELEASING)
                 {
                     gfps_sass_get_pending_proc(&pending);
-                    if ((pending.activeId == devId) && !(AOB_AUDIO_CONTEXT_TYPE_SOUND_EFFECT == contextType))
+                    if ((pending.activeId == devId) && !((BT_LEA_CONTEXT_TYPE_SOUND_EFFECTS_BIT == contextType) || (BT_LEA_CONTEXT_TYPE_UNSPECIFIED_BIT == contextType)))
                     {
                         gfps_sass_clear_pending_proc();
                     }
@@ -3140,8 +3293,11 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
                 {
                     GFPS_TRACE(2,"leaParam->state is %d, media type is 0x%0x ", leaParam->state, contextType);
                     if (otherInfo && (!devIssass || !otherIssass) &&
-                        leaParam->state == AOB_MGR_STREAM_STATE_ENABLING &&
-                        gfps_sass_is_dev_streaming(otherInfo->connId))
+                        leaParam->state == BT_LEA_ASCS_ASE_STATE_ENABLING &&
+                        gfps_sass_is_dev_streaming(otherInfo->connId) &&
+                         !(BT_LEA_CONTEXT_TYPE_CONVERSATIONAL_BIT & contextType || \
+                           BT_LEA_CONTEXT_TYPE_EMERGENCY_ALERT_BIT & contextType || \
+                           BT_LEA_CONTEXT_TYPE_MAN_MACHINE_BIT & contextType))
                     {
                         if ((devIssass != otherIssass) || !gfps_sass_is_accept_new_media())
                         {
@@ -3153,7 +3309,7 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
                         }
                     }
 
-                   /* if(leaParam->state == AOB_MGR_STREAM_STATE_STREAMING)
+                   /* if(leaParam->state == BT_LEA_ASCS_ASE_STATE_STREAMING)
                     {
                         //it is media
                         if( GET_PROFILE_STATE(sInfo->audState, MUSIC, LEA))
@@ -3172,7 +3328,7 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
                 break;
 
             case SASS_EVENT_LEA_CALL_STATE:
-                if (leaParam->state != AOB_CALL_STATE_IDLE)
+                if (leaParam->state != BTS_LEA_CCP_CALL_STATE_IDLE)
                 {
                     gfps_sass_lea_call_connect_handler(sInfo, otherInfo);
                 }
@@ -3229,7 +3385,7 @@ void gfps_sass_profile_event_handler(uint8_t pro, uint8_t devId, bt_bdaddr_t *bt
     if (needResume && GET_PROFILE_STATE(sInfo->audState, CONNECTION, A2DP) && \
         GET_PROFILE_STATE(sInfo->audState, CONNECTION, AVRCP))
     {
-        app_bt_resume_music_player(GET_BT_ID(devId));
+        bts_am_resume_a2dp_music_player(GET_BT_ID(devId));
         memset(sassInfo.reconnInfo.reconnAddr.address, 0, sizeof(bt_bdaddr_t));
         sassInfo.reconnInfo.evt = 0xFF;
     }
@@ -3275,9 +3431,9 @@ uint8_t gfps_sass_switch_src_evt_hdl(uint8_t device_id, uint8_t evt)
         SassBtInfo *tInfo = gfps_sass_get_connected_dev(switchId);
         currentId = SET_BT_ID(bts_am_get_curr_playing_a2dp());
 #if BLE_AUDIO_ENABLED
-        if(currentId == BT_DEVICE_INVALID_ID)
+        if(currentId == BT_INVALID_DEVICE_ID)
         {
-            currentId = app_ble_get_curr_play_bleaudio_id();
+            currentId = bts_lea_get_audio_play_curr_con_lid();
         }
 #endif
         GFPS_TRACE(3, "sass switch src to %d from %d, other:%d, evt:0x%0x curr id:%d", switchId, awayId, otherId, evt, currentId);
@@ -3296,7 +3452,7 @@ uint8_t gfps_sass_switch_src_evt_hdl(uint8_t device_id, uint8_t evt)
                     gfps_sass_update_last_dev(&(awayinfo->btAddr));
                     gfps_sass_update_last_dev_connId(awayId);
                     gfps_sass_set_disconnecting_dev((bt_bdaddr_t *)&(awayinfo->btAddr));
-                    bta_tws_remove_device((bt_bdaddr_t *)&(awayinfo->btAddr));
+                    gfps_bta_remove_bt_device((bt_bdaddr_t *)&(awayinfo->btAddr));
                 }
 
                  if (!gfps_sass_is_dev_playing_state(tInfo) &&
@@ -3345,7 +3501,9 @@ uint8_t gfps_sass_switch_src_evt_hdl(uint8_t device_id, uint8_t evt)
         {
             if (IS_BT_DEVICE(awayId))
             {
-                if (app_bt_is_a2dp_streaming(GET_BT_ID(awayId)))
+                bt_bdaddr_t btAddr;
+                bta_get_addr_by_device_id(GET_BT_ID(awayId), &btAddr);
+                if (bta_a2dp_is_streaming(&btAddr))
                 {
                     // app_bt_audio_stop_a2dp_playing(GET_BT_ID(awayId));
                     bts_am_pause_a2dp_stream(GET_BT_ID(awayId));
@@ -3354,9 +3512,11 @@ uint8_t gfps_sass_switch_src_evt_hdl(uint8_t device_id, uint8_t evt)
 #if BLE_AUDIO_ENABLED
             else
             {
-                if (aob_media_is_device_any_ase_in_streamimg_state(awayId))
+                ble_bdaddr_t bleAddr;
+                bta_ble_get_addr_by_conidx(awayId, &bleAddr);
+                if (bts_lea_is_device_ase_in_streaming_state(&bleAddr))
                 {
-                    bes_ble_aob_media_pause(awayId);
+                    bts_lea_mcp_media_pause(&bleAddr);
                 }
             }
 #endif
@@ -3368,12 +3528,12 @@ set_hf:
     {
         if(IS_BT_DEVICE(awayId))
         {
-            app_bt_hf_set_reject_dev(GET_BT_ID(awayId));
+            gfps_sass_hfp_hf_set_reject_dev(GET_BT_ID(awayId));
         }
 #if BLE_AUDIO_ENABLED
         else
         {
-            app_bt_hf_set_reject_dev(awayId);
+            gfps_sass_hfp_hf_set_reject_dev(awayId);
         }
 #endif
     }
@@ -3385,9 +3545,7 @@ uint8_t gfps_sass_switch_back_evt_hdl(uint8_t device_id, uint8_t evt)
     bt_bdaddr_t currAddr, lastAddr;
     uint8_t lastconnId;
     uint8_t empty[6] = {0};
-#if BLE_AUDIO_ENABLED
-    uint8_t con_lid[AOB_COMMON_MOBILE_CONNECTION_MAX];
-#endif
+
     sassInfo.IfSendSwitchNTF = false;
 
     if ((evt != SASS_EVT_SWITCH_BACK) && (evt != SASS_EVT_SWITCH_BACK_AND_RESUME))
@@ -3397,13 +3555,13 @@ uint8_t gfps_sass_switch_back_evt_hdl(uint8_t device_id, uint8_t evt)
 
     if(IS_BT_DEVICE(device_id))
     {
-        app_bt_get_device_bdaddr(GET_BT_ID(device_id), currAddr.address);
+        bta_get_addr_by_device_id(GET_BT_ID(device_id), &currAddr);
     }
 #if BLE_AUDIO_ENABLED
     else
     {
         ble_bdaddr_t GetPeerAddr = {{0}};
-        app_ble_get_peer_solved_addr(device_id, &GetPeerAddr);
+        bta_ble_get_addr_by_conidx(device_id, &GetPeerAddr);
         memcpy(currAddr.address, GetPeerAddr.addr, 6);
     }
 #endif
@@ -3420,22 +3578,19 @@ uint8_t gfps_sass_switch_back_evt_hdl(uint8_t device_id, uint8_t evt)
         GFPS_DUMP8("%02x ", lastAddr.address, 6);
         if(IS_BT_DEVICE(lastconnId))
         {
-            if (!app_bt_is_acl_connected_byaddr((bt_bdaddr_t *)&lastAddr))
+            if (!bts_bt_is_connected((bt_bdaddr_t *)&lastAddr))
             {
                 uint8_t maxLink = gfps_sass_get_multi_status() ? SASS_MAX_DEVICE_NUM : 1;
-#if BLE_AUDIO_ENABLED
-                if (app_bt_count_connected_device() + ble_audio_get_mobile_connected_dev_lids(con_lid) >= maxLink)
-#else
-                if(app_bt_count_connected_device() >= maxLink)
-#endif
+
+                if (gfps_bta_get_bt_connected_link_num() + gfps_bta_get_lea_connected_link_num() >= maxLink)
                 {
                     gfps_sass_set_reconnecting_dev(&lastAddr, evt);
                     gfps_sass_set_disconnecting_dev(&currAddr);
-                    bta_tws_remove_device(&currAddr);
+                    gfps_bta_remove_bt_device(&currAddr);
                 }
                 else
                 {
-                    bta_tws_connect_bt_device((bt_bdaddr_t *)&lastAddr, SASS_CONNECT_COUNT);
+                    gfps_bta_connect_bt_device((bt_bdaddr_t *)&lastAddr, SASS_CONNECT_COUNT);
                 }
             }
             else if (evt == SASS_EVT_SWITCH_BACK_AND_RESUME && gfps_sass_is_profile_connected(&lastAddr))
@@ -3444,17 +3599,19 @@ uint8_t gfps_sass_switch_back_evt_hdl(uint8_t device_id, uint8_t evt)
                 uint8_t lastId = lastInfo->connId;
                 uint8_t currId;
                 bool isExchanged = gfps_sass_is_profile_exchanged(lastInfo);
+                bt_bdaddr_t btAddr;
 
                 currId = SET_BT_ID(bts_am_get_curr_playing_a2dp());
 #if BLE_AUDIO_ENABLED
-                if(currId == BT_DEVICE_INVALID_ID)
+                if(currId == BT_INVALID_DEVICE_ID)
                 {
-                    currId = app_ble_get_curr_play_bleaudio_id();
+                    currId = bts_lea_get_audio_play_curr_con_lid();
                 }
 #endif
 
+                bta_get_addr_by_device_id(GET_BT_ID(lastId), &btAddr);
                 if (isExchanged && (currId != lastId && currId != SASS_INVALID_DEV_ID) && \
-                    app_bt_is_a2dp_streaming(GET_BT_ID(lastId)) && \
+                    bta_a2dp_is_streaming(&btAddr) && \
                     GET_PROFILE_STATE(lastInfo->audState, AUDIO, AVRCP) && \
                     (lastInfo->waitPauseDone == false))
                 {
@@ -3487,14 +3644,15 @@ uint8_t gfps_sass_switch_back_evt_hdl(uint8_t device_id, uint8_t evt)
 #if BLE_AUDIO_ENABLED
         else
         {
-            if(!bes_ble_gap_is_remote_dev_connected((ble_bdaddr_t *)&lastAddr))
+            if(!bta_ble_is_connection_on_by_addr((ble_bdaddr_t *)&lastAddr))
             {
                 uint8_t maxLink = gfps_sass_get_multi_status() ? SASS_MAX_DEVICE_NUM : 1;
-                if (app_bt_count_connected_device() + ble_audio_get_mobile_connected_dev_lids(con_lid) >= maxLink)
+                if (gfps_bta_get_bt_connected_link_num() + gfps_bta_get_lea_connected_link_num() >= maxLink)
                 {
                     gfps_sass_set_reconnecting_dev(&lastAddr, evt);
                     gfps_sass_set_disconnecting_dev(&currAddr);
-                    bta_tws_remove_device(&currAddr);
+                    gfps_bta_remove_bt_device(&currAddr);
+                    //app_dev_mgr_start_lea_reconnect_adv(&lastAddr);
                 }
                 else
                 {
@@ -3507,21 +3665,24 @@ uint8_t gfps_sass_switch_back_evt_hdl(uint8_t device_id, uint8_t evt)
                 uint8_t lastId = lastInfo->connId;
                 uint8_t currId;
                 bool isExchanged = gfps_sass_is_profile_exchanged(lastInfo);
+                ble_bdaddr_t bleAddr;
 
                 currId = SET_BT_ID(bts_am_get_curr_playing_a2dp());
-                if(currId == BT_DEVICE_INVALID_ID)
+                if(currId == BT_INVALID_DEVICE_ID)
                 {
-                    currId = app_ble_get_curr_play_bleaudio_id();
+                    currId = bts_lea_get_audio_play_curr_con_lid();
                 }
 
+                bta_ble_get_addr_by_conidx(lastId, &bleAddr);
+
                 if (isExchanged && (currId != lastId && currId != SASS_INVALID_DEV_ID) && \
-                    aob_media_is_device_any_ase_in_streamimg_state(lastId) && \
+                    bts_lea_is_device_ase_in_streaming_state(&bleAddr) && \
                     GET_PROFILE_STATE(lastInfo->audState, MUSIC, LEA))
                 {
                     gfps_sass_switch_media(currId, lastId, true);
                     lastInfo->isNeedResume = true;
                 }
-                else if (!isExchanged && aob_media_is_device_any_ase_in_streamimg_state(lastId))
+                else if (!isExchanged && bts_lea_is_device_ase_in_streaming_state(&bleAddr))
                 {
                     GFPS_TRACE(1, "%s waiting profile exchange", __func__);
                     SassPendingProc pending;
@@ -3532,7 +3693,8 @@ uint8_t gfps_sass_switch_back_evt_hdl(uint8_t device_id, uint8_t evt)
                 }
                 else
                 {
-                    bes_ble_aob_media_play(lastId);
+                    bta_ble_get_addr_by_conidx(lastId, &bleAddr);
+                    bts_lea_mcp_media_play(&bleAddr);
                 }
             }
             else
@@ -3546,7 +3708,7 @@ uint8_t gfps_sass_switch_back_evt_hdl(uint8_t device_id, uint8_t evt)
     {
         GFPS_TRACE(0, "sass switch back hdl disconnect itself");
         gfps_sass_set_disconnecting_dev(&currAddr);
-        bta_tws_remove_device(&currAddr);
+        gfps_bta_remove_bt_device(&currAddr);
     }
 
     return SASS_STATUS_OK;
@@ -3556,8 +3718,8 @@ void gfps_sass_switch_src_hdl(uint8_t devId, uint8_t *data)
 {
     uint8_t evt = data[0];
     uint8_t status = SASS_STATUS_OK;
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-    if (BT_IBRT_SLAVE != bts_core_get_ui_role()&& bts_tws_if_get_init_done_state())
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    if (BT_IBRT_SLAVE != bta_tws_get_ui_role()&& bts_tws_if_get_init_done_state())
 #endif
     {
         status = gfps_sass_switch_src_evt_hdl(devId, evt);
@@ -3584,8 +3746,8 @@ void gfps_sass_switch_back_hdl(uint8_t devId, uint8_t *data)
 {
     uint8_t evt = data[0];
     uint8_t status = SASS_STATUS_OK;
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-    if(BT_IBRT_SLAVE != bts_core_get_ui_role()&& bts_tws_if_get_init_done_state())
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    if(BT_IBRT_SLAVE != bta_tws_get_ui_role()&& bts_tws_if_get_init_done_state())
 #endif
     {
         status = gfps_sass_switch_back_evt_hdl(devId, evt);
@@ -3808,7 +3970,7 @@ void gfps_sass_add_dev_handler(uint8_t devId, bt_bdaddr_t *addr)
     btHdl->secondId = SASS_INVALID_DEV_ID;
     memcpy(btHdl->btAddr.address, addr, sizeof(bt_bdaddr_t));
 
-    app_bt_get_remote_cod_by_addr(addr, cod);
+    bts_bt_get_class_of_device(addr, cod);
     btHdl->devType = gfps_sass_get_dev_type_by_cod(cod);
 
     isSass = gfps_sass_check_sass_mode(btHdl);
@@ -3821,9 +3983,8 @@ void gfps_sass_add_dev_handler(uint8_t devId, bt_bdaddr_t *addr)
         GFPS_TRACE(0,"gfps_sass_add_dev_handler lea");
         SET_PROFILE_STATE(btHdl->audState, CONNECTION, LEA, 1);
         btHdl->state = SASS_STATE_NO_DATA;
-
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-        if(gfps_sass_get_slave_streaming_state(addr) == AOB_MGR_STREAM_STATE_STREAMING)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+        if(gfps_sass_get_slave_streaming_state(addr) == BT_LEA_ASCS_ASE_STATE_STREAMING)
         {
             btHdl->proExchanged = true;
         }
@@ -4044,8 +4205,8 @@ void gfps_sass_update_state(SassEvtParam *evtParam)
 
         case SASS_EVT_UPDATE_INUSE_ACCKEY:
         {
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-            if (BT_IBRT_MASTER == bts_core_get_ui_role())
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+            if (BT_IBRT_MASTER == bta_tws_get_ui_role())
             {
                 gfps_sass_sync_info();
             }
@@ -4092,7 +4253,7 @@ void gfps_sass_update_state(SassEvtParam *evtParam)
 
     if (needUpdate)
     {
-        bes_ble_gap_refresh_adv_state();
+        bts_ble_gap_refresh_adv();
     }
 }
 
@@ -4131,7 +4292,7 @@ void gfps_sass_ind_inuse_acckey(uint8_t devId, uint8_t *data)
             gfps_sass_set_inuse_acckey_by_dev(devId, accKey);
             if(IS_BT_DEVICE(devId))
             {
-                if (app_bt_get_device_bdaddr(GET_BT_ID(devId), btAddr.address) && \
+                if (bta_get_addr_by_device_id(GET_BT_ID(devId), &btAddr) && \
                     gfps_sass_is_truely_sass_dev(devId))
                 {
                     nv_record_fp_update_addr(i, btAddr.address);
@@ -4144,7 +4305,7 @@ void gfps_sass_ind_inuse_acckey(uint8_t devId, uint8_t *data)
             else
             {
                 ble_bdaddr_t GetPeerAddr = {{0}};
-                if (app_ble_get_peer_solved_addr(devId, &GetPeerAddr) && \
+                if (bta_ble_get_addr_by_conidx(devId, &GetPeerAddr) && \
                     gfps_sass_is_truely_sass_dev(devId))
                 {
                     memcpy(btAddr.address, GetPeerAddr.addr, 6);

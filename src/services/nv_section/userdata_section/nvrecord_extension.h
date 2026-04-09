@@ -100,6 +100,7 @@
 #define FINDMY_NV_SK_LEN            (32)
 #define FINDMY_NV_IK_LEN            (32)
 #define FINDMY_NV_iCLOUD_ID_LEN     (60)
+#define FINDMY_NV_IRK_LEN           (16)
 #endif
 
 // TODO: should be increased if NV_EXTENSION_MIRROR_RAM_SIZE exceeds this value
@@ -610,6 +611,7 @@ typedef struct
     uint8_t  currLTK[BLE_LTK_SIZE];
     uint8_t  currKSN[FINDMY_NV_P256_KEY_LEN];
     uint8_t  iCloudId[FINDMY_NV_iCLOUD_ID_LEN];
+    uint8_t  irk[FINDMY_NV_IRK_LEN];
 
     uint32_t  next4AM; //uint: ms(Jan 1 2001 Epoch)
     uint32_t  rollTime;

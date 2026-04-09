@@ -426,7 +426,7 @@ uint8_t aob_media_get_enableing_ase_lid_list(uint8_t con_lid, uint8_t *ase_lid_l
  ****************************************************************************************
  */
 
-bool aob_media_is_device_any_ase_in_streamimg_state(uint8_t con_lid);
+bool aob_media_is_device_any_ase_in_streaming_state(uint8_t con_lid);
 
 /**
  ****************************************************************************************
@@ -589,7 +589,7 @@ uint8_t aob_media_get_sink_ase_streaming_device_id(void);
 
 uint8_t aob_media_get_ase_streaming_device_id(void);
 
-bool aob_media_is_device_any_ase_in_streamimg_state(uint8_t con_lid);
+bool aob_media_is_device_any_ase_in_streaming_state(uint8_t con_lid);
 
 AOB_MGR_CONTEXT_TYPE_BF_E aob_media_get_cur_context_type_by_ase_lid(uint8_t ase_lid);
 

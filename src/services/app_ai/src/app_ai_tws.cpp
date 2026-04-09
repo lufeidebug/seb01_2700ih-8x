@@ -20,7 +20,7 @@
 #include "app_ai_ble.h"
 #endif
 
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
 #include "app_tws_ibrt.h"
 #include "app_ibrt_customif_cmd.h"
 #include "bts_tws_types.h"
@@ -41,6 +41,13 @@
 #include "app_recording_handle.h"
 #endif
 
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+#include "bta_tws_ux_api.h"
+#endif
+
+void app_ai_tws_send_tws_cmd(uint32_t opcode, uint8_t *buf, uint16_t len);
+
+
 #define CASE_S(s) \
     case s:       \
         return "[" #s "]";
@@ -54,7 +61,7 @@
 
 APP_AI_TWS_REBOOT_T REBOOT_CUSTOM_PARAM_LOC app_ai_tws_reboot = {false, 0xFF};
 
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
 static void app_ai_role_switch_timeout_cb(void const *n);
 osTimerDef(APP_AI_ROLE_SWITCH_TIMER, app_ai_role_switch_timeout_cb);
 osTimerId app_ai_role_switch_timer_id = NULL;
@@ -84,7 +91,7 @@ static void app_ai_ble_disc_timeout_cb(void const *n)
 
 void app_ai_let_slave_continue_roleswitch(void)
 {
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
     uint8_t role = app_ai_get_ai_spec(AI_SPEC_AMA);
     tws_ctrl_send_cmd(APP_TWS_CMD_LET_SLAVE_CONTINUE_RS, &role, 1);
 #endif
@@ -93,7 +100,7 @@ void app_ai_let_slave_continue_roleswitch(void)
 bool app_ai_tws_role_switch_direct(void)
 {
     bool ret = false;
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
     uint8_t ai_index = 0;
     for (uint8_t ai_connect_index = 0; ai_connect_index < AI_CONNECT_NUM_MAX; ai_connect_index++)
     {
@@ -138,7 +145,7 @@ bool app_ai_tws_role_switch_direct(void)
 bool app_ai_tws_role_switch_dis_ble(void)
 {
     bool ret = false;
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
     osTimerStop(app_ai_role_switch_timer_id);
 #if defined(__AI_VOICE_BLE_ENABLE__)
     uint16_t ble_Conhandle = 0;
@@ -167,7 +174,7 @@ bool app_ai_tws_role_switch_dis_ble(void)
 }
 #endif
 
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
 static void app_ai_tws_slave_request_master_role_switch(void)
 {
     //APP_AI_TRACE(3,"%s complete %d switching %d", __func__,
@@ -179,7 +186,7 @@ static void app_ai_tws_slave_request_master_role_switch(void)
     }
     uint8_t role = ai_info->ai_spec;
 
-    tws_ctrl_send_cmd(APP_TWS_CMD_LET_MASTER_PREPARE_RS, &role, 1);
+    app_ai_tws_send_tws_cmd(APP_TWS_CMD_LET_MASTER_PREPARE_RS, &role, 1);
     osTimerStart(app_ai_ble_disc_timer_id, APP_AI_ROLE_SWITCH_TIME_IN_MS + APP_AI_BLE_DISC_TIME_IN_MS);
 }
 #endif
@@ -187,7 +194,7 @@ static void app_ai_tws_slave_request_master_role_switch(void)
 bool app_ai_tws_master_role_switch(void)
 {
     bool ret = false;
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
     //APP_AI_TRACE(3,"%s complete %d switching %d", __func__,
     //        app_ai_is_setup_complete(),
     //        app_ai_is_role_switching());
@@ -265,7 +272,6 @@ bool app_ai_role_switch(void)
         }
     }
 
-#if defined(IBRT)
     if (app_ai_tws_get_local_role() == APP_AI_TWS_MASTER)
     {
         ret = app_ai_tws_master_role_switch();
@@ -275,7 +281,6 @@ bool app_ai_role_switch(void)
         app_ai_tws_slave_request_master_role_switch();
         ret = true;
     }
-#endif
 #endif
 
     return ret;
@@ -305,7 +310,6 @@ uint32_t app_ai_tws_role_switch_prepare(uint32_t *wait_ms)
     }
 #endif
 #endif
-
     APP_AI_TRACE(3, "[%s] ret=%d, wait_ms=%d", __func__, ret, *wait_ms);
     return ret;
 }
@@ -319,7 +323,7 @@ void app_ai_tws_master_role_switch_prepare(void)
 
 void app_ai_tws_role_switch_prepare_done(void)
 {
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
     APP_AI_TRACE(1, "%s", __func__);
     if (APP_AI_TWS_MASTER == app_ai_tws_get_local_role())
     {
@@ -362,7 +366,7 @@ void app_ai_tws_role_switch_complete(void)
         {
             app_ai_set_speech_state(AI_SPEECH_STATE__IDLE, ai_index);
             app_ai_voice_deinit(ai_index, ai_connect_index);
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
             if (bts_tws_if_is_tws_link_connected() && (app_ai_tws_get_local_role() == APP_AI_TWS_MASTER))
 #endif
             {
@@ -383,7 +387,7 @@ void app_ai_tws_role_switch_complete(void)
                 }
                 app_ai_voice_stream_control(true, app_ai_voice_get_user_from_spec(ai_index));
             }
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
             else if (bts_tws_if_is_tws_link_connected() && (APP_AI_TWS_SLAVE == app_ai_tws_get_local_role()))
             {
                 /// close mic if slave is not allowed to open mic
@@ -426,7 +430,7 @@ void app_ai_tws_sync_info_received_handler(uint8_t *buf, uint16_t length, bool i
 
 void app_ai_tws_sync_init(void)
 {
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
     TWS_SYNC_USER_T user_app_ai_t = {
         app_ai_tws_sync_info_prepare_handler,
         app_ai_tws_sync_info_received_handler,
@@ -452,7 +456,7 @@ void app_ai_tws_sync_init(void)
 
 void app_ai_tws_sync_ai_info(void)
 {
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
     bts_tws_if_prepare_user_sync_tws_info();
     bts_tws_if_user_sync_tws_info(TWS_SYNC_USER_AI_INFO);
     bts_tws_if_flush_user_sync_tws_info();
@@ -485,7 +489,7 @@ void ai_manager_sync_info_received_rsp_handler(uint8_t *buf, uint16_t length, bo
 
 void ai_manager_sync_init(void)
 {
-#if defined(IBRT) && defined(IS_MULTI_AI_ENABLED)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(IS_MULTI_AI_ENABLED)
     TWS_SYNC_USER_T user_ai_manager_t = {
         ai_manager_sync_info_prepare_handler,
         ai_manager_sync_info_received_handler,
@@ -500,14 +504,14 @@ void ai_manager_sync_init(void)
 
 void app_ai_tws_sync_ai_manager_info(void)
 {
-#if defined(IBRT) && defined(IS_MULTI_AI_ENABLED) && !defined(FREEMAN_ENABLED_STERO)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(IS_MULTI_AI_ENABLED) && !defined(FREEMAN_ENABLED_STERO)
     bts_tws_if_prepare_user_sync_tws_info();
     bts_tws_if_user_sync_tws_info(TWS_SYNC_USER_AI_MANAGER);
     bts_tws_if_flush_user_sync_tws_info();
 #endif
 }
 
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
 void app_tws_ai_send_cmd_to_peer(uint8_t *p_buff, uint16_t length)
 {
     APP_AI_TRACE(1,"[%s]", __func__);
@@ -565,7 +569,7 @@ void app_tws_ai_rev_cmd_rsp_timeout_hanlder(uint16_t rsp_seq, uint8_t *p_buff, u
 
 void app_ai_tws_send_cmd_to_peer(uint8_t *p_buff, uint16_t length)
 {
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     if (bts_tws_if_is_tws_link_connected())
     {
         app_tws_ai_send_cmd_to_peer(p_buff, length);
@@ -582,7 +586,7 @@ void app_ai_tws_rev_peer_cmd_hanlder(uint16_t rsp_seq, uint8_t *p_buff, uint16_t
 
 void app_ai_tws_send_cmd_with_rsp_to_peer(uint8_t *p_buff, uint16_t length)
 {
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     if (bts_tws_if_is_tws_link_connected())
     {
         app_tws_ai_send_cmd_with_rsp_to_peer(p_buff, length);
@@ -592,7 +596,7 @@ void app_ai_tws_send_cmd_with_rsp_to_peer(uint8_t *p_buff, uint16_t length)
 
 void app_ai_tws_send_cmd_rsp_to_peer(uint8_t *p_buff, uint16_t rsp_seq, uint16_t length)
 {
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     if (bts_tws_if_is_tws_link_connected())
     {
         app_tws_ai_send_cmd_rsp_to_peer(p_buff, rsp_seq, length);
@@ -624,7 +628,7 @@ void app_ai_tws_rev_cmd_rsp_timeout_hanlder(uint16_t rsp_seq, uint8_t *p_buff, u
 
 bool app_ai_tws_init_done(void)
 {
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_TWS_ENABLED)
     return bts_tws_if_get_init_done_state();
 #endif
     return false;
@@ -632,7 +636,7 @@ bool app_ai_tws_init_done(void)
 
 bool app_ai_tws_link_connected(void)
 {
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     return bts_tws_if_is_tws_link_connected();
 #endif
     return false;
@@ -641,7 +645,7 @@ bool app_ai_tws_link_connected(void)
 uint8_t *app_ai_tws_local_address(void)
 {
     uint8_t *local_addr = NULL;
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_TWS_ENABLED)
     local_addr = bts_tws_if_get_local_addr();
 #endif
     return local_addr;
@@ -659,7 +663,7 @@ uint8_t app_ai_tws_reboot_get_box_action(void)
 
 void app_ai_tws_clear_reboot_box_state(void)
 {
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     APP_AI_TRACE(2, "%s box state %d", __func__, app_ai_tws_reboot.box_state);
     app_ai_tws_reboot.is_ai_reboot = false;
     app_ai_tws_reboot.box_state = 0xFF;
@@ -671,9 +675,18 @@ void app_ai_tws_disconnect_all_bt_connection(void)
 
 }
 
+bool app_ai_tws_is_tws_connected(void)
+{
+#if defined(BT_SVC_MODULE_TWS_ENABLED)
+    return bts_tws_if_is_tws_link_connected();
+#else
+    return false;
+#endif
+}
+
 bool app_ai_tws_is_mobile_link_connected(void)
 {
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     static bt_bdaddr_t device_addr[BT_DEVICE_NUM];
     uint8_t count = bts_bt_if_get_dev_connected_list(&device_addr[0]);
     if (count)
@@ -681,14 +694,14 @@ bool app_ai_tws_is_mobile_link_connected(void)
         return bts_bt_if_is_dev_link_connected(&device_addr[0]);
     }
     return false;
-#else   //IBRT
+#else   //BT_SVC_MODULE_IBRT_ENABLED
     return false;
 #endif
 }
 
 bool app_ai_tws_is_profile_exchanged(void)
 {
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     static bt_bdaddr_t device_addr[BT_DEVICE_NUM];
     uint8_t count = bts_bt_if_get_dev_connected_list(&device_addr[0]);
     if (count)
@@ -696,14 +709,14 @@ bool app_ai_tws_is_profile_exchanged(void)
         return bts_ibrt_if_is_profile_exchanged(&device_addr[0]);
     }
     return false;
-#else   //IBRT
+#else   //BT_SVC_MODULE_TWS_ENABLED
     return false;
 #endif
 }
 
 bool app_ai_tws_is_slave_ibrt_link_connected(void)
 {
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     static bt_bdaddr_t device_addr[BT_DEVICE_NUM];
     uint8_t count = bts_bt_if_get_dev_connected_list(&device_addr[0]);
     if (count)
@@ -711,20 +724,36 @@ bool app_ai_tws_is_slave_ibrt_link_connected(void)
         return bts_ibrt_if_is_ibrt_link_connected(&device_addr[0]);
     }
     return false;
-#else   //IBRT
+#else   //BT_SVC_MODULE_IBRT_ENABLED
     return false;
+#endif
+}
+
+bt_ui_role_t app_ai_tws_get_ui_role(void)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    return bta_tws_get_ui_role();
+#else
+    return BT_IBRT_UNKNOWN;
+#endif
+}
+
+void app_ai_tws_send_tws_cmd(uint32_t opcode, uint8_t *buf, uint16_t len)
+{
+#if defined(BT_SVC_MODULE_TWS_ENABLED)
+    bta_tws_send_cmd(opcode, buf, len);
 #endif
 }
 
 uint8_t app_ai_tws_get_local_role(void)
 {
     uint8_t local_role = APP_AI_TWS_UNKNOW;
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     bool tws_link_connected = bts_tws_if_is_tws_link_connected();
     bool tws_profile_exchanged = app_ai_tws_is_profile_exchanged();
     bool mobile_link_connected = app_ai_tws_is_mobile_link_connected();
     bool slave_ibrt_link_connected = app_ai_tws_is_slave_ibrt_link_connected();
-    bt_ui_role_t current_role = bts_core_get_ui_role();
+    bt_ui_role_t current_role = app_ai_tws_get_ui_role();
 
     if (tws_profile_exchanged)
     {
@@ -931,7 +960,7 @@ static const bt_tws_cmd_instance_t g_ai_cmd_handler_table[]=
 
 void app_ai_tws_init(void)
 {
-#if defined(IBRT) && defined(__AI_VOICE__)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && defined(__AI_VOICE__)
 #ifdef FREEMAN_ENABLED_STERO
     app_ai_set_in_tws_mode(false, 0);
 #else

@@ -294,10 +294,6 @@ void app_bt_stop_sniff(uint8_t deviceId);
 
 void app_bt_sniff_config(uint16_t conn_handle);
 
-bool app_bt_has_mobile_device_in_sniff_mode(void);
-
-bool app_bt_has_mobile_device_in_active_mode(void);
-
 void app_bt_allow_sniff_rem_dev(uint16_t conn_handle);
 
 void app_bt_stay_active_rem_dev(uint16_t conn_handle);

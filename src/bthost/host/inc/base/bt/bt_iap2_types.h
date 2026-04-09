@@ -24,6 +24,8 @@
 #define BT_IAP2_MATCH_ACTION_DEVICE_MAY_PROMPT_AND_FIND_APP_BUTTON     1
 #define BT_IAP2_MATCH_ACTION_DEVICE_NO_PROMPT_AND_FIND_APP_BUTTON      2
 
+// macro from NameMaxLen to BT_IAP2_NAME_MAX_LEN
+#define BT_IAP2_NAME_MAX_LEN                         (32)
 // macro from ModelIdentifierMaxLen to BT_IAP2_MODEL_IDENTIFIER_MAX_LEN
 #define BT_IAP2_MODEL_IDENTIFIER_MAX_LEN             (16)
 // macro from ManufacturerMaxLen to BT_IAP2_BT_IAP2_MANUFACTURER_MAX_LEN
@@ -109,6 +111,7 @@ typedef struct
 
 typedef struct
 {
+    uint8_t Name[BT_IAP2_NAME_MAX_LEN];
     uint8_t ModelIdentifier[BT_IAP2_MODEL_IDENTIFIER_MAX_LEN];
     uint8_t Manufacturer[BT_IAP2_MANUFACTURER_MAX_LEN];
     uint8_t SerialNumber[BT_IAP2_SERIAL_NUMBER_MAX_LEN];

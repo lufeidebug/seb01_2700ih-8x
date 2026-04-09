@@ -137,9 +137,11 @@ static void _anc_cmd_control(APP_TOTA_CMD_CODE_E funcCode, uint8_t* ptrParam, ui
 
             anc_data_buff_init();
 
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
             /* ban bt sniff */
             struct BT_DEVICE_T *curr_device = app_bt_get_device(0);
             app_ibrt_if_prevent_sniff_set((uint8_t *)&curr_device->remote, AVRCP_STATUS_CHANING);
+#endif
             hal_norflash_disable_protection(HAL_FLASH_ID_0);
 
             app_tota_v2_send_data(funcCode, resData, resLen);

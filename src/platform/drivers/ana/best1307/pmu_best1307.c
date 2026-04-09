@@ -292,6 +292,9 @@
 #define REG_BT_BG_PU                            (1 << 1)
 #define REG_BT_BG_PU_DR                         (1 << 0)
 
+// RF_REG_543
+#define REG_XTAL_MDLL_PFD_ERROR_DET_EN          (1 << 3)
+
 // RF_REG_544
 #define REG_XTAL_MDLL_DLL_SWRC_SHIFT            0
 #define REG_XTAL_MDLL_DLL_SWRC_MASK             (0x7 << REG_XTAL_MDLL_DLL_SWRC_SHIFT)
@@ -313,6 +316,7 @@ enum RF_ANA_CHG_REG_T {
     RF_REG_524          = 0x524,
     RF_REG_526          = 0x526,
     RF_REG_527          = 0x527,
+    RF_REG_543          = 0x543,
     RF_REG_544          = 0x544,
 };
 
@@ -1145,6 +1149,10 @@ void BOOT_TEXT_FLASH_LOC pmu_rf_ana_init(void)
     rf_read(RF_REG_544, &val);
     val = SET_BITFIELD(val, REG_XTAL_MDLL_DLL_SWRC, vtmp);
     rf_write(RF_REG_544, val);
+
+    rf_read(RF_REG_543, &val);
+    val |= REG_XTAL_MDLL_PFD_ERROR_DET_EN;
+    rf_write(RF_REG_543, val);
 
     // Add 1us delay for mdll calib flag ready
     rf_read(RF_REG_524, &val);

@@ -37,6 +37,7 @@
 #include "anc_process.h"
 #include "hwtimer_list.h"
 #include "hal_sysfreq.h"
+#include "tgt_hardware.h"
 
 
 /**********************************mocro**************************************/
@@ -725,22 +726,38 @@ struct _anc_mc_gain
 #error "ANC_TT_CHECK and ANC_FF_CHECK can not defined simultaneously "
 #endif
 
-#define IIR_COUNTER (8)
+#define IIR_COUNTER (13)
 
 #if defined(AUDIO_ANC_TT_HW)
+#ifndef IIR_FF_COUNTER
 #define IIR_FF_COUNTER (8)
+#endif
+#ifndef IIR_TT_COUNTER
 #define IIR_TT_COUNTER (6)
+#endif
 #else
+#ifndef IIR_FF_COUNTER
 #define IIR_FF_COUNTER (8)
+#endif
+#ifndef IIR_TT_COUNTER
 #define IIR_TT_COUNTER (0)
+#endif
 #endif
 
 #if defined(AUDIO_ANC_FB_MC_HW)
+#ifndef IIR_FB_COUNTER
 #define IIR_FB_COUNTER (7)
+#endif
+#ifndef IIR_MC_COUNTER
 #define IIR_MC_COUNTER (7)
+#endif
 #else
+#ifndef IIR_FB_COUNTER
 #define IIR_FB_COUNTER (7)
+#endif
+#ifndef IIR_MC_COUNTER
 #define IIR_MC_COUNTER (0)
+#endif
 #endif
 
 #define ANC_AUD_OUTPUT_PATH_SPEAKER_DEV  (AUD_CHANNEL_MAP_CH0)
@@ -1765,7 +1782,7 @@ static int iir_filter_coef_copy(volatile struct _anc_iir_coefs *iir_coefs, iir_p
     return 0;
 }
 
-static int iir_coef_copy(volatile struct _anc_iir_coefs *iir_coefs, anc_iir_coefs * __restrict filtes_old)
+static int POSSIBLY_UNUSED iir_coef_copy(volatile struct _anc_iir_coefs *iir_coefs, anc_iir_coefs * __restrict filtes_old)
 {
 #if 0
     LOG_I("%s: iir_coefs:0x%x",__func__,(uint32_t)iir_coefs);
@@ -3305,7 +3322,7 @@ static void anc_ctrl_reg_init(void)
 #endif
 
 #if (ANC_AUD_OUTPUT_PATH_SPEAKER_DEV & AUD_CHANNEL_MAP_CH0)
-    for(int i=0;i<IIR_COUNTER;i++)
+    for(int i=0;i<IIR_FF_COUNTER;i++)
     {
         ff_filtes_l_old.iir_coef[i].coef_a[0]=0;
         ff_filtes_l_old.iir_coef[i].coef_a[1]=0;
@@ -3320,7 +3337,7 @@ static void anc_ctrl_reg_init(void)
     ff_filtes_l_old.iir_bypass_flag=0;
 
 #if defined(AUDIO_ANC_TT_HW)
-    for(int i=0;i<IIR_COUNTER;i++)
+    for(int i=0;i<IIR_TT_COUNTER;i++)
     {
         tt_filtes_l_old.iir_coef[i].coef_a[0]=0;
         tt_filtes_l_old.iir_coef[i].coef_a[1]=0;
@@ -3335,7 +3352,7 @@ static void anc_ctrl_reg_init(void)
     tt_filtes_l_old.iir_bypass_flag=0;
 #endif
 
-    for(int i=0;i<IIR_COUNTER;i++)
+    for(int i=0;i<IIR_FB_COUNTER;i++)
     {
         fb_filtes_l_old.iir_coef[i].coef_a[0]=0;
         fb_filtes_l_old.iir_coef[i].coef_a[1]=0;
@@ -3350,7 +3367,7 @@ static void anc_ctrl_reg_init(void)
     fb_filtes_l_old.iir_bypass_flag=0;
 
 #if defined(AUDIO_ANC_FB_MC_HW)
-    for(int i=0;i<IIR_COUNTER;i++)
+    for(int i=0;i<IIR_MC_COUNTER;i++)
     {
         mc_filtes_l_old.iir_coef[i].coef_a[0]=0;
         mc_filtes_l_old.iir_coef[i].coef_a[1]=0;
@@ -3557,7 +3574,7 @@ static void anc_iir0_init(void)
     anc_iir0_control->codec_iir0_lmt_ch1_bypass=1;
 #endif
 
-    for(int i=0;i<IIR_COUNTER;i++)
+    for(int i=0;i<IIR_FF_COUNTER;i++)
     {
         anc_ff_iir_coefs0_l[i].a1=0;
         anc_ff_iir_coefs0_l[i].a2=0;
@@ -3570,6 +3587,9 @@ static void anc_iir0_init(void)
         anc_ff_iir_coefs1_l[i].b0=0;
         anc_ff_iir_coefs1_l[i].b1=0;
         anc_ff_iir_coefs1_l[i].b2=0;
+    }
+
+    for (int i = 0; i < IIR_TT_COUNTER; i++) {
 #if defined(AUDIO_ANC_TT_HW)
         anc_tt_iir_coefs0_l[i].a1=0;
         anc_tt_iir_coefs0_l[i].a2=0;
@@ -3782,7 +3802,7 @@ static void anc_iir2_init(void)
 #endif
 #endif
 
-    for(int i=0;i<IIR_COUNTER;i++)
+    for(int i=0;i<IIR_FB_COUNTER;i++)
     {
         anc_fb_iir_coefs0_l[i].a1=0;
         anc_fb_iir_coefs0_l[i].a2=0;
@@ -3795,7 +3815,13 @@ static void anc_iir2_init(void)
         anc_fb_iir_coefs1_l[i].b0=0;
         anc_fb_iir_coefs1_l[i].b1=0;
         anc_fb_iir_coefs1_l[i].b2=0;
+    }
 
+    anc_iir2_control->codec_iir2_ch0_bypass=0;
+    anc_iir2_control->codec_iir2_count_ch0=IIR_FB_COUNTER;
+
+    for(int i=0;i<IIR_MC_COUNTER;i++)
+    {
 #if defined(AUDIO_ANC_FB_MC_HW)
         anc_mc_iir_coefs0_l[i].a1=0;
         anc_mc_iir_coefs0_l[i].a2=0;
@@ -3810,9 +3836,6 @@ static void anc_iir2_init(void)
         anc_mc_iir_coefs1_l[i].b2=0;
 #endif
     }
-
-    anc_iir2_control->codec_iir2_ch0_bypass=0;
-    anc_iir2_control->codec_iir2_count_ch0=IIR_FB_COUNTER;
 
 #if defined(AUDIO_ANC_FB_MC_HW)
     anc_iir2_control->codec_iir2_ch1_bypass=0;
@@ -3852,7 +3875,7 @@ static void anc_ctrl_reg_open(enum ANC_TYPE_T anc_type)
             anc_ff_gain->codec_anc_mute_gain_update_ff_ch0=1;
 #endif
 
-            for(int i=0;i<IIR_COUNTER;i++)
+            for(int i=0;i<IIR_FF_COUNTER;i++)
             {
                 ff_filtes_l_old.iir_coef[i].coef_a[0]=0;
                 ff_filtes_l_old.iir_coef[i].coef_a[1]=0;
@@ -3894,7 +3917,7 @@ static void anc_ctrl_reg_open(enum ANC_TYPE_T anc_type)
             anc_tt_gain->codec_anc_mute_gain_update_tt_ch0=1;
 #endif
 
-            for(int i=0;i<IIR_COUNTER;i++)
+            for(int i=0;i<IIR_TT_COUNTER;i++)
             {
                 tt_filtes_l_old.iir_coef[i].coef_a[0]=0;
                 tt_filtes_l_old.iir_coef[i].coef_a[1]=0;
@@ -3936,7 +3959,7 @@ static void anc_ctrl_reg_open(enum ANC_TYPE_T anc_type)
             anc_fb_gain->codec_anc_mute_gain_update_fb_ch0=1;
 #endif
 
-            for(int i=0;i<IIR_COUNTER;i++)
+            for(int i=0;i<IIR_FB_COUNTER;i++)
             {
                 fb_filtes_l_old.iir_coef[i].coef_a[0]=0;
                 fb_filtes_l_old.iir_coef[i].coef_a[1]=0;
@@ -3990,7 +4013,7 @@ static void anc_ctrl_reg_open(enum ANC_TYPE_T anc_type)
             anc_mc_gain->codec_anc_mute_gain_update_mc_ch0=1;
 #endif
 
-            for(int i=0;i<IIR_COUNTER;i++)
+            for(int i=0;i<IIR_MC_COUNTER;i++)
             {
                 mc_filtes_l_old.iir_coef[i].coef_a[0]=0;
                 mc_filtes_l_old.iir_coef[i].coef_a[1]=0;

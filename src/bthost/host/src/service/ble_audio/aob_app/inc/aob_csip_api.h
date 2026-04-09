@@ -142,7 +142,7 @@ typedef struct
     bool            inuse;
     uint8_t         sirk[16];
     uint8_t         member_numbers;
-    AOB_CSIP_DEV_T  dev_info[AOB_COMMON_MOBILE_CONNECTION_MAX];
+    AOB_CSIP_DEV_T  dev_info[BLE_AUDIO_CONNECTION_CNT];
     //list_t*       dev_list;
 } AOB_CSIP_GROUP_INFO_T;
 

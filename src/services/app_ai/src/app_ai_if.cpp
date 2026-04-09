@@ -533,7 +533,10 @@ void app_ai_init(void)
 #ifdef __MMA_VOICE__
     ai_open_specific_ai(AI_SPEC_MMA);
 #endif
+
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     app_ai_tws_init();
+#endif
     app_ai_if_custom_init();
 
 #ifdef __THROUGH_PUT__

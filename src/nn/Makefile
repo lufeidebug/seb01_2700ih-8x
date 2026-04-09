@@ -12,11 +12,16 @@ obj-y += cmsis-nn/
 endif
 
 ifeq ($(ETHOSU_ARCH), u55)
-obj-y += core-driver/ core-platform/
+obj-y += core-driver/
+ifneq ($(TFLITE_IF_TEST),1)
+obj-y += core-platform/
+endif
 subdir-ccflags-y += -DETHOSU -DETHOSU55 -DETHOSU_ARCH=$(ETHOSU_ARCH)
 
 ifneq ($(ETHOSU_DRIVER_TEST),1)
+ifneq ($(TFLITE_IF_TEST),1)
 obj-y += core-software/
+endif
 export TFLITE_MICRO_ENABLE ?= 1
 endif
 endif

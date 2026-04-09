@@ -456,7 +456,7 @@ static void hal_codec_restore_dig_adc_gain(void)
     }
 }
 
-static void POSSIBLY_UNUSED hal_codec_get_adc_gain(enum AUD_CHANNEL_MAP_T map, float *gain)
+static void POSSIBLY_UNUSED hal_codec_vad_get_adc_gain(enum AUD_CHANNEL_MAP_T map, float *gain)
 {
     struct ADC_GAIN_T {
         int32_t v : 20;

@@ -390,7 +390,6 @@ struct BT_DEVICE_MANAGER_T {
     bool trigger_a2dp_switch;
     uint8_t trigger_sco_device_id;
     uint8_t a2dp_switch_trigger_device;
-    uint8_t a2dp_switch_target_device;
     uint32_t a2dp_switch_trigger_btclk;
     uint32_t sco_switch_trigger_btclk;
     bool trigger_a2dp_cis_toggle;

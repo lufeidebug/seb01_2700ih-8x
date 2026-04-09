@@ -174,6 +174,10 @@
 #endif
 #endif
 
+#if defined(BT_SVC_FW_PRODUCT_HEADSET)
+#include "app_headset.h"
+#endif
+
 #ifdef GFPS_ENABLED
 #include "bluetooth_ble_api.h"
 #endif
@@ -474,7 +478,6 @@ void app_exit_fastpairing_mode(void)
         MAIN_TRACE(0,"[FP]exit fast pair mode");
         app_stop_10_second_timer(APP_FASTPAIR_LASTING_TIMER_ID);
         gfps_exit_fastpairing_mode();
-        bta_tws_enable_pairing_mode(false);
     }
 #endif
 }
@@ -874,7 +877,7 @@ void ble_gfps_spot_auto_power_off_init(void)
     {
         spot_auto_poweroff_timer_id = hwtimer_alloc((HWTIMER_CALLBACK_T)spot_auto_poweroff_handler, NULL);
     }
-    hwtimer_start(spot_auto_poweroff_timer_id, MS_TO_TICKS(SPOT_AUTO_POWER_ON_TIME*1000)); 
+    hwtimer_start(spot_auto_poweroff_timer_id, MS_TO_TICKS(SPOT_AUTO_POWER_ON_TIME*1000));
 }
 #endif
 
@@ -1976,7 +1979,7 @@ void app_earbud_mode_init()
     soundInit(true);
 #elif defined(BT_SVC_FW_PRODUCT_WIRELESSMIC)
     app_product_ui_init();
-#elif defined(BT_SVC_FW_PRODUCT_GLASSES)
+#elif defined(BT_SVC_FW_PRODUCT_GLASSES) || defined(BT_SVC_FW_PRODUCT_HEADSET)
     app_bta_init();
 #else
     app_ibrt_init();
@@ -2076,7 +2079,7 @@ static void app_tell_battery_info_handler(uint8_t *batteryValueCount,
     BESUI_TRACE(1,"%s count %d", __func__, *batteryValueCount);
     DUMP8("0x%02x ",batteryValue, *batteryValueCount);
 #else
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     if (bts_tws_if_is_tws_link_connected())
     {
         *batteryValueCount = 3;

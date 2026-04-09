@@ -96,7 +96,7 @@
 // External 32.768KHz stable time(ms)
 #define PMU_EXT_32K_STABLE_TIME         300
 #define PMU_EXT_32K_CLK_OUT_STABLE_TIME 1
-#define PMU_CLK_SWITCH_STABLE_TIME      1
+#define PMU_CLK_SWITCH_STABLE_TIME_US   1000
 #define PMU_EXT_32K_CAPBIT_DEFAULT      0x141
 
 // 2mV
@@ -281,6 +281,8 @@
 #define PMU_EFUSE_CP_WAFER_CTX_ID_SHIFT         0
 #define PMU_EFUSE_CP_WAFER_CTX_ID_MASK          (0x1F << PMU_EFUSE_CP_WAFER_CTX_ID_SHIFT)
 #define PMU_EFUSE_CP_WAFER_CTX_ID(n)            BITFIELD_VAL(PMU_EFUSE_CP_WAFER_CTX_ID, n)
+#define PMU_EFUSE_GPADC_OFFSET_COMP_FLAG        (1 << 6)
+#define PMU_EFUSE_VCODEC_LV_VALID               (1 << 7)
 
 // RF_REG_F5
 #define REG_BT_BBPLL_DIVN_CODEC_SHIFT           0
@@ -392,6 +394,9 @@
 #define REG_LP_BBPLL_CLKGEN_RST_DR              (1 << 12)
 #define REG_LP_BBPLL_SDM_CLK_SEL                (1 << 14)
 
+// RF_REG_543
+#define REG_XTAL_MDLL_PFD_ERROR_DET_EN          (1 << 3)
+
 // RF_REG_544
 #define REG_XTAL_MDLL_DLL_SWRC_SHIFT            0
 #define REG_XTAL_MDLL_DLL_SWRC_MASK             (0x7 << REG_XTAL_MDLL_DLL_SWRC_SHIFT)
@@ -446,6 +451,7 @@ enum RF_ANA_CHG_REG_T {
     RF_REG_534                  = 0x534,
     RF_REG_535                  = 0x535,
     RF_REG_537                  = 0x537,
+    RF_REG_543                  = 0x543,
     RF_REG_544                  = 0x544,
 };
 
@@ -529,7 +535,10 @@ static OPT_TYPE uint8_t ana_act_dcdc =
     PMU_DCDC_ANA_1_3V;
 static OPT_TYPE uint8_t ana_lp_dcdc = ana_act_dcdc;
 
-static OPT_TYPE POSSIBLY_UNUSED uint16_t vcodec_mv = (uint16_t)(VCODEC_VOLT * 1000);
+#ifndef PSRAM_ENABLE
+OPT_TYPE
+#endif
+static POSSIBLY_UNUSED uint16_t BOOT_DATA_LOC vcodec_mv = (uint16_t)(VCODEC_VOLT * 1000);
 static OPT_TYPE POSSIBLY_UNUSED uint16_t vhppa_mv = (uint16_t)(VHPPA_VOLT * 1000);
 
 static OPT_TYPE uint8_t dig_lp_dcdc =
@@ -640,6 +649,7 @@ static uint8_t pmu_ext_crystal_clkout_usr_map;
 
 static void pmu_external_crystal_init(void);
 static void pmu_external_crystal_clkout_after_pwroff(void);
+static int pmu_main_clock_sel_ext32k(bool sel_ext32k);
 #endif
 
 #ifdef PMU_NTC_MONITOR
@@ -1215,6 +1225,11 @@ void BOOT_TEXT_FLASH_LOC pmu_boot_init(void)
     pmu_charger_save_context();
 #endif
 
+#ifdef PMU_CLK_USE_EXT_CRYSTAL
+    // PMU clock sel LPO
+    pmu_main_clock_sel_ext32k(false);
+#endif
+
 #ifndef PMU_ALREADY_INIT
     // Reset PMU (to recover from a possible insane state, e.g., ESD reset)
     pmu_write(PMU_REG_METAL_ID, 0xCAFE);
@@ -1225,6 +1240,30 @@ void BOOT_TEXT_FLASH_LOC pmu_boot_init(void)
     val &= ~REG_BUCK_VCORE_RAMP_EN;
     pmu_write(PMU_REG_BUCK_VCORE_EN, val);
 #endif
+
+    pmu_read(PMU_REG_BUCK_VHPPA_CFG_159, &val);
+    val |= REG_BUCK_VHPPA_PWR_OR_SEL;
+    pmu_write(PMU_REG_BUCK_VHPPA_CFG_159, val);
+
+    pmu_read(PMU_REG_BUCK_VANA_CFG_15A, &val);
+    val |= REG_BUCK_VANA_PWR_OR_SEL;
+    pmu_write(PMU_REG_BUCK_VANA_CFG_15A, val);
+
+    pmu_read(PMU_REG_BUCK_VCORE_CFG_15B, &val);
+    val |= REG_BUCK_VCORE_PWR_OR_SEL;
+    pmu_write(PMU_REG_BUCK_VCORE_CFG_15B, val);
+
+    pmu_read(PMU_REG_DCDC_HPPA_CFG_C2, &val);
+    val &= ~REG_BUCK_VHPPA_COUNTER_SEL;
+    pmu_write(PMU_REG_DCDC_HPPA_CFG_C2, val);
+
+    pmu_read(PMU_REG_BUCK_ANA_CFG_C5, &val);
+    val &= ~REG_BUCK_VANA_COUNTER_SEL;
+    pmu_write(PMU_REG_BUCK_ANA_CFG_C5, val);
+
+    pmu_read(PMU_REG_BUCK_CORE_CFG_C8, &val);
+    val &= ~REG_BUCK_VCORE_COUNTER_SEL;
+    pmu_write(PMU_REG_BUCK_CORE_CFG_C8, val);
 
     pmu_read(PMU_REG_CHARGER_CFG, &val);
     val |= REG_CHARGE_INTR_EN;
@@ -1530,6 +1569,10 @@ void BOOT_TEXT_FLASH_LOC pmu_rf_ana_init(void)
     val = SET_BITFIELD(val, REG_XTAL_MDLL_DLL_SWRC, swrc_i_val);
     rf_write(RF_REG_544, val);
 
+    rf_read(RF_REG_543, &val);
+    val |= REG_XTAL_MDLL_PFD_ERROR_DET_EN;
+    rf_write(RF_REG_543, val);
+
     // Add 1us delay for mdll calib flag ready
     rf_read(RF_REG_524, &val);
     val = SET_BITFIELD(val, REG_XTAL_MDLL_CAL_WAIT_TIME, 0x10);
@@ -1795,13 +1838,8 @@ static void pmu_sys_ctrl(bool shutdown)
 #endif
 
 #ifdef PMU_CLK_USE_EXT_CRYSTAL
-    uint16_t val_32k_sel;
-
     // PMU clock sel LPO
-    pmu_read(PMU_REG_CLK_SEL_CFG, &val_32k_sel);
-    val_32k_sel = SET_BITFIELD(val_32k_sel, CLK_32K_SEL, 0x0);
-    pmu_write(PMU_REG_CLK_SEL_CFG, val_32k_sel);
-    hal_sys_timer_delay(MS_TO_TICKS(PMU_CLK_SWITCH_STABLE_TIME));
+    pmu_main_clock_sel_ext32k(false);
 #endif
 
     // Reset PMU
@@ -1811,9 +1849,9 @@ static void pmu_sys_ctrl(bool shutdown)
 
 #ifdef PMU_CLK_USE_EXT_CRYSTAL
     // PMU clock sel EXT32K
-    val_32k_sel = SET_BITFIELD(val_32k_sel, CLK_32K_SEL, 0x2);
-    pmu_write(PMU_REG_CLK_SEL_CFG, val_32k_sel);
-    hal_sys_timer_delay(MS_TO_TICKS(PMU_CLK_SWITCH_STABLE_TIME));
+    if (pmu_main_clock_sel_ext32k(true)) {
+        PMU_INFO_TRACE_IMM(0, "%s: Sel ext32k fail!", __func__);
+    }
 #endif
 
     pmu_read(PMU_REG_CHARGER_CFG, &val);
@@ -2739,6 +2777,16 @@ int BOOT_TEXT_FLASH_LOC pmu_open(void)
     pmu_efuse_init();
 #endif
 
+#ifdef PSRAM_ENABLE
+    if (vcodec_mv > 1800) {
+        pmu_get_efuse(PMU_EFUSE_PAGE_CP_WAFER_ID, &val);
+        if (val & PMU_EFUSE_VCODEC_LV_VALID) {
+            vcodec_mv = 1800;
+            DRIVERS_TRACE(0, "%s: val=0x%x, real vcodec_mv=%d", __func__, val, vcodec_mv);
+        }
+    }
+#endif
+
     pmu_get_efuse(PMU_EFUSE_PAGE_CP_WAFER_XY_CTX, &val);
     pmu_pkg_type = GET_BITFIELD(val, PMU_EFUSE_PACKAGE_TYPE);
     DRIVERS_TRACE(0, "%s pmu_pkg_type:%d", __func__, pmu_pkg_type);
@@ -2771,6 +2819,17 @@ int BOOT_TEXT_FLASH_LOC pmu_open(void)
     // Disable sar vref output
     pmu_sar_adc_vref_sw_pu(false);
     pmu_set_sar_adc_vref();
+
+    pmu_get_efuse(PMU_EFUSE_PAGE_CP_WAFER_ID, &val);
+    if (val & PMU_EFUSE_GPADC_OFFSET_COMP_FLAG) {
+        pmu_read(PMU_REG_SAR_CFG_7E, &val);
+        val = SET_BITFIELD(val, SAR_P_BIT17_WEIGHT, 0x3C30);
+        pmu_write(PMU_REG_SAR_CFG_7E, val);
+
+        pmu_read(PMU_REG_SAR_CFG_8B, &val);
+        val = SET_BITFIELD(val, SAR_N_BIT17_WEIGHT, 0x3C30);
+        pmu_write(PMU_REG_SAR_CFG_8B, val);
+    }
 
     // Set sar adc config
     // reg_sar_adc_offset[15:0]
@@ -2810,19 +2869,6 @@ int BOOT_TEXT_FLASH_LOC pmu_open(void)
 #ifndef NO_SLEEP
     pmu_sleep_en(1);  //enable sleep
 #endif
-
-    // Optimize time for buck work mode switch.(burst<->pwm)
-    pmu_read(PMU_REG_BUCK_VHPPA_CFG_159, &val);
-    val &= ~REG_BUCK_VHPPA_PWR_OR_SEL;
-    pmu_write(PMU_REG_BUCK_VHPPA_CFG_159, val);
-
-    pmu_read(PMU_REG_BUCK_VANA_CFG_15A, &val);
-    val &= ~REG_BUCK_VANA_PWR_OR_SEL;
-    pmu_write(PMU_REG_BUCK_VANA_CFG_15A, val);
-
-    pmu_read(PMU_REG_BUCK_VCORE_CFG_15B, &val);
-    val &= ~REG_BUCK_VCORE_PWR_OR_SEL;
-    pmu_write(PMU_REG_BUCK_VCORE_CFG_15B, val);
 
     uint16_t val_burst_threshold_calib, vtemp, val_efuse_5;
 
@@ -3051,7 +3097,7 @@ int BOOT_TEXT_FLASH_LOC pmu_open(void)
 #ifdef HPPA_LDO_ON
     ASSERT(false, "1306p don't support HPPA_LDO_ON!");
 #else
-    val = pmu_dcdc_hppa_mv_to_val(vhppa_mv);
+    val = pmu_dcdc_hppa_mv_to_val(vcodec_mv);
     pmu_hppa_set_volt(val);
 #endif
 
@@ -4999,13 +5045,10 @@ void pmu_external_crystal_enable(void)
     while (hal_sys_timer_get() - pmu_ext_crystal_init_stime < MS_TO_TICKS(PMU_EXT_32K_STABLE_TIME));
 
 #ifdef PMU_CLK_USE_EXT_CRYSTAL
-    uint16_t val;
-
-    // PMU clock slecet to external crystal.
-    pmu_read(PMU_REG_CLK_SEL_CFG, &val);
-    val = SET_BITFIELD(val, CLK_32K_SEL, 0x2);
-    pmu_write(PMU_REG_CLK_SEL_CFG, val);
-    hal_sys_timer_delay(MS_TO_TICKS(PMU_CLK_SWITCH_STABLE_TIME));
+    // PMU clock sel EXT32K
+    if (pmu_main_clock_sel_ext32k(true)) {
+        PMU_INFO_TRACE_IMM(0, "%s: Sel ext32k fail!", __func__);
+    }
 #endif
 }
 
@@ -5203,6 +5246,50 @@ _calib_start:
 
 _exit:
     DRIVERS_TRACE(0, "%s: ret=%d next_state=%d", __func__, ret, xtal_32k_calib_state);
+    return ret;
+}
+
+// true: ext32k  false: lpo32k
+static int BOOT_TEXT_FLASH_LOC pmu_main_clock_sel_ext32k(bool sel_ext32k)
+{
+    uint16_t val;
+    int ret = 0;
+
+    if (sel_ext32k) {
+        uint32_t v1, v2;
+        uint8_t retry_count = 0;
+        const uint8_t max_retries = 20;
+
+        ret = -1;
+
+        pmu_read(PMU_REG_CLK_SEL_CFG, &val);
+        while (retry_count < max_retries) {
+            val = SET_BITFIELD(val, CLK_32K_SEL, 0x2);
+            pmu_write(PMU_REG_CLK_SEL_CFG, val);
+            hal_sys_timer_delay_us(PMU_CLK_SWITCH_STABLE_TIME_US);
+
+            v1 = hal_sys_timer_get();
+            hal_sys_timer_delay_us(200);
+            v2 = hal_sys_timer_get();
+
+            if (v1 != v2) {
+                ret = 0;
+                break;
+            }
+
+            val = SET_BITFIELD(val, CLK_32K_SEL, 0x0);
+            pmu_write(PMU_REG_CLK_SEL_CFG, val);
+            hal_sys_timer_delay_us(PMU_CLK_SWITCH_STABLE_TIME_US);
+
+            retry_count++;
+        }
+    } else {
+        pmu_read(PMU_REG_CLK_SEL_CFG, &val);
+        val = SET_BITFIELD(val, CLK_32K_SEL, 0x0);
+        pmu_write(PMU_REG_CLK_SEL_CFG, val);
+        hal_sys_timer_delay_us(PMU_CLK_SWITCH_STABLE_TIME_US);
+    }
+
     return ret;
 }
 #endif
@@ -5447,4 +5534,9 @@ int pmu_get_acin_volt(uint16_t *volt)
 enum PMU_PACKAGE_TYPE_T pmu_get_chip_package_type(void)
 {
     return pmu_pkg_type;
+}
+
+uint16_t pmu_get_vcodec_volt_mv(void)
+{
+    return vcodec_mv;
 }

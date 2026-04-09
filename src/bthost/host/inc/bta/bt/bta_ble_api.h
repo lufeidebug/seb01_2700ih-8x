@@ -36,11 +36,11 @@ extern "C" {
 
 typedef struct
 {
-    // Scan window
+    /// Scan window
     uint16_t scan_window_ms;
-    // Scan Interval
+    /// Scan Interval
     uint16_t scan_interval_ms;
-    // Scan Duration
+    /// Scan Duration
     uint16_t scan_duration_ms;
 } bta_ble_scan_param_t;
 
@@ -200,11 +200,11 @@ int bta_ble_get_peer_irk_by_addr(const ble_bdaddr_t *addr, bt_ble_gap_irk_t *irk
 
 /**
  * @brief       Add device to resolving list
- * @param[in]   addr  Peer device address
- * @param[in]   irk   Peer IRK
+ * @param[in]   count Resolving list item count
+ * @param[in]   item_list Resolving list item
  * @return      0 if successful, non-zero otherwise
  */
-int bta_ble_add_resolving_list(const ble_bdaddr_t *addr, const bt_ble_gap_irk_t *irk);
+int bta_ble_add_resolving_list(uint8_t count, const bt_ble_resolving_item_t *item_list);
 
 /**
  * @brief       Remove all devices from resolving list
@@ -214,10 +214,11 @@ int bta_ble_clear_resolving_list(void);
 
 /**
  * @brief       Add device to filter accept list
- * @param[in]   addr  Peer device address
+ * @param[in]   count Filter list item count
+ * @param[in]   addr_list  Peer device address list
  * @return      0 if successful, non-zero otherwise
  */
-int bta_ble_add_filter_accept_list(const ble_bdaddr_t *addr);
+int bta_ble_add_filter_accept_list(uint8_t count, const ble_bdaddr_t *addr_list);
 
 /**
  * @brief       Remove all devices from filter accept list
@@ -319,26 +320,17 @@ int bta_ble_gap_stop_scan(void);
 void bta_lea_register_event_callback(bt_lea_evt_callback cb);
 
 /**
- * @brief       Set LE Audio switch state for a device
- * @param[in]   addr   Device address
- * @param[in]   state  Switch state
- * @return      0 if successful, non-zero otherwise
- */
-int bta_lea_set_switch_state(const ble_bdaddr_t *addr, uint8_t state);
-
-/**
- * @brief       Get LE Audio switch state for a device
- * @param[in]   addr   Device address
- * @param[out]  state  Pointer to store switch state
- * @return      0 if successful, non-zero otherwise
- */
-int bta_lea_get_switch_state(const ble_bdaddr_t *addr, uint8_t *state);
-
-/**
  * @brief       Check if any LE Audio device is connected
  * @return      true if any LEA device connected, false otherwise
  */
 bool bta_lea_is_any_lea_device_connected(void);
+
+/**
+ * @brief       Get the number of connected LE Audio device.
+ *
+ * @return uint8_t the number of connected LE Audio device
+ */
+uint8_t bta_lea_get_connected_dev_num(void);
 
 /**
  * @brief       Media control functions (play, pause, forward, backward, fast forward/reverse)
@@ -351,6 +343,8 @@ int bta_lea_mcp_media_next_track(const ble_bdaddr_t *addr);
 int bta_lea_mcp_media_prev_track(const ble_bdaddr_t *addr);
 int bta_lea_mcp_media_fast_fw(const ble_bdaddr_t *addr);
 int bta_lea_mcp_media_fast_rw(const ble_bdaddr_t *addr);
+
+uint8_t bta_lea_mcp_get_media_state(const ble_bdaddr_t *addr);
 
 /**
  * @brief       Call control functions (answer, terminate, hold, retrieve, originate, join)

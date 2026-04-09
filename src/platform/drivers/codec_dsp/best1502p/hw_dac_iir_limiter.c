@@ -346,6 +346,8 @@ int32_t hw_dac_limiter_disable(void)
         codec->REG_258 |= CODEC_CODEC_DEQ_IIR_LMT_CH1_BYPASS;
     }
 
+    hal_sys_timer_delay_us(1);
+
     return 0;
 }
 

@@ -1479,7 +1479,7 @@ int a2dp_audio_ldac_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
 
 #ifdef A2DP_CP_ACCEL
     int ret;
-    ret = a2dp_cp_init(a2dp_cp_ldac_cp_decode, CP_PROC_DELAY_2_FRAMES);
+    ret = a2dp_cp_init(a2dp_cp_ldac_cp_decode, CP_PROC_DELAY_1_FRAME);
     ASSERT(ret == 0, "%s: a2dp_cp_init() failed: ret=%d", __func__, ret);
     uint32_t cp_buffer_frames_max = 0;
     uint32_t out_frame_len;
@@ -1559,8 +1559,8 @@ int  a2dp_audio_ldac_synchronize_packet(A2DP_AUDIO_SYNCFRAME_INFO_T *sync_info,u
     }
     else
     {
-        //AUDIOPLAYERS_TRACE(2,"%s nRet:%d", __func__, nRet);
-        AUDIOPLAYERS_TRACE(5,"nRet:%d SEQ:%d timestamp:%d sync %d/%d", nRet, ldac_decoder_frame_p->header.sequenceNumber, ldac_decoder_frame_p->header.timestamp,sync_info->sequenceNumber,sync_info->timestamp);
+        AUDIOPLAYERS_TRACE(2,"%s nRet:%d", __func__, nRet);
+        //AUDIOPLAYERS_TRACE(5,"nRet:%d SEQ:%d timestamp:%d sync %d/%d", nRet, ldac_decoder_frame_p->header.sequenceNumber, ldac_decoder_frame_p->header.timestamp,sync_info->sequenceNumber,sync_info->timestamp);
     }
 
     return nRet;

@@ -1823,6 +1823,8 @@ static void btdrv_bt_modem_config(void)
 
     besmdm_rx_adc_clock_rate_setf(0x1);
     besmdm_rf_adcclk_sel_x2_setf(1);
+    besmdm_adc_clk_sel_bw_2m_setf(0x1);
+    besmdm_adc_clk_sel_bw_4m_setf(0x1);
     besmdm_rx_iq_swap_pack(0x0DA7, 0x1, 0x0, 0x1);
     besmdm_rx_rate_converter_pack(0x1, 0x400000);
 
@@ -1882,6 +1884,7 @@ static void btdrv_bt_modem_config(void)
 
     besmdm_osr_12_ble_2m_setf(0x2);
     besmdm_int_dacfifo_bypass_setf(0x0);
+    rf_corr_new_en_setf(0x0);
 #ifdef __HW_AGC__
     besmdm_hw_agc_pwr_lock_pack(0x0, 0x0);
     besmdm_omega_lock_th_bt_setf(0x0);

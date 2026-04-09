@@ -73,18 +73,19 @@ enum HAL_I2C_API_MODE_T {
 };
 
 enum HAL_I2C_INT_STATUS_T {
-    HAL_I2C_INT_STATUS_GEN_CALL_MASK = 0x1<<11,
-    HAL_I2C_INT_STATUS_START_DET_MASK = 0x1<<10,
-    HAL_I2C_INT_STATUS_STOP_DET_MASK = 0x1<<9,
-    HAL_I2C_INT_STATUS_ACTIVITY_MASK = 0x1<<8,
-    HAL_I2C_INT_STATUS_RX_DONE_MASK = 0x1<<7,
-    HAL_I2C_INT_STATUS_TX_ABRT_MASK = 0x1<<6,
-    HAL_I2C_INT_STATUS_RD_REQ_MASK = 0x1<<5,
-    HAL_I2C_INT_STATUS_TX_EMPTY_MASK = 0x1<<4,
-    HAL_I2C_INT_STATUS_TX_OVER_MASK = 0x1<<3,
-    HAL_I2C_INT_STATUS_RX_FULL_MASK = 0x1<<2,
-    HAL_I2C_INT_STATUS_RX_OVER_MASK = 0x1<<1,
-    HAL_I2C_INT_STATUS_RX_UNDER_MASK = 0x1<<0,
+    // Same as i2cip intr status definitions
+    HAL_I2C_INT_STATUS_GEN_CALL_MASK            = (1 << 11),
+    HAL_I2C_INT_STATUS_START_DET_MASK           = (1 << 10),
+    HAL_I2C_INT_STATUS_STOP_DET_MASK            = (1 << 9),
+    HAL_I2C_INT_STATUS_ACTIVITY_MASK            = (1 << 8),
+    HAL_I2C_INT_STATUS_RX_DONE_MASK             = (1 << 7),
+    HAL_I2C_INT_STATUS_TX_ABRT_MASK             = (1 << 6),
+    HAL_I2C_INT_STATUS_RD_REQ_MASK              = (1 << 5),
+    HAL_I2C_INT_STATUS_TX_EMPTY_MASK            = (1 << 4),
+    HAL_I2C_INT_STATUS_TX_OVER_MASK             = (1 << 3),
+    HAL_I2C_INT_STATUS_RX_FULL_MASK             = (1 << 2),
+    HAL_I2C_INT_STATUS_RX_OVER_MASK             = (1 << 1),
+    HAL_I2C_INT_STATUS_RX_UNDER_MASK            = (1 << 0),
     /* FIXME : same as i2cip definitions
     #define I2CIP_INT_STATUS_GEN_CALL_SHIFT (11)
     #define I2CIP_INT_STATUS_START_DET_SHIFT (10)
@@ -102,50 +103,47 @@ enum HAL_I2C_INT_STATUS_T {
 };
 
 enum HAL_I2C_ERRCODE_T {
-    HAL_I2C_ERRCODE_SLVRD_INTX      = 1<<15,
-    HAL_I2C_ERRCODE_SLV_ARBLOST     = 1<<14,
-    HAL_I2C_ERRCODE_SLVFLUSH_TXFIFO = 1<<13,
-    HAL_I2C_ERRCODE_ARB_LOST        = 1<<12,
-    HAL_I2C_ERRCODE_MASTER_DIS      = 1<<11,
-    HAL_I2C_ERRCODE_10B_RD_NORSTRT  = 1<<10,
-    HAL_I2C_ERRCODE_SBYTE_NORSTRT   = 1<<9,
-    HAL_I2C_ERRCODE_HS_NORSTRT      = 1<<8,
-    HAL_I2C_ERRCODE_SBYTE_ACKDET    = 1<<7,
-    HAL_I2C_ERRCODE_HS_ACKDET       = 1<<6,
-    HAL_I2C_ERRCODE_GCALL_READ      = 1<<5,
-    HAL_I2C_ERRCODE_GCALL_NOACK     = 1<<4,
-    HAL_I2C_ERRCODE_TXDATA_NOACK    = 1<<3,
-    HAL_I2C_ERRCODE_10ADDR2_NOACK   = 1<<2,
-    HAL_I2C_ERRCODE_10ADDR1_NOACK   = 1<<1,
-    HAL_I2C_ERRCODE_7B_ADDR_NOACK   = 1<<0,
+    // Software general errors
+    HAL_I2C_ERRCODE_INV_PARAM                   = (8 << 28),
+    HAL_I2C_ERRCODE_IN_USE                      = (7 << 28),
+    HAL_I2C_ERRCODE_ACT_TIMEOUT                 = (6 << 28),
+    HAL_I2C_ERRCODE_TFNF_TIMEOUT                = (5 << 28),
+    HAL_I2C_ERRCODE_TFE_TIMEOUT                 = (4 << 28),
+    HAL_I2C_ERRCODE_RFNE_TIMEOUT                = (3 << 28),
+    HAL_I2C_ERRCODE_CLOSED                      = (2 << 28),
+    HAL_I2C_ERRCODE_NO_RX_TIMER                 = (1 << 28),
 
-    HAL_I2C_ERRCODE_INV_PARAM       = 1<<31,
-    HAL_I2C_ERRCODE_IN_USE          = 1<<30,
-    HAL_I2C_ERRCODE_FIFO_ERR        = 1<<29,
-    HAL_I2C_ERRCODE_SYNC_TIMEOUT    = 1<<28,
-    HAL_I2C_ERRCODE_ACT_TIMEOUT     = 1<<27,
-    HAL_I2C_ERRCODE_TFNF_TIMEOUT    = 1<<26,
-    HAL_I2C_ERRCODE_TFE_TIMEOUT     = 1<<25,
-    HAL_I2C_ERRCODE_RFNE_TIMEOUT    = 1<<24,
+    // Software task errors
+    HAL_I2C_ERRCODE_FIFO_ERR                    = (1 << 27),
+    HAL_I2C_ERRCODE_SYNC_TIMEOUT                = (1 << 26),
+    HAL_I2C_ERRCODE_CANCELLED                   = (1 << 25),
+    HAL_I2C_ERRCODE_EXTRA_RX                    = (1 << 24),
 
-    /* FIXME : same as i2cip definitions
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_SLVRD_INTX_SHIFT (15)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_SLV_ARBLOST_SHIFT (14)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_SLVFLUSH_TXFIFO_SHIFT (13)
-    #define I2CIP_TX_ABRT_SOURCE_ARB_LOST_SHIFT (12)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_MASTER_DIS_SHIFT (11)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_10B_RD_NORSTRT_SHIFT (10)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_SBYTE_NORSTRT_SHIFT (9)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_HS_NORSTRT_SHIFT (8)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_SBYTE_ACKDET_SHIFT (7)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_HS_ACKDET_SHIFT (6)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_GCALL_READ_SHIFT (5)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_GCALL_NOACK_SHIFT (4)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_TXDATA_NOACK_SHIFT (3)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_10ADDR2_NOACK_SHIFT (2)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_10ADDR1_NOACK_SHIFT (1)
-    #define I2CIP_TX_ABRT_SOURCE_ABRT_7B_ADDR_NOACK_SHIFT (0)
-    */
+    // Same as i2cip tx abort source definitions
+    // V2 or later
+    HAL_I2C_ERRCODE_ABRT_DEVICE_WRITE           = (1 << 20),
+    HAL_I2C_ERRCODE_ABRT_DEVICE_SLVADDR_NOACK   = (1 << 19),
+    HAL_I2C_ERRCODE_ABRT_DEVICE_NOACK           = (1 << 18),
+    HAL_I2C_ERRCODE_ABRT_SDA_STUCK_AT_LOW       = (1 << 17),
+    HAL_I2C_ERRCODE_ABRT_USER_ABRT              = (1 << 16),
+
+    // All versions
+    HAL_I2C_ERRCODE_SLVRD_INTX                  = (1 << 15),
+    HAL_I2C_ERRCODE_SLV_ARBLOST                 = (1 << 14),
+    HAL_I2C_ERRCODE_SLVFLUSH_TXFIFO             = (1 << 13),
+    HAL_I2C_ERRCODE_ARB_LOST                    = (1 << 12),
+    HAL_I2C_ERRCODE_MASTER_DIS                  = (1 << 11),
+    HAL_I2C_ERRCODE_10B_RD_NORSTRT              = (1 << 10),
+    HAL_I2C_ERRCODE_SBYTE_NORSTRT               = (1 << 9),
+    HAL_I2C_ERRCODE_HS_NORSTRT                  = (1 << 8),
+    HAL_I2C_ERRCODE_SBYTE_ACKDET                = (1 << 7),
+    HAL_I2C_ERRCODE_HS_ACKDET                   = (1 << 6),
+    HAL_I2C_ERRCODE_GCALL_READ                  = (1 << 5),
+    HAL_I2C_ERRCODE_GCALL_NOACK                 = (1 << 4),
+    HAL_I2C_ERRCODE_TXDATA_NOACK                = (1 << 3),
+    HAL_I2C_ERRCODE_10ADDR2_NOACK               = (1 << 2),
+    HAL_I2C_ERRCODE_10ADDR1_NOACK               = (1 << 1),
+    HAL_I2C_ERRCODE_7B_ADDR_NOACK               = (1 << 0),
 };
 
 struct HAL_I2C_CONFIG_T {
@@ -170,8 +168,12 @@ struct HAL_GPIO_I2C_CONFIG_T {
     uint32_t speed;
 };
 
+typedef void (*HAL_I2C_DELAY_FUNC)(uint32_t ms);
+HAL_I2C_DELAY_FUNC hal_i2c_set_delay_func(HAL_I2C_DELAY_FUNC new_func);
+
 uint32_t hal_i2c_open(enum HAL_I2C_ID_T id, const struct HAL_I2C_CONFIG_T *cfg);
 uint32_t hal_i2c_close(enum HAL_I2C_ID_T id);
+void hal_i2c_dump_reg(enum HAL_I2C_ID_T id);
 
 /* for master task mode */
 typedef void (*HAL_I2C_TRANSFER_HANDLER_T)(enum HAL_I2C_ID_T id, uint32_t transfer_id,
@@ -195,16 +197,22 @@ uint32_t hal_i2c_task_msend(enum HAL_I2C_ID_T id, uint16_t device_addr, const ui
 uint32_t hal_i2c_task_mrecv(enum HAL_I2C_ID_T id, uint16_t device_addr, const uint8_t *tx_buf, uint16_t tx_item_len,
         uint8_t *rx_buf, uint16_t rx_item_len, uint16_t item_cnt,
         uint32_t transfer_id, HAL_I2C_TRANSFER_HANDLER_T handler);
+uint32_t hal_i2c_cancel_active_task(enum HAL_I2C_ID_T id);
+uint32_t hal_i2c_task_busy(enum HAL_I2C_ID_T id);
 /* for master task mode end */
 
 /* for slave and simple master mode */
+typedef void (*HAL_I2C_SLAVE_TRANSFER_HANDLER_T)(enum HAL_I2C_ID_T id, uint32_t transport_dir,
+                                            const uint8_t *tx_buf, uint32_t tx_len,
+                                            const uint8_t *rx_buf, uint32_t rx_len,
+                                            enum HAL_I2C_ERRCODE_T errcode);
+typedef void (*HAL_I2C_RD_REQ_HANDLER_T)(enum HAL_I2C_ID_T id, uint32_t reg_addr, uint8_t **tx_buf,
+                                            uint32_t *tx_len, enum HAL_I2C_ERRCODE_T errcode);
 typedef void (*HAL_I2C_INT_HANDLER_T)(enum HAL_I2C_ID_T id, enum HAL_I2C_INT_STATUS_T status, uint32_t errocode);
 uint32_t hal_i2c_slv_simple_send_raw(enum HAL_I2C_ID_T id, const uint8_t *tx_buf, uint32_t tx_len, uint32_t yield);
 uint32_t hal_i2c_slv_simple_send(enum HAL_I2C_ID_T id, const uint8_t *tx_buf, uint32_t tx_len, uint32_t yield);
 uint32_t hal_i2c_slv_simple_recv(enum HAL_I2C_ID_T id, uint8_t *rx_buf, uint32_t rx_len, uint32_t yield);
-uint32_t hal_i2c_slv_task_send_raw(enum HAL_I2C_ID_T id, const uint8_t *tx_buf, uint32_t tx_len, uint32_t transfer_id, HAL_I2C_TRANSFER_HANDLER_T handler);
-uint32_t hal_i2c_slv_task_send(enum HAL_I2C_ID_T id, const uint8_t *tx_buf, uint32_t tx_len, uint32_t transfer_id, HAL_I2C_TRANSFER_HANDLER_T handler);
-uint32_t hal_i2c_slv_task_recv(enum HAL_I2C_ID_T id, uint8_t *rx_buf, uint32_t rx_len, uint32_t transfer_id, HAL_I2C_TRANSFER_HANDLER_T handler);
+uint32_t hal_i2c_slv_task_send_recv(enum HAL_I2C_ID_T id, uint8_t *rx_buf, uint32_t rx_len, uint32_t transfer_id, HAL_I2C_SLAVE_TRANSFER_HANDLER_T handler, HAL_I2C_RD_REQ_HANDLER_T rd_req_handler);
 uint32_t hal_i2c_set_interrupt_handler(enum HAL_I2C_ID_T id, HAL_I2C_INT_HANDLER_T handler);
 uint32_t hal_i2c_mst_write(enum HAL_I2C_ID_T id, uint32_t device_addr, const uint8_t *buf, uint32_t buf_len, uint32_t *act_len, uint32_t restart, uint32_t stop, uint32_t yield);
 uint32_t hal_i2c_mst_read(enum HAL_I2C_ID_T id, uint32_t device_addr, uint8_t *buf, uint32_t buf_len, uint32_t *act_len, uint32_t restart, uint32_t stop, uint32_t yield);

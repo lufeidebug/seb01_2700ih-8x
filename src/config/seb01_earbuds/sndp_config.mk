@@ -381,7 +381,7 @@ ifeq ($(SNDP_HEART_RATE_MGR),1)
     #KBUILD_CPPFLAGS += -D__SNDP_HEART_RATE_DUMP__
     
     export SNDP_HRSENSOR_SUPPORT                := 1
-    export SNDP_HR_ALGO                         := 0
+    export SNDP_HR_ALGO                         := 1
 
 endif
 

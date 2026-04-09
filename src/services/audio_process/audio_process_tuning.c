@@ -402,8 +402,9 @@ int audio_hw_dac_iir_limiter_callback(uint8_t *buf, uint32_t  len)
                                                                                 (int32_t)(audio_process.hw_dac_limiter_cfg.limiter_param_ch1.thd),
                                                                                 (int32_t)(audio_process.hw_dac_limiter_cfg.limiter_param_ch1.att_ms),
                                                                                 (int32_t)(audio_process.hw_dac_limiter_cfg.limiter_param_ch1.rls_ms));
-
     hw_dac_limiter_set_cfg(&audio_process.hw_dac_limiter_cfg);
+    hw_dac_limiter_disable();
+    hw_dac_limiter_enable();
 
     return 0;
 }

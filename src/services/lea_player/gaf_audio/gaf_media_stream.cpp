@@ -327,6 +327,7 @@ void gaf_stream_capture_register_dma_irq_cb(gaf_stream_dma_irq_cb func)
 }
 #endif
 
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
 static void gaf_stream_configure_playback_trigger(GAF_AUDIO_STREAM_ENV_T *pStreamEnv, CC_PLAYBACK_DATA_T *frame)
 {
     int32_t bt_time_diff = 0;
@@ -365,6 +366,7 @@ static void gaf_stream_configure_playback_trigger(GAF_AUDIO_STREAM_ENV_T *pStrea
         LEA_PLAYER_TRACE(0, "time_stamp pass");
     }
 }
+#endif
 
 POSSIBLY_UNUSED static void gaf_media_stop_all_iso_dp_rx(GAF_AUDIO_STREAM_ENV_T* pStreamEnv)
 {
@@ -468,11 +470,13 @@ static void gaf_stream_receive_data(uint16_t conhdl, GAF_ISO_PKT_STATUS_E pkt_st
             gaf_stream_common_store_packet(pStreamEnv, &frame, coreInfo, pk_size);
         }
 
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
         if ((GAF_PLAYBACK_STREAM_INITIALIZED == pStreamEnv->stream_context.playback_stream_state) &&
             (GAF_ISO_PKT_STATUS_VALID == p_media_data->pkt_status) && (p_media_data->data_len > 0))
         {
             gaf_stream_configure_playback_trigger(pStreamEnv, &frame);
         }
+#endif
 
         gaf_stream_data_free(p_media_data);
     }

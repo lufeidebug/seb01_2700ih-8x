@@ -595,7 +595,7 @@ static void gaf_bis_stream_receive_data(uint16_t conhdl, GAF_ISO_PKT_STATUS_E pk
                 trigger_bt_time += pStreamEnv->stream_info.playbackInfo.dma_info.dmaChunkIntervalUs;
             }
             LEA_PLAYER_TRACE(0, "curr_ts:%u trigg_ts:%u seq:%d offset:%d",current_bt_time, trigger_bt_time, p_sdu_buf->pkt_seq_nb, trigger_bt_time - current_bt_time);
-   
+
             pStreamEnv->stream_context.lastestPlaybackSeqNum[GAF_AUDIO_DFT_PLAYBACK_LIST_IDX] = p_sdu_buf->pkt_seq_nb;
             gaf_stream_common_set_playback_trigger_time(pStreamEnv, trigger_bt_time);
 
@@ -668,7 +668,14 @@ static int gaf_bis_audio_media_stream_start_handler(void* _pStreamEnv)
         af_codec_tune(AUD_STREAM_PLAYBACK, 0);
         af_stream_open(AUD_STREAM_ID_0, AUD_STREAM_PLAYBACK, &stream_cfg);
 
+#ifdef BIS_STREAM_PROCESS_ENABLE
+        gaf_bis_stream_process_playback_open(&stream_cfg);
+#endif
+
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
         pStreamEnv->stream_context.playbackTriggerChannel = app_bt_sync_get_available_trigger_channel(APP_BT_SYNC_OP_MAX, APP_BT_SYNC_POLICY_DEFAULT);
+#endif
+
         gaf_media_prepare_playback_trigger(pStreamEnv->stream_context.playbackTriggerChannel);
 
         // put PID env into stream context
@@ -690,6 +697,7 @@ static void gaf_bis_audio_media_playback_buf_init(void* _pStreamEnv)
 {
     uint8_t* heapBufStartAddr = NULL;
     GAF_AUDIO_STREAM_ENV_T* pStreamEnv = (GAF_AUDIO_STREAM_ENV_T *)_pStreamEnv;
+    GAF_AUDIO_STREAM_COMMON_INFO_T* pCommonInfo = &pStreamEnv->stream_info.playbackInfo;
 
     if (pStreamEnv->stream_context.playback_stream_state <= GAF_PLAYBACK_STREAM_INITIALIZING)
     {
@@ -704,6 +712,19 @@ static void gaf_bis_audio_media_playback_buf_init(void* _pStreamEnv)
         pStreamEnv->stream_info.playbackInfo.dma_info.dmaChunkSize);
     app_audio_mempool_get_buff(&heapBufStartAddr, audioCacheHeapSize);
     gaf_stream_heap_init(heapBufStartAddr, audioCacheHeapSize);
+
+#ifdef BIS_STREAM_PROCESS_ENABLE
+    uint32_t stream_process_buf_size = gaf_bis_stream_process_need_playback_buf_size();
+    if (stream_process_buf_size != 0) {
+        gaf_bis_stream_process_set_playback_buf((uint8_t *)app_audio_mempool_calloc(stream_process_buf_size, sizeof(int8_t)), stream_process_buf_size);
+    }
+
+    uint32_t stream_process_conversion_buf_size = gaf_bis_stream_process_need_conversion_buf_size(pCommonInfo->dma_info.dmaChunkSize, pCommonInfo->dma_info.bits_depth);
+    if (stream_process_conversion_buf_size != 0) {
+        gaf_bis_stream_process_set_conversion_buf((uint8_t *)app_audio_mempool_calloc(stream_process_conversion_buf_size,
+            sizeof(int8_t)), stream_process_conversion_buf_size);
+    }
+#endif
 
 #if !defined (GAF_CODEC_CROSS_CORE) && !defined (AOB_CODEC_CP)
     AOB_BIS_GROUP_INFO_T *aob_bis_group_info = ble_audio_earphone_info_get_bis_group_info();
@@ -868,9 +889,6 @@ static uint32_t gaf_bis_stream_media_dma_irq_handler(uint8_t *buf, uint32_t len)
     // LEA_PLAYER_TRACE(0, "seq 0x%02x expected play time %u local time %u dec ret %d", frame->seq_nb,
     //             frame->time_stamp, dmaIrqHappeningTimeUs, ret);
 #endif
-    if (ret) {
-        memset(buf, 0, len);
-    }
 
     if (LC3_API_OK == ret) {
 #ifdef BIS_STREAM_PROCESS_ENABLE

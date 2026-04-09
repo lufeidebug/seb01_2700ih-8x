@@ -88,6 +88,16 @@ extern "C" {
 #define BT_DRIVER_PUT_U16_REG_VAL(regAddr, val)     *(volatile  uint16_t *)(uintptr_t)(regAddr) = (val)
 #define BT_DRIVER_PUT_U32_REG_VAL(regAddr, val)     *(volatile  uint32_t *)(uintptr_t)(regAddr) = (val)
 
+typedef uint32_t BT_CONTROLER_TRACE_TYPE;
+#define BT_CONTROLER_TRACE_TYPE_INTERSYS                0x01
+#define BT_CONTROLER_TRACE_TYPE_CONTROLLER              0x02
+#define BT_CONTROLER_TRACE_TYPE_LMP_TRACE               0x04
+#define BT_CONTROLER_TRACE_TYPE_SPUV_HCI_BUFF           0x08
+#define BT_CONTROLER_FILTER_TRACE_TYPE_A2DP_STREAM      0x10
+#define BT_CONTROLER_TRACE_TYPE_DUMP_BUFF               0x20
+#define BT_CONTROLER_TRACE_TYPE_SPUV_HCI_BUFF_HIGH      0x40
+#define BT_CONTROLER_TRACE_TYPE_ACL_PACKET              0x80
+
 #define BT_SUB_SYS_TYPE     0
 #define MCU_SYS_TYPE        1
 #define BT_EM_AREA_1_TYPE   2
@@ -340,6 +350,8 @@ void bt_drv_free(void *ptr);
 void bt_tester_cmd_receive_evt_analyze(const unsigned char *data, unsigned int len);
 uint32_t bt_drv_get_btc_sw_version(void);
 void bt_drv_bt_tport_type_config(void);
+typedef void (*XtalSetCallback)(int current_val);
+void  bt_drv_rf_set_xtal_fcap(uint16_t start_val, uint16_t target_val, uint16_t max_step, XtalSetCallback set_xtal_fcap);
 
 #ifdef MCU_WAKEUP_BT_V2
 void bt_intersys_oper_btcore(enum WAKEUP_BT_USER_T user, enum WAKEUP_BT_MSG_T msg);

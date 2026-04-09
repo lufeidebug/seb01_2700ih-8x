@@ -5,18 +5,19 @@
 #include "cmsis.h"
 #include "cmsis_os.h"
 #include "hal_trace.h"
-#include "bluetooth.h"
-#include "bt_if.h"
+
+#include "bt_drv_reg_op.h"
+
 #include "../utils/encrypt/aes.h"
 #include "bes_gap_api.h"
 #include "bes_gatt_api.h"
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
 #include "app_ibrt_conn_evt.h"
-#include "bts_tws_api.h"
+
 #endif
 #include "nvrecord_fp_account_key.h"
 #include "apps.h"
-#include "app_bt.h"
+
 #include "ble_gfps.h"
 #include "bes_gap_api.h"
 #include "gfps_ble.h"
@@ -30,10 +31,13 @@
 #include "hwtimer_list.h"
 #include "hal_timer.h"
 #endif
-#include "app_ble.h"
 #include "bes_gfps_api.h"
-#include "bts_core_if.h"
-#include "bes_aob_api.h"
+
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
+#include "bts_tws_api.h"
+#include "bta_tws_ux_api.h"
+#endif
+
 
 /************************private macro defination***************************/
 #define USE_BLE_ADDR_AS_SALT      (0)
@@ -45,7 +49,9 @@
 /************************extern function declearation***********************/
 extern int rand(void);
 
+extern "C" bool app_bt_get_tx_power_idx(uint16_t handle, int8_t *tx_power_idx);
 #if defined(GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED)
+
 extern void gfps_write_sec_conn_host_supp(bool enable);
 extern void gfps_restore_sec_conn_host_supp(void);
 #else
@@ -365,7 +371,7 @@ static bool gfps_ble_adv_activity_prepare(ble_adv_activity_t *adv)
         return false;
     }
 
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     if (!app_ble_check_ibrt_allow_adv(USER_GFPS))
     {
         return false;
@@ -451,8 +457,6 @@ static bool gfps_ble_adv_activity_prepare(ble_adv_activity_t *adv)
         adv_param->own_addr_use_rpa = false;
     }
 
-    app_ble_dt_set_local_name(adv_param, NULL);
-
     return true;
 }
 
@@ -467,7 +471,7 @@ static bool gfps_ble_spot_adv_activity_prepare(ble_adv_activity_t *adv)
         return false;
     }
 
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     if (!app_ble_check_ibrt_allow_adv(USER_SPOT))
     {
         return false;
@@ -516,8 +520,6 @@ static bool gfps_ble_spot_adv_activity_prepare(ble_adv_activity_t *adv)
         }
 
         gap_dt_add_service_data(&adv_param->adv_data, APP_SPOT_SERVICE_UUID, service_data, data_ptr-service_data);
-
-        app_ble_dt_set_local_name(adv_param, NULL);
     }
 
     return true;
@@ -798,8 +800,11 @@ static uint8_t gfps_ble_write_spot_beacon_actions_hander(uint8_t condix, uint8_t
             additional_data.SECP_method = GFPS_BEACON_SECP_160R1_METHOD;
             additional_data.numbesr_of_ringing = GFPS_BEACON_TWO_CAPABLE_OF_RING;
             additional_data.ringing_capability = GFPS_BEACON_RINGING_VOLUME_AVAILABLE;
+
             int8_t tx_power_id = 0;
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
             app_bt_get_tx_power_idx(bts_tws_if_get_tws_acl_handle(), &tx_power_id);
+#endif
             additional_data.power_value = btdrv_reg_op_txpwr_idx_to_rssidbm(tx_power_id);
 
             GFPS_TRACE(1,"tx power is %x", additional_data.power_value);
@@ -1836,29 +1841,38 @@ static void gfps_process_bt_user_confirmation(struct bdaddr_t *bdaddr, uint32 nu
     memcpy(passkey, &numeric_value, GFPS_PASSKEY_LEN);
     big_little_switch(passkey, gfps_ble_env.passkey, GFPS_PASSKEY_LEN);
 
-    bes_bt_me_confirmation_resp(bdaddr, true);
+    memcpy(&gfps_ble_env.seeker_bt_addr, bdaddr, sizeof(bdaddr_t));
+    gfps_ble_env.isBTUserConfirm = true;
 }
 
-static void gfps_process_ble_user_confirmation(ble_event_handled_t param, ble_event_type_e type)
+void gfps_process_ble_user_confirmation(ble_event_t* ble_event, void* output)
 {
-    ble_event_handled_t *ble_event = &param;
-    if(BLE_CONNECT_NC_EXCH_EVENT == type)
+    if(output == NULL)
     {
+        return;
+    }
+    if(BLE_CONNECT_NC_EXCH_EVENT == ble_event->evt_type)
+    {
+        bool *result = (bool *)output;
         uint8_t passkey[GFPS_PASSKEY_LEN] = {0};
-        big_little_switch((uint8_t *)&ble_event->connect_nc_exch_handled.confirm_value, passkey, GFPS_PASSKEY_LEN);
+        big_little_switch((uint8_t *)&ble_event->p.connect_nc_exch_handled.confirm_value, passkey, GFPS_PASSKEY_LEN);
 
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-        if (BT_IBRT_SLAVE != bts_core_get_ui_role() && bts_tws_if_get_init_done_state())
-#endif
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+        if(BT_IBRT_SLAVE != bta_tws_get_ui_role())
+#endif // BT_SVC_MODULE_IBRT_ENABLED
         {
+            *result = false;
             gfps_set_pass_key(passkey, GFPS_PASSKEY_LEN);
+            gfps_ble_env.isBLEConfirm = true;
+            gfps_ble_env.connectionHandle = ble_event->p.connect_nc_exch_handled.connhdl;
         }
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
         else
         {
+            *result = true;
             gfps_set_additional_pass_key(passkey, GFPS_PASSKEY_LEN);
         }
-#endif
+#endif // BT_SVC_MODULE_IBRT_ENABLED
     }
 }
 
@@ -1882,6 +1896,12 @@ static uint8_t gfps_ble_handle_decrypted_keybase_pairing_request(gfps_ble_req_re
     {
         bes_bt_me_confirmation_register_callback(gfps_process_bt_user_confirmation);
     }
+#if BLE_AUDIO_ENABLED
+    if(!raw_req->rx_tx.key_based_pairing_req.flags_retroactively_write_account_key && raw_req->rx_tx.key_based_pairing_req.flags_support_le_audio)
+    {
+        bes_ble_gap_core_register_global_handler(gfps_process_ble_user_confirmation);
+    }
+#endif
 
 #if defined(GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED)
     if (!is_lea_enabled || !raw_req->rx_tx.key_based_pairing_req.flags_support_le_audio)
@@ -1917,16 +1937,12 @@ static uint8_t gfps_ble_handle_decrypted_keybase_pairing_request(gfps_ble_req_re
             ext_rsp->flags_ble_bonding = 1;
         }
 
-#if BLE_AUDIO_ENABLED
-        if(is_lea_enabled && raw_req->rx_tx.key_based_pairing_req.flags_support_le_audio)
-        {
-            ext_rsp->addrNum = bes_ble_aob_csip_if_get_device_numbers();
-        }
-        else
+        if (is_lea_enabled
+         && raw_req->rx_tx.key_based_pairing_req.flags_support_le_audio
+         && gfps_bta_is_tws_connected())
         {
             ext_rsp->addrNum = 1;
         }
-#endif
 
         if (ext_rsp->addrNum == 2)
         {
@@ -2135,9 +2151,15 @@ int gfps_get_wait_connect_phone(void)
 }
 #endif
 
+bool gfps_ble_get_if_keybase_isDecryptedSuccessful(uint8_t condix)
+{
+    return gfps_ble_env.isDecryptedSuccessful[condix];
+}
+
 static uint8_t gfps_ble_write_key_based_pairing_handler(uint8_t condix, uint8_t *param, uint16_t len)
 {
     uint8_t status = BES_GATT_NO_ERR;
+    gfps_ble_env.isDecryptedSuccessful[gap_zero_based_conidx(condix)] = true;
     if (!param)
     {
         return BES_GATT_ERR_INVALID_PERM;
@@ -2175,6 +2197,12 @@ static uint8_t gfps_ble_write_key_based_pairing_handler(uint8_t condix, uint8_t 
             GFPS_TRACE(0,"raw req seeker's addr:");
             GFPS_DUMP8("%02x ", ptr_raw_req->rx_tx.key_based_pairing_req.seeker_addr, BT_ADDR_OUTPUT_PRINT_NUM);
             GFPS_TRACE(1,"fp message type 0x%02x.", ptr_raw_req->rx_tx.raw_req.message_type);
+            if(!ptr_raw_req->rx_tx.key_based_pairing_req.flags_retroactively_write_account_key && gfps_get_if_just_accept_retroative_connect())
+            {
+                status = BES_GATT_ERR_INVALID_PERM;
+                gfps_ble_env.isDecryptedSuccessful[gap_zero_based_conidx(condix)] = false;
+                return status;
+            }
             if ((KEY_BASED_PAIRING_REQ == ptr_raw_req->rx_tx.raw_req.message_type) &&
             ((memcmp(ptr_raw_req->rx_tx.key_based_pairing_req.provider_addr,
                 gfps_ble_env.local_bt_addr.address , 6)==0) ||
@@ -2187,10 +2215,14 @@ static uint8_t gfps_ble_write_key_based_pairing_handler(uint8_t condix, uint8_t 
             }
             else
             {
-                GFPS_TRACE(0,"decrypt false..ingore");
+                status = BES_GATT_ERR_INVALID_PERM;
+                gfps_ble_env.isDecryptedSuccessful[gap_zero_based_conidx(condix)] = false;
+                GFPS_TRACE(0,"decrypt false..ingore or not in fast pair mode");
             }
 
         }else{
+            status = BES_GATT_ERR_INVALID_PERM;
+            gfps_ble_env.isDecryptedSuccessful[gap_zero_based_conidx(condix)] = false;
             GFPS_TRACE(1,"error = %x",gfps_state);
         }
     }
@@ -2200,9 +2232,16 @@ static uint8_t gfps_ble_write_key_based_pairing_handler(uint8_t condix, uint8_t 
         POSSIBLY_UNUSED bool isDecryptedSuccessful =
             gfps_ble_decrypt_keybase_pairing_request(( uint8_t * )en_req.en_req, out_key);
         GFPS_TRACE(1,"Decrypt keybase pairing req without public key result: %d", isDecryptedSuccessful);
+        if(!isDecryptedSuccessful)
+        {
+            status = BES_GATT_ERR_INVALID_PERM;
+            gfps_ble_env.isDecryptedSuccessful[gap_zero_based_conidx(condix)] = false;
+        }
     }
     else
     {
+        status = BES_GATT_ERR_INVALID_PERM;
+        gfps_ble_env.isDecryptedSuccessful[gap_zero_based_conidx(condix)] = false;
         GFPS_TRACE(0,"who you are??");
     }
 
@@ -2241,6 +2280,17 @@ static uint8_t gfps_ble_write_passkey_ind_handler(uint8_t conidx, uint8_t *param
         raw_rsp.reserved[9]  = 0x12;
         raw_rsp.reserved[10] = 0x12;
         raw_rsp.reserved[11] = 0x01;
+        if(gfps_ble_env.isBTUserConfirm)
+        {
+            gfps_ble_env.isBTUserConfirm = false;
+            bes_bt_me_confirmation_resp(&gfps_ble_env.seeker_bt_addr, true);
+        }
+    
+         if(gfps_ble_env.isBLEConfirm)
+         {
+             gfps_ble_env.isBLEConfirm = false;
+             gap_input_numeric_confirm(gfps_ble_env.connectionHandle, NULL, true);
+         }
         gfps_crypto_encrypt(( const uint8_t * )(&raw_rsp.message_type), sizeof(raw_rsp), gfps_ble_env.keybase_pair_key, en_rsp.uint128_array);
         ble_app_gfps_send_passkey(conidx, ( uint8_t * )en_rsp.uint128_array, sizeof(en_rsp));
     }
@@ -2270,15 +2320,21 @@ void gfps_set_flag(bool flag)
 {
     gfps_ble_env.gfps_flag = flag;
 }
+
 void gfps_send_flag_to_slave(bool flag)
 {
-    tws_ctrl_send_cmd(APP_TWS_CMD_SNED_GFPS_FLAG_INFO, (uint8_t *)&flag, 1);
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    bta_tws_send_cmd(APP_TWS_CMD_SNED_GFPS_FLAG_INFO, (uint8_t *)&flag, 1);
+#endif
 }
 
 void gfps_send_additional_passkey_to_slave(uint8_t *p_buff, uint16_t length)
 {
-     tws_ctrl_send_cmd(APP_TWS_CMD_SNED_GFPS_PASSKEY, p_buff, length);
+#if defined(BT_SVC_MODULE_TWS_ENABLED)
+    bta_tws_send_cmd(APP_TWS_CMD_SNED_GFPS_PASSKEY, p_buff, length);
+#endif
 }
+
 uint8_t* gfps_get_keybase_pair_key()
 {
     return gfps_ble_env.keybase_pair_key;
@@ -2315,7 +2371,7 @@ static uint8_t  gfps_ble_write_additional_passkey_ind_handler(uint8_t conidx, ui
     raw_rsp.passkey[1]   = decryptdata[2];
     raw_rsp.passkey[2]   = decryptdata[3];
 
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     gfps_send_additional_passkey_to_slave(raw_rsp.passkey, sizeof(raw_rsp.passkey));
 #endif
     return BES_GATT_NO_ERR;
@@ -2350,7 +2406,7 @@ static uint8_t gfps_ble_write_name_hander(uint8_t conidx, uint8_t *param, uint16
         {
             nv_record_fp_update_name(rawName, len-16);
             GFPS_TRACE(1,"Rename BT name: [%s]", rawName);
-        #if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
+        #if defined(BT_SVC_MODULE_IBRT_ENABLED)
             app_tws_send_fastpair_info_to_slave();
         #endif
         }
@@ -2388,7 +2444,7 @@ static uint8_t gfps_ble_write_accountkey_hander(uint8_t conidx, uint8_t *param, 
     gfps_sass_set_inuse_acckey(accountkey.key, NULL);
 #endif
 
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     app_tws_send_fastpair_info_to_slave();
 #endif
 
@@ -2448,11 +2504,10 @@ void gfps_ble_connected_evt_handler(uint8_t conidx, bt_bdaddr_t *localAddr)
             big_little_switch(localAddr->address, &gfps_ble_env.local_le_addr.address[0], 6);
         }
     }
-
     GFPS_TRACE(0,"local LE addr: ");
     GFPS_DUMP8("0x%02x ", gfps_ble_env.local_le_addr.address, 6);
 
-#if !defined(IBRT)
+#if !defined(BT_SVC_MODULE_IBRT_ENABLED)
     big_little_switch(bt_get_ble_local_address(), &gfps_ble_env.local_bt_addr.address[0], 6);
 #else
     uint8_t *bt_local_addr = bts_tws_if_get_local_addr();
@@ -2470,6 +2525,10 @@ void gfps_ble_disconnected_evt_handler(uint8_t conidx)
         gfps_ble_env.isPendingForWritingNameReq = false;
         gfps_ble_env.connectionIndex = BLE_INVALID_CONNECTION_INDEX;
         gfps_ble_env.isSubPairing = false;
+        gfps_ble_env.isBLEConfirm = false;
+        gfps_ble_env.isBTUserConfirm = false;
+        bes_bt_me_confirmation_register_callback(NULL);
+        bes_ble_gap_core_register_global_handler(NULL);
 #if !defined(GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED)
         // * for gfps certification compatiblity, allow accept le conn req with same addr temporarily
         bt_exec_async_2(false, gfps_set_le_con_allow_use_same_addr, bt_fixed_param(conidx), bt_fixed_param(false));
@@ -2623,7 +2682,7 @@ uint8_t gfps_ble_gatt_callback(ble_app_gfps_event_param_t *param)
                  rsp_data[0] = KEY_BASED_PAIRING_RSP;
                  memcpy(&rsp_data[1], gfps_get_additional_passkey(), 3);
                  //copy address
-                 if (bts_tws_if_is_tws_link_connected())
+                 if (gfps_bta_is_tws_connected())
                  {
                      big_little_switch(nv_record_get_ibrt_peer_addr(), &rsp_data[4], sizeof(bt_bdaddr_t));
                      if (gfps_get_if_send_passkey())
@@ -2647,8 +2706,8 @@ uint8_t gfps_ble_gatt_callback(ble_app_gfps_event_param_t *param)
         case GFPS_BLE_EVT_GET_EVENT_STREAM:
             if(param->outData)
             {
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-                if (BT_IBRT_SLAVE != bts_core_get_ui_role()&& bts_tws_if_get_init_done_state())
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+                if (BT_IBRT_SLAVE != bta_tws_get_ui_role())
                 {
                     param->outData[0] = STATE_READY_CONNECT;
                 }
@@ -2656,12 +2715,12 @@ uint8_t gfps_ble_gatt_callback(ble_app_gfps_event_param_t *param)
                 {
                      param->outData[0] = STATE_UNAVAILABLE;
                 }
- #else
-                 param->outData[0] = STATE_READY_CONNECT;
- #endif
-                 param->outData[1] = (L2CAP_SPSM_GFPS >> 8);
-                 param->outData[2] = (L2CAP_SPSM_GFPS & 0xFF);
-                 param->outLen = 3;
+#else
+                param->outData[0] = STATE_READY_CONNECT;
+#endif
+                param->outData[1] = (L2CAP_SPSM_GFPS >> 8);
+                param->outData[2] = (L2CAP_SPSM_GFPS & 0xFF);
+                param->outLen = 3;
             }
             break;
         default:
@@ -2685,6 +2744,5 @@ void gfps_ble_init(void)
     bes_ble_dult_init(&gfps_ble_dult_callback);
 #endif
     ble_app_gfps_register_event_callback(gfps_ble_gatt_callback);
-    bes_ble_customif_link_event_callback_register(gfps_process_ble_user_confirmation);
 }
 #endif

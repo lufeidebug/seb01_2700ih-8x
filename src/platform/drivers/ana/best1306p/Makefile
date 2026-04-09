@@ -7,7 +7,11 @@ obj-y := $(obj-y:.S=.o)
 
 subdir-ccflags-y += -Iutils/hwtimer_list
 
+ifeq ($(PSRAM_ENABLE),1)
+VCODEC_VOLT ?= 1.9V
+else
 VCODEC_VOLT ?= 1.7V
+endif
 ifneq ($(filter-out 1.4V 1.45V 1.5V 1.55V 1.6V 1.65V 1.7V 1.75V 1.8V 1.9V,$(VCODEC_VOLT)),)
 $(error Invalid VCODEC_VOLT=$(VCODEC_VOLT))
 endif

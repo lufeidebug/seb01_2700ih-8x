@@ -261,6 +261,7 @@ void hal_codec_sync_dac_gain_enable(enum HAL_CODEC_SYNC_TYPE_T type);
 void hal_codec_sync_dac_gain_disable(void);
 void hal_codec_sync_adc_gain_enable(enum HAL_CODEC_SYNC_TYPE_T type);
 void hal_codec_sync_adc_gain_disable(void);
+int hal_codec_get_adc_gain(enum AUD_CHANNEL_MAP_T map, float *gain);
 int hal_codec_dac_reset_set(void);
 int hal_codec_dac_reset_clear(void);
 int hal_codec_dac_sdm_reset_set(void);

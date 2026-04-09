@@ -435,6 +435,9 @@
 #define REG_LP_BBPLL_CLKGEN_RST_DR              (1 << 12)
 #define REG_LP_BBPLL_SDM_CLK_SEL                (1 << 14)
 
+// REG_1043
+#define REG_XTAL_MDLL_PFD_ERROR_DET_EN          (1 << 3)
+
 // REG_1044
 #define REG_XTAL_MDLL_LPF_PRECH_BIAS_SHIFT      0
 #define REG_XTAL_MDLL_LPF_PRECH_BIAS_MASK       (0x7 << REG_XTAL_MDLL_LPF_PRECH_BIAS_SHIFT)
@@ -506,6 +509,7 @@ enum RF_ANA_CHG_REG_T {
     RF_REG_1034                 = RF1_REG(0x34),
     RF_REG_1035                 = RF1_REG(0x35),
     RF_REG_1037                 = RF1_REG(0x37),
+    RF_REG_1043                 = RF1_REG(0x43),
     RF_REG_1044                 = RF1_REG(0x44),
     RF_REG_1050                 = RF1_REG(0x50),
     RF_REG_1052                 = RF1_REG(0x52),
@@ -1638,6 +1642,10 @@ void BOOT_TEXT_FLASH_LOC pmu_rf_ana_init(void)
     val = SET_BITFIELD(val, REG_XTAL_LDO_VTUNE_CH46, vtune_val);
     val = SET_BITFIELD(val, REG_XTAL_LDO_VTUNE_CH70, vtune_val);
     rf_write(RF_REG_1016,val);
+
+    rf_read(RF_REG_1043, &val);
+    val |= REG_XTAL_MDLL_PFD_ERROR_DET_EN;
+    rf_write(RF_REG_1043, val);
 
     rf_read(RF_REG_1044, &val);
     val = SET_BITFIELD(val, REG_XTAL_MDLL_LPF_PRECH_BIAS, 0x2);

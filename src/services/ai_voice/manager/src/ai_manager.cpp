@@ -70,10 +70,12 @@ osTimerDef(BLE_GVA_AMA_CROSS_ADV_TIMER, ( void (*)(void const *) )ble_gva_ama_cr
 
 static void ai_manager_reset(void)
 {
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     if (app_ai_is_in_tws_mode(0))
     {
         app_ai_tws_reboot_record_box_state();
     }
+#endif
     bes_bt_me_write_access_mode(BTIF_BAM_NOT_ACCESSIBLE,1);
     hal_sw_bootmode_set(HAL_SW_BOOTMODE_REBOOT);
     app_reset();

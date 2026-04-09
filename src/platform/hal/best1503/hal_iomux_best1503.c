@@ -2080,94 +2080,14 @@ void hal_iomux_single_wire_pmu_uart_tx(uint32_t uart)
 {
 }
 
-
-POSSIBLY_UNUSED void hal_iomux_single_wire_mcu_uart_rx(uint32_t uart)
-{
-    if(uart != HAL_UART_ID_1 && uart != HAL_UART_ID_2) {
-        return;
-    }
-
-    struct HAL_IOMUX_PIN_FUNCTION_MAP pinmux_uart[] = 
-    {
-#if (SINGLE_UART_IOMUX_INDEX == 64)
-        {HAL_IOMUX_PIN_P6_4,    HAL_IOMUX_FUNC_MCU_UART2_RX,    HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_PULLUP_ENABLE },
-        {HAL_IOMUX_PIN_P6_5,    HAL_IOMUX_FUNC_GPIO,            HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_NOPULL        },
-#else
-        {HAL_IOMUX_PIN_P2_0,    HAL_IOMUX_FUNC_MCU_UART1_RX,    HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_PULLUP_ENABLE },
-        {HAL_IOMUX_PIN_P2_1,    HAL_IOMUX_FUNC_GPIO,            HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_NOPULL        },
-#endif
-    };
-
-    hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)pinmux_uart[0].pin, HAL_GPIO_DIR_IN, 1);
-    hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)pinmux_uart[1].pin, HAL_GPIO_DIR_IN, 1);
-    
-    hal_iomux_init(pinmux_uart, ARRAY_SIZE(pinmux_uart));
-    hal_uart_flush(uart, 0);
-}
-
-
-POSSIBLY_UNUSED void hal_iomux_single_wire_mcu_uart_tx(uint32_t uart)
-{
-    
-    if(uart != HAL_UART_ID_1 && uart != HAL_UART_ID_2) {
-        return;
-    }
-
-    struct HAL_IOMUX_PIN_FUNCTION_MAP pinmux_uart[] = 
-    {
-#if (SINGLE_UART_IOMUX_INDEX == 64)
-        {HAL_IOMUX_PIN_P6_4,    HAL_IOMUX_FUNC_GPIO,            HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_PULLUP_ENABLE },
-        {HAL_IOMUX_PIN_P6_5,    HAL_IOMUX_FUNC_MCU_UART2_TX,    HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_NOPULL          },
-#else
-        {HAL_IOMUX_PIN_P2_0,    HAL_IOMUX_FUNC_GPIO,            HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_PULLUP_ENABLE },
-        {HAL_IOMUX_PIN_P2_1,    HAL_IOMUX_FUNC_MCU_UART1_TX,    HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_NOPULL          },
-#endif
-    };
-
-    hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)pinmux_uart[0].pin, HAL_GPIO_DIR_IN, 1);
-    hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)pinmux_uart[1].pin, HAL_GPIO_DIR_IN, 1);
-    
-    hal_iomux_init(pinmux_uart, ARRAY_SIZE(pinmux_uart));
-   
-}
-
-POSSIBLY_UNUSED void hal_iomux_single_wire_mcu_uart_en()
-{
-    static bool uart_en = false;
-    
-    struct HAL_IOMUX_PIN_FUNCTION_MAP ctrl_pin = 
-    {
-        HAL_IOMUX_PIN_P0_5, HAL_IOMUX_FUNC_GPIO,  HAL_IOMUX_PIN_VOLTAGE_VIO, HAL_IOMUX_PIN_PULLUP_ENABLE,
-    };
-
-    if(!uart_en) {
-        uart_en = true;
-    
-        hal_iomux_init(&ctrl_pin, 1);
-        hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)ctrl_pin.pin, HAL_GPIO_DIR_OUT, 1);
-    }
-}
-
-
 void hal_iomux_single_wire_uart_rx(uint32_t uart)
 {
-#if defined(__SINGLE_WIRE_MCU_UART__)
-    hal_iomux_single_wire_mcu_uart_en();
-    hal_iomux_single_wire_mcu_uart_rx(uart);
-#else
     hal_iomux_single_wire_pmu_uart_rx(uart);
-#endif
 }
 
 void hal_iomux_single_wire_uart_tx(uint32_t uart)
 {
-#if defined(__SINGLE_WIRE_MCU_UART__)
-    hal_iomux_single_wire_mcu_uart_en();
-    hal_iomux_single_wire_mcu_uart_tx(uart);
-#else
     hal_iomux_single_wire_pmu_uart_tx(uart);
-#endif    
-    
 }
 
 void hal_iomux_set_flash_qspi(void)

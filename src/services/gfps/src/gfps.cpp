@@ -28,56 +28,66 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "cmsis.h"
 #include "cmsis_os.h"
+
 #include "hal_trace.h"
-#include "bluetooth.h"
-#include "bt_if.h"
-#include "btapp.h"
-#include "app_bt_func.h"
-#ifdef IBRT
-#include "app_tws_ibrt.h"
+
+#include "bt_drv_reg_op.h"
+#if defined(SPOT_ENABLED)
+#include "bt_drv_interface.h"
+#include "hal_timer.h"
+#endif
+
+#include "nvrecord_ble.h"
+#include "nvrecord_fp_account_key.h"
+
+#include "apps.h"
+#include "app_media_player.h"
+
+#ifndef BT_SVC_MODULE_IBRT_ENABLED
+#include "bta_normal_ux_api.h"
+#else
 #include "app_ibrt_customif_cmd.h"
-#include "app_ibrt_conn_evt.h"
-#include "bts_core_if.h"
-#include "bts_tws_api.h"
-#include "bts_bt_if.h"
 #include "bta_tws_ux_api.h"
 #endif
-#include "app_media_player.h"
-#include "nvrecord_fp_account_key.h"
-#include "customparam_section.h"
+
+
 #include "gfps.h"
 #include "gfps_ble.h"
 #include "gfps_rfcomm.h"
 #include "gfps_crypto.h"
+
 #include "bes_gfps_api.h"
-#include "app_ble.h"
 #include "bes_gap_api.h"
 
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
 #include "gfps_sass.h"
 #include "gfps_crypto.h"
-#include "app_bt.h"
 #endif
 
-#ifdef SPOT_ENABLED
-#include "bt_drv_interface.h"
-#include "hal_timer.h"
-#endif
-#include "app_status_ind.h"
-#include "apps.h"
-#include "nvrecord_ble.h"
+#include "customparam_section.h"
+
+#include "bts_ble_api.h"
+#include "bts_lea_api.h"
+
+#include "bta_bt_api.h"
+#include "bta_ble_api.h"
 #include "ble_gfps.h"
 
-#if BLE_AUDIO_ENABLED
-#include "ble_aob_common.h"
-#include "bt_svc_lea_api.h"
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+#include "bts_bt_if.h"
+#include "bts_api.h"
+#include "bts_tws_api.h"
+#include "bta_tws_audio_api.h"
+#include "bta_tws_ux_api.h"
+#else
+#include "bta_normal_ux_api.h"
+#include "bta_normal_audio_api.h"
 #endif
 
-#ifdef BESUI_GFPS_ID_EN
-#include "besui_common.h"
-#endif
+
 
 /************************private macro defination***************************/
 #define GFPS_MAIL_MAX (20)
@@ -107,14 +117,20 @@ void gfps_srv_event_rfcomm_process(uint8_t devId, GFPS_SRV_EVENT_RFCOM_PARAM_T *
 void gfps_srv_event_l2cap_process(uint8_t devId, GFPS_SRV_EVENT_L2CAP_PARAM_T *param);
 void gfps_link_connect_process(uint8_t devId, const bt_bdaddr_t *addr);
 #if BLE_AUDIO_ENABLED
-void gfps_lea_event_handler(void *param);
+void gfps_lea_event_handler(const bt_lea_evt_packet_t *evt_pkt);
 #endif
 
-#if defined(BT_SVC_MODULE_TWS_ENABLED) && !defined(FREEMAN_ENABLED_STERO)
+/**
+ ****************************************************************************************
+ *  GFPS BTA Adapter
+ ****************************************************************************************
+ */
 
 #define gfps_cmd_rsp_timeout_handler_null   (0)
 #define gfps_cmd_rsp_handler_null           (0)
 #define gfps_cmd_tx_done_handler_null       (0)
+
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
 
 void app_ibrt_send_gfps_flag_info(uint8_t *p_buff, uint16_t length);
 void app_ibrt_send_gfps_flag_info_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
@@ -132,16 +148,15 @@ void app_ibrt_send_gfps_ble_disc_cmd_handler(uint16_t rsp_seq, uint8_t *p_buff, 
 
 void app_ibrt_send_streaming_state_cmd(uint8_t *p_buff, uint16_t length);
 void app_ibrt_send_streaming_state_cmd_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
-#endif // BLE_AUDIO_ENABLED
+#endif
 
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
 void app_ibrt_send_sass_info(uint8_t *p_buff, uint16_t length);
 void app_ibrt_send_sass_info_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
 void app_ibrt_send_sass_info_rsp_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
 #endif // SASS_ENABLED
 
-static const bt_tws_cmd_instance_t g_gfps_cmd_handler_table[]=
-{
+static const bt_tws_cmd_instance_t g_gfps_cmd_handler_table[]= {
     {
         APP_TWS_CMD_SNED_GFPS_FLAG_INFO,                 "SEND_GFPS_FLAG_INFO",
         app_ibrt_send_gfps_flag_info,
@@ -205,21 +220,24 @@ static const bt_tws_cmd_instance_t g_gfps_cmd_handler_table[]=
     },
 #endif // SASS_ENABLED
 };
+#endif
 
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
 void app_ibrt_send_gfps_flag_info(uint8_t *p_buff, uint16_t length)
 {
-    bts_tws_if_send_cmd_without_rsp(APP_TWS_CMD_SNED_GFPS_FLAG_INFO , p_buff, length);
+    bta_tws_send_cmd_without_rsp(APP_TWS_CMD_SNED_GFPS_FLAG_INFO , p_buff, length);
 }
 
 void app_ibrt_send_gfps_flag_info_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
 {
     bool flag = *p_buff;
     gfps_set_flag(flag);
+    bes_ble_gap_core_register_global_handler(gfps_process_ble_user_confirmation);
 }
 
 void app_ibrt_send_gfps_passkey(uint8_t *p_buff, uint16_t length)
 {
-    bts_tws_if_send_cmd_with_rsp(APP_TWS_CMD_SNED_GFPS_PASSKEY, p_buff, length);
+    bta_tws_send_cmd_with_rsp(APP_TWS_CMD_SNED_GFPS_PASSKEY, p_buff, length);
 }
 
 void app_ibrt_send_gfps_passkey_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
@@ -229,7 +247,7 @@ void app_ibrt_send_gfps_passkey_handler(uint16_t rsp_seq, uint8_t *p_buff, uint1
     {
         memset(p_buff, 0x00, length);
     }
-    tws_ctrl_send_rsp((uint16_t)APP_TWS_CMD_SNED_GFPS_PASSKEY, rsp_seq, p_buff,length);
+    bta_tws_send_rsp((uint16_t)APP_TWS_CMD_SNED_GFPS_PASSKEY, rsp_seq, p_buff,length);
 }
 
 void app_ibrt_send_gfps_passkey_rsp_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
@@ -242,7 +260,7 @@ void app_ibrt_send_gfps_passkey_rsp_handler(uint16_t rsp_seq, uint8_t *p_buff, u
     memcpy(raw_rsp.passkey, p_buff, length);
     gfps_set_additional_pass_key(p_buff, length);
 
-    if (bts_tws_if_is_tws_link_connected())
+    if (bta_tws_get_sync_state() == BTA_TWS_SYNCED)
     {
         big_little_switch(nv_record_get_ibrt_peer_addr(), raw_rsp.bonding_addr, sizeof(bt_bdaddr_t));
     }
@@ -259,12 +277,11 @@ void app_ibrt_send_gfps_passkey_rsp_handler(uint16_t rsp_seq, uint8_t *p_buff, u
     ble_app_gfps_send_additional_passkey(gfps_ble_get_conidx(), ( uint8_t * )en_rsp.uint128_array, sizeof(en_rsp));
 
     gfps_set_if_send_passkey(true);
-
 }
 
 void app_ibrt_send_gfps_ring_info(uint8_t *p_buff, uint16_t length)
 {
-     bts_tws_if_send_cmd_without_rsp(APP_TWS_CMD_SEND_GFPS_RING_INFO, p_buff, length);
+    bta_tws_send_cmd_without_rsp(APP_TWS_CMD_SEND_GFPS_RING_INFO, p_buff, length);
 }
 
 void app_ibrt_send_gfps_ring_info_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
@@ -277,19 +294,19 @@ void app_ibrt_send_gfps_ring_info_handler(uint16_t rsp_seq, uint8_t *p_buff, uin
 void app_ibrt_send_gfps_ble_disc_cmd(uint8_t *p_buff, uint16_t length)
 {
     GFPS_TRACE(1, "%s", __func__);
-    bts_tws_if_send_cmd_without_rsp(APP_TWS_CMD_SNED_GFPS_BLE_DISC_CMD, p_buff, length);
+    bta_tws_send_cmd_without_rsp(APP_TWS_CMD_SNED_GFPS_BLE_DISC_CMD, p_buff, length);
 }
 
 void app_ibrt_send_gfps_ble_disc_cmd_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
 {
     GFPS_TRACE(1, "%s", __func__);
-    bes_ble_gap_disconnect_by_addr((ble_bdaddr_t *)p_buff);
+    bta_ble_disconnect((ble_bdaddr_t *)p_buff);
 }
 
 void app_ibrt_send_streaming_state_cmd(uint8_t *p_buff, uint16_t length)
 {
     GFPS_TRACE(1, "%s", __func__);
-    bts_tws_if_send_cmd_without_rsp(APP_TWS_CMD_SNED_STREAMING_STATE_CMD, p_buff, length);
+    bta_tws_send_cmd_without_rsp(APP_TWS_CMD_SNED_STREAMING_STATE_CMD, p_buff, length);
 }
 
 void app_ibrt_send_streaming_state_cmd_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
@@ -297,27 +314,150 @@ void app_ibrt_send_streaming_state_cmd_handler(uint16_t rsp_seq, uint8_t *p_buff
     GFPS_TRACE(1, "%s", __func__);
     gfps_rec_peer_streaming_state_handler(p_buff, length);
 }
-#endif //BLE_AUDIO_ENABLED
+#endif // BLE_AUDIO_ENABLED
 
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
 void app_ibrt_send_sass_info(uint8_t *p_buff, uint16_t length)
 {
-    bts_tws_if_send_cmd_with_rsp(APP_TWS_CMD_SEND_SASS_INFO, p_buff, length);
+    bta_tws_send_cmd_with_rsp(APP_TWS_CMD_SEND_SASS_INFO, p_buff, length);
 }
 
 void app_ibrt_send_sass_info_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
 {
     gfps_sass_set_sync_info(p_buff, length);
-    tws_ctrl_send_rsp((uint16_t)APP_TWS_CMD_SEND_SASS_INFO, rsp_seq, NULL, 0);
+    bta_tws_send_rsp((uint16_t)APP_TWS_CMD_SEND_SASS_INFO, rsp_seq, NULL, 0);
 }
 
 void app_ibrt_send_sass_info_rsp_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
 {
     GFPS_TRACE(1, "%s", __func__);
 }
-#endif //SASS_ENABLED
+#endif // SASS_ENABLED
 
-#endif //defined(BT_SVC_MODULE_TWS_ENABLED) && !defined(FREEMAN_ENABLED_STERO)
+#endif // BT_SVC_MODULE_IBRT_ENABLED
+
+uint8_t gfps_bta_get_device_num_max(void)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    return bta_tws_get_device_num_max();
+#else
+    return bta_get_device_num_max();
+#endif
+}
+
+uint8_t gfps_bta_get_bt_connected_dev_list(bt_bdaddr_list_t *p_dev_addr_l)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    return bta_tws_find_all_connected_bt_device(p_dev_addr_l);
+#else
+    return bta_find_all_connected_bt_device(p_dev_addr_l);
+#endif
+}
+
+uint8_t gfps_bta_get_bt_connected_link_num(void)
+{
+    return gfps_bta_get_bt_connected_dev_list(NULL);
+}
+
+uint8_t gfps_bta_get_lea_connected_link_num(void)
+{
+#if BLE_AUDIO_ENABLED
+    return bta_lea_get_connected_dev_num();
+#else
+    return 0;
+#endif
+}
+
+void gfps_bta_enable_pairing_mode(bool enable)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    bta_tws_enable_pairing_mode(enable);
+#else
+    bta_enable_pairing_mode(enable);
+#endif
+}
+
+void gfps_bta_connect_bt_device(const bt_bdaddr_t *addr, uint8_t page_count)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    bta_tws_connect_bt_device(addr, page_count);
+#else
+    bta_connect_bt_device(addr, page_count, 0);
+#endif
+}
+
+void gfps_bta_remove_bt_device(const bt_bdaddr_t *addr)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    bta_tws_remove_bt_device(addr);
+#else
+    bta_remove_bt_device(addr);
+#endif
+}
+
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+bool gfps_event_io_capbility_request_callback(const bt_bdaddr_t *addr, uint8_t local_initiate);
+const bts_bt_to_gfps_cbs_t cbs = {
+    .io_capbility_request = gfps_event_io_capbility_request_callback,
+};
+#endif
+
+int gfps_bta_register_iocap_req_cb(void)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    bts_bt_if_register_gfps_cbs(&cbs);
+    return 0;
+#else
+    // TODO headset callback missing
+    return -1;
+#endif
+}
+
+
+bool gfps_bta_is_tws_addr(const bt_bdaddr_t *addr)
+{
+#if defined(BT_SVC_MODULE_TWS_ENABLED)
+    return bta_tws_is_tws_addr(addr);
+#else
+    return false;
+#endif
+}
+
+bool gfps_bta_is_tws_connected(void)
+{
+#if defined(BT_SVC_MODULE_TWS_ENABLED)
+    return bta_tws_get_sync_state() != BTA_TWS_DISCONNECTED;
+#else
+    return false;
+#endif
+}
+
+void gfps_bta_set_device_num_max(uint8_t device_num_max, const bt_bdaddr_t reserved_hint[], uint8_t reserved_hint_count)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    bta_tws_set_device_num_max(device_num_max, reserved_hint, reserved_hint_count);
+#else
+    bta_set_device_num_max(device_num_max, reserved_hint, reserved_hint_count);
+#endif
+}
+
+void gfps_bta_switch_streaming_a2dp(void)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    bta_tws_switch_streaming_a2dp();
+#else
+    bta_switch_streaming_a2dp();
+#endif
+}
+
+void gfps_bta_toggle_a2dp_cis(void)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    bta_tws_toggle_a2dp_cis();
+#else
+    bta_toggle_a2dp_cis();
+#endif
+}
 
 /************************extern function declearation***********************/
 #ifdef FIRMWARE_REV
@@ -442,7 +582,7 @@ static void gfps_thread(void const *argument)
     POSSIBLY_UNUSED uint16_t len = 0;
     uint8_t devId = 0;
     uint8_t event;
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
     GFPS_SASS_PROFILE_EVENT *pEvent;
     uint8_t *p = NULL;
 #endif
@@ -462,7 +602,7 @@ static void gfps_thread(void const *argument)
                     break;
                 case GFPS_EVENT_PROFILE:
                 {
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
                     uint8_t emptyAddr[6] = {0};
                     memset(emptyAddr, 0, 6);
 
@@ -508,8 +648,9 @@ void gfps_thread_init(void)
 uint8_t gfps_send(uint8_t devId, uint8_t *ptrData, uint32_t length)
 {
     uint8_t ret = 0;
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-    if (BT_IBRT_SLAVE == bts_core_get_ui_role() && bts_tws_if_get_init_done_state())
+
+#if defined(BT_SVC_IBRT_MODULE_ENABLED)
+    if (BT_IBRT_SLAVE == bta_tws_get_ui_role() && bts_tws_if_get_init_done_state())
     {
         return 1;
     }
@@ -537,14 +678,14 @@ static __attribute__((unused)) void gfps_send_active_components_rsp(uint8_t devI
 {
     FP_MESSAGE_STREAM_T req = {FP_MSG_GROUP_DEVICE_INFO, FP_MSG_DEVICE_INFO_ACTIVE_COMPONENTS_RSP, 0, 1};
 
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-    if (bts_tws_if_is_tws_link_connected())
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    if (gfps_bta_is_tws_connected())
     {
         req.data[0] = FP_MSG_BOTH_BUDS_ACTIVE;
     }
     else
     {
-        if (bts_tws_if_is_local_left_side())
+        if (bta_tws_get_location() == BT_LOCATION_LEFT)
         {
             req.data[0] = FP_MSG_LEFT_BUD_ACTIVE;
         }
@@ -631,10 +772,7 @@ const uint8_t* gfps_get_private_key(void) {
 
 void gfps_enter_pairing_mode_handler(void)
 {
-#ifndef IBRT_UI
-    app_bt_set_access_mode(BTIF_BAM_GENERAL_ACCESSIBLE);
-#endif
-
+    gfps_bta_enable_pairing_mode(true);
 #ifdef __INTERCONNECTION__
     clear_discoverable_adv_timeout_flag();
     app_interceonnection_start_discoverable_adv(INTERCONNECTION_BLE_FAST_ADVERTISING_INTERVAL,
@@ -647,8 +785,11 @@ void gfps_enter_fastpairing_mode(void)
     GFPS_TRACE(0,"[FP] enter fast pair mode");
     btif_sec_set_io_capabilities(3);
     btif_sec_set_authrequirements(0);
+    bes_bt_me_confirmation_register_callback(NULL);
+    bes_ble_gap_core_register_global_handler(NULL);
+    gfps_set_if_just_accept_retroactive(false);
     gfps_set_in_fastpairing_mode_flag(true);
-    bes_ble_gap_start_connectable_adv();
+    bts_ble_gap_refresh_adv();
 }
 
 bool gfps_is_in_fastpairing_mode(void)
@@ -664,15 +805,9 @@ void gfps_set_in_fastpairing_mode_flag(bool isEnabled)
 
 void gfps_exit_fastpairing_mode(void)
 {
-#if defined(IBRT)
-#if defined(IBRT_UI)
-    bta_tws_enable_pairing_mode(false);
-#endif
-#else
-    app_bt_set_access_mode(BTIF_BAM_CONNECTABLE_ONLY);
-#endif
+    gfps_bta_enable_pairing_mode(false);
 
-    gfps_set_in_fastpairing_mode_flag(false); 
+    gfps_set_in_fastpairing_mode_flag(false);
     // reset ble adv
     app_ble_refresh_adv_state_generic();
 }
@@ -921,7 +1056,7 @@ void gfps_set_find_my_buds_stereo(uint8_t mode)
 static void gfps_set_find_my_buds(uint8_t cmd)
 {
     GFPS_TRACE(2,"%s, cmd = %d", __func__, cmd);
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     if(GFPS_FIND_MY_BUDS_CMD_STOP_DUAL == cmd)
     {
         gfps_set_ring_mode(GFPS_RING_MODE_BOTH_OFF);
@@ -934,7 +1069,7 @@ static void gfps_set_find_my_buds(uint8_t cmd)
         if(!app_get_find_my_buds_cur_status())
 #endif
         gfps_set_ring_mode(GPFS_RING_MODE_RIGHT_ON);
-        if (bts_tws_if_is_local_left_side())
+        if (bta_tws_get_location() == BT_LOCATION_LEFT)
         {
             gfps_set_find_my_buds_peer_status(1);
             gfps_find_sm(false);
@@ -953,7 +1088,7 @@ static void gfps_set_find_my_buds(uint8_t cmd)
         if(!app_get_find_my_buds_cur_status())
 #endif
         gfps_set_ring_mode(GFPS_RING_MODE_LEFT_ON);
-        if (bts_tws_if_is_local_left_side())
+        if (bta_tws_get_location() == BT_LOCATION_LEFT)
         {
 #if GFPS_FIND_VOICE_LOOP_EN
         if(!app_get_find_my_buds_cur_status())
@@ -1010,13 +1145,13 @@ static void gfps_ring_request_handling(uint8_t devId, uint8_t* requestdata, uint
 {
     GFPS_TRACE(1,"%s,[RFCOMM][FMD] request",__func__);
     GFPS_DUMP8("%02x ", requestdata, datalen);
-#if defined(IBRT) && defined(IBRT_UI) && !defined(FREEMAN_ENABLED_STERO)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     switch (requestdata[0])
     {
         case GFPS_FIND_MY_BUDS_CMD_START_MASTER_ONLY://ring right
-            if (!bts_tws_if_is_local_left_side())
+            if (!(bta_tws_get_location() == BT_LOCATION_LEFT))
             {
-                if (bts_core_get_ui_role() == BT_IBRT_MASTER)      //right is master
+                if (bta_tws_get_ui_role() == BT_IBRT_MASTER)      //right is master
                 {
                     if (bta_tws_get_box_state(false) == BTA_TWS_IN_BOX_OPEN)
                     {
@@ -1037,7 +1172,7 @@ static void gfps_ring_request_handling(uint8_t devId, uint8_t* requestdata, uint
                     {
                         GFPS_TRACE(0,"right phone-right master out box");
                     }
-                    
+
                 }
                 else    //right is slave
                 {
@@ -1051,9 +1186,9 @@ static void gfps_ring_request_handling(uint8_t devId, uint8_t* requestdata, uint
                      }
                 }
             }
-            else if (bts_tws_if_is_local_left_side())
+            else if (bta_tws_get_location() == BT_LOCATION_LEFT)
             {
-                if (bts_core_get_ui_role() == BT_IBRT_MASTER)     //left is master
+                if (bta_tws_get_ui_role() == BT_IBRT_MASTER)     //left is master
                 {
                     if (bta_tws_get_box_state(true) == BTA_TWS_IN_BOX_OPEN)
                     {
@@ -1088,9 +1223,9 @@ static void gfps_ring_request_handling(uint8_t devId, uint8_t* requestdata, uint
             }
             break;
         case GFPS_FIND_MY_BUDS_CMD_START_SLAVE_ONLY://ring left
-            if (bts_tws_if_is_local_left_side())
+            if (bta_tws_get_location() == BT_LOCATION_LEFT)
             {
-                if (bts_core_get_ui_role()  == BT_IBRT_MASTER)   //left is master
+                if (bta_tws_get_ui_role()  == BT_IBRT_MASTER)   //left is master
                 {
                     if (bta_tws_get_box_state(false) == BTA_TWS_IN_BOX_OPEN)
                     {
@@ -1118,9 +1253,9 @@ static void gfps_ring_request_handling(uint8_t devId, uint8_t* requestdata, uint
                 }
 
             }
-            else if (!bts_tws_if_is_local_left_side())
+            else if (!(bta_tws_get_location() == BT_LOCATION_LEFT))
             {
-                if (bts_core_get_ui_role() == BT_IBRT_MASTER)//right is master
+                if (bta_tws_get_ui_role() == BT_IBRT_MASTER)//right is master
                 {
                      if (bta_tws_get_box_state(true) == BTA_TWS_IN_BOX_OPEN)
                     {
@@ -1142,9 +1277,9 @@ static void gfps_ring_request_handling(uint8_t devId, uint8_t* requestdata, uint
             break;
 
             case GFPS_FIND_MY_BUDS_CMD_START_DUAL:
-            if (bts_tws_if_is_local_left_side())
+            if (bta_tws_get_location() == BT_LOCATION_LEFT)
             {
-                if (bts_core_get_ui_role()  == BT_IBRT_MASTER)    //left is master
+                if (bta_tws_get_ui_role()  == BT_IBRT_MASTER)    //left is master
                 {
                     if (bta_tws_get_box_state(false) == BTA_TWS_IN_BOX_OPEN)
                     {
@@ -1203,9 +1338,9 @@ static void gfps_ring_request_handling(uint8_t devId, uint8_t* requestdata, uint
                     }
                 }
             }
-            else if (!bts_tws_if_is_local_left_side())
+            else if (!(bta_tws_get_location() == BT_LOCATION_LEFT))
             {
-                if (bts_core_get_ui_role() == BT_IBRT_MASTER)    //right is master
+                if (bta_tws_get_ui_role() == BT_IBRT_MASTER)    //right is master
                 {
                     if (bta_tws_get_box_state(false) == BTA_TWS_IN_BOX_OPEN)
                     {
@@ -1238,7 +1373,7 @@ static void gfps_ring_request_handling(uint8_t devId, uint8_t* requestdata, uint
                                 gfps_ring_timer_set(GFPS_FIND_MY_BUDS_CMD_START_MASTER_ONLY);
                             }
                             GFPS_TRACE(0,"DUAL ring right");
-                            
+
                             gfps_set_find_my_buds(GFPS_FIND_MY_BUDS_CMD_START_MASTER_ONLY);
                             return;
                         }
@@ -1271,21 +1406,22 @@ static void gfps_ring_request_handling(uint8_t devId, uint8_t* requestdata, uint
                     }
                     return;
                 }
-               
+
             }
             break;
 
             default:
                 break;
     }
-#endif
-    if ((bta_tws_get_box_state(true) == BTA_TWS_IN_BOX_OPEN) && (bta_tws_get_box_state(true) == BTA_TWS_IN_BOX_OPEN))
+
+    if (bta_tws_get_box_state(true) == BTA_TWS_IN_BOX_OPEN)
     {
         GFPS_TRACE(0,"######both earbud is in box");
         gfps_send_msg_nak(devId, FP_MSG_NAK_REASON_NOT_ALLOWED, FP_MSG_GROUP_DEVICE_ACTION, FP_MSG_DEVICE_ACTION_RING);
         return;
     }
-    
+#endif // BT_SVC_MODULE_IBRT_ENABLED
+
     gfps_send_msg_ack(devId, FP_MSG_GROUP_DEVICE_ACTION, FP_MSG_DEVICE_ACTION_RING);
      if (datalen > 1)
     {
@@ -1352,14 +1488,14 @@ void gfps_get_updated_ble_addr(uint8_t devId, uint8_t *addr)
 
     if (IS_BT_DEVICE(devId))
     {
-        BT_DEVICE_T *btInfo = app_bt_get_device(GET_BT_ID(devId));
-        if (btInfo)
+        bt_bdaddr_t btAddr;
+        if (bta_get_addr_by_device_id(GET_BT_ID(devId), &btAddr))
         {
-             if (nv_record_blerec_is_paired_from_addr(btInfo->remote.address))
-             {
-                 GFPS_TRACE(1, "%s get paired dev from nv", __func__);
-                 isIdentity = true;
-             }
+            if (nv_record_blerec_is_paired_from_addr(btAddr.address))
+            {
+                GFPS_TRACE(1, "%s get paired dev from nv", __func__);
+                isIdentity = true;
+            }
         }
     }
     else
@@ -1369,7 +1505,7 @@ void gfps_get_updated_ble_addr(uint8_t devId, uint8_t *addr)
 
     if (isIdentity)
     {
-        bleAddr = bes_ble_gap_get_local_identity_addr(0xFF);
+        bleAddr = bts_ble_gap_get_local_identity_addr(0xFF);
         memcpy(ptr, bleAddr.addr, 6);
     }
     else
@@ -1413,7 +1549,7 @@ void gfps_send_battery_levels(uint8_t devId)
     gfps_send(devId, ( uint8_t * )&req, FP_MESSAGE_RESERVED_LEN + batteryLevelCount);
 }
 
-#ifdef SPOT_ENABLED
+#if defined(SPOT_ENABLED)
 void gfps_send_firmware_version(uint8_t devId)
 {
     GFPS_TRACE(1,"%s",__func__);
@@ -1553,27 +1689,13 @@ void gfps_enter_connectable_mode_req_handler(uint8_t *response)
     GFPS_TRACE(0,"response data:");
     GFPS_DUMP8("%02x ", response, GFPSP_ENCRYPTED_RSP_LEN);
 
-#ifdef IBRT
-    static bt_bdaddr_t device_addr[BT_DEVICE_NUM];
-    uint8_t count = bts_bt_if_get_dev_connected_list(&device_addr[0]);
-#endif
+    bt_bdaddr_list_t dev_addr_l = { 0 };
 
-#ifndef IBRT
-    if (btif_me_get_activeCons() > 0)
-#else
-    if (bts_bt_if_get_dev_acl_connected_count() > 1)
-#endif
+    if (gfps_bta_get_bt_connected_dev_list(&dev_addr_l) >= gfps_bta_get_device_num_max())
     {
         memcpy(gfpsEnv.pendingLastResponse, response, GFPSP_ENCRYPTED_RSP_LEN);
         gfpsEnv.isLastResponsePending = true;
-    #ifndef IBRT
-        app_disconnect_all_bt_connections();
-    #else
-        if (count)
-        {
-            bta_tws_remove_bt_device(&device_addr[0]);
-        }
-    #endif
+        gfps_bta_remove_bt_device(&dev_addr_l.addrs[0]);
     }
     else
     {
@@ -1589,7 +1711,7 @@ void gfps_enter_connectable_mode_req_handler(uint8_t *response)
     }
 }
 
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
 void gfps_sass_event_handler(uint8_t devId, uint8_t evt, void *param)
 {
     GFPS_TRACE(3,"%s id:%d evt:0x%0x", __func__, devId, evt);
@@ -1597,7 +1719,7 @@ void gfps_sass_event_handler(uint8_t devId, uint8_t evt, void *param)
 
     if(IS_BT_DEVICE(devId))
     {
-        app_bt_get_device_bdaddr(GET_BT_ID(devId), currAddr.address);
+        bta_get_addr_by_device_id(GET_BT_ID(devId), currAddr.address);
     }
     else
     {
@@ -1678,24 +1800,27 @@ void gfps_set_le_con_allow_use_same_addr(uint8_t conidx, bool enable)
 }
 #endif // GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED
 
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
 void app_ibrt_share_fastpair_info(uint8_t *p_buff, uint16_t length)
 {
-    bts_tws_if_send_cmd_without_rsp(APP_TWS_CMD_SHARE_FASTPAIR_INFO, p_buff, length);
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    bta_tws_send_cmd_without_rsp(APP_TWS_CMD_SHARE_FASTPAIR_INFO, p_buff, length);
+#endif
 }
 
 void app_tws_send_fastpair_info_to_slave(void)
 {
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     GFPS_TRACE(0,"Send fastpair info to secondary device.");
     NV_FP_ACCOUNT_KEY_RECORD_T *pFpData = nv_record_get_fp_data_structure_info();
     app_ibrt_share_fastpair_info(( uint8_t * )pFpData, sizeof(NV_FP_ACCOUNT_KEY_RECORD_T));
+#endif
 }
 
 void app_ibrt_share_fastpair_info_received_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
 {
+#if SASS_ENABLED && defined(BT_SVC_MODULE_IBRT_ENABLED)
     NV_FP_ACCOUNT_KEY_RECORD_T *pFpData = ( NV_FP_ACCOUNT_KEY_RECORD_T * )p_buff;
     nv_record_update_fp_data_structure(pFpData);
-#ifdef SASS_ENABLED
     if (length > sizeof(NV_FP_ACCOUNT_KEY_RECORD_T))
     {
         gfps_sass_set_sync_info(p_buff + sizeof(NV_FP_ACCOUNT_KEY_RECORD_T), length - sizeof(NV_FP_ACCOUNT_KEY_RECORD_T));
@@ -1709,8 +1834,8 @@ void gfps_tws_info_prepare_handler(uint8_t *buf, uint16_t *totalLen, uint16_t *l
     NV_FP_ACCOUNT_KEY_RECORD_T *pFpData = nv_record_get_fp_data_structure_info();
     memcpy(buf, pFpData, sizeof(NV_FP_ACCOUNT_KEY_RECORD_T));
     *totalLen = *len = sizeof(NV_FP_ACCOUNT_KEY_RECORD_T);
-    
-#ifdef SASS_ENABLED
+
+#if defined(SASS_ENABLED)
     uint16_t sassLen = 0;
     gfps_sass_get_sync_info(buf+(*len), &sassLen);
     *totalLen += sassLen;
@@ -1720,39 +1845,44 @@ void gfps_tws_info_prepare_handler(uint8_t *buf, uint16_t *totalLen, uint16_t *l
 
 void gfps_tws_info_received_handler(uint8_t *buf, uint16_t length, bool isContinueInfo)
 {
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     uint16_t offset = 0;
     nv_record_fp_update_all(buf);
     offset += sizeof(NV_FP_ACCOUNT_KEY_RECORD_T);
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
     gfps_sass_set_sync_info(buf + offset, length - offset);
+#endif
 #endif
 }
 
 void gfps_send_ble_disconnect_cmd_to_slave(uint8_t *buf, uint16_t length)
 {
-    bts_tws_if_send_cmd_without_rsp(APP_TWS_CMD_SNED_GFPS_BLE_DISC_CMD, buf, length);
+#if BLE_AUDIO_ENABLED && defined(BT_SVC_MODULE_IBRT_ENABLED)
+    bta_tws_send_cmd_without_rsp(APP_TWS_CMD_SNED_GFPS_BLE_DISC_CMD, buf, length);
+#endif
 }
 
-#if (BLE_AUDIO_ENABLED == 1)
 void gfps_send_streaming_state_to_master(bt_bdaddr_t *addr, uint8_t state)
 {
+#if BLE_AUDIO_ENABLED && defined(BT_SVC_MODULE_IBRT_ENABLED)
     GFPS_STREAMING_STATE_T syncInfo;
     memcpy(syncInfo.devAddr.address, addr->address, sizeof(bt_bdaddr_t));
     syncInfo.state = state;
-    bts_tws_if_send_cmd_without_rsp(APP_TWS_CMD_SNED_STREAMING_STATE_CMD, (uint8_t *)&syncInfo, sizeof(GFPS_STREAMING_STATE_T));
+    bta_tws_send_cmd_without_rsp(APP_TWS_CMD_SNED_STREAMING_STATE_CMD, (uint8_t *)&syncInfo, sizeof(GFPS_STREAMING_STATE_T));
+#endif
 }
 
 void gfps_rec_peer_streaming_state_handler(uint8_t *p_buff, uint16_t length)
 {
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED) && defined(BT_SVC_MODULE_IBRT_ENABLED)
     GFPS_STREAMING_STATE_T *syncInfo = (GFPS_STREAMING_STATE_T *)p_buff;
     gfps_sass_set_peer_streaming_state(&(syncInfo->devAddr), syncInfo->state);
 #endif
 }
-#endif
 
 void gfps_tws_sync_init(void)
 {
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     // TODO: freddie move to isolated ota file
     TWS_SYNC_USER_T userGfps = {
         gfps_tws_info_prepare_handler,
@@ -1763,11 +1893,13 @@ void gfps_tws_sync_init(void)
     };
 
     bts_tws_if_register_tws_sync_user(TWS_SYNC_USER_GFPS_INFO, &userGfps);
+#endif
 }
 
 void gfps_sync_info(void)
 {
-    if (BT_IBRT_SLAVE != bts_core_get_ui_role()&& bts_tws_if_get_init_done_state())
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    if (BT_IBRT_SLAVE != bta_tws_get_ui_role())
     {
         uint8_t info[FP_TWS_MAX_LEN];
         uint16_t offset = 0;
@@ -1775,33 +1907,36 @@ void gfps_sync_info(void)
         NV_FP_ACCOUNT_KEY_RECORD_T *pFpData = nv_record_get_fp_data_structure_info();
         memcpy(info, pFpData, sizeof(NV_FP_ACCOUNT_KEY_RECORD_T));
         offset += sizeof(NV_FP_ACCOUNT_KEY_RECORD_T);
-    
-#ifdef SASS_ENABLED
+
+#if defined(SASS_ENABLED)
         uint16_t sassLen = 0;
         gfps_sass_get_sync_info(info + offset, &sassLen);
         offset += sassLen;
         ASSERT(offset <= FP_TWS_MAX_LEN, "Len exceed FP_TWS_MAX_LEN");
 #endif
-        tws_ctrl_send_cmd(APP_TWS_CMD_SHARE_FASTPAIR_INFO, info, offset);
-
+        bta_tws_send_cmd(APP_TWS_CMD_SHARE_FASTPAIR_INFO, info, offset);
     }
+#endif
 }
 
 void gfps_info_received_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
 {
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     uint16_t offset = 0;
     nv_record_fp_update_all((uint8_t *)p_buff);
     offset += sizeof(NV_FP_ACCOUNT_KEY_RECORD_T);
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
     gfps_sass_set_sync_info(p_buff + offset, length - offset);
+#endif
 #endif
 }
 
 void gfps_role_switch_prepare(void)
 {
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     gfps_sync_info();
-}
 #endif
+}
 
 void gfps_set_anc_current_state_info(uint8_t current_state_info)
 {
@@ -1900,7 +2035,7 @@ uint16_t gfps_data_handler(uint8_t devId, uint8_t* ptr, uint16_t len)
 
         case FP_MSG_GROUP_SASS:
         {
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
             gfps_sass_event_handler(devId, pMsg->messageCode, pMsg->data);
 #endif
             break;
@@ -1908,7 +2043,7 @@ uint16_t gfps_data_handler(uint8_t devId, uint8_t* ptr, uint16_t len)
 
         case FP_MSG_GROUP_DEVICE_CAPABLITY_SYNC:
         {
-#ifdef SPOT_ENABLED
+#if defined(SPOT_ENABLED)
             switch(pMsg->messageCode)
             {
                 case FP_MSG_DEVICE_CAPABLITY_CAP_UPDATE_REQ:
@@ -1953,28 +2088,28 @@ static void gfps_srv_connect_handler(uint8_t devId, const bt_bdaddr_t *pBtAddr)
 {
     gfps_link_connect_process(devId, pBtAddr);
 
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-    if (BT_IBRT_SLAVE != bts_core_get_ui_role()&& bts_tws_if_get_init_done_state())
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    if (BT_IBRT_SLAVE != bta_tws_get_ui_role() && bts_tws_if_get_init_done_state())
 #endif
     {
         gfps_send_model_id(devId);
         gfps_send_ble_addr(devId);
         gfps_send_battery_levels(devId);
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
         gfps_sass_send_info_to_seeker(devId);
 #endif
 
-#ifdef SPOT_ENABLED
+#if defined(SPOT_ENABLED)
         gfps_send_firmware_version(devId);
         gfps_send_eddystone_identifier_state(devId);
         gfps_spot_event_handler(devId);
 #endif
 
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
         gfps_sync_info();
 #endif
-      
-#ifdef SASS_ENABLED
+
+#if defined(SASS_ENABLED)
         gfps_sass_exe_pending_switch_media(devId);
 #endif
     }
@@ -1985,9 +2120,39 @@ static void gfps_srv_disconnect_handler(uint8_t devId)
     return;
 }
 
+osTimerId gfps_accept_keybase_timeout_timer_id = NULL;
+static void gfps_ble_accept_keybase_timeout_handler(void const *param);
+osTimerDef (GFPS_ACCEPT_KEYBASE_TIMEOUT, gfps_ble_accept_keybase_timeout_handler);
+
+void gfps_keybase_timer_set()
+{
+    TRACE(1,"%s,", __func__);
+    if (gfps_accept_keybase_timeout_timer_id == NULL)
+    {
+        gfps_accept_keybase_timeout_timer_id = osTimerCreate(osTimer(GFPS_ACCEPT_KEYBASE_TIMEOUT), osTimerOnce, NULL);
+    }
+    osTimerStart(gfps_accept_keybase_timeout_timer_id, 60*1000);
+}
+static void gfps_ble_accept_keybase_timeout_handler(void const *param)
+{
+    gfpsEnv.JustAcceptRetro = false;
+}
+
+bool gfps_get_if_just_accept_retroative_connect()
+{
+    return gfpsEnv.JustAcceptRetro;
+}
+
+void gfps_set_if_just_accept_retroactive(bool value)
+{
+    gfpsEnv.JustAcceptRetro = value;
+}
+
 void gfps_link_connect_process(uint8_t devId, const bt_bdaddr_t *addr)
 {
-#ifdef SASS_ENABLED
+    gfpsEnv.JustAcceptRetro = true;
+    gfps_keybase_timer_set();
+#if defined(SASS_ENABLED)
     if (NULL == gfps_sass_get_connected_dev(devId))
     {
         gfps_sass_connect_handler(devId, (bt_bdaddr_t *)addr);
@@ -1997,16 +2162,11 @@ void gfps_link_connect_process(uint8_t devId, const bt_bdaddr_t *addr)
 
 void gfps_link_disconnect_process(uint8_t devId, const bt_bdaddr_t *addr, uint8_t errCode)
 {
-    bool isDisconnectedWithMobile = false;
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
-    ibrt_link_type_e link_type = app_tws_ibrt_get_link_type_by_addr((bt_bdaddr_t *)addr);
-    if (MOBILE_LINK == link_type)
-    {
-        isDisconnectedWithMobile = true;
-    }
-#else
-    isDisconnectedWithMobile = true;
-#endif
+    bool isDisconnectedWithMobile = true;
+
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    isDisconnectedWithMobile = !gfps_bta_is_tws_addr(addr);
+#endif // BT_SVC_MODULE_IBRT_ENABLED
 
     if (isDisconnectedWithMobile)
     {
@@ -2019,7 +2179,7 @@ void gfps_link_disconnect_process(uint8_t devId, const bt_bdaddr_t *addr, uint8_
 #if defined(GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED)
     // to be optimized
     {
-        bool dev_count = bts_bt_if_get_dev_acl_connected_count();
+        uint8_t dev_count = gfps_bta_get_bt_connected_link_num();
         GFPS_TRACE(0, "%s: count=%d", __func__, dev_count);
         if (dev_count == 0)
         {
@@ -2028,7 +2188,7 @@ void gfps_link_disconnect_process(uint8_t devId, const bt_bdaddr_t *addr, uint8_
     }
 #endif  // GFPS_BR_EDR_SEC_CONN_SWITCH_ENABLED
 
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
     gfps_sass_disconnect_handler(devId, addr, errCode);
 #endif
 
@@ -2037,7 +2197,7 @@ void gfps_link_disconnect_process(uint8_t devId, const bt_bdaddr_t *addr, uint8_
 
 void gfps_link_destroy_process(uint8_t devId)
 {
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
     gfps_sass_check_if_need_reconnect(devId);
 #endif
 }
@@ -2171,10 +2331,12 @@ void gfps_srv_event_l2cap_process(uint8_t devId, GFPS_SRV_EVENT_L2CAP_PARAM_T *p
             buf = param->p.data.pBuf;
             dataLen = param->p.data.len;
             gfps_data_handler(devId, buf, dataLen);
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
             if(buf[0] == FP_MSG_GROUP_DEVICE_ACTION && buf[1] == FP_MSG_DEVICE_ACTION_RING)
             {
-                tws_ctrl_send_cmd(APP_TWS_CMD_SEND_GFPS_RING_INFO, buf, dataLen);
+                bta_tws_send_cmd(APP_TWS_CMD_SEND_GFPS_RING_INFO, buf, dataLen);
             }
+#endif
             break;
     
         case FP_SRV_EVENT_SENT_DONE:
@@ -2201,44 +2363,6 @@ uint16_t gfps_event_l2cap_callback(uint8_t devId, GFPS_SRV_EVENT_L2CAP_PARAM_T *
     return ret;
 }
 
-#ifdef SASS_ENABLED
-void gfps_event_base_profile_callback(const bt_bdaddr_t *addr, uint8_t device_id, uint64_t profile, uint8_t event, uint8_t param)
-{
-    GFPS_SASS_PROFILE_EVENT pEvent;
-    pEvent.btEvt = event;
-    memcpy(pEvent.btAddr.address, (uint8_t *)addr, sizeof(bt_bdaddr_t));
-    if (profile == BTIF_APP_A2DP_PROFILE_ID)
-    {
-        pEvent.pro = GFPS_PROFILE_A2DP;
-        pEvent.len = 0;
-    }
-    else if (profile == BTIF_APP_HFP_PROFILE_ID)
-    {
-        pEvent.pro = GFPS_PROFILE_HFP;
-        pEvent.len = 1;
-        pEvent.param[0] = param;
-    }
-    else if (profile == BTIF_APP_AVRCP_PROFILE_ID)
-    {
-        pEvent.pro = GFPS_PROFILE_AVRCP;
-        pEvent.len = 1;
-        pEvent.param[0] = param;
-    }
-    else
-    {
-        return;
-    }
-    gfps_mailbox_put(SET_BT_ID(device_id), GFPS_EVENT_PROFILE, (uint8_t *)&pEvent, sizeof(GFPS_SASS_PROFILE_EVENT));
-}
-#endif
-
-void gfps_event_dev_acl_disconnect_callback(void)
-{
-    if (gfps_is_last_response_pending())
-    {
-        gfps_enter_connectable_mode_req_handler(gfps_get_last_response());
-    }
-}
 
 bool gfps_event_io_capbility_request_callback(const bt_bdaddr_t *addr, uint8_t local_initiate)
 {
@@ -2251,19 +2375,11 @@ bool gfps_event_io_capbility_request_callback(const bt_bdaddr_t *addr, uint8_t l
     return io_cap_request;
 }
 
-const static bts_bt_to_gfps_cbs_t bt_cbs = {
-#ifdef SASS_ENABLED
-    .profile_evt_callback                    = gfps_event_base_profile_callback,
-#endif
-    .dev_acl_disconnect_callback             = gfps_event_dev_acl_disconnect_callback,
-    .io_capbility_request                    = gfps_event_io_capbility_request_callback,
-};
-
 void gfps_env_init(void)
 {
     memset((uint8_t *)&gfpsEnv, 0, sizeof(GFPSEnv_t));
     gfpsEnv.batteryDataType = HIDE_UI_INDICATION;
-#if defined(IBRT) && !defined(FREEMAN_ENABLED_STERO)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     gfpsEnv.isBatteryInfoIncluded = true;
 #else
     gfpsEnv.isBatteryInfoIncluded = false;
@@ -2275,6 +2391,91 @@ void gfps_env_init(void)
     gfpsEnv.fpCap.env.isCompanionAppInstalled = false;
     gfpsEnv.fpCap.env.isSilentModeSupported   = false;
 }
+
+#if defined(SASS_ENABLED)
+void gfps_event_bt_profiles_cb(const bt_bdaddr_t *addr, GFPS_PROFILE_ID_E profile, uint8_t event, uint8_t param)
+{
+    uint8_t device_id = bta_get_device_id_by_addr(addr);
+    GFPS_SASS_PROFILE_EVENT pEvent;
+
+    pEvent.pro = profile;
+    memcpy(pEvent.btAddr.address, (uint8_t *)addr, sizeof(bt_bdaddr_t));
+    pEvent.btEvt = event;
+    pEvent.len = 1;
+    pEvent.param[0] = param;
+
+    gfps_mailbox_put(SET_BT_ID(device_id), GFPS_EVENT_PROFILE, (uint8_t *)&pEvent, sizeof(GFPS_SASS_PROFILE_EVENT));
+}
+
+void gfps_a2dp_connection_state_cb(const bt_bdaddr_t *address, bt_a2dp_conn_state_t state, uint8_t error_code)
+{
+    gfps_event_bt_profiles_cb(address, GFPS_PROFILE_A2DP, BT_A2DP_SINK_CB_TYPE_CONNECTION, state);
+}
+
+void gfps_a2dp_audio_state_cb(const bt_bdaddr_t *address, bt_a2dp_audio_state_t state, uint8_t error_code)
+{
+    gfps_event_bt_profiles_cb(address, GFPS_PROFILE_A2DP, BT_A2DP_SINK_CB_TYPE_AUDIO_STATE, state);
+}
+
+void gfps_hfp_hf_connection_state_cb(const bt_bdaddr_t *address, bt_hfp_conn_state_t state, uint8_t error_code)
+{
+    gfps_event_bt_profiles_cb(address, GFPS_PROFILE_HFP, BT_HFP_HF_CB_TYPE_CONNECTION_STATE, state);
+}
+
+void gfps_hfp_hf_audio_status_cb(const bt_bdaddr_t *address, bt_hfp_audio_state_t state, bt_hfp_audio_codec_t codec, uint8_t error_code)
+{
+    gfps_event_bt_profiles_cb(address, GFPS_PROFILE_HFP, BT_HFP_HF_CB_TYPE_AUDIO_STATUS, state);
+}
+
+void gfps_hfp_hf_call_status_cb(const bt_bdaddr_t *address, bt_hfp_call_state_t call)
+{
+    gfps_event_bt_profiles_cb(address, GFPS_PROFILE_HFP, BT_HFP_HF_CB_TYPE_CALL_STATUS, call);
+}
+
+void gfps_hfp_hf_callsetup_status_cb(const bt_bdaddr_t *address, bt_hfp_callsetup_state_t callsetup)
+{
+    gfps_event_bt_profiles_cb(address, GFPS_PROFILE_HFP, BT_HFP_HF_CB_TYPE_CALLSETUP_STATUS, callsetup);
+}
+
+void gfps_avrcp_connection_state_cb(const bt_bdaddr_t *address, bt_avrcp_conn_state_t state, uint8_t error_code)
+{
+    gfps_event_bt_profiles_cb(address, GFPS_PROFILE_AVRCP, BT_AVRCP_CB_TYPE_CONNECTION, state);
+}
+
+void gfps_avrcp_recv_register_notification_rsp_cb(const bt_bdaddr_t *address, bool changed, const bt_avrcp_notification_params_t *params)
+{
+    if (params->event == BT_AVRCP_EVENT_PLAY_STATUS_CHANGED)
+    {
+        gfps_event_bt_profiles_cb(address, GFPS_PROFILE_AVRCP, BT_AVRCP_CB_TYPE_RECV_REGISTER_NTF_RSP, params->params.playback_status);
+    }
+}
+
+inline void gfps_register_bt_profiles_cb(void)
+{
+    static bt_a2dp_sink_callbacks_t a2dp_sink_callbacks =
+    {
+        .connection_state_cb = gfps_a2dp_connection_state_cb,
+        .audio_state_cb = gfps_a2dp_audio_state_cb,
+    };
+    bta_a2dp_register_callbacks(BT_A2DP_SINK_CB_USER_GFPS, &a2dp_sink_callbacks);
+
+    static bt_hfp_hf_callbacks_t hf_callbacks =
+    {
+        .connection_state_cb = gfps_hfp_hf_connection_state_cb,
+        .audio_status_cb = gfps_hfp_hf_audio_status_cb,
+        .call_status_cb = gfps_hfp_hf_call_status_cb,
+        .callsetup_status_cb = gfps_hfp_hf_callsetup_status_cb,
+    };
+    bta_hf_register_callbacks(BT_HFP_HF_CB_USER_GFPS, &hf_callbacks);
+
+    static bt_avrcp_callbacks_t avrcp_callbacks =
+    {
+        .connection_state_cb = gfps_avrcp_connection_state_cb,
+        .notification_rsp_cb = gfps_avrcp_recv_register_notification_rsp_cb,
+    };
+    bta_avrcp_register_callbacks(BT_AVRCP_CB_USER_GFPS, &avrcp_callbacks);
+}
+#endif
 
 void gfps_init(void)
 {
@@ -2291,7 +2492,7 @@ void gfps_init(void)
     gfps_crypto_set_p256_key(gfps_get_public_key(),gfps_get_private_key());
 #endif
 
-#ifdef SASS_ENABLED
+#if defined(SASS_ENABLED)
     gfps_sass_init();
 #endif
 
@@ -2301,12 +2502,17 @@ void gfps_init(void)
 
     gfps_thread_init();
 
-    bts_bt_if_register_gfps_cbs(&bt_cbs);
+#if defined(SASS_ENABLED)
+    gfps_register_bt_profiles_cb();
+#endif
+
+    gfps_bta_register_iocap_req_cb();
 
 #if BLE_AUDIO_ENABLED
-    bts_lea_register_gfps_audio_event_callback(gfps_lea_event_handler);
+    bta_lea_register_event_callback(gfps_lea_event_handler);
 #endif
-#if defined(BT_SVC_MODULE_TWS_ENABLED) && !defined(FREEMAN_ENABLED_STERO)
+
+#if defined(BT_SVC_MODULE_TWS_ENABLED)
     bts_tws_if_add_cmd_table(APP_TWS_CMD_GFPS_USER, ARRAY_SIZE(g_gfps_cmd_handler_table), (const bt_tws_cmd_instance_t *)&g_gfps_cmd_handler_table);
 #endif
 
@@ -2316,19 +2522,19 @@ void gfps_init(void)
 }
 
 #if BLE_AUDIO_ENABLED
-void gfps_lea_event_handler(void *param)
+void gfps_lea_event_handler(const bt_lea_evt_packet_t *evt_pkt)
 {
     uint8_t conidx = 0xFF;
     bool valid = true;
     GFPS_SASS_PROFILE_EVENT pEvent;
-    AOB_EVENT_HEADER_T *header = (AOB_EVENT_HEADER_T *)param;
-#ifdef SASS_ENABLED
+    bt_lea_evt_header_t *header = (bt_lea_evt_header_t *)evt_pkt;
+#if defined(SASS_ENABLED)
     SassLeaParam *sassParam = (SassLeaParam *)pEvent.param;
 #endif
     pEvent.pro = GFPS_PROFILE_LEA;
     ble_bdaddr_t GetPeerAddr = {{0}};
 
-    if (param == NULL)
+    if (evt_pkt == NULL)
     {
         return;
     }
@@ -2336,18 +2542,18 @@ void gfps_lea_event_handler(void *param)
 
     switch (header->type)
     {
-        case AOB_EVENT_MOB_CONNECTION_STATE:
+        case BT_LEA_EVT_MOB_CONNECTION_STATE:
         {
-            AOB_EVENT_MOB_STATE_T *connEvt = (AOB_EVENT_MOB_STATE_T *)header;
+            bt_lea_evt_mob_state_t *connEvt = (bt_lea_evt_mob_state_t *)header;
             valid = false;
             conidx = connEvt->conidx;
             GFPS_TRACE(3, "%s d(%d) connection state:%d", __func__, conidx, connEvt->state.acl_state);
             GFPS_DUMP8("%2x ", connEvt->peer_bdaddr.addr, 6);
-            if (connEvt->state.acl_state == AOB_ACL_DISCONNECTED)
+            if (connEvt->state.acl_state == BT_LEA_ACL_DISCONNECTED)
             {
                 gfps_link_disconnect_handler(conidx, (bt_bdaddr_t *)connEvt->peer_bdaddr.addr, connEvt->state.err_code);
             }
-            else if(connEvt->state.acl_state == AOB_ACL_CONNECTED)
+            else if(connEvt->state.acl_state == BT_LEA_ACL_CONNECTED)
             {
                 gfps_link_connect_handler(conidx, (bt_bdaddr_t *)connEvt->peer_bdaddr.addr);
 
@@ -2359,12 +2565,12 @@ void gfps_lea_event_handler(void *param)
         }
         break;
 
-#ifdef SASS_ENABLED
-        case AOB_EVENT_STREAM_STATUS_CHANGED:
+#if defined(SASS_ENABLED)
+        case BT_LEA_EVT_STREAM_STATUS_CHANGED:
         {
-            AOB_EVENT_STREAM_STATUS_CHANGED_T *streamEvt = (AOB_EVENT_STREAM_STATUS_CHANGED_T *)header;
-            if (streamEvt->curr_state == AOB_MGR_STREAM_STATE_CODEC_CONFIGURED ||
-                streamEvt->curr_state == AOB_MGR_STREAM_STATE_QOS_CONFIGURED)
+            bt_lea_evt_stream_status_changed_t *streamEvt = (bt_lea_evt_stream_status_changed_t *)header;
+            if (streamEvt->curr_state == BT_LEA_ASCS_ASE_STATE_CODEC_CONFIGURED ||
+                streamEvt->curr_state == BT_LEA_ASCS_ASE_STATE_QOS_CONFIGURED)
             {
                 valid = false;
             }
@@ -2380,21 +2586,22 @@ void gfps_lea_event_handler(void *param)
         }
         break;
 
-        case AOB_EVENT_MCP_MCC_CHAR_VALUE:
+        case BT_LEA_EVT_MCP_MCC_CHAR_VALUE:
         {
-            AOB_EVENT_MCP_MCC_CHAR_VALUE_IND_T *pbEvt = (AOB_EVENT_MCP_MCC_CHAR_VALUE_IND_T *)header;
+            bt_lea_evt_mcp_mcc_char_value_ind_t *pbEvt = (bt_lea_evt_mcp_mcc_char_value_ind_t *)header;
 
             if (pbEvt->char_type != 12)
             {
+                valid = false;
                 break;
             }
 
             uint8_t state = pbEvt->val ? *pbEvt->val : 0;
 
             GFPS_TRACE(2, "%s playback state:%d", __func__, state);
-            if (state == AOB_MGR_PLAYBACK_STATE_PLAYING ||
-                state == AOB_MGR_PLAYBACK_STATE_PAUSED ||
-                state == AOB_MGR_PLAYBACK_STATE_INACTIVE)
+            if (state == BT_LEA_MCP_PLAYBACK_STATE_PLAYING ||
+                state == BT_LEA_MCP_PLAYBACK_STATE_PAUSED ||
+                state == BT_LEA_MCP_PLAYBACK_STATE_INACTIVE)
             {
                 pEvent.btEvt = SASS_EVENT_LEA_PLAYBACK_STATE;
                 pEvent.len = sizeof(SassLeaParam);
@@ -2409,10 +2616,10 @@ void gfps_lea_event_handler(void *param)
         }
         break;
 
-        case AOB_EVENT_CALL_STATE_CHANGE:
+        case BT_LEA_EVT_CALL_STATE_CHANGE:
         {
-            AOB_EVENT_CALL_STATE_CHANGE_T *pbEvt = (AOB_EVENT_CALL_STATE_CHANGE_T *)header;
-            AOB_SINGLE_CALL_INFO_T *p_state_ind = (AOB_SINGLE_CALL_INFO_T *)pbEvt->param;
+            bt_lea_evt_call_state_change_t *pbEvt = (bt_lea_evt_call_state_change_t *)header;
+            bts_lea_ccp_single_call_info_t *p_state_ind = (bts_lea_ccp_single_call_info_t *)pbEvt->param;
             pEvent.btEvt = SASS_EVENT_LEA_CALL_STATE;
             pEvent.len = sizeof(SassLeaParam);
             conidx = pbEvt->con_lid;
@@ -2421,9 +2628,9 @@ void gfps_lea_event_handler(void *param)
         }
         break;
 
-        case AOB_EVENT_ASE_METADATA_UPDATE_IND:
+        case BT_LEA_EVT_ASE_METADATA_UPDATE_IND:
         {
-            AOB_EVENT_ASE_METADATA_UPDATE_IND_T *pbEvt= (AOB_EVENT_ASE_METADATA_UPDATE_IND_T *)header;
+            bt_lea_evt_ase_metadata_update_ind_t *pbEvt= (bt_lea_evt_ase_metadata_update_ind_t *)header;
 
             pEvent.btEvt = SASS_EVENT_LEA_METADATA_UPDATA_STATE;
             pEvent.len = sizeof(SassLeaParam);
@@ -2439,7 +2646,7 @@ void gfps_lea_event_handler(void *param)
             valid = false;
             break;
     }
-    
+
     if (valid)
     {
         app_ble_get_peer_solved_addr(conidx, &GetPeerAddr);

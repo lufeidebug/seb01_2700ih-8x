@@ -987,15 +987,19 @@ void bt_drv_reg_op_crash_dump(void)
     uint8_t *em_dump_area_2_start = (uint8_t*)EM_BASE_ADDR;
     uint32_t em_area_2_len_max = EM_SIZE;
     POSSIBLY_UNUSED uint8_t metal_id = hal_get_chip_metal_id();
-    DRIVERS_TRACE(1,"BTC 1503: metal id=%d", metal_id);
 
     #ifdef __BT_RAMRUN_NEW__
     DRIVERS_TRACE(1,"BT ramrun %s", BT_CONTROLLER_COMMIT_ID);
     DRIVERS_TRACE(1,"BT ramrun %s", BT_CONTROLLER_COMMIT_DATE);
     #else
-    if (workmode_patch_version_addr)
-    {
-        DRIVERS_TRACE(1,"BT_REG_OP:BT 1503: metal id=%d,patch version=%08x", hal_get_chip_metal_id(), BTDIGITAL_REG(workmode_patch_version_addr));
+    if (metal_id < HAL_CHIP_METAL_ID_3) {
+        DRIVERS_TRACE(1,"BTC:1503 t0 metal id=%d,commit id=%s", metal_id, BT_PATCH_1503_T0_COMMIT_ID);
+    } else if ((metal_id >= HAL_CHIP_METAL_ID_3) && (metal_id < HAL_CHIP_METAL_ID_6)) {
+        DRIVERS_TRACE(1,"BTC:1503 t1 metal id=%d,commit id=%s", metal_id, BT_PATCH_1503_T1_COMMIT_ID);
+    } else if (metal_id == HAL_CHIP_METAL_ID_6) {
+        DRIVERS_TRACE(1,"BTC:1503 t2 metal id=%d,commit id=%s", metal_id, BT_PATCH_1503_T2_COMMIT_ID);
+    } else if (metal_id >= HAL_CHIP_METAL_ID_7) {
+        DRIVERS_TRACE(1,"BTC:1503 t3 metal id=%d,commit id=%s", metal_id, BT_PATCH_1503_T3_COMMIT_ID);
     }
     #endif
     //first move R3 to R9, lost R9
@@ -2235,6 +2239,19 @@ uint16_t bt_drv_reg_op_rxbit_1us_get(uint16_t conhdl)
 }
 #endif
 
+bool bt_drv_is_support_set_bt_ble_active_link_switch(void)
+{
+    uint8_t metal_id = hal_get_chip_metal_id();
+    if (metal_id >= HAL_CHIP_METAL_ID_7)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 void bt_drv_reg_op_set_btpcm_trig_flag(bool flag)
 {
     BT_DRV_REG_OP_CLK_ENB();
@@ -2548,6 +2565,7 @@ uint32_t btdrv_reg_op_syn_get_cis_curr_time(void)
 void btdrv_syn_clr_trigger(uint8_t trig_route)
 {
     BT_DRV_REG_OP_CLK_ENB();
+    DRIVERS_TRACE(2,"[%s] trig status=0x%x,trig_route=%x",__func__,bt_trig_cntl6_trig_on_flag_getf(),trig_route);
     switch(trig_route)
     {
         case 0:

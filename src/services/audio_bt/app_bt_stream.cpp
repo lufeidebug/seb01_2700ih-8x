@@ -7308,7 +7308,7 @@ static int bt_sco_player(bool on, enum APP_SYSFREQ_FREQ_T freq)
 #if defined(CALL_BYPASS_SLAVE_TX_PROCESS)
         extern int bt_sco_chain_set_master_role(bool is_master);
         bool is_master = 1;
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
         if (bts_core_get_ui_role() == BT_IBRT_SLAVE)
         {
             is_master = 0;
@@ -9544,7 +9544,6 @@ AUD_ID_ENUM retrigger_prompt_id = AUD_ID_INVALID;
 static bool app_tws_ibrt_audio_retrigger(void)
 {
     bool ret = true;
-    audio_focus_req_info_t* top_focus_info = app_audio_focus_ctrl_stack_top();
 
 #if defined(BT_SVC_MODULE_IBRT_ENABLED)
     app_tws_ibrt_audio_analysis_stop();
@@ -9561,9 +9560,8 @@ static bool app_tws_ibrt_audio_retrigger(void)
     media_PlayAudio_standalone(retrigger_prompt_id, 0);
 #else
 #if defined(BT_SVC_MODULE_IBRT_ENABLED)
-    ret = app_bt_sync_enable(APP_BT_SYNC_OP_RETRIGGER, sizeof(bt_bdaddr_t),
-                                    top_focus_info->device_info.device_addr.address,
-                                    APP_BT_SYNC_POLICY_MULTIPLEX);
+    ret = app_bt_sync_enable(APP_BT_SYNC_OP_RETRIGGER,
+               0, NULL, APP_BT_SYNC_POLICY_MULTIPLEX);
 #endif
 #endif
     return ret;

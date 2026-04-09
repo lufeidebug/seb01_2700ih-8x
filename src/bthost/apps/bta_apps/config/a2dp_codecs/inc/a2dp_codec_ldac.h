@@ -35,7 +35,7 @@ extern "C" {
 #define A2DP_LDAC_CM_DUAL                        0x02
 #define A2DP_LDAC_CM_STEREO                      0x01
 
-#if defined(A2DP_LDAC_ON)
+#if 1//defined(A2DP_LDAC_ON)
 extern const unsigned char a2dp_codec_ldac_elements[A2DP_LDAC_OCTET_NUMBER];
 void a2dp_codec_ldac_init(void);
 #endif /* A2DP_LDAC_ON */

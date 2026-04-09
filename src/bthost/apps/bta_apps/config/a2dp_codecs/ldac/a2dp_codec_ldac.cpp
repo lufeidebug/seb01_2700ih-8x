@@ -20,7 +20,7 @@
 #include "a2dp_codec_ldac.h"
 #include "bta_bt_api.h"
 
-#if defined(A2DP_LDAC_ON)
+#if 1//defined(A2DP_LDAC_ON)
 
 const unsigned char a2dp_codec_ldac_elements[A2DP_LDAC_OCTET_NUMBER] =
 {

@@ -3456,7 +3456,7 @@ static void hal_codec_restore_dig_adc_gain(void)
     }
 }
 
-static void POSSIBLY_UNUSED hal_codec_get_adc_gain(enum AUD_CHANNEL_MAP_T map, float *gain)
+int hal_codec_get_adc_gain(enum AUD_CHANNEL_MAP_T map, float *gain)
 {
     struct ADC_GAIN_T {
         int32_t v : 20;
@@ -3464,6 +3464,10 @@ static void POSSIBLY_UNUSED hal_codec_get_adc_gain(enum AUD_CHANNEL_MAP_T map, f
 
     struct ADC_GAIN_T adc_val;
 
+    if (__builtin_popcount(map) != 1) {
+        HAL_TRACE(0, "Only one ch of adc gain can be obtained.");
+        return -1;
+    }
     for (int i = 0; i < NORMAL_ADC_CH_NUM; i++) {
         if (map & (AUD_CHANNEL_MAP_CH0 << i)) {
             adc_val.v = GET_BITFIELD(*(&codec->REG_084 + i), CODEC_CODEC_ADC_GAIN_CH0);
@@ -3471,11 +3475,12 @@ static void POSSIBLY_UNUSED hal_codec_get_adc_gain(enum AUD_CHANNEL_MAP_T map, f
             *gain = adc_val.v;
             // Gain format: 8.12
             *gain /= (1 << 12);
-            return;
+            return 0;
         }
     }
 
     *gain = 0;
+    return -1;
 }
 
 void hal_codec_adc_mute(bool mute)

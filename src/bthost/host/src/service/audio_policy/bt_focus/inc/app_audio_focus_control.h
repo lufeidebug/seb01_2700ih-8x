@@ -138,10 +138,6 @@ typedef struct
 
 typedef bool (*custom_allow_focus_switch)(bt_bdaddr_t* addr);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  ****************************************************************************************
  * @brief Initialize the audio focus module.
@@ -251,9 +247,4 @@ void app_audio_call_preempt_mode_set(bool preempt);
 void app_audio_allow_switch_focus_request_callback(custom_allow_focus_switch function);
 
 bool app_audio_update_focus(bt_bdaddr_t *addr);
-
-#ifdef __cplusplus
-}
-#endif
-
 #endif /* __AUDIO_FOCUS_CONTROL_H__ */

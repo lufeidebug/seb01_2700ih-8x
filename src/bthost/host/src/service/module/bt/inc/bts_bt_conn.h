@@ -261,8 +261,6 @@ void bts_bt_conn_notify_dev_connect_ind(const bt_bdaddr_t *addr);
 
 void bts_bt_conn_register_gfps_cbs(const bts_bt_to_gfps_cbs_t *cb);
 
-void bts_bt_conn_profile_evt_notify_gfps(const bt_bdaddr_t *addr, uint8_t device_id, uint64_t profile, uint8_t event, uint8_t param);
-
 void bts_bt_conn_dev_acl_disconnect_notify_gfps(void);
 
 void bts_bt_conn_notify_bluetooth_enabled(void);

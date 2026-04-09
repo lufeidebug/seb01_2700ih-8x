@@ -194,7 +194,7 @@ typedef void (*bt_a2dp_audio_state_cb)(const bt_bdaddr_t *address, bt_a2dp_audio
  */
 typedef void (*bt_a2dp_audio_config_cb)(const bt_bdaddr_t *address, const bt_a2dp_audio_config_t *config);
 
-typedef void (*bt_a2dp_unkown_cmd_cb)(const bt_bdaddr_t *address, const bt_a2dp_unknown_cmd_t *param);
+typedef void (*bt_a2dp_unknown_cmd_cb)(const bt_bdaddr_t *address, const bt_a2dp_unknown_cmd_t *param);
 
 /**
  ****************************************************************************************
@@ -212,14 +212,23 @@ typedef struct
     bt_a2dp_connection_state_cb    connection_state_cb;
     bt_a2dp_audio_state_cb         audio_state_cb;
     bt_a2dp_audio_config_cb        audio_config_cb;
-    bt_a2dp_unkown_cmd_cb          cmd_req_cb;
+    bt_a2dp_unknown_cmd_cb         cmd_req_cb;
 } bt_a2dp_sink_callbacks_t;
+
+typedef enum
+{
+    BT_A2DP_SINK_CB_TYPE_CONNECTION,
+    BT_A2DP_SINK_CB_TYPE_AUDIO_STATE,
+    BT_A2DP_SINK_CB_TYPE_AUDIO_CONFIG,
+    BT_A2DP_SINK_CB_TYPE_UNKNOWN_CMD,
+} bt_a2dp_sink_cb_type_t;
 
 typedef enum
 {
     BT_A2DP_SINK_CB_USER_BTA = 0,
     BT_A2DP_SINK_CB_USER_APP,
     BT_A2DP_SINK_CB_USER_DEPRECATED,
+    BT_A2DP_SINK_CB_USER_GFPS,
     BT_A2DP_SINK_CB_USER_MODULE_1,
     BT_A2DP_SINK_CB_USER_CUSTOMER,
     BT_A2DP_SINK_CB_USER_MAX,

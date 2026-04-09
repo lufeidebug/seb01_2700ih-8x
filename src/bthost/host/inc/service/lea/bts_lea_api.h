@@ -64,6 +64,8 @@ void bts_lea_mcp_media_fast_fw(const ble_bdaddr_t *addr);
 
 void bts_lea_mcp_media_fast_rw(const ble_bdaddr_t *addr);
 
+uint8_t bts_lea_mcp_get_media_state(const ble_bdaddr_t *addr);
+
 void bts_lea_vcp_volume_mute(void);
 
 void bts_ble_vcp_volume_unmute(void);
@@ -142,7 +144,7 @@ void bts_lea_bis_scan_past_info_send(uint16_t sync_hdl);
 
 const bt_lea_ascs_ase_t *bts_lea_get_ascs_ase_info(uint8_t ase_lid);
 
-bool bts_lea_is_device_ase_in_streamimg_state(const ble_bdaddr_t *addr);
+bool bts_lea_is_device_ase_in_streaming_state(const ble_bdaddr_t *addr);
 
 uint8_t bts_lea_get_audio_play_curr_con_lid(void);
 

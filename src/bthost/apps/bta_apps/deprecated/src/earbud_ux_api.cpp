@@ -593,7 +593,7 @@ void app_ibrt_if_connect_mobile_device(const bt_bdaddr_t *addr, uint8_t page_cou
 
 uint8_t app_ibrt_if_get_mobile_connected_dev_list(bt_bdaddr_t *out_addrs)
 {
-    return bta_find_all_connected_bt_device(out_addrs);
+    return bta_find_all_connected_bt_device((bt_bdaddr_list_t *)out_addrs);
 }
 
 bool app_ibrt_if_is_earbud_in_pairing_mode(void)

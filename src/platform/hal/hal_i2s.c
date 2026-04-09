@@ -481,6 +481,10 @@ int hal_i2s_setup_stream(enum HAL_I2S_ID_T id, enum AUD_STREAM_T stream, const s
 
     reg_base = _i2s_get_reg_base(id);
 
+    if (stream >= AUD_STREAM_NUM) {
+        return -1;
+    }
+
     if (i2s_status[id][stream] != HAL_I2S_STATUS_OPENED) {
         HAL_TRACE(2,"Invalid I2S setup status for stream %d: %d", stream, i2s_status[id][stream]);
         return 1;

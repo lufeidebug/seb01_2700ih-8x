@@ -72,7 +72,7 @@ int bts_ble_gap_disconnect_by_addr(const ble_bdaddr_t *peer_addr);
 
 void bts_ble_gap_clear_rpa_list(void);
 
-void bts_ble_gap_set_rpa_list(const ble_bdaddr_t *ble_addr, const uint8_t *irk);
+void bts_ble_gap_set_rpa_list(uint8_t count, const bt_ble_resolving_item_t *item);
 
 void bts_ble_gap_set_bonded_devs_rpa_list(void);
 

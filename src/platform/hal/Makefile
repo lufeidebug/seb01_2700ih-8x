@@ -132,10 +132,14 @@ endif
 ifeq ($(GPIO_BOTH_EDGE_IRQ),1)
 CFLAGS_hal_gpio_v2.o += -DGPIO_BOTH_EDGE_IRQ
 endif
+
+CHIP_I2C_VER ?= 1
+CFLAGS_hal_i2c.o += -DCHIP_I2C_VER=$(CHIP_I2C_VER)
+
 I2C_TASK_MODE ?= 1
 I2C_SIMPLE_MODE ?= 1
 ifeq ($(I2C_TASK_MODE),1)
-CFLAGS_hal_i2c.o += -DI2C_TASK_MODE
+CFLAGS_hal_i2c.o += -DI2C_TASK_MODE -Iutils/hwtimer_list
 endif
 ifeq ($(I2C_SIMPLE_MODE),1)
 CFLAGS_hal_i2c.o += -DI2C_SIMPLE_MODE

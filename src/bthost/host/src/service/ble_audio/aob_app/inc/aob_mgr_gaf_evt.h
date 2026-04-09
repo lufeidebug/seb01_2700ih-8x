@@ -356,11 +356,11 @@ typedef enum
 typedef struct
 {
     void (*call_state_change_cb)(uint8_t con_lid, uint8_t call_id, void *param);
-    void (*call_srv_signal_strength_value_ind_cb)(uint8_t con_lid, uint8_t call_id, uint8_t value);
-    void (*call_status_flags_ind_cb)(uint8_t con_lid, uint8_t call_id, bool inband_ring, bool silent_mode);
-    void (*call_ccp_opt_supported_opcode_ind_cb)(uint8_t con_lid, bool local_hold_op_supported, bool join_op_supported);
-    void (*call_terminate_reason_ind_cb)(uint8_t con_lid, uint8_t call_id, uint8_t reason);
-    void (*call_incoming_number_inf_ind_cb)(uint8_t con_lid, uint8_t call_id, uint8_t url_len, uint8_t *url);
+    void (*call_srv_signal_strength_value_ind_cb)(uint8_t con_lid, uint8_t bearer_lid, uint8_t call_id, uint8_t value);
+    void (*call_status_flags_ind_cb)(uint8_t con_lid, uint8_t call_id, uint8_t bearer_lid, bool inband_ring, bool silent_mode);
+    void (*call_ccp_opt_supported_opcode_ind_cb)(uint8_t con_lid, uint8_t bearer_lid, bool local_hold_op_supported, bool join_op_supported);
+    void (*call_terminate_reason_ind_cb)(uint8_t con_lid, uint8_t bearer_lid, uint8_t call_id, uint8_t reason);
+    void (*call_incoming_number_inf_ind_cb)(uint8_t con_lid, uint8_t bearer_lid, uint8_t call_id, uint8_t url_len, uint8_t *url);
     void (*call_svc_changed_ind_cb)(uint8_t con_lid);
     void (*call_action_result_ind_cb)(uint8_t con_lid, void *param);
     void (*call_tbc_set_cfg_cmp_cb)(uint8_t con_lid, uint8_t bearer_lid, uint8_t char_type, uint8_t error_code);

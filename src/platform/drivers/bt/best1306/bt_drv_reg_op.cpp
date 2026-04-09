@@ -2303,7 +2303,7 @@ void bt_drv_reg_op_afh_assess_en(bool en)
 void bt_drv_reg_op_afh_assess_init(void)
 {
 
-    bt_drv_reg_op_afh_assess_en(true);
+    bt_drv_reg_op_afh_assess_en(false);
 }
 
 

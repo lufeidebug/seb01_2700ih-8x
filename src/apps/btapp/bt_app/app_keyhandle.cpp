@@ -285,7 +285,7 @@ HFCALL_MACHINE_ENUM app_get_hfcall_machine(void)
         current_audioState == BT_HFP_AUDIO_DISCON &&
 #endif
         another_callSetup==BT_HFP_CALL_SETUP_NONE &&
-        another_call == BT_HFP_CALL_NONE 
+        another_call == BT_HFP_CALL_NONE
 #ifndef BESUI_KEY_EN
      && another_audioState == BT_HFP_AUDIO_DISCON
 #endif
@@ -779,7 +779,7 @@ void bes_bt_hfp_key_handler(uint8_t hfp_key)
 
 void bt_key_handle_customer_volume(void)
 {
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     if(bts_tws_if_is_nv_master())
     {
         app_audio_control_streaming_volume_up();

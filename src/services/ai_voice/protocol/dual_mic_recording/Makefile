@@ -47,4 +47,3 @@ subdir-ccflags-y += \
     -Iservices/app_ai/inc \
     -Iservices/nv_section/factory_section \
     -Ithirdparty/binaural_lib
-    

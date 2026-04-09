@@ -454,7 +454,7 @@ void app_ibrt_ui_perform_user_action_v2(uint8_t *p_buff, uint16_t length)
             app_bt_local_volume_down(app_ibrt_keyboard_sync_volume_info_v2);
             break;
         case IBRT_ACTION_SWITCH_A2DP:
-            bts_am_switch_streaming_a2dp_handler(action_header->param, action_header->param2, &action_header->remote);
+            bts_am_switch_streaming_a2dp_handler(action_header->param, action_header->param2);
             break;
         case IBRT_ACTION_SWITCH_SCO:
             bts_am_switch_streaming_sco_handler();

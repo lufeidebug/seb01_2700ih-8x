@@ -217,6 +217,22 @@ extern "C" WEAK int _execve(char *name, char **argv, char **env)
     return -1;
 }
 
+extern "C" WEAK int _gettimeofday(struct timeval *tv, struct timezone *tz)
+{
+    (void)tz;
+
+#ifdef RTC_CALENDAR
+    time_t mtime;
+    struct RTC_CALENDAR_FORMAT_T cur_time;
+
+    pmu_rtc_calendar_get(&cur_time);
+    mtime = rtc_calendar_to_unix(&cur_time);
+    tv->tv_sec = mtime;
+    tv->tv_usec = 0;
+#endif
+    return 0;
+}
+
 #ifndef OS_WRAP_MALLOC
 #include "cmsis.h"
 #include <sys/lock.h>

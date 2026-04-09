@@ -1484,7 +1484,7 @@ int a2dp_audio_lhdc_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
 
 #ifdef A2DP_CP_ACCEL
     int ret;
-    ret = a2dp_cp_init(a2dp_cp_lhdc_cp_decode, CP_PROC_DELAY_2_FRAMES);
+    ret = a2dp_cp_init(a2dp_cp_lhdc_cp_decode, CP_PROC_DELAY_1_FRAME);
     ASSERT(ret == 0, "%s: a2dp_cp_init() failed: ret=%d", __func__, ret);
     uint32_t cp_buffer_frames_max = 0;
     uint32_t out_frame_len;

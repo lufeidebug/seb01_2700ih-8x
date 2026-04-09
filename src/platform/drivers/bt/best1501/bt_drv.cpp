@@ -183,9 +183,6 @@ void btdrv_poweron(uint8_t en)
 
 void bt_drv_extra_config_after_init(void)
 {
-#if (!defined(__BT_RAMRUN__) && defined(__AFH_ASSESS__) && !defined(__HW_AGC__))
-    bt_drv_reg_op_afh_assess_init();
-#endif
 }
 
 #define D_REF 0x102

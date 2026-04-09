@@ -281,6 +281,8 @@ static void audio_test_dac_limiter(const char *cmd)
 
 #if defined(__HW_DAC_IIR_LIMITER__)
     hw_dac_limiter_set_cfg(&hw_dac_limiter_cfg);
+    hw_dac_limiter_disable();
+    hw_dac_limiter_enable();
 #else
     APP_TEST_TRACE(0, "[%s] Need to enable HW_DAC_IIR_LIMITER", __func__);
     g_cmd_send_rsp = true;

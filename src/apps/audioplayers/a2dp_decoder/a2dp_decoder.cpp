@@ -484,9 +484,15 @@ uint32_t a2dp_audio_get_passed(uint32_t curr_ticks, uint32_t prev_ticks, uint32_
 
 #ifdef A2DP_CP_ACCEL
 extern "C" uint32_t get_in_cp_frame_cnt(void);
+extern "C" uint32_t get_out_cp_frame_cnt(void);
 extern "C" uint32_t get_in_cp_frame_delay(void);
 #else
 static uint32_t get_in_cp_frame_cnt(void)
+{
+    return 0;
+}
+
+static uint32_t get_out_cp_frame_cnt(void)
 {
     return 0;
 }
@@ -1824,7 +1830,7 @@ uint32_t a2dp_audio_playback_handler(uint8_t device_id, uint8_t *buffer, uint32_
         if (!a2dp_audio_refill_packet()){
             uint16_t packet_mut = 0;
             if (!a2dp_audio_internal_lastframe_info_ptr_get(&lastframe_info)){
-                packet_mut = list_len +  get_in_cp_frame_cnt() + get_in_cp_frame_delay() * (lastframe_info->frame_samples  /lastframe_info->list_samples);
+                packet_mut = list_len + get_in_cp_frame_cnt() + get_out_cp_frame_cnt() * get_cp_frame_mtus(&a2dp_audio_lastframe_info);
                 a2dp_audio_context.average_packet_mut = a2dp_audio_alpha_filter((float)a2dp_audio_context.average_packet_mut, (float)packet_mut);
 
                 bool isProcessedByCodecAlg = false;
@@ -1865,7 +1871,7 @@ uint32_t a2dp_audio_playback_handler(uint8_t device_id, uint8_t *buffer, uint32_
                 a2dp_audio_context.skip_frame_cnt_after_no_cache = 0;
                 a2dp_audio_context.mute_frame_cnt_after_no_cache = 0;
 #if defined(A2DP_CP_ACCEL)
-                a2dp_audio_context.water_line_delay_cache_cnt = (uint8_t)CP_PROC_DELAY_2_FRAMES;
+                a2dp_audio_context.water_line_delay_cache_cnt = (uint8_t)CP_PROC_DELAY_1_FRAME;
 #else
                 a2dp_audio_context.water_line_delay_cache_cnt = 0;
 #endif
@@ -3271,7 +3277,7 @@ void sbm_register_local_scalable_sbm_feature_updated_callback(sbm_feature_update
 
 void sbm_control_local_scalable_sbm_feature(uint8_t device_id, bool isEnable)
 {
-#ifdef IBRT
+#ifdef BT_SVC_MODULE_IBRT_ENABLED
     if (bts_tws_if_is_tws_link_connected())
     {
         SBM_CONTROL_REQ_T req;

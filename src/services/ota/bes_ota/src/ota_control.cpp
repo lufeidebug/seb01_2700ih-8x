@@ -2553,8 +2553,8 @@ static void _handle_received_data(uint8_t *otaBuf, bool isViaBle,uint16_t dataLe
             if ((BES_OTA_START_MAGIC_CODE == packet->payload.cmdSegmentVerify.magicCode) &&
                 (ota_control_env.receivedCrc32OfSegment == ota_control_env.crc32OfSegment))
             {
-                errOtaCode = 1;
 #if defined(BT_SVC_MODULE_TWS_ENABLED)
+                errOtaCode = 1;
                 uint8_t ota_segment_crc = OTA_RESULT_PASSED;
                 ota_send_rsp_handle(OTA_RSP_SEGMENT_VERIFY, (uint8_t *)&ota_segment_crc, 1, APP_TWS_CMD_OTA_SEGMENT_CRC_CMD);
 #endif
@@ -2808,8 +2808,8 @@ static void _handle_received_data(uint8_t *otaBuf, bool isViaBle,uint16_t dataLe
                     OTA_TRACE(0,"OTA config pass.");
                     OTA_TRACE(0,"Start writing the received image to flash offset 0x%x", ota_control_env.offsetInFlashToProgram);
 
-                    errOtaCode = 1;
 #if defined(BT_SVC_MODULE_TWS_ENABLED)
+                    errOtaCode = 1;
                     bool ota_config = OTA_RESULT_PASSED;
                     ota_send_rsp_handle(OTA_RSP_CONFIG, (uint8_t *)&ota_config, 1, APP_TWS_CMD_OTA_OTA_CONFIG_CMD);
 #endif
@@ -2906,8 +2906,8 @@ static void _handle_received_data(uint8_t *otaBuf, bool isViaBle,uint16_t dataLe
             _update_user(packet->payload.cmdSetUser.user);
 
             /// update local error code to no_error
-            errOtaCode = 1;
 #if defined(BT_SVC_MODULE_TWS_ENABLED)
+            errOtaCode = 1;
             /// TWS sync command from phone
             ota_send_rsp_handle(OTA_RSP_SET_USER,
                                 &(packet->payload.cmdSetUser.user),
@@ -3231,7 +3231,9 @@ void ota_data_reception_done(void)
     }
     else
     {
+#if defined(BT_SVC_MODULE_TWS_ENABLED)
             errOtaCode = 1;
+#endif
         /// set pending for apply flag
         ota_control_env.isPendingForReboot = true;
 

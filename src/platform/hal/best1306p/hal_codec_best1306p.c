@@ -682,6 +682,33 @@ static void hal_codec_classg_enable(bool en)
 }
 #endif
 
+void hal_codec_adc_dig_dc_offset_enable(uint32_t adc_chan, int32_t dc)
+{
+    uint32_t i;
+
+    for (i = 0; i < NORMAL_ADC_CH_NUM; i++) {
+        if (adc_chan & (1 << i)) {
+            volatile uint32_t *reg = (volatile uint32_t *)&(codec->REG_188) + i;
+            *reg = *reg & (~(CODEC_CODEC_ADC_DC_UPDATE_CH0));
+            hal_codec_reg_update_delay();
+            *reg = SET_BITFIELD(*reg, CODEC_CODEC_ADC_DC_DIN_CH0, dc) | CODEC_CODEC_ADC_DC_UPDATE_CH0;
+        }
+    }
+}
+
+void hal_codec_adc_dig_dc_offset_init(void)
+{
+#ifdef AUDIO_INPUT_CH0_DC_OFFSET
+    hal_codec_adc_dig_dc_offset_enable(AUD_CHANNEL_MAP_CH0, AUDIO_INPUT_CH0_DC_OFFSET);
+#endif
+#ifdef AUDIO_INPUT_CH1_DC_OFFSET
+    hal_codec_adc_dig_dc_offset_enable(AUD_CHANNEL_MAP_CH1, AUDIO_INPUT_CH1_DC_OFFSET);
+#endif
+#ifdef AUDIO_INPUT_CH2_DC_OFFSET
+    hal_codec_adc_dig_dc_offset_enable(AUD_CHANNEL_MAP_CH2, AUDIO_INPUT_CH2_DC_OFFSET);
+#endif
+}
+
 void hal_codec_dac_dc_offset_enable(int32_t dc_l, int32_t dc_r)
 {
     codec->REG_1B8 &= ~CODEC_CODEC_DAC_DC_UPDATE_CH0;
@@ -3365,7 +3392,7 @@ static void hal_codec_restore_dig_adc_gain(void)
     }
 }
 
-static void POSSIBLY_UNUSED hal_codec_get_adc_gain(enum AUD_CHANNEL_MAP_T map, float *gain)
+int hal_codec_get_adc_gain(enum AUD_CHANNEL_MAP_T map, float *gain)
 {
     struct ADC_GAIN_T {
         int32_t v : 20;
@@ -3373,6 +3400,10 @@ static void POSSIBLY_UNUSED hal_codec_get_adc_gain(enum AUD_CHANNEL_MAP_T map, f
 
     struct ADC_GAIN_T adc_val;
 
+    if (__builtin_popcount(map) != 1) {
+        HAL_TRACE(0, "Only one ch of adc gain can be obtained.");
+        return -1;
+    }
     for (int i = 0; i < NORMAL_ADC_CH_NUM; i++) {
         if (map & (AUD_CHANNEL_MAP_CH0 << i)) {
             adc_val.v = GET_BITFIELD(*(&codec->REG_084 + i), CODEC_CODEC_ADC_GAIN_CH0);
@@ -3380,11 +3411,12 @@ static void POSSIBLY_UNUSED hal_codec_get_adc_gain(enum AUD_CHANNEL_MAP_T map, f
             *gain = adc_val.v;
             // Gain format: 8.12
             *gain /= (1 << 12);
-            return;
+            return 0;
         }
     }
 
     *gain = 0;
+    return -1;
 }
 
 void hal_codec_adc_mute(bool mute)
@@ -3784,6 +3816,9 @@ static void hal_codec_anc_chan_config(
         } else {
             codec->REG_084 = SET_BITFIELD(codec->REG_084, CODEC_CODEC_ADC_IN_SEL_CH0, ch_idx);
             codec->REG_0C4 &= ~CODEC_CODEC_PDM_ADC_SEL_CH0;
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+            hal_codec_adc_dig_dc_offset_enable(AUD_CHANNEL_MAP_CH0, adc_calib_cfg[ch_idx].rsvd0);
+#endif
         }
     } else if (ANC_FF_MIC_CH_L & AUD_CHANNEL_MAP_ALL) {
         reserv_map |= AUD_CHANNEL_MAP_CH0;
@@ -3800,6 +3835,9 @@ static void hal_codec_anc_chan_config(
         } else {
             codec->REG_088 = SET_BITFIELD(codec->REG_088, CODEC_CODEC_ADC_IN_SEL_CH1, ch_idx);
             codec->REG_0C4 &= ~CODEC_CODEC_PDM_ADC_SEL_CH1;
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+            hal_codec_adc_dig_dc_offset_enable(AUD_CHANNEL_MAP_CH1, adc_calib_cfg[ch_idx].rsvd0);
+#endif
         }
     } else if (ANC_FF_MIC_CH_R & AUD_CHANNEL_MAP_ALL) {
         reserv_map |= AUD_CHANNEL_MAP_CH1;
@@ -3858,6 +3896,9 @@ static void hal_codec_anc_chan_config(
         } else {
             codec->REG_08C = SET_BITFIELD(codec->REG_08C, CODEC_CODEC_ADC_IN_SEL_CH2, ch_idx);
             codec->REG_0C4 &= ~CODEC_CODEC_PDM_ADC_SEL_CH2;
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+            hal_codec_adc_dig_dc_offset_enable(AUD_CHANNEL_MAP_CH2, adc_calib_cfg[ch_idx].rsvd0);
+#endif
         }
     } else if (ANC_FB_MIC_CH_L & AUD_CHANNEL_MAP_ALL) {
         reserv_map |= AUD_CHANNEL_MAP_CH2;
@@ -3874,6 +3915,9 @@ static void hal_codec_anc_chan_config(
         } else {
             codec->REG_088 = SET_BITFIELD(codec->REG_088, CODEC_CODEC_ADC_IN_SEL_CH1, ch_idx);
             codec->REG_0C4 &= ~CODEC_CODEC_PDM_ADC_SEL_CH1;
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+            hal_codec_adc_dig_dc_offset_enable(AUD_CHANNEL_MAP_CH1, adc_calib_cfg[ch_idx].rsvd0);
+#endif
         }
     } else if (ANC_FB_MIC_CH_R & AUD_CHANNEL_MAP_ALL) {
         reserv_map |= AUD_CHANNEL_MAP_CH1;
@@ -3941,6 +3985,9 @@ static void hal_codec_anc_chan_config(
         } else {
             *(&codec->REG_084 + i) = SET_BITFIELD(*(&codec->REG_084 + i), CODEC_CODEC_ADC_IN_SEL_CH0, ch_idx);
             codec->REG_0C4 &= ~(CODEC_CODEC_PDM_ADC_SEL_CH0 << i);
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+            hal_codec_adc_dig_dc_offset_enable((AUD_CHANNEL_MAP_CH0 << i), adc_calib_cfg[ch_idx].rsvd0);
+#endif
         }
     } else if (ANC_TT_MIC_CH_L) {
         reserv_map |= anc_tt_adc_ch_l;
@@ -3959,6 +4006,9 @@ static void hal_codec_anc_chan_config(
         } else {
             *(&codec->REG_084 + i) = SET_BITFIELD(*(&codec->REG_084 + i), CODEC_CODEC_ADC_IN_SEL_CH0, ch_idx);
             codec->REG_0C4 &= ~(CODEC_CODEC_PDM_ADC_SEL_CH0 << i);
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+            hal_codec_adc_dig_dc_offset_enable((AUD_CHANNEL_MAP_CH0 << i), adc_calib_cfg[ch_idx].rsvd0);
+#endif
         }
     } else if (ANC_TT_MIC_CH_R) {
         reserv_map |= anc_tt_adc_ch_r;
@@ -4243,6 +4293,9 @@ int hal_codec_setup_stream(enum HAL_CODEC_ID_T id, enum AUD_STREAM_T stream, con
                 } else {
                     *(&codec->REG_084 + i) = SET_BITFIELD(*(&codec->REG_084 + i), CODEC_CODEC_ADC_IN_SEL_CH0, ch_idx);
                     codec->REG_0C4 &= ~(CODEC_CODEC_PDM_ADC_SEL_CH0 << i);
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+                    hal_codec_adc_dig_dc_offset_enable((AUD_CHANNEL_MAP_CH0 << i), adc_calib_cfg[ch_idx].rsvd0);
+#endif
                 }
 #ifdef SIDETONE_DEDICATED_ADC_CHAN
                 sidetone_adc_ch_map = st_map;
@@ -4277,6 +4330,9 @@ int hal_codec_setup_stream(enum HAL_CODEC_ID_T id, enum AUD_STREAM_T stream, con
                     } else {
                         *(&codec->REG_084 + i) = SET_BITFIELD(*(&codec->REG_084 + i), CODEC_CODEC_ADC_IN_SEL_CH0, ch_idx);
                         codec->REG_0C4 &= ~(CODEC_CODEC_PDM_ADC_SEL_CH0 << i);
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+                        hal_codec_adc_dig_dc_offset_enable((AUD_CHANNEL_MAP_CH0 << i), adc_calib_cfg[ch_idx].rsvd0);
+#endif
 #if defined(CODEC_ADC_DC_FILTER_FACTOR)
                         hal_codec_enable_adc_dc_filter((1 << i), true);
 #endif
@@ -4649,6 +4705,9 @@ int hal_codec_anc_adc_enable(enum ANC_TYPE_T type)
             } else {
                 codec->REG_084 = SET_BITFIELD(codec->REG_084, CODEC_CODEC_ADC_IN_SEL_CH0, ch_idx);
                 codec->REG_0C4 &= ~CODEC_CODEC_PDM_ADC_SEL_CH0;
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+                hal_codec_adc_dig_dc_offset_enable(AUD_CHANNEL_MAP_CH0, adc_calib_cfg[ch_idx].rsvd0);
+#endif
             }
             map |= AUD_CHANNEL_MAP_CH0;
             mic_map |= ANC_FF_MIC_CH_L;
@@ -4663,6 +4722,9 @@ int hal_codec_anc_adc_enable(enum ANC_TYPE_T type)
             } else {
                 codec->REG_088 = SET_BITFIELD(codec->REG_084, CODEC_CODEC_ADC_IN_SEL_CH1, ch_idx);
                 codec->REG_0C4 &= ~CODEC_CODEC_PDM_ADC_SEL_CH1;
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+                hal_codec_adc_dig_dc_offset_enable(AUD_CHANNEL_MAP_CH1, adc_calib_cfg[ch_idx].rsvd0);
+#endif
             }
             map |= AUD_CHANNEL_MAP_CH1;
             mic_map |= ANC_FF_MIC_CH_R;
@@ -4690,6 +4752,9 @@ int hal_codec_anc_adc_enable(enum ANC_TYPE_T type)
             } else {
                 codec->REG_08C = SET_BITFIELD(codec->REG_08C, CODEC_CODEC_ADC_IN_SEL_CH2, ch_idx);
                 codec->REG_0C4 &= ~CODEC_CODEC_PDM_ADC_SEL_CH2;
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+                hal_codec_adc_dig_dc_offset_enable(AUD_CHANNEL_MAP_CH2, adc_calib_cfg[ch_idx].rsvd0);
+#endif
             }
             map |= AUD_CHANNEL_MAP_CH2;
             mic_map |= ANC_FB_MIC_CH_L;
@@ -4704,6 +4769,9 @@ int hal_codec_anc_adc_enable(enum ANC_TYPE_T type)
             } else {
                 codec->REG_088 = SET_BITFIELD(codec->REG_088, CODEC_CODEC_ADC_IN_SEL_CH1, ch_idx);
                 codec->REG_0C4 &= ~CODEC_CODEC_PDM_ADC_SEL_CH1;
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+                hal_codec_adc_dig_dc_offset_enable(AUD_CHANNEL_MAP_CH1, adc_calib_cfg[ch_idx].rsvd0);
+#endif
             }
             codec->REG_22C = SET_BITFIELD(codec->REG_22C, CODEC_CODEC_FB_ADC_SEL_CH1, 1);
             map |= AUD_CHANNEL_MAP_CH1;
@@ -4730,6 +4798,9 @@ int hal_codec_anc_adc_enable(enum ANC_TYPE_T type)
             } else {
                 *(&codec->REG_084 + i) = SET_BITFIELD(*(&codec->REG_084 + i), CODEC_CODEC_ADC_IN_SEL_CH0, ch_idx);
                 codec->REG_0C4 &= ~(CODEC_CODEC_PDM_ADC_SEL_CH0 << i);
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+                hal_codec_adc_dig_dc_offset_enable((AUD_CHANNEL_MAP_CH0 << i), adc_calib_cfg[ch_idx].rsvd0);
+#endif
             }
             codec->REG_22C = SET_BITFIELD(codec->REG_22C, CODEC_CODEC_TT_ADC_SEL_CH0, i);
 #ifdef PSAP_APP
@@ -4750,6 +4821,9 @@ int hal_codec_anc_adc_enable(enum ANC_TYPE_T type)
             } else {
                 *(&codec->REG_084 + i) = SET_BITFIELD(*(&codec->REG_084 + i), CODEC_CODEC_ADC_IN_SEL_CH0, ch_idx);
                 codec->REG_0C4 &= ~(CODEC_CODEC_PDM_ADC_SEL_CH0 << i);
+#ifdef AUDIO_ADC_DIG_DC_CALIB
+                hal_codec_adc_dig_dc_offset_enable((AUD_CHANNEL_MAP_CH0 << i), adc_calib_cfg[ch_idx].rsvd0);
+#endif
             }
             codec->REG_22C = SET_BITFIELD(codec->REG_22C, CODEC_CODEC_TT_ADC_SEL_CH1, i);
 #ifdef PSAP_APP

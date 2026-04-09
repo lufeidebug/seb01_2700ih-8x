@@ -112,7 +112,8 @@ typedef enum gaf_bap_activity_type
     GAF_BAP_ACT_TYPE_MAX,
 } gaf_bap_activity_type_e;
 
-typedef enum {
+typedef enum
+{
     AOB_MGR_STREAM_STATE_IDLE             = 0,
     AOB_MGR_STREAM_STATE_CODEC_CONFIGURED = 1,
     AOB_MGR_STREAM_STATE_QOS_CONFIGURED   = 2,
@@ -124,20 +125,23 @@ typedef enum {
     AOB_MGR_STREAM_STATE_MAX,
 } AOB_MGR_STREAM_STATE_E;
 
-typedef enum {
+typedef enum
+{
     AOB_ADV_START         = 0,
     AOB_ADV_FAILED        = 1,
     AOB_ADV_STOP          = 2,
 } AOB_ADV_STATE_T;
 
-typedef enum {
+typedef enum
+{
     AOB_ADV_IDLE        = 0,
     AOB_ADV_PAIRING     = 1,
     AOB_ADV_RECONNECT   = 2,
     AOB_ADV_UNKNOWN     = 3,
 } AOB_ADV_TYPE_T;
 
-typedef enum {
+typedef enum
+{
     AOB_ACL_DISCONNECTED       = 0,
     AOB_ACL_CONNECTING         = 1,
     AOB_ACL_FAILED             = 3,
@@ -149,13 +153,15 @@ typedef enum {
     AOB_ACL_DISCONNECTING      = 9,
 } AOB_ACL_STATE_T;
 
-typedef struct {
+typedef struct
+{
     AOB_ACL_STATE_T                     acl_state;
     uint8_t                             err_code;
 } AOB_CONNECTION_STATE_T;
 
 //see @acc_mc_media_state
-typedef enum {
+typedef enum
+{
     /// Inactive
     AOB_MGR_PLAYBACK_STATE_INACTIVE = 0,
     /// Playing
@@ -193,6 +199,7 @@ typedef struct
 {
     /// Bearer local index, reserve value is 0xFF
     uint8_t                         bearer_lid;
+    /// Signal strength in dbm
     uint8_t                         signal_strength;
     /// Call flags
     AOB_CALL_CALL_FLAGS_T           call_flags;
@@ -203,8 +210,22 @@ typedef struct
     /// Length of Incoming or Outgoing Call URI value
     uint8_t                         uri_len;
     /// Remote Call URI value
-    uint8_t                         *uri;
+    const uint8_t                   *uri;
 } AOB_SINGLE_CALL_INFO_T;
+
+typedef struct
+{
+    /// Connection local index
+    uint8_t                         con_lid;
+    /// Bearer local index, reserve value is 0xFF
+    uint8_t                         bearer_lid;
+    /// Call index, reserve value is 0x00
+    uint8_t                         call_id;
+    /// Call action opcode
+    uint8_t                         action_opcode;
+    /// Call action result
+    uint8_t                         result;
+} AOB_CALL_ACTION_RESULT_IND_T;
 
 typedef struct
 {
@@ -247,7 +268,8 @@ typedef struct
     uint8_t media_state;
 } AOB_MEDIA_INFO_T;
 
-typedef struct {
+typedef struct
+{
     /// Cmd return status
     uint16_t status;
     /// Ase_lid
@@ -266,7 +288,7 @@ typedef struct {
     uint32_t rx_unrx_packets;
     /// Number of duplicate packets received
     uint32_t duplicate_packets;
-} __attribute__ ((__packed__)) AOB_ISO_LINK_QUALITY_INFO_T;
+} __attribute__((__packed__)) AOB_ISO_LINK_QUALITY_INFO_T;
 
 /// Unicast group configuration structure (provided by controller after stream establisment)
 typedef struct
@@ -307,7 +329,6 @@ typedef struct
     /// Maximum number of subevents in each isochronous interval. From 0x1 to 0x1F
     uint8_t nse;
 } AOB_US_CONFIG_T;
-
 
 /// Structure for BAP_UC_SRV_CIS_STATE indication message
 typedef struct
@@ -535,7 +556,8 @@ typedef struct
     uint8_t hdt_pld_window_size_p2c; // 1 to 4 Size of the transmit payload window size p 2 c
 } AOB_BAP_CIS_CFG_T;
 
-typedef enum {
+typedef enum
+{
     AOB_EVENT_TW_CONNECTION_STATE                 = 0,
     AOB_EVENT_MOB_CONNECTION_STATE                = 1,
     AOB_EVENT_ADV_STATE                           = 2,
@@ -583,19 +605,22 @@ typedef enum {
 
 } AOB_EVENT_E;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_E                         type;
     uint8_t                             length;
 } AOB_EVENT_HEADER_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     AOB_ADV_STATE_T                     adv_state;
     AOB_ADV_TYPE_T                      adv_type;
     uint8_t                             err_code;
 } AOB_EVENT_ADV_STATE_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     AOB_CONNECTION_STATE_T              state;
     uint32_t                            evt_type;
@@ -603,7 +628,8 @@ typedef struct {
     ble_bdaddr_t                        peer_bdaddr;
 } AOB_EVENT_TWS_STATE_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                   header;
     AOB_CONNECTION_STATE_T               state;
     uint32_t                             evt_type;
@@ -611,7 +637,8 @@ typedef struct {
     ble_bdaddr_t                         peer_bdaddr;
 } AOB_EVENT_MOB_STATE_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
     uint8_t                             volume;
@@ -620,25 +647,29 @@ typedef struct {
     bool                                is_local;   // volume change triggered by the local or the remote
 } AOB_EVENT_VOL_CHANGED_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     int16_t                             offset;
     uint8_t                             output_lid;
 } AOB_EVENT_VOCS_OFFSET_CHANGED_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             output_lid;
     uint8_t                             cli_cfg_bf;
 } AOB_EVENT_VOCS_BOND_DATA_CHANGED_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
     uint8_t                             media_lid;
 } AOB_EVENT_MEDIA_TRACK_CHANGED_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
     uint8_t                             ase_lid;
@@ -646,12 +677,15 @@ typedef struct {
     AOB_MGR_STREAM_STATE_E              curr_state;
 } AOB_EVENT_STREAM_STATUS_CHANGED_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
+    uint8_t                             media_lid;
 } AOB_EVENT_MCP_MCC_SVC_CHANGED_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
     uint8_t                             media_lid;
@@ -660,73 +694,92 @@ typedef struct {
     const uint8_t                       *val;
 } AOB_EVENT_MCP_MCC_CHAR_VALUE_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             mute;
 } AOB_EVENT_MIC_STATE_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     AOB_ISO_LINK_QUALITY_INFO_T         param;
 } AOB_EVENT_ISO_LINK_QUALITY_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
 } AOB_EVENT_PACS_CCCD_WRITTEN_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
-    void                                *param;
+    const AOB_SINGLE_CALL_INFO_T        *param;
 } AOB_EVENT_CALL_STATE_CHANGE_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
     uint8_t                             value;
 } AOB_EVENT_CALL_SRV_SIG_STRENGTH_VALUE_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
     bool                                inband_ring;
     bool                                silent_mode;
 } AOB_EVENT_CALL_STATUS_FLAGS_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
     bool                                local_hold_op_supported;
     bool                                join_op_supported;
 } AOB_EVENT_CALL_CCP_OPT_SUPPORTED_OPCODE_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
     uint8_t                             call_id;
     uint8_t                             reason;
 } AOB_EVENT_CALL_TERMINATE_REASON_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
+    uint8_t                             call_id;
     uint8_t                             url_len;
-    uint8_t                             *url;
+    const uint8_t                       *url;
 } AOB_EVENT_CALL_INCOMING_NUM_INF_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
+    uint8_t                             bearer_lid;
 } AOB_EVENT_CALL_SVC_CHANGED_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
-    void                                *param;
+    const AOB_CALL_ACTION_RESULT_IND_T  *param;
 } AOB_EVENT_CALL_ACTION_RESULT_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
     uint8_t                             bearer_lid;
@@ -734,12 +787,14 @@ typedef struct {
     uint8_t                             err_code;
 } AOB_EVENT_CCP_SET_CFG_CMP_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     AOB_UC_SRV_CIS_INFO_T               *ascs_cis_established;
 } AOB_EVENT_CIS_ESTABLISHED_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
     uint8_t                             cig_id;
@@ -747,13 +802,15 @@ typedef struct {
     uint8_t                             reason;
 } AOB_EVENT_CIS_DISCONNECTED_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint16_t                            con_hdl;
     uint8_t                             error;
 } AOB_EVENT_CIS_REJECTED_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             cig_id;
     uint8_t                             group_lid;
@@ -761,7 +818,8 @@ typedef struct {
     uint8_t                             reason;
 } AOB_EVENT_CIG_TERMINATED_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             opcode;
     uint8_t                             nb_ases;
@@ -770,7 +828,8 @@ typedef struct {
     uint8_t                             reason;
 } AOB_EVENT_ASE_NTF_VALUE_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             ase_lid;
     AOB_CODEC_ID_T                      codec_id;
@@ -779,14 +838,16 @@ typedef struct {
     AOB_BAP_QOS_REQ_T                   ntf_qos_req;
 } AOB_EVENT_ASE_CODEC_CFG_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
     uint8_t                             ase_lid;
     void                                *param;
 } AOB_EVENT_ASE_ENABLE_REQ_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
     uint8_t                             ase_lid;
@@ -794,54 +855,63 @@ typedef struct {
     uint8_t                             state;
 } AOB_EVENT_ASE_METADATA_UPDATE_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             grp_lid;
     uint8_t                             state;
     uint32_t                            stream_pos_bf;
 } AOB_EVENT_BIS_SINK_STATUS_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             grp_lid;
 } AOB_EVENT_BIS_SINK_ENABLE_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             grp_lid;
 } AOB_EVENT_BIS_SINK_DISABLE_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             grp_lid;
 } AOB_EVENT_BIS_SINK_STREAM_START_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             grp_lid;
 } AOB_EVENT_BIS_SINK_STREAM_STOP_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             src_lid;
     uint8_t                             con_lid;
     uint8_t                             pa_syn_req;
 } AOB_EVENT_BIS_DELEG_SOURCE_ADD_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             src_lid;
     uint8_t                             con_lid;
 } AOB_EVENT_BIS_DELEG_SOURCE_RM_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             src_lid;
     uint8_t                             con_lid;
     uint8_t                             pa_syn_req;
 } AOB_EVENT_BIS_DELEG_SOURCE_UPD_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
     uint8_t                             media_lid;
@@ -849,21 +919,24 @@ typedef struct {
     uint8_t                             err_code;
 } AOB_EVENT_MCP_SET_CFG_CMP_IND_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
     uint8_t                             char_type;
     bool                                ntf_enable;
 } AOB_EVENT_VCP_VCS_CCCD_WRITTEN_T;
 
-typedef struct {
+typedef struct
+{
     AOB_EVENT_HEADER_T                  header;
     uint8_t                             con_lid;
     uint8_t                             err_code;
     uint16_t                            role_bf;
 } AOB_EVENT_TMAP_READ_ROLE_CMP_IND_T;
 
-typedef union {
+typedef union
+{
     AOB_EVENT_TWS_STATE_T                         aob_tws_connection_state;
     AOB_EVENT_MOB_STATE_T                         aob_mob_connection_state;
     AOB_EVENT_ADV_STATE_T                         aob_adv_state_changed;
@@ -956,7 +1029,7 @@ typedef struct
     void (*ble_tws_sirk_refreshed)();
     void (*ble_audio_adv_state_changed)(AOB_ADV_STATE_T state, AOB_ADV_TYPE_T type, uint8_t err_code);
     void (*ble_tws_acl_state_changed)(uint32_t evt_type, ble_event_handled_t *p);
-    void (*ble_mob_acl_state_changed)(uint32_t evt_type, ble_bdaddr_t *peer_addr, uint8_t con_idx,uint8_t err_code);
+    void (*ble_mob_acl_state_changed)(uint32_t evt_type, ble_bdaddr_t *peer_addr, uint8_t con_idx, uint8_t err_code);
     void (*ble_vol_changed)(uint8_t con_lid, uint8_t volume, uint8_t mute, uint8_t change_counter, bool is_local);
     void (*ble_vcp_vcs_cccd_changed_cb)(uint8_t con_lid, uint8_t char_type, bool ntf_enable);
     void (*ble_vocs_offset_changed_cb)(int16_t offset, uint8_t output_lid);
@@ -971,14 +1044,14 @@ typedef struct
     void (*ble_media_iso_link_quality_cb)(void *event);
     void (*ble_media_pacs_cccd_written_cb)(uint8_t con_lid);
     void (*ble_con_pacs_cccd_gatt_load_cb)(uint8_t con_lid, uint8_t gatt_load_status);
-    void (*ble_call_state_change_cb)(uint8_t con_lid, void *param);
-    void (*ble_call_srv_signal_strength_value_ind_cb)(uint8_t con_lid, uint8_t call_id, uint8_t value);
-    void (*ble_call_status_flags_ind_cb)(uint8_t con_lid, uint8_t call_id, bool inband_ring, bool silent_mode);
-    void (*ble_call_ccp_opt_supported_opcode_ind_cb)(uint8_t con_lid, bool local_hold_op_supported, bool join_op_supported);
-    void (*ble_call_terminate_reason_ind_cb)(uint8_t con_lid, uint8_t call_id, uint8_t reason);
-    void (*ble_call_incoming_number_inf_ind_cb)(uint8_t con_lid, uint8_t call_id, uint8_t url_len, uint8_t *url);
+    void (*ble_call_state_change_cb)(uint8_t con_lid, const AOB_SINGLE_CALL_INFO_T *param);
+    void (*ble_call_srv_signal_strength_value_ind_cb)(uint8_t con_lid, uint8_t bearer_lid, uint8_t call_id, uint8_t value);
+    void (*ble_call_status_flags_ind_cb)(uint8_t con_lid, uint8_t bearer_lid, uint8_t call_id, bool inband_ring, bool silent_mode);
+    void (*ble_call_ccp_opt_supported_opcode_ind_cb)(uint8_t con_lid, uint8_t bearer_lid, bool local_hold_op_supported, bool join_op_supported);
+    void (*ble_call_terminate_reason_ind_cb)(uint8_t con_lid, uint8_t bearer_lid, uint8_t call_id, uint8_t reason);
+    void (*ble_call_incoming_number_inf_ind_cb)(uint8_t con_lid, uint8_t bearer_lid, uint8_t call_id, uint8_t url_len, uint8_t *url);
     void (*ble_call_svc_changed_ind_cb)(uint8_t con_lid);
-    void (*ble_call_action_result_ind_cb)(uint8_t con_lid, void *param);
+    void (*ble_call_action_result_ind_cb)(uint8_t con_lid, const AOB_CALL_ACTION_RESULT_IND_T *param);
     void (*ble_csip_ntf_sent_cb)(uint8_t con_lid, uint8_t char_type);
     void (*ble_csip_read_rsp_sent_cb)(uint8_t con_lid, uint8_t char_type, uint8_t *p_data, uint8_t data_len);
     void (*ble_csip_rsi_updated_cb)(uint8_t *rsi);
@@ -989,7 +1062,7 @@ typedef struct
     void (*ble_ase_ntf_value_cb)(uint8_t opcode, uint8_t nb_ases, uint8_t ase_lid, uint8_t rsp_code, uint8_t reason);
     void (*ble_ase_cp_cccd_written_cb)(uint8_t con_lid);
     void (*ble_ase_codec_cfg_req_cb)(uint8_t ase_lid, const AOB_CODEC_ID_T *codec_id, uint8_t tgt_latency,
-                                    AOB_BAP_CFG_T *codec_cfg_req, AOB_BAP_QOS_REQ_T *ntf_qos_req);
+                                     AOB_BAP_CFG_T *codec_cfg_req, AOB_BAP_QOS_REQ_T *ntf_qos_req);
     void (*ble_ase_enable_req_cb)(uint8_t con_lid, uint8_t ase_lid, void *context);
     void (*ble_ase_update_metadata_req_cb)(uint8_t con_lid, uint8_t ase_lid, void *context, uint8_t ase_state);
     void (*ble_bis_sink_status_cb)(uint8_t grp_lid, uint8_t state, uint32_t stream_pos_bf);
@@ -1010,8 +1083,8 @@ typedef struct
 
 typedef struct
 {
-      bool mute_new_music_stream;
-      bool pause_new_music_stream;
+    bool mute_new_music_stream;
+    bool pause_new_music_stream;
 } BLE_AUDIO_POLICY_CONFIG_T;
 
 typedef struct
@@ -1019,8 +1092,7 @@ typedef struct
     uint8_t conlid;
     uint8_t src_state;
     uint8_t sink_state;
-}BLE_PLAYING_DEVICE_T;
-
+} BLE_PLAYING_DEVICE_T;
 
 #define BLE_MUSIC_EVENT_BASE        0x00
 #define BLE_CALL_EVENT_BASE         0x10
@@ -1029,7 +1101,8 @@ typedef struct
 #define BLE_CONNECT_EVENT_BASE      0x40
 #define BLE_UD_EVENT_BASE           0x50
 
-typedef enum app_ble_audio_event {
+typedef enum app_ble_audio_event
+{
     BLE_AUDIO_MUSIC_QOS_CONFIG_IND          = BLE_MUSIC_EVENT_BASE,
     BLE_AUDIO_MUSIC_ENABLE_REQ,
     BLE_AUDIO_MUSIC_RELEASE_REQ,

@@ -133,12 +133,6 @@ typedef int(*app_bt_audio_event_callback)(bt_bdaddr_t *addr, enum app_bt_base_ev
 
 void app_bt_audio_event_callback_init(int(*cb)(bt_bdaddr_t *addr, enum app_bt_base_event_t event, uint32_t data));
 
-typedef void (*app_bt_resync_focus_recv_handler)(uint8_t *buf, uint8_t buf_len);
-
-typedef void (*app_bt_resync_focus_trigger_cb)(void);
-
-void app_bt_resync_focus_register(app_bt_resync_focus_recv_handler recv_cb, app_bt_resync_focus_trigger_cb trigger_cb);
-
 void app_bt_audio_adapter_player_init(app_bt_audio_adapter_player player);
 
 void app_bt_audio_strategy_init(void);
@@ -194,7 +188,7 @@ void app_bt_audio_register_toggle_a2dp_cis_cmp_cb(void (*cb)(uint8_t device_id))
 
 void app_bt_audio_switch_streaming_a2dp();
 
-void app_bt_audio_switch_streaming_a2dp_handler(uint32_t btclk, uint8_t error_code,  bt_bdaddr_t* remote);
+void app_bt_audio_switch_streaming_a2dp_handler(uint32_t btclk, uint8_t error_code);
 
 void app_bt_audio_check_switch_streaming_a2dp(void);
 
@@ -226,8 +220,6 @@ void app_bt_audio_start_check_a2dp_restreaming_timer(uint8_t device_id, uint32_t
 void app_bt_audio_switch_to_non_prompt_disc_a2dp_play_mode(void);
 
 void app_bt_audio_switch_to_multi_a2dp_quick_switch_play_mode(void);
-
-uint8_t app_bt_audio_select_another_streaming_a2dp_by_focus_stack(uint8_t curr_device_id);
 
 uint8_t app_bt_audio_select_another_streaming_a2dp(uint8_t curr_device_id);
 
@@ -282,6 +274,8 @@ uint8_t app_bt_audio_get_another_hfp_device_for_user_action(uint8_t curr_device_
 void app_bt_audio_delay_abandon_focus(uint8_t device_id);
 
 void app_bt_audio_delay_abandon_focus_clear();
+
+void app_bt_audio_restart_sco_player(uint8_t device_id);
 #endif /* BT_HFP_SUPPORT */
 
 #ifdef __cplusplus

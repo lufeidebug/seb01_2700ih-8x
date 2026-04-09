@@ -443,12 +443,12 @@ static int hal_cmd_list_register(const char *name, hal_cmd_callback_t callback)
 
 static int hal_cmd_list_parse(const uint8_t *buf, hal_cmd_cfg_t *cfg)
 {
-    cfg->prefix = *((uint32_t *)buf);
+    memcpy(&cfg->prefix, buf, 4);
     HAL_TRACE(2,"[%s] PREFIX = %c", __func__, cfg->prefix);
     buf += HAL_CMD_PREFIX_SIZE;
     hal_cmd.res.prefix = cfg->prefix;
 
-    cfg->crc = *((uint32_t *)buf);
+    memcpy(&cfg->crc, buf, 4);
     HAL_TRACE(2,"[%s] crc = %d", __func__, cfg->crc);
     buf += HAL_CMD_CRC_SIZE;
     hal_cmd.res.crc = cfg->crc;
@@ -458,7 +458,7 @@ static int hal_cmd_list_parse(const uint8_t *buf, hal_cmd_cfg_t *cfg)
     buf += HAL_CMD_NAME_SIZE;
     memcpy(hal_cmd.res.name, cfg->name, HAL_CMD_NAME_SIZE);
 
-    cfg->len = *((uint32_t *)buf);
+    memcpy(&cfg->len, buf, 4);
     HAL_TRACE(2,"[%s] LEN = %d", __func__, cfg->len);
     buf += HAL_CMD_LEN_SIZE;
 

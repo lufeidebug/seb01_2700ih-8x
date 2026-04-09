@@ -697,9 +697,9 @@ static void pmu_rtc_calendar_alarm_intr_enable(void)
     int_unlock(lock);
 }
 
-static void pmu_rtc_calendar_init(void)
+static void pmu_rtc_calendar_init(bool shutdown)
 {
-    uint16_t POSSIBLY_UNUSED val;
+    uint16_t val;
 
 #ifdef RTC_CLK_USE_EXT_CRYSTAL
     pmu_read(PMU_REG_RTC_RTC_CFG_10E, &val);
@@ -715,10 +715,16 @@ static void pmu_rtc_calendar_init(void)
 
 #ifdef SIMU
     val = 32 - 2;
-#elif defined(RTC_CLK_USE_EXT_CRYSTAL)
+#elif defined(PMU_CLK_USE_EXT_CRYSTAL) || defined(RTC_CLK_USE_EXT_CRYSTAL)
     val = 32768 - 2;
 #else
-    val = CONFIG_SYSTICK_HZ * 2 - 2;
+    float hz_f;
+
+    hz_f = CONFIG_SYSTICK_HZ_FLOAT * 2;
+    hz_f += 0.5f;
+    val = (uint16_t)hz_f;
+    PMU_INFO_TRACE_IMM(0, "%s: shutdown:%d val=%u hz_f=%u.%02u",
+        __func__, shutdown, val, (unsigned)hz_f, ((unsigned)(hz_f * 100) - ((unsigned)hz_f * 100)));
 #endif
     pmu_write(PMU_REG_RTC_DIV_1HZ, val);
 }
@@ -1997,7 +2003,24 @@ static void pmu_sys_ctrl(bool shutdown)
     pmu_write(PMU_REG_CHARGER_CFG, val);
 
 #ifdef RTC_CALENDAR
-    pmu_rtc_calendar_init();
+#if !(defined(PMU_CLK_USE_EXT_CRYSTAL) || defined(RTC_CLK_USE_EXT_CRYSTAL)) && defined(CALIB_SLOW_TIMER)
+    if (shutdown) {
+        uint16_t vrtc_v;
+
+        pmu_read(PMU_REG_LP_RTC_CFG, &val);
+        val = (val & ~LP_MODE_RTC_REG) | LP_MODE_RTC_DR;
+        pmu_write(PMU_REG_LP_RTC_CFG, val);
+
+        pmu_read(PMU_REG_LDO_VRTC_VOLT, &val);
+        vrtc_v = GET_BITFIELD(val, REG_LDO_VRTC_VBIT_NORMAL);
+        val = SET_BITFIELD(val, REG_LDO_VRTC_VBIT_PWR_DOWN, vrtc_v);
+        pmu_write(PMU_REG_LDO_VRTC_VOLT, val);
+
+        // Update CONFIG_SYSTICK_HZ_FLOAT
+        hal_sys_timer_calib();
+    }
+#endif
+    pmu_rtc_calendar_init(shutdown);
 #endif
 
     if (shutdown) {
@@ -3704,7 +3727,7 @@ int BOOT_TEXT_FLASH_LOC pmu_open(void)
 #endif
 
 #ifdef RTC_CALENDAR
-    pmu_rtc_calendar_init();
+    pmu_rtc_calendar_init(false);
 #endif
 
 #ifdef PMU_REG_CFG_DUMP

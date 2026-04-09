@@ -136,6 +136,9 @@ typedef struct
 typedef struct gatt_peer_srvc_node_t
 {
     struct gatt_peer_srvc_node_t *next;
+    /// Record prf id for service event [1, GATT_PRF_LAST_ID]
+    uint32_t prf_interest_bf;
+    /// Service mem for all same uuid service
     gatt_peer_service_t service[GATT_ARRAY_SIZE_1];
 } gatt_peer_srvc_node_t;
 

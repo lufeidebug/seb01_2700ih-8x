@@ -25,3 +25,12 @@
 #define BT_INVALID_HANDLE       (0xffff)
 
 #define BT_UUID_MAX_LEN         (16)
+
+#ifndef BT_DEVICE_NUM
+#define BT_DEVICE_NUM 2
+#endif
+
+typedef struct bt_bdaddr_list
+{
+    bt_bdaddr_t addrs[BT_DEVICE_NUM];
+} bt_bdaddr_list_t;

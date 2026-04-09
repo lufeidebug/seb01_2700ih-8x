@@ -60,7 +60,7 @@ static int capsensor_polling_rawdata(int * rawdata_ready)
     *rawdata_ready = 0;
     ret = read_capsensor_fifo(capsense_sample_buff);
     if(ret == CAPSENSOR_READ_DATA_WAIT_READY) {
-        osDelay((int)(CAP_CHNUM*ONE_CH_SAMPLE_TIME_MS + 0.5f));  //Waiting for cap data ready
+        osDelay((int)((CAP_CHNUM + 1) * ONE_CH_SAMPLE_TIME_MS + 0.5f));  //Waiting for cap data ready
         ret = read_capsensor_fifo(capsense_sample_buff);
     }
 

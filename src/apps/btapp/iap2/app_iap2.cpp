@@ -50,6 +50,7 @@ bt_iap2_bluetooth_transport_component_group_t bt_trans_group =
  */
 void app_ia2p_info_init(void)
 {
+    char Name[]      = "IAP2 ACCESSORY"; // max_len is 32, included \0
     char ModelIdentifier[]      = "Any buds"; // max_len is 16, included \0
     char Manufacturer[]         = "Amazon"; // max_len is 11, included \0
     char SerialNumber[]         = "G2A26Q033205TFDP"; // max_len is 17, included \0
@@ -73,6 +74,7 @@ void app_ia2p_info_init(void)
     char SupportedLanguage[]    = { 'e', 'n', 0, 0}; // [fixed style]max_len is 4, included two '\0': first '\0' is string end flag, second '\0' is feild end flag
     // Product plan UID for identification
     char ProductPlanUID[]       = "3024e0b1f5494537"; // max_len is 17, included \0
+    memcpy(iap2_info.Name, Name, sizeof(Name));
     memcpy(iap2_info.ModelIdentifier, ModelIdentifier, sizeof(ModelIdentifier));
     memcpy(iap2_info.Manufacturer, Manufacturer, sizeof(Manufacturer));
     memcpy(iap2_info.SerialNumber, SerialNumber, sizeof(SerialNumber));

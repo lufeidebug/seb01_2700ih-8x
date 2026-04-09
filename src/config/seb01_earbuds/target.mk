@@ -410,7 +410,8 @@ include $(srctree)/config/$(T)/anc_config.mk
 endif
 
 ifeq ($(ANC_ASSIST_ENABLE),1)
-include $(srctree)/config/$(CHIP)/anc_assist_cfg.mk
+#include $(srctree)/config/$(CHIP)/anc_assist_cfg.mk
+include $(srctree)/config/$(T)/anc_assist_cfg.mk
 endif
 
 #ifeq ($(CAPSENSOR_ENABLE),1)

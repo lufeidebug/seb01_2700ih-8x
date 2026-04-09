@@ -184,7 +184,7 @@ void btdrv_poweron(uint8_t en)
 
 void bt_drv_extra_config_after_init(void)
 {
-    bt_drv_reg_op_afh_assess_en(true);
+    bt_drv_reg_op_afh_assess_en(false);
 }
 
 const uint16_t dc_iq_rf_set_common[][2] =

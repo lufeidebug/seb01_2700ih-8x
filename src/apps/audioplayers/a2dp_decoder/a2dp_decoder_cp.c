@@ -93,6 +93,7 @@ static uint8_t max_buffer_frames = 2;
 static bool mcu_dec_inited;
 static A2DP_CP_DECODE_T decode_frame;
 static enum CP_PROC_DELAY_T proc_delay;
+static bool cp_out_cache_full;
 
 static bool cp_need_reset;
 #if !defined(UNIFY_HEAP_ENABLED)
@@ -328,6 +329,7 @@ int a2dp_cp_init(A2DP_CP_DECODE_T decode_func, enum CP_PROC_DELAY_T delay)
         return 1;
     }
     mcu_dec_inited = false;
+    cp_out_cache_full = false;
     decode_frame = decode_func;
     proc_delay = delay;
 #ifdef A2DP_TRACE_CP_DEC_TIME
@@ -743,6 +745,9 @@ int a2dp_cp_consume_emtpy_out_frame(void)
         out_widx -= CP_OUT_FRAME_CNT;
     }
     cp_out_widx = out_widx;
+    if (cp_out_widx == cp_out_ridx) {
+        cp_out_cache_full = true;
+    }
 
     return 0;
 }
@@ -820,6 +825,9 @@ int a2dp_cp_consume_full_out_frame(void)
         out_ridx -= CP_OUT_FRAME_CNT;
     }
     cp_out_ridx = out_ridx;
+    if (cp_out_cache_full) {
+        cp_out_cache_full = false;
+    }
 
     // Notify CP to work again
     cp_accel_send_event_mcu2cp(CP_BUILD_ID(CP_TASK_A2DP_DECODE, CP_EVENT_A2DP_DECODE));
@@ -832,7 +840,7 @@ static uint32_t get_out_frame_cnt(uint32_t out_widx, uint32_t out_ridx)
 {
     uint32_t cnt;
 
-    if (out_widx >= out_ridx) {
+    if (out_widx >= out_ridx && !cp_out_cache_full) {
         cnt = out_widx - out_ridx;
     } else {
         cnt = CP_OUT_FRAME_CNT - out_ridx + out_widx;
