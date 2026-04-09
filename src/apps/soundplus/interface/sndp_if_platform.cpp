@@ -175,7 +175,7 @@ void sndp_app_shutdown(SNDP_shutdown_reason_e reason)
     SNDP_TRACE_IMM(1, "%s, %d", __func__, reason);
     
     sndp_save_data_before_shutdown();
-
+    bta_tws_shutdown();
     osDelay(100);
     hal_sw_bootmode_clear(HAL_SW_BOOTMODE_REBOOT);
     app_shutdown();
