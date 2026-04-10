@@ -389,21 +389,21 @@ void sndp_dev_acc_init(void);
 
 /************************************************** prompt start **************************************************/
 #if defined(__SNDP_SLEEP_APP__)
-void sndp_dev_set_eq_index(bool peer, uint8_t index, bool save_data);
-uint8_t sndp_get_eq_index(bool peer);
-void sndp_dev_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_data);
-bool sndp_dev_get_prompt_onoff(bool peer);
+void sndp_dev_sleep_app_set_eq_index(bool peer, uint8_t index, bool save_data);
+uint8_t sndp_dev_sleep_app_get_eq_index(bool peer);
+void sndp_dev_sleep_app_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_data);
+bool sndp_dev_sleep_app_get_prompt_onoff(bool peer);
 void sndp_save_app_flag_to_flash(void);
-void sndp_sleep_app_anc_mode_set(bool peer,uint8_t anc_mode,bool sava_data);
-uint8_t sndp_sleep_app_anc_mode_get(bool peer);
-void sndp_dev_set_gesture_onoff(bool peer, uint8_t onoff, bool sava);
-bool sndp_dev_get_gesture_onoff(bool peer);
-void sndp_dev_set_splaypause_onoff(bool peer, uint8_t onoff, bool sava);
-uint8_t sndp_dev_get_splaypause_onoff(bool peer);
-uint8_t sndp_dev_set_proximity_onoff(bool peer, uint8_t onoff, bool sava);
-uint8_t sndp_dev_get_proximity_onoff(bool peer);
-unsigned short sndp_dev_get_proximity_data(bool peer);
-uint8_t sndp_dev_set_proximity_data(bool peer, unsigned short data);
+void sndp_dev_sleep_app_anc_mode_set(bool peer,uint8_t anc_mode,bool sava_data);
+uint8_t sndp_dev_sleep_app_anc_mode_get(bool peer);
+void sndp_dev_sleep_app_set_gesture_onoff(bool peer, uint8_t onoff, bool sava);
+bool sndp_dev_sleep_app_get_gesture_onoff(bool peer);
+void sndp_dev_sleep_app_set_splaypause_onoff(bool peer, uint8_t onoff, bool sava);
+uint8_t sndp_dev_sleep_app_get_splaypause_onoff(bool peer);
+uint8_t sndp_dev_sleep_app_set_proximity_onoff(bool peer, uint8_t onoff, bool sava);
+uint8_t sndp_dev_sleep_app_get_proximity_onoff(bool peer);
+unsigned short sndp_dev_sleep_app_get_proximity_data(bool peer);
+uint8_t sndp_dev_sleep_app_set_proximity_data(bool peer, unsigned short data);
 #endif
 /************************************************** prompt end **************************************************/
 

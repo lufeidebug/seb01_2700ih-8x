@@ -1194,7 +1194,7 @@ void media_PlayAudio_single_play(AUD_ID_ENUM id,uint8_t device_id)
 void media_PlayAudio(AUD_ID_ENUM id,uint8_t device_id)
 {
 #if defined(__SNDP_SLEEP_APP__)
-    if(!sndp_dev_get_prompt_onoff(false))
+    if(!sndp_dev_sleep_app_get_prompt_onoff(false))
     {
         AUDIO_BT_TRACE(1,"[UIAPP]%s, prompt is off",__func__);
         return;

@@ -1336,14 +1336,13 @@ void sndp_load_eq_param(void)
 {
 	// Load default EQ parameters to the running param, so that the UI can read and display them.
 	sndp_da_field_eq_data_s *eq_data_ptr = &custom_global_eq_data;
-	IIR_CFG_T* default_cfg_ptr = NULL;
-	sndp_da_read_field(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),false);
+	IIR_CFG_T* user_cfg_ptr = (IIR_CFG_T*)eq_data_ptr->data;
+	sndp_da_read_field(SNDP_DA_FIELD_EQ_DATA, (uint8_t *)eq_data_ptr, sizeof(sndp_da_field_eq_data_s),true);
 	if(eq_data_ptr->key == SNDP_DA_PARAM_FIELD_VALID)
 	{
 		if(sndp_check_crc(eq_data_ptr->data, eq_data_ptr->data_crc,sizeof(IIR_CFG_T)))
 		{
 			SNDP_IF_TRACE(0, "Load EQ param from flash");
-			return;
 		}
 		else
 		{
@@ -1355,9 +1354,8 @@ void sndp_load_eq_param(void)
 	{
 		sndp_set_default_eq_param();
 	}
-		default_cfg_ptr = (IIR_CFG_T*)eq_data_ptr->data;
-		memcpy(&custom_eq_global_run_cfg, default_cfg_ptr, sizeof(IIR_CFG_T));
-		memcpy(&custom_eq_global_flash_cfg, default_cfg_ptr, sizeof(IIR_CFG_T));
+		memcpy(&custom_eq_global_run_cfg, user_cfg_ptr, sizeof(IIR_CFG_T));
+		memcpy(&custom_eq_global_flash_cfg, user_cfg_ptr, sizeof(IIR_CFG_T));
 }
 
 void sndp_set_custom_eq_param(int8_t *param)
@@ -1433,11 +1431,11 @@ uint8_t sndp_bt_audio_updata_eq_for_anc(void)
 
 	if(anc_status)
 	{
-		sndp_bt_audio_set_eq(sndp_get_eq_index(false) + EQ_HW_DAC_IIR_LIST_NUM/2);
+		sndp_bt_audio_set_eq(sndp_dev_sleep_app_get_eq_index(false) + EQ_HW_DAC_IIR_LIST_NUM/2);
 	}
 	else
 	{
-		sndp_bt_audio_set_eq(sndp_get_eq_index(false));
+		sndp_bt_audio_set_eq(sndp_dev_sleep_app_get_eq_index(false));
 	}
 	
 

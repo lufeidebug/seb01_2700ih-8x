@@ -1623,7 +1623,7 @@ void sndp_dev_acc_init(void)
 /**************************************************  acc End **************************************************/
 #if defined(__SNDP_SLEEP_APP__)
 /************************************************** prompt start **************************************************/
-void sndp_dev_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_data)
+void sndp_dev_sleep_app_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_data)
 {
 	if(peer)
 	{
@@ -1644,7 +1644,7 @@ void sndp_dev_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_data)
 		SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff, sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff);
 }
 
-bool sndp_dev_get_prompt_onoff(bool peer)
+bool sndp_dev_sleep_app_get_prompt_onoff(bool peer)
 {
 	if(peer)
 		return sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff;
@@ -1656,7 +1656,7 @@ bool sndp_dev_get_prompt_onoff(bool peer)
 
 /************************************************** prompt end **************************************************/
 /**************************************************set eq mode **************************************************/
-void sndp_dev_set_eq_index(bool peer, uint8_t index, bool save_data)
+void sndp_dev_sleep_app_set_eq_index(bool peer, uint8_t index, bool save_data)
 {
 	SNDP_IF_TRACE(1, "index=%d", index);
 	if(index > SNDP_EQ_MODE_RELAXED && index != SNDP_EQ_MODE_CUSTOM_MODE) 
@@ -1681,7 +1681,7 @@ void sndp_dev_set_eq_index(bool peer, uint8_t index, bool save_data)
 
 }
 
-uint8_t sndp_get_eq_index(bool peer)
+uint8_t sndp_dev_sleep_app_get_eq_index(bool peer)
 {
 	uint8_t select_eq_num = 0;
 	SNDP_IF_TRACE(1, "index=%d", sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index);
@@ -1703,7 +1703,7 @@ uint8_t sndp_get_eq_index(bool peer)
 	return select_eq_num;
 }
 
-void sndp_sleep_app_anc_mode_set(bool peer,uint8_t anc_mode,bool sava_data)
+void sndp_dev_sleep_app_anc_mode_set(bool peer,uint8_t anc_mode,bool sava_data)
 {
 	if(peer)
 		sndp_dev_ctx.peer.sleep_app_flag.sleep_anc_mode = anc_mode;
@@ -1716,10 +1716,9 @@ void sndp_sleep_app_anc_mode_set(bool peer,uint8_t anc_mode,bool sava_data)
 		sleep_flag_flash.sleep_anc_mode = anc_mode;
 		sndp_save_app_flag_to_flash();
 	}
-	sndp_anc_mode_set((sndp_anc_mode_e)anc_mode);
 }
 
-uint8_t sndp_sleep_app_anc_mode_get(bool peer)
+uint8_t sndp_dev_sleep_app_anc_mode_get(bool peer)
 {
 	if(peer)
 		return sndp_dev_ctx.peer.sleep_app_flag.sleep_anc_mode;
@@ -1728,7 +1727,7 @@ uint8_t sndp_sleep_app_anc_mode_get(bool peer)
 }
 
 /**************************************************set eq mode end************************************************/
-void sndp_dev_set_gesture_onoff(bool peer, uint8_t onoff, bool sava)
+void sndp_dev_sleep_app_set_gesture_onoff(bool peer, uint8_t onoff, bool sava)
 {
 	SNDP_IF_TRACE(0, "enter");
 	if(peer) {
@@ -1745,7 +1744,7 @@ void sndp_dev_set_gesture_onoff(bool peer, uint8_t onoff, bool sava)
 	}
 }
 
-bool sndp_dev_get_gesture_onoff(bool peer)
+bool sndp_dev_sleep_app_get_gesture_onoff(bool peer)
 {
 	if(peer) {
 		return sndp_dev_ctx.peer.sleep_app_flag.sleep_gesture_onoff;
@@ -1754,7 +1753,7 @@ bool sndp_dev_get_gesture_onoff(bool peer)
 	}
 }
 
-void sndp_dev_set_splaypause_onoff(bool peer, uint8_t onoff, bool sava)
+void sndp_dev_sleep_app_set_splaypause_onoff(bool peer, uint8_t onoff, bool sava)
 {
 	SNDP_IF_TRACE(0, "enter");
 	if(peer) {
@@ -1771,7 +1770,7 @@ void sndp_dev_set_splaypause_onoff(bool peer, uint8_t onoff, bool sava)
 	}
 }
 
-uint8_t sndp_dev_get_splaypause_onoff(bool peer)
+uint8_t sndp_dev_sleep_app_get_splaypause_onoff(bool peer)
 {
 	if(peer) {
 		return sndp_dev_ctx.peer.sleep_app_flag.sleep_splaypause_onoff;
@@ -1780,7 +1779,7 @@ uint8_t sndp_dev_get_splaypause_onoff(bool peer)
 	}
 }
 
-uint8_t sndp_dev_set_proximity_onoff(bool peer, uint8_t onoff, bool sava)
+uint8_t sndp_dev_sleep_app_set_proximity_onoff(bool peer, uint8_t onoff, bool sava)
 {
 	SNDP_IF_TRACE(0, "enter");
 	if(peer) {
@@ -1799,7 +1798,7 @@ uint8_t sndp_dev_set_proximity_onoff(bool peer, uint8_t onoff, bool sava)
 	return 0;
 }
 
-uint8_t sndp_dev_get_proximity_onoff(bool peer)
+uint8_t sndp_dev_sleep_app_get_proximity_onoff(bool peer)
 {
 	if(peer) {
 		return sndp_dev_ctx.peer.sleep_app_flag.sleep_proximity_onoff;
@@ -1808,7 +1807,7 @@ uint8_t sndp_dev_get_proximity_onoff(bool peer)
 	}
 }
 
-unsigned short sndp_dev_get_proximity_data(bool peer)
+unsigned short sndp_dev_sleep_app_get_proximity_data(bool peer)
 {
 	if(peer) {
 		return sndp_dev_ctx.peer.sleep_proximity_data;
@@ -1817,7 +1816,7 @@ unsigned short sndp_dev_get_proximity_data(bool peer)
 	}
 }
 
-uint8_t sndp_dev_set_proximity_data(bool peer, unsigned short data)
+uint8_t sndp_dev_sleep_app_set_proximity_data(bool peer, unsigned short data)
 {
 	if(peer) {
 		sndp_dev_ctx.peer.sleep_proximity_data = data;
@@ -1832,20 +1831,26 @@ void sndp_save_app_flag_to_flash(void)
 {
 	// Save the custom EQ parameters to flash, so that it can be loaded and used after power on.
 	sndp_da_field_sleep_app_data_s *sleep_flag_ptr = &sleep_app_data_global;
-
+	sndp_sleep_app_flag *test_flag = (sndp_sleep_app_flag *)sleep_flag_ptr->data;
 	sndp_da_read_field(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
-	if(memcmp(sleep_flag_ptr->sleep_app_flag, &sleep_flag_flash, sizeof(sndp_sleep_app_flag)) == 0)
+	if(memcmp(sleep_flag_ptr->data, &sleep_flag_flash, sizeof(sndp_sleep_app_flag)) == 0)
 	{
 		SNDP_IF_TRACE(0, "app flag not changed, no need to write to flash");
 	}
 	else
 	{
-		memcpy(sleep_flag_ptr->sleep_app_flag, &sleep_flag_flash, sizeof(sndp_sleep_app_flag));
-		sndp_set_crc(&sleep_flag_ptr->data_crc, sleep_flag_ptr->sleep_app_flag, sizeof(sndp_sleep_app_flag));
+		memcpy(sleep_flag_ptr->data, &sleep_flag_flash, sizeof(sndp_sleep_app_flag));
+		sndp_set_crc(&sleep_flag_ptr->data_crc, sleep_flag_ptr->data, sizeof(sndp_sleep_app_flag));
 		SNDP_IF_TRACE(0, "app flag changed, write to flash %d",sleep_flag_ptr->data_crc);
+		// SNDP_IF_TRACE(0, "eq:%d anc:%d",test_flag->sleep_eq_index, test_flag->sleep_anc_mode);
+		// SNDP_IF_TRACE(0, "gesture:%d prompt:%d",test_flag->sleep_gesture_onoff, test_flag->sleep_prompt_onoff);
+		// SNDP_IF_TRACE(0, "splaypause:%d proximity:%d",test_flag->sleep_splaypause_onoff, test_flag->sleep_proximity_onoff);
 		sndp_da_write_field(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
 	}
-
+	// sndp_da_read_field(SNDP_DA_FIELD_APP_DATA, sleep_flag_ptr,sizeof(sndp_da_field_sleep_app_data_s),true);
+	// 	SNDP_IF_TRACE(0, "eq:%d anc:%d",test_flag->sleep_eq_index, test_flag->sleep_anc_mode);
+	// 	SNDP_IF_TRACE(0, "gesture:%d prompt:%d",test_flag->sleep_gesture_onoff, test_flag->sleep_prompt_onoff);
+	// 	SNDP_IF_TRACE(0, "splaypause:%d proximity:%d",test_flag->sleep_splaypause_onoff, test_flag->sleep_proximity_onoff);
 }
 
 void sndp_set_default_flag(void)
@@ -1855,47 +1860,50 @@ void sndp_set_default_flag(void)
 	memset(&sleep_flag_flash, 0, sizeof(sndp_sleep_app_flag));
 	memset(&sleep_flag_run, 0, sizeof(sndp_sleep_app_flag));
 
+	/*****************from flash back flag*****************************/
 	sleep_flag_flash.sleep_eq_index = 0;
 	sleep_flag_flash.sleep_anc_mode = 0;
 	sleep_flag_flash.sleep_gesture_onoff = 1;
 	sleep_flag_flash.sleep_prompt_onoff = 1;
 	sleep_flag_flash.sleep_splaypause_onoff = 1;
-	sleep_flag_run.sleep_splaypause_onoff = 1;
+	sleep_flag_flash.sleep_proximity_onoff = 0;
+
+	/*****************from flash running flag*****************************/
 	sleep_flag_run.sleep_eq_index = 0;
 	sleep_flag_run.sleep_anc_mode = 0;
 	sleep_flag_run.sleep_gesture_onoff = 1;
 	sleep_flag_run.sleep_prompt_onoff = 1;	
+	sleep_flag_run.sleep_splaypause_onoff = 1;
+	sleep_flag_run.sleep_proximity_onoff = 0;
 	sleep_flag_ptr->key = SNDP_DA_PARAM_FIELD_VALID;
-	memcpy(sleep_flag_ptr->sleep_app_flag, &sleep_flag_flash, sizeof(sndp_sleep_app_flag));
+	memcpy(sleep_flag_ptr->data, &sleep_flag_flash, sizeof(sndp_sleep_app_flag));
 	sndp_da_write_field(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
 }
 
 void sndp_load_sleep_app_flag(void)
 {
 	sndp_da_field_sleep_app_data_s* sleep_flag_ptr = &sleep_app_data_global;
-	sndp_sleep_app_flag* default_flag_ptr = NULL;
-	sndp_da_read_field(SNDP_DA_FIELD_APP_DATA, sleep_flag_ptr,sizeof(sndp_da_field_sleep_app_data_s),false);
+	sndp_sleep_app_flag* user_flag_ptr = (sndp_sleep_app_flag*)sleep_flag_ptr->data;
+	sndp_da_read_field(SNDP_DA_FIELD_APP_DATA, sleep_flag_ptr,sizeof(sndp_da_field_sleep_app_data_s),true);
 	if(sleep_flag_ptr->key == SNDP_DA_PARAM_FIELD_VALID)
 	{
-		if(sndp_check_crc(sleep_flag_ptr->sleep_app_flag, sleep_flag_ptr->data_crc, sizeof(sndp_sleep_app_flag)))
+		if(sndp_check_crc(sleep_flag_ptr->data, sleep_flag_ptr->data_crc, sizeof(sndp_sleep_app_flag)))
 		{
-			SNDP_IF_TRACE(0, "Load EQ param from flash");
-			return;
+			SNDP_IF_TRACE(0, "Load flag param from flash");
 		}
 		else
 		{
-			SNDP_IF_TRACE(0, "Load EQ param from crc fail, use default param");
+			SNDP_IF_TRACE(0, "Load flag param from crc fail, use default param");
 			sndp_set_default_flag();
 		}
 	}
 	else
 	{
-			SNDP_IF_TRACE(0, "Load EQ param from key fail, use default param");
+			SNDP_IF_TRACE(0, "Load flag param from key fail, use default param");
 			sndp_set_default_flag();
 	}
-	default_flag_ptr = (sndp_sleep_app_flag*)sleep_flag_ptr->sleep_app_flag;
-	memcpy(&sleep_flag_flash, default_flag_ptr, sizeof(sndp_sleep_app_flag));
-	memcpy(&sleep_flag_run, default_flag_ptr, sizeof(sndp_sleep_app_flag));
+	memcpy(&sleep_flag_flash, user_flag_ptr, sizeof(sndp_sleep_app_flag));
+	memcpy(&sleep_flag_run, user_flag_ptr, sizeof(sndp_sleep_app_flag));
 }
 
 void sndp_load_sleep_app_param(void)
@@ -1904,13 +1912,18 @@ void sndp_load_sleep_app_param(void)
 #if defined(__SNDP_EQ_PARAM_SETTING__)
 	sndp_load_eq_param();
 #endif
-	sndp_dev_set_prompt_onoff(false, sleep_flag_run.sleep_prompt_onoff, false);
+	// SNDP_IF_TRACE(0, "sleep_prompt_onoff=%d, sleep_eq_index=%d", sleep_flag_run.sleep_prompt_onoff, sleep_flag_run.sleep_eq_index);
+	// SNDP_IF_TRACE(0, "sleep_anc_mode=%d, sleep_gesture_onoff=%d", sleep_flag_run.sleep_anc_mode, sleep_flag_run.sleep_gesture_onoff);
+	// SNDP_IF_TRACE(0, "sleep_splaypause_onoff=%d, sleep_proximity_onoff=%d", sleep_flag_run.sleep_splaypause_onoff, sleep_flag_run.sleep_proximity_onoff);
+
+	sndp_dev_sleep_app_set_prompt_onoff(false, sleep_flag_run.sleep_prompt_onoff, false);
 #if defined(__SNDP_GESTURE_MAP__)
-	sndp_dev_set_gesture_onoff(false, sleep_flag_run.sleep_gesture_onoff, false);
+	sndp_dev_sleep_app_set_gesture_onoff(false, sleep_flag_run.sleep_gesture_onoff, false);
 #endif
-	sndp_dev_set_eq_index(false, sleep_flag_run.sleep_eq_index, false);
-	sndp_dev_set_splaypause_onoff(false, sleep_flag_run.sleep_splaypause_onoff, false);
-	sndp_dev_set_proximity_onoff(false, sleep_flag_run.sleep_proximity_onoff, false);
+	sndp_dev_sleep_app_set_eq_index(false, sleep_flag_run.sleep_eq_index, false);
+	sndp_dev_sleep_app_anc_mode_set(false, sleep_flag_run.sleep_anc_mode, false);
+	sndp_dev_sleep_app_set_splaypause_onoff(false, sleep_flag_run.sleep_splaypause_onoff, false);
+	sndp_dev_sleep_app_set_proximity_onoff(false, sleep_flag_run.sleep_proximity_onoff, false);
 }
 #endif
 

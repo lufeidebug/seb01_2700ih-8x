@@ -70,7 +70,7 @@ typedef struct {
 	/* data */
 	uint32_t key;
 	uint32_t data_crc;
-	uint8_t sleep_app_flag[16];
+	uint8_t data[16];
 }sndp_da_field_sleep_app_data_s;
 #endif
 

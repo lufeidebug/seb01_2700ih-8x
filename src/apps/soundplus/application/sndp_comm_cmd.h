@@ -118,6 +118,11 @@ typedef enum {
     COMM_CMDID_LR_SYNC_Proximity_Notification_DATA  = 0x35, /* desc: 左右耳同步 proximity 数据。
                                                              * recv: 2 bytes, proximity value(2)
                                                              * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_START_HEARTRATE_MEASUREMENT  = 0x36, /* desc: 左右耳同步开始心率监测。
+                                                             * recv: 2 bytes, sampling rate(1) + dump data(1)
+                                                             * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_STOP_HEARTRATE_MEASUREMENT   = 0x37, /* desc: 左右耳同步停止心率监测。
+                                                             * recv: 0 bytes,*/
 #endif                                                                   
     COMM_CMDID_LR_SYNC_ALL_DEV_STATUS               = 0x2D, /* desc: 左右耳同步所有设备状态指令。
                                                              * recv: n bytes, 
@@ -320,6 +325,7 @@ typedef enum {
 
 uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, uint8_t resulcode);
 uint32_t sndp_comm_cmd_sleepapp_proximity_role_switch_update(void);
+uint32_t sndp_comm_cmd_send_lr_sync_anc_mode(uint8_t ancmode,uint8_t is_save);
 #endif
 #ifdef __cplusplus
 }

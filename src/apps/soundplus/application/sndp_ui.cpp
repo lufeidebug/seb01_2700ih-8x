@@ -91,7 +91,7 @@ typedef struct {
     sndp_dev_iobox_status_e iobox_sta;
     sndp_dev_wear_status_e wear_sta;
     sndp_dev_bat_info_s bat_info;
-
+    sndp_sleep_app_flag sleep_flag;
 } sndp_ui_all_dev_sta_s;
 
 
@@ -242,7 +242,7 @@ static void sndp_ui_anc_switch(void)
 		media_PlayAudio(AUD_ID_ANC_ON, 0);
 #endif
 		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
-
+        sndp_dev_sleep_app_anc_mode_set(false, sndp_anc_get_mode_index(), false);
 	} else if(sndp_anc_is_on()) {
         SPUI_TRACE(0, "ANC_TT");
 
@@ -252,18 +252,18 @@ static void sndp_ui_anc_switch(void)
 		media_PlayAudio(AUD_ID_TRANSPARENT, 0);
 #endif           
 		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE_TRANSPARENT, 0, 0);
-
+        sndp_dev_sleep_app_anc_mode_set(false, SNDP_ANC_MODE_TRANSPARENT, false);
 	} else if(sndp_anc_is_transparent()) {
         SPUI_TRACE(0, "ANC_OFF");
         
 	    sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
-        
+        sndp_dev_sleep_app_anc_mode_set(false, SNDP_ANC_MODE_OFF, false);
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_OFF, 0);
 #endif
 
 	}
-
+    sndp_comm_cmd_send_lr_sync_anc_mode(sndp_dev_sleep_app_anc_mode_get(false), 0);
 }
 
 
@@ -290,7 +290,7 @@ POSSIBLY_UNUSED static void sndp_ui_wear_on_play_music(void)
 		return;
 	}
 #if defined(__SNDP_SLEEP_APP__)
-    if(sndp_dev_get_splaypause_onoff(false) == 0)
+    if(sndp_dev_sleep_app_get_splaypause_onoff(false) == 0)
     {
 		SPUI_TRACE(0, "%d, rtn", __LINE__);
 		return;        
@@ -313,7 +313,7 @@ static void sndp_ui_wear_off_stop_music(void)
 		}
 	}
 #if defined(__SNDP_SLEEP_APP__)
-    if(sndp_dev_get_splaypause_onoff(false) == 0)
+    if(sndp_dev_sleep_app_get_splaypause_onoff(false) == 0)
     {
 		SPUI_TRACE(0, "%d, rtn", __LINE__);
 		return;        
@@ -378,12 +378,11 @@ static POSSIBLY_UNUSED void sndp_ui_wear_on_tone_switch_to_earbuds(void)
 
 static POSSIBLY_UNUSED void sndp_ui_wear_on_open_anc(void)
 {
-	SPUI_TRACE(0, "starting...");
-	if(sndp_is_tws_link_connected()) {
-		if(sndp_dev_wear_is_worn(false) && sndp_dev_wear_is_worn(true)) {
-			sndp_anc_mode_set(sndp_anc_get_mode_index());
-		}
-	}
+    sndp_anc_mode_e running_param_anc_mode = (sndp_anc_mode_e)sndp_dev_sleep_app_anc_mode_get(false);
+    SPUI_TRACE(0, "starting... %d",running_param_anc_mode);
+    if(running_param_anc_mode != SNDP_ANC_MODE_OFF) {
+        sndp_anc_mode_set_locally(running_param_anc_mode);
+    }
 }
 
 static POSSIBLY_UNUSED void sndp_ui_wear_off_close_anc(void)
@@ -394,8 +393,8 @@ static POSSIBLY_UNUSED void sndp_ui_wear_off_close_anc(void)
 	} 
 
 	SPUI_TRACE(0, "stopping...");	
-	sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
-	
+
+    sndp_anc_mode_set_locally(SNDP_ANC_MODE_OFF);
 }
 
 static POSSIBLY_UNUSED void sndp_ui_wear_on_start_hr(void)
@@ -448,7 +447,8 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds, 0, 0, 0);
             sndp_delay_exec_start(300, (uint32_t)sndp_ui_wear_on_play_music, 0, 0, 0);
 			sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_role_switch, 0, 0, 0);          
-            //sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_start_hr, 0, 0, 0);   
+            // sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_start_hr, 0, 0, 0); 
+            sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_open_anc, 0, 0, 0);  
             sndp_delay_exec_start(2000, (uint32_t)sndp_ui_wear_on_enable_gesture, 0, 0, 0);
             
 	    } else if(SNDP_DEV_WEAR_OFF == wear_action) {
@@ -778,7 +778,7 @@ void sndp_ui_gesture_event_local_hdlr(sndp_dev_gesture_event_e gesture_event)
     SPUI_TRACE(0, "event=%d", gesture_event);
 
 #if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_GESTURE_MAP__)
-    if(!sndp_dev_get_gesture_onoff(false)){
+    if(!sndp_dev_sleep_app_get_gesture_onoff(false)){
         SPUI_TRACE(0, "gesture detection is off, rtn");
         return;
     }
@@ -1478,6 +1478,17 @@ static void sndp_ui_all_status_sync_send(void)
         all_dev_sta.iobox_sta = sndp_dev_iobox_get_status(false);
         all_dev_sta.wear_sta = sndp_dev_wear_get_status(false);
         sndp_dev_get_bat_info(false, &all_dev_sta.bat_info);
+#if defined(__SNDP_SLEEP_APP__)
+        all_dev_sta.sleep_flag.sleep_eq_index = sndp_dev_sleep_app_get_eq_index(false);
+        all_dev_sta.sleep_flag.sleep_anc_mode = sndp_dev_sleep_app_anc_mode_get(false);
+        all_dev_sta.sleep_flag.sleep_prompt_onoff = sndp_dev_sleep_app_get_prompt_onoff(false);
+#if defined(__SNDP_GESTURE_MAP__)
+        all_dev_sta.sleep_flag.sleep_gesture_onoff = sndp_dev_sleep_app_get_gesture_onoff(false);
+#endif
+        all_dev_sta.sleep_flag.sleep_splaypause_onoff = sndp_dev_sleep_app_get_splaypause_onoff(false);
+        all_dev_sta.sleep_flag.sleep_proximity_onoff = sndp_dev_sleep_app_get_proximity_onoff(false);
+
+#endif
         sndp_comm_cmd_send_lr_sync_all_dev_status((uint8_t *)&all_dev_sta, sizeof(sndp_ui_all_dev_sta_s));
 #endif        
 	}
@@ -1493,6 +1504,16 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
         sndp_dev_iobox_set_status(true, all_dev_sta.iobox_sta);
         sndp_dev_wear_set_status(true, all_dev_sta.wear_sta);
         sndp_dev_set_bat_info(true, all_dev_sta.bat_info);
+#if defined(__SNDP_SLEEP_APP__)
+        sndp_dev_sleep_app_set_eq_index(false, all_dev_sta.sleep_flag.sleep_eq_index, true);
+        sndp_dev_sleep_app_anc_mode_set(false, all_dev_sta.sleep_flag.sleep_anc_mode, true);
+        sndp_dev_sleep_app_set_prompt_onoff(false, all_dev_sta.sleep_flag.sleep_prompt_onoff, true);
+#if defined(__SNDP_GESTURE_MAP__)
+        sndp_dev_sleep_app_set_gesture_onoff(false, all_dev_sta.sleep_flag.sleep_gesture_onoff, true);
+#endif
+        sndp_dev_sleep_app_set_splaypause_onoff(false, all_dev_sta.sleep_flag.sleep_splaypause_onoff, true);
+        sndp_dev_sleep_app_set_proximity_onoff(false, all_dev_sta.sleep_flag.sleep_proximity_onoff, true);
+#endif
     }
 }
 
