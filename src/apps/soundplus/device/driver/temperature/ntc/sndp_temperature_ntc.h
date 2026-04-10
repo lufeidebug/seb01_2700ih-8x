@@ -33,7 +33,7 @@ typedef struct {
 
 typedef struct {
 	int16_t temperature;
-	uint16_t resistence;
+	uint32_t resistence;
     
 } sndp_ntc_temp_table_s;
 
