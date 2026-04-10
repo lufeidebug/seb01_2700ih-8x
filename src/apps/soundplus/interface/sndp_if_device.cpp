@@ -1831,7 +1831,7 @@ void sndp_save_app_flag_to_flash(void)
 {
 	// Save the custom EQ parameters to flash, so that it can be loaded and used after power on.
 	sndp_da_field_sleep_app_data_s *sleep_flag_ptr = &sleep_app_data_global;
-	sndp_sleep_app_flag *test_flag = (sndp_sleep_app_flag *)sleep_flag_ptr->data;
+	// sndp_sleep_app_flag *test_flag = (sndp_sleep_app_flag *)sleep_flag_ptr->data;
 	sndp_da_read_field(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
 	if(memcmp(sleep_flag_ptr->data, &sleep_flag_flash, sizeof(sndp_sleep_app_flag)) == 0)
 	{
