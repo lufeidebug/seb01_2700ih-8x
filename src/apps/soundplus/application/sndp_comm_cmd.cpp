@@ -1785,12 +1785,14 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_ap
     char *sn = (char *)sndp_dev_get_dev_sn();
     char *hw_ver = (char *)sndp_dev_get_hw_ver(false);
     char *fw_ver = (char *)sndp_dev_get_fw_ver(false);
-    
+    char temp_str[20];
+    uint8_t len;
+        
     memset(cmd_info->value, 0, sizeof(cmd_info->value));
 
     // BT Name
     {
-        uint8_t len = strlen(bt_name);
+        len = strlen(bt_name);
         *p++ = len + 1; // Length = 1 (tag) + value_len
         *p++ = DEVICE_INFO_TAG_BT_NAME;
         memcpy(p, bt_name, len);
@@ -1799,7 +1801,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_ap
 
     // SN
     {
-        uint8_t len = strlen(sn);
+        len = strlen(sn);
         *p++ = len + 1;
         *p++ = DEVICE_INFO_TAG_SN;
         memcpy(p, sn, len);
@@ -1808,23 +1810,25 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_ap
 
     // FW Ver
     {
-        uint8_t len = 4;
+        memset(temp_str, 0, sizeof(temp_str));
+        sprintf(temp_str, "%d.%d.%d.%d", fw_ver[0], fw_ver[1], fw_ver[2], fw_ver[3]);
+        len = strlen(temp_str);
         *p++ = len + 1;
         *p++ = DEVICE_INFO_TAG_FW_VER;
-        memcpy(p, fw_ver, len);
+        memcpy(p, temp_str, len);
         p += len;
     }
 
     // HW Ver
     {
-        uint8_t len = 2;
+        memset(temp_str, 0, sizeof(temp_str));
+        sprintf(temp_str, "%d.%d", hw_ver[0], hw_ver[1]);
+        len = strlen(temp_str);
         *p++ = len + 1;
         *p++ = DEVICE_INFO_TAG_HW_VER;
         memcpy(p, hw_ver, len);
         p += len;
     }
-
-
 
     cmd_info->data_len = p - cmd_info->value;
 
