@@ -1259,14 +1259,13 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
                     sndp_is_master_mobile_link_connected());
 
             if(sndp_dev_cover_is_opened(false)) {
-#if 0
-    			if(reason == 0x13) { 
-    			    //REMOTE_USER_TERMINATED         
-    				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
-    		
-    			} else { 
-    				//other reason, shutdown time is set to 15 minutes
+#if 1
+    			if(reason == 0x08) { 
+    		        //other reason, shutdown time is set to 15 minutes
                     sndp_enter_mobile_reconnect();
+    			} else { 
+    				//REMOTE_USER_TERMINATED         
+    				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
     			}
 #else
                 sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
