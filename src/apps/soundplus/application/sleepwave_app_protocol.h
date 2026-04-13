@@ -45,7 +45,7 @@ typedef enum {
 #define SLEEP_APP_DATA_LEN (1)
 #define SLEEP_APP_CMD_LEN (1)
 #define SLEEP_APP_COMM_HEAD_LEN (SLEEP_APP_FLAG_LEN + SLEEP_APP_DATA_LEN + SLEEP_APP_CMD_LEN)
-#define SLEEP_APP_COMM_DATA_LEN_MAX      (128)
+#define SLEEP_APP_COMM_DATA_LEN_MAX      (256)
 
 typedef struct {
     uint32_t    flag;
