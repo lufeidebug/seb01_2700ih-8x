@@ -97,7 +97,7 @@ static osTimerId da217_tap_timer = NULL;
 * Function
 **************************************************************************************************/
 
-static int32_t da217e_reg_write(uint8_t reg, uint8_t val)
+int32_t da217e_reg_write(uint8_t reg, uint8_t val)
 {
     if(da217e_drv_if.i2c_read) {
         return da217e_drv_if.i2c_write_byte(DA217E_I2C_SLAVE_ADDR, reg, val);
@@ -106,7 +106,7 @@ static int32_t da217e_reg_write(uint8_t reg, uint8_t val)
     return -1;
 }
 
-static int32_t da217e_reg_read(uint8_t reg, uint8_t *data)
+int32_t da217e_reg_read(uint8_t reg, uint8_t *data)
 {
     if(da217e_drv_if.i2c_read) {
         return da217e_drv_if.i2c_read(DA217E_I2C_SLAVE_ADDR, reg, data, 1);
@@ -115,7 +115,7 @@ static int32_t da217e_reg_read(uint8_t reg, uint8_t *data)
     return -1;
 }
 
-POSSIBLY_UNUSED static int32_t da217e_reg_read_data(uint8_t reg, uint8_t *data, uint8_t len)
+int32_t da217e_reg_read_data(uint8_t reg, uint8_t *data, uint8_t len)
 {
     if(da217e_drv_if.i2c_read) {
         return da217e_drv_if.i2c_read(DA217E_I2C_SLAVE_ADDR, reg, data, len);

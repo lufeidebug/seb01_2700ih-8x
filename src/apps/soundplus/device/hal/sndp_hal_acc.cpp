@@ -113,6 +113,20 @@ int32_t sndp_hal_acc_exec_calibration_self_calib(void)
 	return SNDP_HAL_RET_FAIL;
 }
 
+int32_t sndp_hal_acc_write_reg(uint8_t reg_addr, uint8_t reg_val)
+{
+	if((p_hal_acc != NULL) && (p_hal_acc->write_reg != NULL))
+		return p_hal_acc->write_reg(reg_addr, reg_val);
+	return SNDP_HAL_RET_FAIL;
+}
+
+int32_t sndp_hal_acc_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len)
+{
+	if((p_hal_acc != NULL) && (p_hal_acc->read_reg != NULL))
+		return p_hal_acc->read_reg(reg_addr, read_buf, read_len);
+	return SNDP_HAL_RET_FAIL;
+}
+
 
 #endif	/* __SNDP_GSENSOR_SUPPORT__ */
 

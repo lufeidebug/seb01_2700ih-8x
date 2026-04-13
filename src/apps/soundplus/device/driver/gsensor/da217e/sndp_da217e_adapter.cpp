@@ -387,6 +387,17 @@ int32_t da217e_exec_calibration_self_calib(void)
     return SNDP_HAL_RET_FAIL;
 }
 
+int32_t da217e_write_reg(uint8_t reg_addr, uint8_t reg_val)
+{
+	return da217e_reg_write(reg_addr, reg_val);
+}
+
+int32_t da217e_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len)
+{
+    return da217e_reg_read_data(reg_addr, read_buf, read_len);
+}
+
+
 extern "C" const sndp_hal_acc_s sndp_acc_da217e = {
     .init                           = da217e_init,
     .enter_standby_mode             = da217e_enter_standby_mode,
@@ -397,6 +408,8 @@ extern "C" const sndp_hal_acc_s sndp_acc_da217e = {
     .set_calibration_rsp_func       = da217e_set_calibration_rsp_func,
     .recv_calibration_data          = da217e_recv_calibration_data,
     .exec_calibration_self_calib    = da217e_exec_calibration_self_calib,
+    .write_reg                      = da217e_write_reg,
+    .read_reg                       = da217e_read_reg,
 };
 
 #endif

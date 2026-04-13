@@ -30,6 +30,10 @@ typedef struct {
 } da217e_drv_if_s;
 
 
+int32_t da217e_reg_write(uint8_t reg, uint8_t val);
+int32_t da217e_reg_read(uint8_t reg, uint8_t *data);
+int32_t da217e_reg_read_data(uint8_t reg, uint8_t *data, uint8_t len);
+
 int32_t da217e_set_enable(uint8_t enable);
 
 int32_t da217e_open_double_tap_interrupt(uint8_t th);

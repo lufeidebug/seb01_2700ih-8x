@@ -67,6 +67,16 @@ typedef struct {
      */
     int32_t (* exec_calibration_self_calib)(void);
 
+    
+    /** 
+     * return: 0 no error.
+     */
+    int32_t (* write_reg)(uint8_t reg_addr, uint8_t reg_val);
+
+    /** 
+     * return: 0 no error.
+     */
+    int32_t (* read_reg)(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
 
 } sndp_hal_acc_s;
 
@@ -80,6 +90,8 @@ int32_t sndp_hal_acc_set_calibration_rsp_func(sndp_hal_acc_calibration_rsp_func 
 int32_t sndp_hal_acc_recv_calibration_data(uint8_t *data, uint16_t data_len);
 int32_t sndp_hal_acc_exec_calibration_self_calib(void);
 
+int32_t sndp_hal_acc_write_reg(uint8_t reg_addr, uint8_t reg_val);
+int32_t sndp_hal_acc_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
 
 #ifdef __cplusplus
 }
