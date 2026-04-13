@@ -79,6 +79,9 @@
 typedef struct {
     bool hr_running;
     bool sleep_running;
+
+    bool ppg_notification;
+    
 } sndp_hr_ctx_s;
 
 
@@ -128,6 +131,7 @@ POSSIBLY_UNUSED static int16_t sleep_app_accel[90];
 POSSIBLY_UNUSED static uint8_t sleep_screen_status[30];
 POSSIBLY_UNUSED static uint16_t sleep_analysis_time = 0;
 
+POSSIBLY_UNUSED static uint16_t hr_ppg_raw_len = 0;
 
 
 /**************************************************************************************************
@@ -489,6 +493,43 @@ void sndp_sleep_analysis_stop(void)
 
 }
 
+void sndp_ppg_notification_start(void)
+{
+    app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
+    SNDP_TRACE(0, "...");
+    
+    ppg_raw_data_queue_reset();
+
+    // sleep_step_1:打开读取PPG数据。
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
+    sndp_hal_hr_start_reading_ppg();
+#endif
+
+    hr_ctx.hr_running = false;
+    hr_ctx.sleep_running = false;
+    hr_ctx.ppg_notification = true;
+
+    memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
+    hr_ppg_raw_len = 0;
+}
+
+void sndp_ppg_notification_stop(void)
+{
+    SNDP_TRACE(0, "...");
+    
+    // hr_setp_3: 停止处理
+    hr_ctx.ppg_notification = false;
+    
+    // hr_setp_4: 停止读取ppg数据
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
+    sndp_hal_hr_stop_reading_ppg();
+#endif
+
+    app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
+
+}
+
+
 #if defined(__SNDP_HEART_RATE_MGR__)
 static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 {
@@ -501,6 +542,21 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
         if(ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES) {
             //HR_TRACE(0, "wakeup thread");
             osSemaphoreRelease(hr_process_wait_semaphore_id);
+        }
+    }
+
+    if(hr_ctx.ppg_notification) {
+        for(int i = 0; i < cnt && hr_ppg_raw_len < HR_PPG_SECOND_ALLCH_SAMPLES; i++) {
+            hr_ppg_raw_data[hr_ppg_raw_len++] = data[i];
+        }
+
+        if(hr_ppg_raw_len >= 32) {
+            //report PPG data
+            
+
+            //clear buff
+            memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
+            hr_ppg_raw_len = 0;
         }
     }
 }
@@ -554,6 +610,8 @@ void sndp_hr_app_init(void)
         hr_process_thread_tid = osThreadCreate(osThread(sndp_hr_process_thread), NULL);
         ASSERT(hr_process_thread_tid != NULL, "%s, line=%d", __func__, __LINE__);
     }
+
+    memset(&hr_ctx, 0, sizeof(sndp_hr_ctx_s));
 
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
     SNDP_TRACE(0, "lib_ver:%s", lib_engine_version());

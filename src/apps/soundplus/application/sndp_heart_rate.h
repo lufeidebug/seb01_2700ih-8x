@@ -52,6 +52,19 @@ void sndp_sleep_analysis_start(int32_t sleep_control);
 void sndp_sleep_analysis_stop(void);
 
 /**
+ * @brief       Start PPG notifiycation.
+ * @return      void
+ */
+void sndp_ppg_notification_start(void);
+
+/**
+ * @brief       Stop PPG notifiycation.
+ * @return      void
+ */
+void sndp_ppg_notification_stop(void);
+
+
+/**
  * @brief       Heartrate app init.
  * @return      void
  */
