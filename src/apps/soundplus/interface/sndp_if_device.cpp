@@ -1395,7 +1395,7 @@ void sndp_dev_get_default_sn(uint8_t *buf, uint16_t buf_size)
     
     memset(buf, 0, buf_size);  
 	factory_section_original_btaddr_get(local_bt_addr);
-    sprintf((char *)buf, "TMH01%02X%02X%02X%02X%02X%02X", 
+    sprintf((char *)buf, "SEB01%02X%02X%02X%02X%02X%02X", 
         local_bt_addr[5],
         local_bt_addr[4],
         local_bt_addr[3],
