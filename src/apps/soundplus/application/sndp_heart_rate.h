@@ -63,6 +63,18 @@ void sndp_ppg_notification_start(void);
  */
 void sndp_ppg_notification_stop(void);
 
+/**
+ * @brief       Start ACC notifiycation.
+ * @return      void
+ */
+void sndp_acc_notification_start(void);
+
+/**
+ * @brief       Stop ACC notifiycation.
+ * @return      void
+ */
+void sndp_acc_notification_stop(void);
+
 
 /**
  * @brief       Heartrate app init.

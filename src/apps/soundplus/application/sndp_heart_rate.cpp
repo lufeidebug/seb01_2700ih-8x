@@ -81,6 +81,7 @@ typedef struct {
     bool sleep_running;
 
     bool ppg_notification;
+    bool acc_notification;
     
 } sndp_hr_ctx_s;
 
@@ -132,6 +133,7 @@ POSSIBLY_UNUSED static uint8_t sleep_screen_status[30];
 POSSIBLY_UNUSED static uint16_t sleep_analysis_time = 0;
 
 POSSIBLY_UNUSED static uint16_t hr_ppg_raw_len = 0;
+POSSIBLY_UNUSED static uint16_t hr_acc_raw_len = 0;
 
 
 /**************************************************************************************************
@@ -500,7 +502,12 @@ void sndp_ppg_notification_start(void)
     
     ppg_raw_data_queue_reset();
 
-    // sleep_step_1:打开读取PPG数据。
+    // sleep_step_1:停止读取ACC数据。
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+    sndp_hal_acc_stop_reading_raw_data();
+#endif
+
+    // sleep_step_2:打开读取PPG数据。
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
     sndp_hal_hr_start_reading_ppg();
 #endif
@@ -508,6 +515,7 @@ void sndp_ppg_notification_start(void)
     hr_ctx.hr_running = false;
     hr_ctx.sleep_running = false;
     hr_ctx.ppg_notification = true;
+    hr_ctx.acc_notification = false;
 
     memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
     hr_ppg_raw_len = 0;
@@ -528,6 +536,49 @@ void sndp_ppg_notification_stop(void)
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
 }
+
+void sndp_acc_notification_start(void)
+{
+    app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
+    SNDP_TRACE(0, "...");
+    
+    ppg_raw_data_queue_reset();
+
+    // sleep_step_1:停止读取PPG数据。
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
+    sndp_hal_hr_stop_reading_ppg();
+#endif
+
+    // sleep_step_2:开始读取ACC数据。
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+    sndp_hal_acc_start_reading_raw_data();
+#endif 
+
+    hr_ctx.hr_running = false;
+    hr_ctx.sleep_running = false;
+    hr_ctx.ppg_notification = false;
+    hr_ctx.acc_notification = true;
+
+    memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
+    hr_acc_raw_len = 0;
+}
+
+void sndp_acc_notification_stop(void)
+{
+    SNDP_TRACE(0, "...");
+    
+    // hr_setp_3: 停止处理
+    hr_ctx.acc_notification = false;
+    
+    // hr_setp_4: 停止读取ACC数据
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+    sndp_hal_acc_stop_reading_raw_data();
+#endif
+
+    app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
+
+}
+
 
 
 #if defined(__SNDP_HEART_RATE_MGR__)
@@ -571,6 +622,23 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
     
     if(hr_ctx.hr_running || hr_ctx.sleep_running) {
         acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
+    }
+
+    if(hr_ctx.acc_notification) {
+        for(int i = 0; i < cnt && hr_acc_raw_len < HR_PPG_SECOND_ALLCH_SAMPLES; i++) {
+            hr_acc_raw_data[hr_acc_raw_len++] = data[i].x;
+            hr_acc_raw_data[hr_acc_raw_len++] = data[i].y;
+            hr_acc_raw_data[hr_acc_raw_len++] = data[i].z;
+        }
+
+        if(hr_acc_raw_len >= 25 * 3) {
+            //report ACC data
+            
+
+            //clear buff
+            memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
+            hr_acc_raw_len = 0;
+        }
     }
 }
 #endif 
