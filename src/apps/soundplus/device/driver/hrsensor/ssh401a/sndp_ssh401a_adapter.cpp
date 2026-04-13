@@ -427,6 +427,16 @@ int32_t ssh401a_ppg_write_proximity_threshold(uint16_t high_threshold, uint16_t 
     return ss_ppg_proximity_threshold(high_threshold, low_threshold);
 }
 
+int32_t ssh401a_write_reg(uint8_t reg_addr, uint8_t reg_val)
+{
+	return os_api_i2c_write_byte(reg_addr, reg_val);
+}
+
+int32_t ssh401a_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len)
+{
+    return os_api_i2c_read_burst(reg_addr, read_buf, read_len);
+}
+
 
 extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .init                           = ssh401a_init,
@@ -440,6 +450,8 @@ extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .exec_self_calib                = ssh401a_exec_self_calib,
     .read_proximity_value           = ssh401a_ppg_read_proximity_value,
     .write_proximity_threshold      = ssh401a_ppg_write_proximity_threshold,
+    .write_reg                      = ssh401a_write_reg,
+    .read_reg                       = ssh401a_read_reg,
 };
 
 

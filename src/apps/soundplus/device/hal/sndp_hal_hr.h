@@ -69,6 +69,16 @@ typedef struct {
      */
     int32_t (* write_proximity_threshold)(uint16_t high_threshold, uint16_t low_threshold);
 
+    /** 
+     * return: 0 no error.
+     */
+    int32_t (* write_reg)(uint8_t reg_addr, uint8_t reg_val);
+
+    /** 
+     * return: 0 no error.
+     */
+    int32_t (* read_reg)(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
+
 } sndp_hal_hr_s;
 
 
@@ -85,6 +95,9 @@ int32_t sndp_hal_hr_exec_calib(uint8_t *data, uint16_t data_len);
 int32_t sndp_hal_hr_exec_self_calib(void);
 int32_t sndp_hal_hr_read_proximity_value(unsigned short* value);
 int32_t sndp_hal_hr_write_proximity_threshold(uint16_t high_threshold, uint16_t low_threshold);
+
+int32_t sndp_hal_hr_write_reg(uint8_t reg_addr, uint8_t reg_val);
+int32_t sndp_hal_hr_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
 
 
 #ifdef __cplusplus

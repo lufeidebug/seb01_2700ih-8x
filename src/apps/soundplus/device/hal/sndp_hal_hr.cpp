@@ -123,6 +123,22 @@ int32_t sndp_hal_hr_write_proximity_threshold(uint16_t high_threshold, uint16_t 
 	return SNDP_HAL_RET_FAIL;
 }
 
+int32_t sndp_hal_hr_write_reg(uint8_t reg_addr, uint8_t reg_val)
+{
+	if((p_hal_hr != NULL) && (p_hal_hr->write_reg != NULL))
+		return p_hal_hr->write_reg(reg_addr, reg_val);
+	return SNDP_HAL_RET_FAIL;
+}
+
+int32_t sndp_hal_hr_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len)
+{
+	if((p_hal_hr != NULL) && (p_hal_hr->read_reg != NULL))
+		return p_hal_hr->read_reg(reg_addr, read_buf, read_len);
+	return SNDP_HAL_RET_FAIL;
+}
+
+
+
 
 #endif	/* __SNDP_HRSENSOR_SUPPORT__ */
 
