@@ -313,7 +313,8 @@ bool sndp_is_left_right_bound(void)
 void sndp_mobile_reconnect_timeout(void)
 {
     SNDP_IF_TRACE(0, ".");
-	sndp_enter_mobile_pairing_after_tws_connected();
+	//sndp_enter_mobile_pairing_after_tws_connected();
+	sndp_app_shutdown(SNDP_SHUTDOWN_REASON_RECONNECT_TIMEOUT);
 }
 
 void sndp_mobile_reconnect_sccessful(void)
