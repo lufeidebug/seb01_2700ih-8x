@@ -83,6 +83,8 @@ static bool sndp_comm_proximity_slave_timer_running = false;
 static uint32_t sndp_comm_proximity_report_interval_ms = 1000;
 static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_peer(void);
 static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void);
+
+static bool sndp_comm_sleepapp_report_sleep_tracking = false;
 #endif
 
 
@@ -1580,7 +1582,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
     uint8_t anc_mode = cmd_info->value[0];
     if(anc_mode == 2 || anc_mode == 3 || anc_mode == 4)
     {
-        anc_mode = 1; //only support strong and off
+        anc_mode = SNDP_ANC_MODE_1; //only support strong and off
     }
     COMM_CMD_TRACE(1, "anc mode=%d", anc_mode);
     if(sndp_dev_wear_is_worn(false))
@@ -1626,8 +1628,51 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sleep_ap
 }
 
 POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_comm_cmd_info_s *cmd_info)
+{   
+    //if StartHeartrate 0x30 Dump on
+    // if(sndp_hr_mearsuring_get_dump_state() == 0x01){
+
+    // }
+    sndp_ppg_notification_start();
+    COMM_CMD_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state());
+    return 0;
+}
+
+uint8_t ppg_notify_data[99] = {0};
+static uint8_t* pack_ppg_data(uint8_t* notify_data, uint16_t ppg_raw_data_len, int32_t* ppg_raw_data) {
+    uint8_t* p = notify_data;
+    
+    // 1. 打包LR_flag
+    if(sndp_dev_is_left_earphone())
+        *p++ = 0x01;
+    else
+        *p++ = 0x02;
+
+    // 2. 打包ppg_raw_data_len（2字节）
+    *p++ = (uint8_t)(ppg_raw_data_len & 0xFF);           // 低字节
+    *p++ = (uint8_t)((ppg_raw_data_len >> 8) & 0xFF);    // 高字节
+
+    // 3. 打包32个int32的低3字节
+    for (int i = 0; i < 32; i++) {
+        *p++ = (uint8_t)(ppg_raw_data[i] & 0xFF);         // 最低字节
+        *p++ = (uint8_t)((ppg_raw_data[i] >> 8) & 0xFF);  // 中间字节
+        *p++ = (uint8_t)((ppg_raw_data[i] >> 16) & 0xFF); // 最高字节（低3字节中的）
+    }
+    
+    return notify_data;  // 返回缓冲区起始位置
+}
+
+uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len)
 {
-    sndp_sleep_comm_main_rsp_cmd(cmd_info);
+    if(!sndp_comm_ble_is_connected()){
+        return 0;
+    }
+
+    pack_ppg_data(ppg_notify_data, ppg_raw_len, ppg_raw_data);
+
+    // COMM_CMD_TRACE(1, "report ppg to app, len=%d", ppg_raw_len);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_PPG_NOTIFICATION, sizeof(ppg_notify_data)+1, ppg_notify_data);
+
     return 0;
 }
 
@@ -1645,7 +1690,7 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(v
     if (!sndp_is_tws_master_mode()) {
         return 0;
     }
-
+    
     unsigned short proximity_value_local = 0;
     unsigned short proximity_value_peer = 0;
     uint8_t sendvalue[5] = {0};
@@ -1653,6 +1698,7 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(v
     sndp_dev_hr_read_proximity_value(&proximity_value_local);
     sndp_dev_sleep_app_set_proximity_data(false, proximity_value_local);
     proximity_value_peer = sndp_dev_sleep_app_get_proximity_data(true);
+    COMM_CMD_TRACE(2, "local prox=%d, peer prox=%d", proximity_value_local, proximity_value_peer);
     /*
         Byte0	Master Source
                 0x01:   Left
@@ -1678,7 +1724,7 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(v
         sendvalue[4] = (uint8_t)(proximity_value_local & 0xFF);
     }
 
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION, sizeof(sendvalue), sendvalue);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION, sizeof(sendvalue)+1, sendvalue);
     return 0;
 }
 
@@ -1707,6 +1753,9 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_report_proximity(void)
         return 0;
     }
 
+    if(!sndp_comm_ble_is_connected()){
+        return 0;
+    }
     sndp_comm_cmd_sleepapp_report_proximity_to_app();
     sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(sndp_dev_sleep_app_get_proximity_data(false));
 
@@ -1723,7 +1772,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notificati
 
     sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_report_proximity);
     sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer);
-    sndp_dev_sleep_app_set_proximity_onoff(false, get_proximity_onoff, true);
+    sndp_dev_sleep_app_set_proximity_onoff(false, get_proximity_onoff, false);
 
     if (get_proximity_onoff == 0x01) {
         if (sndp_is_tws_link_connected()) {
@@ -1826,11 +1875,11 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_ap
         len = strlen(temp_str);
         *p++ = len + 1;
         *p++ = DEVICE_INFO_TAG_HW_VER;
-        memcpy(p, hw_ver, len);
+        memcpy(p, temp_str, len);
         p += len;
     }
 
-    cmd_info->data_len = p - cmd_info->value;
+    cmd_info->data_len = p - cmd_info->value + 1; // 加1是因为data_len不包含cmd_id本身
 
     COMM_CMD_TRACE(0,"data_len:%d", cmd_info->data_len);
 
@@ -1923,30 +1972,318 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_smart_play_pause(sle
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    /*
+        Byte0	Bit Value 
+        1: Run command   0: do nothing
+
+        BIT7: Accelerometer ON
+        BIT6: Accelerometer OFF
+        BIT5: PPG OFF
+        BIT4: PPG ON (64Hz)
+        BIT3: PPG ON (128Hz)
+        BIT2: PPG ON (256Hz)
+        BIT1: Proximity ON (keep noti)
+        BIT0: Proximity OFF (stop noti)
+        Byte1	BIT7: Touch Enable
+        BIT6: Touch Disable
+        BIT5: VoicePrompt Enable
+        BIT4: VoicePrompt Disable
+        BIT3: ANC OFF
+        BIT2: ANC ON Strong
+        BIT1: ANC ON Adaptive
+        BIT0: ANC ON Transparent
+        Byte2	BIT7: PPGLEDPWR Manual (CMD 0x13 0x00, CMD 0xFF 0x00 0x01 0x01 0x00 0x23 0x2E)
+        BIT6: PPGLEDPWR Auto (CMD 0x13 0x01)
+        BIT5: Smart PlayPause Enable
+        BIT4: Smart PlayPause Disable
+        BIT3: Music Play
+        BIT2: Music Pause
+        BIT1: reserved(0)
+        BIT0: reserved(0)
+    */
+    SndpSettingsBitMap_t BitMap;
+    memcpy(&BitMap, cmd_info->value, 3);
+   
+    {
+        //byte0 bit0~bit7 of struct
+        /******************proximity map*******************/
+        if(BitMap.proximity_off)
+        {
+            sndp_dev_sleep_app_set_proximity_onoff(false, 0x00, false);
+            if (sndp_is_tws_link_connected()) {
+                sndp_comm_cmd_send_lr_sync_Proximity_Notification_ONOFF(0x00);
+            }
+        }
+        if(BitMap.proximity_on)
+        {
+            sndp_dev_sleep_app_set_proximity_onoff(false, 0x01, false);
+            if (sndp_is_tws_link_connected()) {
+                sndp_comm_cmd_send_lr_sync_Proximity_Notification_ONOFF(0x01);
+            }
+            sndp_comm_cmd_sleepapp_report_proximity();
+        }
+        /******************proximity map*******************/
+
+        if(BitMap.ppg_256hz)
+        {
+            //not support
+        }else if(BitMap.ppg_128hz)
+        {
+            //not support
+        }else if(BitMap.ppg_64hz)
+        {
+            //not support
+        }else if(BitMap.ppg_off)
+        {
+            //not support   
+        }
+
+        if(BitMap.accel_off)
+        {
+            //not support
+        }
+
+        if(BitMap.accel_on)
+        {
+            //not support
+        }
+    }
+    
+    {
+        sndp_anc_mode_e anc_mode = SNDP_ANC_MODE_QTY;
+        //Byte2 bit0~bit7 of struct
+        /******************anc map*******************/
+        if(BitMap.anc_transparent)
+        {
+            anc_mode = SNDP_ANC_MODE_TRANSPARENT;
+        }
+        else if(BitMap.anc_adaptive)
+        {
+            anc_mode = SNDP_ANC_MODE_1;
+        }
+        else if(BitMap.anc_strong)
+        {
+            anc_mode = SNDP_ANC_MODE_1;
+        }
+        else if(BitMap.anc_off)
+        {
+            anc_mode = SNDP_ANC_MODE_OFF;
+        }
+        if(sndp_dev_wear_is_worn(false))
+        {
+            sndp_anc_mode_set_locally((sndp_anc_mode_e)anc_mode);
+        }
+        sndp_dev_sleep_app_anc_mode_set(false, (sndp_anc_mode_e)anc_mode, true);
+        sndp_comm_cmd_send_lr_sync_anc_mode(anc_mode, 1);
+        /******************anc map*******************/
+
+        /******************voice prompt map*******************/
+        if(BitMap.voice_disable)
+        {
+            sndp_dev_sleep_app_set_prompt_onoff(false, 0x00, false);
+            sndp_comm_cmd_send_lr_sync_prompt_onoff(0x00);
+        }
+        else if(BitMap.voice_enable)
+        {
+            sndp_dev_sleep_app_set_prompt_onoff(false, 0x01, false);
+            sndp_comm_cmd_send_lr_sync_prompt_onoff(0x01);
+        }
+        
+        /******************touch onoff map*******************/
+        if(BitMap.touch_disable)
+        {
+            sndp_dev_sleep_app_set_gesture_onoff(false, 0x00, false);
+            sndp_comm_cmd_send_lr_sync_gesture_onoff(0x00);
+        }
+        else if(BitMap.touch_enable)
+        {
+            sndp_dev_sleep_app_set_gesture_onoff(false, 0x01, false);
+            sndp_comm_cmd_send_lr_sync_gesture_onoff(0x01);
+        }
+        /******************touch onoff map*******************/
+    }
+
+    {
+        //byte3 bit0~bit7 of struct
+        if(BitMap.music_pause)
+        {
+            //not support
+        }
+        else if(BitMap.music_play)
+        {
+            //not support
+        }
+
+        if(BitMap.smart_playpause_enable)
+        {
+            sndp_dev_sleep_app_set_splaypause_onoff(false, 0x01, false);
+            sndp_comm_cmd_send_lr_sync_splaypause_onoff(0x01);
+        }
+        else if(BitMap.smart_playpause_disable)
+        {
+            sndp_dev_sleep_app_set_splaypause_onoff(false, 0x00, false);
+            sndp_comm_cmd_send_lr_sync_splaypause_onoff(0x00);
+        }
+
+        if(BitMap.ppgledpwr_auto)
+        {
+            //not support
+        }
+        else if(BitMap.ppgledpwr_manual)
+        {
+            //not support
+        }
+
+    }
+    cmd_info->data_len = 0x02;
+    cmd_info->value[0] = 0; // success
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_settings(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    cmd_info->data_len = 0x06;
+    cmd_info->value[0] = sndp_dev_sleep_app_anc_mode_get(false);
+    cmd_info->value[1] = sndp_hr_mearsuring_get_sampling_rate();
+    cmd_info->value[2] = sndp_dev_sleep_app_get_gesture_onoff(false);
+    cmd_info->value[3] = sndp_dev_sleep_app_get_prompt_onoff(false);
+    cmd_info->value[4] = sndp_dev_sleep_app_get_splaypause_onoff(false);
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sleep_app_comm_cmd_info_s *cmd_info)
 {
+        /* receving data format from app:
+            BYTE0 Reserve：
+                    default 0x00
+            BYTE1 Sensor Select
+                    0x01=PPG, 0x02=Acc
+            BYTE2 Write or Read
+                    0x01=Write, 0x02=Read
+            BYTE3 Read length（max 0x03）
+                    (0x00 = Write only)
+            BYTE4 Register Address
+
+            BYTE5 Write Values
+                Write only
+        */
+       /* reply data format to app:
+        BYTE0   Receive Status
+                0x00= Success, 0x01 = Fail
+
+        BYTE1   Register Address
+
+        BYTE2    Selected Sensor
+                 0x01 = PPG, 0x02= Acc
+        
+        BYTE3   Write or Read
+                0x02 = Read (read only)
+
+        BYTE4   Read length (max 0x03)
+
+        BYTE[5~7]	 Register Read Values 
+       */
+    SndpSensorCtrlMap_t *pSensorCtrlMap = (SndpSensorCtrlMap_t *)cmd_info->value;
+    SndpSensorCtrlReplyMap_t pSensorCtrlReplyMap;
+    uint8_t read_value[3] = {0};
+    uint8_t read_len = 0;
+    memset(&pSensorCtrlReplyMap, 0, sizeof(pSensorCtrlReplyMap));
+    if(cmd_info->data_len != 7){
+        COMM_CMD_TRACE(0, "invalid data_len=%d", cmd_info->data_len);
+        cmd_info->data_len = 0x09;
+        pSensorCtrlReplyMap.receive_status = 0x01; // fail
+        memcpy(cmd_info->value, &pSensorCtrlReplyMap, sizeof(pSensorCtrlReplyMap));
+        sndp_sleep_comm_main_rsp_cmd(cmd_info);
+        return 0;
+    }
+
+    if(pSensorCtrlMap->sensor_select == 0x01) //ppg
+    {
+        COMM_CMD_TRACE(3, "ppg reg=0x%02x, write_read=%d, read_len=%d, write_value=0x%02x", 
+                        pSensorCtrlMap->reg_addr, pSensorCtrlMap->write_read, pSensorCtrlMap->read_lenth, pSensorCtrlMap->write_value);
+        if(pSensorCtrlMap->write_read == 0x01) //write
+        {
+            read_len = 0x01;
+            sndp_dev_hr_write_reg(pSensorCtrlMap->reg_addr, pSensorCtrlMap->write_value);
+            sndp_dev_hr_read_reg(pSensorCtrlMap->reg_addr, read_value, read_len);
+        }
+        else if(pSensorCtrlMap->write_read == 0x02) //read
+        {
+            read_len = pSensorCtrlMap->read_lenth > 3 ? 3 : pSensorCtrlMap->read_lenth;
+            sndp_dev_hr_read_reg(pSensorCtrlMap->reg_addr, read_value, read_len);
+        }
+        else
+        {
+            COMM_CMD_TRACE(0, "invalid write_read value=%d", pSensorCtrlMap->write_read);
+            cmd_info->data_len = 0x09;
+            pSensorCtrlReplyMap.receive_status = 0x01; // fail
+            memcpy(cmd_info->value, &pSensorCtrlReplyMap, sizeof(pSensorCtrlReplyMap));
+            sndp_sleep_comm_main_rsp_cmd(cmd_info);
+            return 0;
+        }
+        COMM_CMD_TRACE(3, "ppg read_value=0x%02x%02x%02x len=%d", read_value[0], read_value[1], read_value[2], read_len);
+    }
+    else if(pSensorCtrlMap->sensor_select == 0x02) //accel
+    {
+        COMM_CMD_TRACE(3, "ppg reg=0x%02x, write_read=%d, read_len=%d, write_value=0x%02x", 
+                pSensorCtrlMap->reg_addr, pSensorCtrlMap->write_read, pSensorCtrlMap->read_lenth, pSensorCtrlMap->write_value);
+        if(pSensorCtrlMap->write_read == 0x01) //write
+        {
+            read_len = 0x01;
+            sndp_dev_acc_write_reg(pSensorCtrlMap->reg_addr, pSensorCtrlMap->write_value);
+            sndp_dev_acc_read_reg(pSensorCtrlMap->reg_addr, read_value, read_len);
+        }
+        else if(pSensorCtrlMap->write_read == 0x02) //read
+        {
+            read_len = pSensorCtrlMap->read_lenth > 3 ? 3 : pSensorCtrlMap->read_lenth;
+            sndp_dev_acc_read_reg(pSensorCtrlMap->reg_addr, read_value, read_len);
+        }
+        else
+        {
+            COMM_CMD_TRACE(0, "invalid write_read value=%d", pSensorCtrlMap->write_read);
+            cmd_info->data_len = 0x09;
+            pSensorCtrlReplyMap.receive_status = 0x01; // fail
+            memcpy(cmd_info->value, &pSensorCtrlReplyMap, sizeof(pSensorCtrlReplyMap));
+            sndp_sleep_comm_main_rsp_cmd(cmd_info);
+            return 0;
+        }
+        COMM_CMD_TRACE(3, "ppg read_value=0x%02x%02x%02x len=%d", read_value[0], read_value[1], read_value[2], read_len);
+    }
+    else
+    {
+        COMM_CMD_TRACE(0, "invalid sensor_select value=%d", pSensorCtrlMap->sensor_select);
+        cmd_info->data_len = 0x09;
+        pSensorCtrlReplyMap.receive_status = 0x01; // fail
+        memcpy(cmd_info->value, &pSensorCtrlReplyMap, sizeof(pSensorCtrlReplyMap));
+        sndp_sleep_comm_main_rsp_cmd(cmd_info);
+        return 0;
+    }
+
+    pSensorCtrlReplyMap.receive_status = 0x00; // success
+    pSensorCtrlReplyMap.reg_addr = pSensorCtrlMap->reg_addr;
+    pSensorCtrlReplyMap.select_sensor = pSensorCtrlMap->sensor_select;
+    pSensorCtrlReplyMap.write_read = 0x02; // read only
+    pSensorCtrlReplyMap.read_lenth = read_len;
+    memcpy(pSensorCtrlReplyMap.read_value, read_value, read_len);
+    cmd_info->data_len = 0x09;
+    memcpy(cmd_info->value, &pSensorCtrlReplyMap, sizeof(pSensorCtrlReplyMap));
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
+
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_earbuds_status_led_control(sleep_app_comm_cmd_info_s *cmd_info)
-{
+{  
+     //Discarded command
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_ppg_auto_led_enable_disable(sleep_app_comm_cmd_info_s *cmd_info)
-{
+{   
+    //Discarded command
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
@@ -1955,6 +2292,8 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_ap
 {
     uint8_t sampling_rate = cmd_info->value[0];
     uint8_t dump_data = cmd_info->value[1];
+    sndp_hr_mearsuring_set_sampling_rate(sampling_rate);
+    sndp_hr_mearsuring_set_dump_state(dump_data);
     sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_start, sampling_rate, dump_data, 0);
     return 0;
 }
@@ -1970,19 +2309,69 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    uint32_t sleep_mode = cmd_info->value[0]<<24 | cmd_info->value[1]<<16 | cmd_info->value[2]<<8 | cmd_info->value[3];
+    DUMP8("0x%02x ", cmd_info->value, 4);
+    COMM_CMD_TRACE(1, "sleep mode=%d", sleep_mode);
+    sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_start, sleep_mode, 0, 0);
+    cmd_info->data_len = 0x02;
+    cmd_info->value[0] = 0; // success
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    sndp_sleep_comm_main_rsp_cmd(cmd_info);
+    sndp_comm_sleepapp_report_sleep_tracking = true;
+    // sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_comm_cmd_info_s *cmd_info)
 {
+    cmd_info->data_len = 0x02;
+    cmd_info->value[0] = 0; // success
+    sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
+                                                    uint16_t position_and_control,
+                                                    int16_t result_code)
+{
+    /*
+        Byte0	Sleep Stage … 40
+    -----------------------------------
+        Byte40	Sleep Position 
+    -----------------------------------
+        Byte41	Sound Control
+        Byte42
+    ------------------------------------
+        Byte43	Result Code 
+    */
+   if(!sndp_comm_ble_is_connected())
+    {
+        COMM_CMD_TRACE(0, "BLE is not connected, stop sleep stage reporting");
+        sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);
+        return 1;
+    }
+    if(sndp_comm_sleepapp_report_sleep_tracking){
+        uint8_t sendvalue[44];
+        uint8_t sendlen = 0;
+        memset(sendvalue, 0, sizeof(sendvalue));
+        memcpy(sendvalue, sleep_stage, 40);
+        sendlen += 40;
+        sendvalue[sendlen] = (uint8_t)((position_and_control >> 8) & 0xFF);
+        sendlen++;
+        sendvalue[sendlen] = position_and_control & 0xFF;
+        sendlen++;
+        sendvalue[sendlen] = (uint8_t)((result_code >> 8) & 0xFF);
+        sendlen++;
+        sendvalue[sendlen] = (uint8_t)(result_code & 0xFF);
+        sendlen++;
+        sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_SLEEP_TRACKING, sendlen+1, sendvalue);
+        sndp_comm_sleepapp_report_sleep_tracking = false;
+    }
     return 0;
 }
 
@@ -2027,7 +2416,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, 
     sendvalue[sendlen] = resulcode;
     sendlen++;
 
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING, sendlen, sendvalue);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING, sendlen+1, sendvalue);
 	return 0;
 }
 

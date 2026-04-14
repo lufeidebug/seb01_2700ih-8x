@@ -1579,6 +1579,26 @@ void sndp_dev_hr_read_proximity_value(unsigned short *proximity_value)
 #endif
 }
 
+int32_t sndp_dev_hr_write_reg(uint8_t reg_addr, uint8_t reg_val)
+{
+	SNDP_IF_TRACE_ENTER();
+#if defined(__SNDP_HEART_RATE_MGR__)	
+	return sndp_hal_hr_write_reg(reg_addr, reg_val);
+#else
+		return -1;
+#endif
+}
+
+int32_t sndp_dev_hr_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len)
+{
+	SNDP_IF_TRACE_ENTER();	
+#if defined(__SNDP_HEART_RATE_MGR__)	
+	return sndp_hal_hr_read_reg(reg_addr, read_buf, read_len);
+#else
+		return -1;
+#endif
+}
+
 void sndp_dev_hr_init(void)
 {
 	SNDP_IF_TRACE_ENTER();
@@ -1610,6 +1630,25 @@ void sndp_dev_acc_enter_detection_mode(void)
 #endif
 }
 
+int32_t sndp_dev_acc_write_reg(uint8_t reg_addr, uint8_t reg_val)
+{
+	SNDP_IF_TRACE_ENTER();
+#if defined(__SNDP_GSENSOR_SUPPORT__)	
+	return sndp_hal_acc_write_reg(reg_addr, reg_val);
+#else
+		return -1;	
+#endif
+}
+
+int32_t sndp_dev_acc_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len)
+{
+	SNDP_IF_TRACE_ENTER();	
+#if defined(__SNDP_GSENSOR_SUPPORT__)	
+	return sndp_hal_acc_read_reg(reg_addr, read_buf, read_len);
+#else
+		return -1;	
+#endif
+}
 
 void sndp_dev_acc_init(void)
 {

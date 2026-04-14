@@ -377,6 +377,8 @@ bool sndp_dev_is_working_mode(sndp_dev_working_mode_e mode);
 void sndp_dev_hr_enter_standby_mode(void);
 void sndp_dev_hr_enter_detection_mode(void);
 void sndp_dev_hr_read_proximity_value(unsigned short *proximity_value);
+int32_t sndp_dev_hr_write_reg(uint8_t reg_addr, uint8_t reg_val);
+int32_t sndp_dev_hr_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
 void sndp_dev_hr_init(void);
 /**************************************************  Heart rate Start **************************************************/
 
@@ -384,6 +386,8 @@ void sndp_dev_hr_init(void);
 /************************************************** acc Start **************************************************/
 void sndp_dev_acc_enter_standby_mode(void);
 void sndp_dev_acc_enter_detection_mode(void);
+int32_t sndp_dev_acc_write_reg(uint8_t reg_addr, uint8_t reg_val);
+int32_t sndp_dev_acc_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
 void sndp_dev_acc_init(void);
 /**************************************************  acc End **************************************************/
 

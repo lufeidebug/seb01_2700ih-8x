@@ -39,6 +39,32 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state);
 void sndp_hr_mearsuring_stop(void);
 
 /**
+ * @brief       Get heartrate mearsuring sampling rate
+ * @return      uint8_t
+ */
+uint8_t sndp_hr_mearsuring_get_sampling_rate(void);
+
+/**
+ * @brief       Set heartrate mearsuring sampling rate
+ * @param[in]   sampling_rate  1:64Hz, 2:128Hz, 3:256Hz
+ * @return      void
+ */
+void sndp_hr_mearsuring_set_sampling_rate(uint8_t sampling_rate);
+
+/**
+ * @brief       Get heartrate mearsuring dump state
+ * @return      uint8_t
+ */
+uint8_t sndp_hr_mearsuring_get_dump_state(void);
+
+/**
+ * @brief       Set heartrate mearsuring sampling rate
+ * @param[in]   dump_state  1:on, 2:off
+ * @return      void
+ */
+void sndp_hr_mearsuring_set_dump_state(uint8_t dump_state);
+
+/**
  * @brief       Start heartrate mearsuring
  * @param[in]   sleep_control default:0
  * @return      void
@@ -82,7 +108,7 @@ void sndp_acc_notification_stop(void);
  */
 void sndp_hr_app_init(void);
 
-
+void sndp_ppg_notification_start(void);
 
 #ifdef __cplusplus
 	}

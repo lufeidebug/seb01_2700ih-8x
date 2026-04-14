@@ -323,9 +323,64 @@ typedef enum {
     DEVICE_INFO_TAG_HW_VER  = 0x04,
 } device_info_tag_e;
 
+typedef struct
+{
+   // Byte0
+    uint8_t proximity_off : 1;    // BIT0
+    uint8_t proximity_on  : 1;     // BIT1
+    uint8_t ppg_256hz    : 1;     // BIT2
+    uint8_t ppg_128hz    : 1;     // BIT3
+    uint8_t ppg_64hz     : 1;     // BIT4
+    uint8_t ppg_off      : 1;     // BIT5
+    uint8_t accel_off    : 1;     // BIT6
+    uint8_t accel_on     : 1;     // BIT7
+    
+    // Byte1
+    uint8_t anc_transparent  : 1;  // BIT0
+    uint8_t anc_adaptive     : 1;  // BIT1
+    uint8_t anc_strong       : 1;  // BIT2
+    uint8_t anc_off          : 1;  // BIT3
+    uint8_t voice_disable    : 1;  // BIT4
+    uint8_t voice_enable     : 1;  // BIT5
+    uint8_t touch_disable    : 1;  // BIT6
+    uint8_t touch_enable     : 1;  // BIT7
+    
+    // Byte2
+    uint8_t reserved0    : 1;      // BIT0
+    uint8_t reserved1    : 1;      // BIT1
+    uint8_t music_pause  : 1;      // BIT2
+    uint8_t music_play   : 1;      // BIT3
+    uint8_t smart_playpause_disable : 1;  // BIT4
+    uint8_t smart_playpause_enable  : 1;  // BIT5
+    uint8_t ppgledpwr_auto  : 1;      // BIT6
+    uint8_t ppgledpwr_manual : 1;    // BIT7
+}SndpSettingsBitMap_t;
+
+typedef struct{
+    uint8_t reserve;
+    uint8_t sensor_select;
+    uint8_t write_read;
+    uint8_t read_lenth;
+    uint8_t reg_addr;
+    uint8_t write_value;
+}SndpSensorCtrlMap_t;
+
+typedef struct{
+    uint8_t receive_status;
+    uint8_t reg_addr;
+    uint8_t select_sensor;
+    uint8_t write_read; //read only
+    uint8_t read_lenth;
+    uint8_t read_value[3];
+}SndpSensorCtrlReplyMap_t;
+
 uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, uint8_t resulcode);
 uint32_t sndp_comm_cmd_sleepapp_proximity_role_switch_update(void);
 uint32_t sndp_comm_cmd_send_lr_sync_anc_mode(uint8_t ancmode,uint8_t is_save);
+uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
+                                                    uint16_t position_and_control,
+                                                    int16_t result_code);
+uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len);
 #endif
 #ifdef __cplusplus
 }

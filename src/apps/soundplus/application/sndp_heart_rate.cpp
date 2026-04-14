@@ -79,10 +79,10 @@
 typedef struct {
     bool hr_running;
     bool sleep_running;
-
     bool ppg_notification;
     bool acc_notification;
-    
+    uint8_t sampling_rate;
+    uint8_t dump_state;
 } sndp_hr_ctx_s;
 
 
@@ -368,6 +368,26 @@ static void sndp_hr_process_thread(void const *argument)
 
 }
 
+uint8_t sndp_hr_mearsuring_get_sampling_rate(void)
+{
+    return hr_ctx.sampling_rate;
+}
+
+void sndp_hr_mearsuring_set_sampling_rate(uint8_t sampling_rate)
+{
+    hr_ctx.sampling_rate = sampling_rate;
+}
+
+uint8_t sndp_hr_mearsuring_get_dump_state(void)
+{
+    return hr_ctx.dump_state;
+}
+
+void sndp_hr_mearsuring_set_dump_state(uint8_t dump_state)
+{
+    hr_ctx.dump_state = dump_state;
+}
+
 void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
@@ -385,7 +405,7 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
     ppg_raw_data_queue_reset();
 
     // hr_setp_1: 算法初始化
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)    
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)   
     dbbeats_initialize_heartrate_data(ppg_sampling_rate, dump_state);
 #endif
 
@@ -439,7 +459,10 @@ void sndp_sleep_analysis_callback(int8_t *sleep_stage,
         // sleep_step_15: Use sleep_stage[0~39]
 
         // sleep_step_16: report data to app via ble.
-        
+        if(hr_ctx.sleep_running) {
+            uint16_t position_and_control = (sleep_position & 0xFF) | ((sound_control & 0xFF)<<8);
+            sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_report_sleep_stage, (uint32_t)sleep_stage, position_and_control, result_code);
+        }
     } else {
         SNDP_TRACE(0, "Error: %d\n", result_code);
     }
@@ -584,6 +607,7 @@ void sndp_acc_notification_stop(void)
 #if defined(__SNDP_HEART_RATE_MGR__)
 static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 {
+    int32_t *hr_ppg_raw_data_ptr = &hr_ppg_raw_data[0];
     //HR_TRACE(0, "cnt=%d", cnt);
     if(hr_ctx.hr_running || hr_ctx.sleep_running) {
         //SNDP_DUMP32("%08X ", data,  cnt > 16?16:cnt);
@@ -602,9 +626,10 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
         }
 
         if(hr_ppg_raw_len >= 32) {
+            // HR_TRACE(0, "ppg notification, len=%d", hr_ppg_raw_len);
+            // DUMP32("%08X ", hr_ppg_raw_data_ptr, 32);
             //report PPG data
-            
-
+            sndp_comm_cmd_sleepapp_report_ppg_ntf(hr_ppg_raw_data_ptr, hr_ppg_raw_len);
             //clear buff
             memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
             hr_ppg_raw_len = 0;
