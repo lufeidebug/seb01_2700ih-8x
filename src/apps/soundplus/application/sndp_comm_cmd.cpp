@@ -1630,9 +1630,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sleep_ap
 POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_comm_cmd_info_s *cmd_info)
 {   
     //if StartHeartrate 0x30 Dump on
-    // if(sndp_hr_mearsuring_get_dump_state() == 0x01){
-
-    // }
+    sndp_hr_mearsuring_set_dump_state(0x01);
     sndp_ppg_notification_start();
     COMM_CMD_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state());
     return 0;
@@ -1665,9 +1663,14 @@ static uint8_t* pack_ppg_data(uint8_t* notify_data, uint16_t ppg_raw_data_len, i
 uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len)
 {
     if(!sndp_comm_ble_is_connected()){
+        COMM_CMD_TRACE(0, "ble is not connected, not report ppg");
         return 0;
     }
 
+    if(sndp_hr_mearsuring_get_dump_state() == 0){
+        COMM_CMD_TRACE(0, "dump state is off, not report ppg");
+        return 0;
+    }
     pack_ppg_data(ppg_notify_data, ppg_raw_len, ppg_raw_data);
 
     // COMM_CMD_TRACE(1, "report ppg to app, len=%d", ppg_raw_len);
