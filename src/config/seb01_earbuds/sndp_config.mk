@@ -5,7 +5,7 @@ ifeq ($(SNDP_PROJ),1)
 KBUILD_CPPFLAGS += -D__SNDP_PROJ__
 
 export HARDWARE_VERSION ?= 1.0
-export SOFTWARE_VERSION ?= 0.0.0.10
+export SOFTWARE_VERSION ?= 0.0.0.11
 
 # platform macro configuration
 export TRACE_BAUD_RATE 							:= 1152000
@@ -69,7 +69,7 @@ export SNDP_WEAR_DETECT_MGR                     := 1
 export SNDP_GESTURE_MGR                         := 1
 export SNDP_COMMUNICATION_MGR                   := 1
 export SNDP_PRODUCT_TEST                        := 1
-export SNDP_ALGO_MGR                            := 0
+export SNDP_ALGO_MGR                            := 1
 export SNDP_MIC_GAIN_SETTING                    := 1
 export SNDP_REBOOT_FORCE_PAIRING                := 1
 export SNDP_AUDIO_TEST                          := 0
@@ -290,7 +290,12 @@ ifeq ($(SNDP_ALGO_MGR),1)
     KBUILD_CPPFLAGS += -D__SNDP_ALGO_MGR__
 
     export SNDP_ALGO_ENC                        := 0
+    export SNDP_USE_BES_ALGO                    := 1
+endif
 
+ifeq ($(SNDP_USE_BES_ALGO), 1)
+    export SNDP_BES_ALGO_CHANNEL_NUM            := 1
+    KBUILD_CPPFLAGS += -D__SNDP_USE_BES_ALGO__
 endif
 
 ifeq ($(SNDP_ALGO_ENC),1)
