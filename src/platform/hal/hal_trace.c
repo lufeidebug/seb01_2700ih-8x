@@ -74,7 +74,11 @@ static void hal_trace_fault_cp_handler(void);
 
 #if !(defined(ROM_BUILD) || defined(PROGRAMMER))
 #define ASSERT_MUTE_CODEC
+#if defined(__SNDP_CRASH_REBOOT__)
+//#define CRASH_DUMP_ENABLE
+#else
 #define CRASH_DUMP_ENABLE
+#endif
 #if !(defined(NO_TRACE_TIME_STAMP) || defined(AUDIO_DEBUG))
 #define TRACE_TIME_STAMP
 #endif

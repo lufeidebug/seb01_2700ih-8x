@@ -77,7 +77,7 @@ export SNDP_BT_NAME                             := 0
 export SNDP_TEST_TWS_PAIRING                    := 0
 export SNDP_TEST_FREEMAN_PAIRING                := 0
 export SNDP_TEST_RF_DUT                         := 0
-export CRASH_REBOOT                             := 1
+export SNDP_CRASH_REBOOT                        := 1
 export SNDP_BLE_MODIFY                          := 0
 export SNDP_HEART_RATE_MGR                      := 1
 export SNDP_KEY_TEST                            := 1
@@ -374,6 +374,12 @@ endif
 
 ifeq ($(SNDP_TEST_RF_DUT),1)
     export FORCE_SIGNALINGMODE                  := 1
+endif
+
+
+ifeq ($(SNDP_CRASH_REBOOT),1)
+    KBUILD_CPPFLAGS += -D__SNDP_CRASH_REBOOT__
+    export CRASH_REBOOT                         := 1
 endif
 
 ifeq ($(SNDP_BLE_MODIFY),1)
