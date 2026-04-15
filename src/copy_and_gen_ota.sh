@@ -7,7 +7,7 @@ proj_name=seb01_earbuds
 #获取当前日期字符串
 
 #dt_str=$(date "+%Y-%m-%d %H:%M:%S")
-dt_str=$(date "+%Y%m%d")
+dt_str=$(date "+%Y%m%d_%H%M")
 echo dt_str=$dt_str
 
 
@@ -36,8 +36,10 @@ app_bin_src_path=./out/${proj_name}/${proj_name}.bin
 #echo app_bin_src=$app_bin_src
 
 #bin文件拷贝到的目录
-#app_bin_des=$proj_name_app_v${trim_sw}_${dt_str}.bin
-app_bin_des=${proj_name}_app_v${trim_sw}.bin
+app_bin_sW=${proj_name}_app_v${trim_sw}.bin
+app_bin_ota=${proj_name}_app_for_ota_v${trim_sw}.bin
+app_bin_dt=${proj_name}_app_${dt_str}.bin
+
 #echo bin_des=$bin_des
 
 
@@ -45,10 +47,11 @@ if [ -e $app_bin_src_path ]; then
 #    echo "文件存在"
 	
 	#拷贝bin文件
-	echo cp -f ${app_bin_src_path} ./${app_bin_des}
-	cp -f ${app_bin_src_path} ./${app_bin_des}
+	echo cp -f ${app_bin_src_path} ./${app_bin_sW}
+	cp -f ${app_bin_src_path} ./${app_bin_sW}
+	cp -f ${app_bin_src_path} ./${app_bin_dt}
 	
-	./tools/build_compressed_ota.sh ./${app_bin_des} ./${proj_name}_app_for_ota_v${trim_sw}.bin
+	./tools/build_compressed_ota.sh ./${app_bin_sW} ./${app_bin_ota}
 	
 	rm crc.bin
 	rm magic.bin
