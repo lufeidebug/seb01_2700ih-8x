@@ -158,7 +158,6 @@ typedef struct
 	uint8_t sleep_prompt_onoff;
 	uint8_t sleep_gesture_onoff;
 	uint8_t sleep_splaypause_onoff;
-	uint8_t sleep_proximity_onoff;
 }sndp_sleep_app_flag;
 
 #endif
@@ -192,7 +191,9 @@ typedef struct {
 	sndp_dev_gesture_mapper_t gesture_mapper;
 #endif
 	sndp_sleep_app_flag sleep_app_flag;
+	uint8_t sleep_proximity_onoff;
 	unsigned short sleep_proximity_data;
+	uint8_t sleep_accelerometer_onoff;
 #endif
 } sndp_dev_earbuds_param_s;
 
@@ -404,7 +405,7 @@ void sndp_dev_sleep_app_set_gesture_onoff(bool peer, uint8_t onoff, bool sava);
 bool sndp_dev_sleep_app_get_gesture_onoff(bool peer);
 void sndp_dev_sleep_app_set_splaypause_onoff(bool peer, uint8_t onoff, bool sava);
 uint8_t sndp_dev_sleep_app_get_splaypause_onoff(bool peer);
-uint8_t sndp_dev_sleep_app_set_proximity_onoff(bool peer, uint8_t onoff, bool sava);
+uint8_t sndp_dev_sleep_app_set_proximity_onoff(bool peer, uint8_t onoff);
 uint8_t sndp_dev_sleep_app_get_proximity_onoff(bool peer);
 unsigned short sndp_dev_sleep_app_get_proximity_data(bool peer);
 uint8_t sndp_dev_sleep_app_set_proximity_data(bool peer, unsigned short data);

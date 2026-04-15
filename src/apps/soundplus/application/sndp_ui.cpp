@@ -92,6 +92,7 @@ typedef struct {
     sndp_dev_wear_status_e wear_sta;
     sndp_dev_bat_info_s bat_info;
     sndp_sleep_app_flag sleep_flag;
+    uint8_t sleep_proximity_onoff;
 } sndp_ui_all_dev_sta_s;
 
 
@@ -1485,8 +1486,7 @@ static void sndp_ui_all_status_sync_send(void)
         all_dev_sta.sleep_flag.sleep_gesture_onoff = sndp_dev_sleep_app_get_gesture_onoff(false);
 #endif
         all_dev_sta.sleep_flag.sleep_splaypause_onoff = sndp_dev_sleep_app_get_splaypause_onoff(false);
-        all_dev_sta.sleep_flag.sleep_proximity_onoff = sndp_dev_sleep_app_get_proximity_onoff(false);
-
+        all_dev_sta.sleep_proximity_onoff = sndp_dev_sleep_app_get_proximity_onoff(false);
 #endif
         sndp_comm_cmd_send_lr_sync_all_dev_status((uint8_t *)&all_dev_sta, sizeof(sndp_ui_all_dev_sta_s));
 #endif        
@@ -1511,7 +1511,7 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
         sndp_dev_sleep_app_set_gesture_onoff(false, all_dev_sta.sleep_flag.sleep_gesture_onoff, true);
 #endif
         sndp_dev_sleep_app_set_splaypause_onoff(false, all_dev_sta.sleep_flag.sleep_splaypause_onoff, true);
-        sndp_dev_sleep_app_set_proximity_onoff(false, all_dev_sta.sleep_flag.sleep_proximity_onoff, true);
+        sndp_dev_sleep_app_set_proximity_onoff(false, all_dev_sta.sleep_proximity_onoff);
 #endif
     }
 }

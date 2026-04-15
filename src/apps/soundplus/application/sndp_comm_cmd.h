@@ -274,6 +274,8 @@ typedef enum {
                                                     rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION = 0x0C, /* recv: 0 bytes. 
                                                     rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION = 0x0D, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_GET_BATTERY_STATUS = 0x0E, /* recv: 0 bytes. 
                                                     rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_GET_DEVICE_INFO = 0x0F, /* recv: 0 bytes. 
@@ -381,6 +383,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
                                                     uint16_t position_and_control,
                                                     int16_t result_code);
 uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len);
+uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t acc_raw_len);
 #endif
 #ifdef __cplusplus
 }

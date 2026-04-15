@@ -642,6 +642,7 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 #if defined(__SNDP_GSENSOR_SUPPORT__)
 static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16_t cnt)
 {
+    int16_t *hr_acc_raw_data_ptr = &hr_acc_raw_data[0];
     //HR_TRACE(0, "cnt=%d", cnt);
     //SNDP_DUMP32("%04X ", data,  cnt > 16?16:cnt);
     
@@ -658,7 +659,7 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
 
         if(hr_acc_raw_len >= 25 * 3) {
             //report ACC data
-            
+            sndp_comm_cmd_sleepapp_report_acc_ntf(hr_acc_raw_data_ptr, hr_acc_raw_len);
 
             //clear buff
             memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));

@@ -78,13 +78,14 @@ POSSIBLY_UNUSED static uint8_t dev_test_from = SNDP_COMM_DEVICE_ATE;
 POSSIBLY_UNUSED static uint8_t dev_test_path = SNDP_COMM_PATH_POGOPIN;
 
 #if defined(__SNDP_SLEEP_APP__)
-POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_report_proximity(void);
+POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_start_report_proximity(void);
 static bool sndp_comm_proximity_slave_timer_running = false;
 static uint32_t sndp_comm_proximity_report_interval_ms = 1000;
 static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_peer(void);
 static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void);
-
+static uint32_t sndp_comm_cmd_sleepapp_stop_report_proximity(void);
 static bool sndp_comm_sleepapp_report_sleep_tracking = false;
+static uint8_t ppg_notify_data[98] = {0};
 #endif
 
 
@@ -694,7 +695,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_Proximity_Notification_ONOFF(sndp_com
     }
 
     uint8_t onoff = cmd_info->data[0];
-    sndp_dev_sleep_app_set_proximity_onoff(false, onoff, false);
+    sndp_dev_sleep_app_set_proximity_onoff(false, onoff);
 
     if (onoff == 0x01) {
         if (!sndp_comm_proximity_slave_timer_running) {
@@ -1636,49 +1637,6 @@ POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_
     return 0;
 }
 
-uint8_t ppg_notify_data[99] = {0};
-static uint8_t* pack_ppg_data(uint8_t* notify_data, uint16_t ppg_raw_data_len, int32_t* ppg_raw_data) {
-    uint8_t* p = notify_data;
-    
-    // 1. 打包LR_flag
-    if(sndp_dev_is_left_earphone())
-        *p++ = 0x01;
-    else
-        *p++ = 0x02;
-
-    // 2. 打包ppg_raw_data_len（2字节）
-    *p++ = (uint8_t)(ppg_raw_data_len & 0xFF);           // 低字节
-    *p++ = (uint8_t)((ppg_raw_data_len >> 8) & 0xFF);    // 高字节
-
-    // 3. 打包32个int32的低3字节
-    for (int i = 0; i < 32; i++) {
-        *p++ = (uint8_t)(ppg_raw_data[i] & 0xFF);         // 最低字节
-        *p++ = (uint8_t)((ppg_raw_data[i] >> 8) & 0xFF);  // 中间字节
-        *p++ = (uint8_t)((ppg_raw_data[i] >> 16) & 0xFF); // 最高字节（低3字节中的）
-    }
-    
-    return notify_data;  // 返回缓冲区起始位置
-}
-
-uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len)
-{
-    if(!sndp_comm_ble_is_connected()){
-        COMM_CMD_TRACE(0, "ble is not connected, not report ppg");
-        return 0;
-    }
-
-    if(sndp_hr_mearsuring_get_dump_state() == 0){
-        COMM_CMD_TRACE(0, "dump state is off, not report ppg");
-        return 0;
-    }
-    pack_ppg_data(ppg_notify_data, ppg_raw_len, ppg_raw_data);
-
-    // COMM_CMD_TRACE(1, "report ppg to app, len=%d", ppg_raw_len);
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_PPG_NOTIFICATION, sizeof(ppg_notify_data)+1, ppg_notify_data);
-
-    return 0;
-}
-
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_set_local_proximity(void)
 {
     unsigned short proximity_value = 0;
@@ -1688,128 +1646,35 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_set_local_proximity(void)
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
-{
-    if (!sndp_is_tws_master_mode()) {
-        return 0;
-    }
-    
-    unsigned short proximity_value_local = 0;
-    unsigned short proximity_value_peer = 0;
-    uint8_t sendvalue[5] = {0};
-
-    sndp_dev_hr_read_proximity_value(&proximity_value_local);
-    sndp_dev_sleep_app_set_proximity_data(false, proximity_value_local);
-    proximity_value_peer = sndp_dev_sleep_app_get_proximity_data(true);
-    COMM_CMD_TRACE(2, "local prox=%d, peer prox=%d", proximity_value_local, proximity_value_peer);
-    /*
-        Byte0	Master Source
-                0x01:   Left
-                0x02:   Right
-    --------------------------------------
-        Byte1
-        Byte2	Proximity Value (Left)
-    --------------------------------------
-        Byte3
-        Byte4	Proximity Value (Right)
-    */
-    if (sndp_dev_is_left_earphone()) {
-        sendvalue[0] = 0x01;
-        sendvalue[1] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
-        sendvalue[2] = (uint8_t)(proximity_value_local & 0xFF);
-        sendvalue[3] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
-        sendvalue[4] = (uint8_t)(proximity_value_peer & 0xFF);
-    } else {
-        sendvalue[0] = 0x02;
-        sendvalue[1] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
-        sendvalue[2] = (uint8_t)(proximity_value_peer & 0xFF);
-        sendvalue[3] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
-        sendvalue[4] = (uint8_t)(proximity_value_local & 0xFF);
-    }
-
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION, sizeof(sendvalue)+1, sendvalue);
-    return 0;
-}
-
-POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_peer(void)
-{
-    unsigned short proximity_value_local = 0;
-    sndp_dev_hr_read_proximity_value(&proximity_value_local);
-    sndp_dev_sleep_app_set_proximity_data(false, proximity_value_local);
-    sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(proximity_value_local);
-
-    if (sndp_dev_sleep_app_get_proximity_onoff(false) && sndp_comm_proximity_slave_timer_running) {
-        sndp_delay_exec_start(sndp_comm_proximity_report_interval_ms,
-                              (uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer,
-                              0, 0, 0);
-    }
-    return 0;
-}
-
-POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_report_proximity(void)
-{
-    if (!sndp_is_tws_master_mode()) {
-        return 0;
-    }
-
-    if (!sndp_dev_sleep_app_get_proximity_onoff(false)) {
-        return 0;
-    }
-
-    if(!sndp_comm_ble_is_connected()){
-        return 0;
-    }
-    sndp_comm_cmd_sleepapp_report_proximity_to_app();
-    sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(sndp_dev_sleep_app_get_proximity_data(false));
-
-    sndp_delay_exec_start(sndp_comm_proximity_report_interval_ms,
-                          (uint32_t)sndp_comm_cmd_sleepapp_report_proximity,
-                          0, 0, 0);
-    return 0;
-}
-
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notification(sleep_app_comm_cmd_info_s *cmd_info)
 {
     uint8_t get_proximity_onoff = cmd_info->value[0];
     TR_INFO(0, (get_proximity_onoff == 0x01) ? "enable proximity" : "disable proximity");
 
-    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_report_proximity);
+    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_start_report_proximity);
     sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer);
-    sndp_dev_sleep_app_set_proximity_onoff(false, get_proximity_onoff, false);
+    sndp_dev_sleep_app_set_proximity_onoff(false, get_proximity_onoff);
 
     if (get_proximity_onoff == 0x01) {
         if (sndp_is_tws_link_connected()) {
             sndp_comm_cmd_send_lr_sync_Proximity_Notification_ONOFF(0x01);
         }
-        sndp_comm_cmd_sleepapp_report_proximity();
+        sndp_comm_cmd_sleepapp_start_report_proximity();
     } else {
         if (sndp_is_tws_link_connected()) {
             sndp_comm_cmd_send_lr_sync_Proximity_Notification_ONOFF(0x00);
         }
+        sndp_comm_cmd_sleepapp_stop_report_proximity();
     }
 
     return 0;
 }
 
-uint32_t sndp_comm_cmd_sleepapp_proximity_role_switch_update(void)
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_accelerometer_notification(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    if (!sndp_dev_sleep_app_get_proximity_onoff(false)) {
-        return 0;
-    }
-
-    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_report_proximity);
-    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer);
-    sndp_comm_proximity_slave_timer_running = false;
-
-    if (sndp_is_tws_master_mode()) {
-        sndp_comm_cmd_sleepapp_report_proximity();
-    } else if (sndp_is_tws_slave_mode()) {
-        sndp_delay_exec_start(sndp_comm_proximity_report_interval_ms,
-                              (uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer,
-                              0, 0, 0);
-        sndp_comm_proximity_slave_timer_running = true;
-    }
-
+    sndp_hr_mearsuring_set_dump_state(0x01);
+    sndp_acc_notification_start();
+    COMM_CMD_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state());
     return 0;
 }
 
@@ -1979,30 +1844,30 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
         Byte0	Bit Value 
         1: Run command   0: do nothing
 
-        BIT7: Accelerometer ON
-        BIT6: Accelerometer OFF
-        BIT5: PPG OFF
-        BIT4: PPG ON (64Hz)
-        BIT3: PPG ON (128Hz)
-        BIT2: PPG ON (256Hz)
-        BIT1: Proximity ON (keep noti)
-        BIT0: Proximity OFF (stop noti)
+            BIT7: Accelerometer ON
+            BIT6: Accelerometer OFF
+            BIT5: PPG OFF
+            BIT4: PPG ON (64Hz)
+            BIT3: PPG ON (128Hz)
+            BIT2: PPG ON (256Hz)
+            BIT1: Proximity ON (keep noti)
+            BIT0: Proximity OFF (stop noti)
         Byte1	BIT7: Touch Enable
-        BIT6: Touch Disable
-        BIT5: VoicePrompt Enable
-        BIT4: VoicePrompt Disable
-        BIT3: ANC OFF
-        BIT2: ANC ON Strong
-        BIT1: ANC ON Adaptive
-        BIT0: ANC ON Transparent
+            BIT6: Touch Disable
+            BIT5: VoicePrompt Enable
+            BIT4: VoicePrompt Disable
+            BIT3: ANC OFF
+            BIT2: ANC ON Strong
+            BIT1: ANC ON Adaptive
+            BIT0: ANC ON Transparent
         Byte2	BIT7: PPGLEDPWR Manual (CMD 0x13 0x00, CMD 0xFF 0x00 0x01 0x01 0x00 0x23 0x2E)
-        BIT6: PPGLEDPWR Auto (CMD 0x13 0x01)
-        BIT5: Smart PlayPause Enable
-        BIT4: Smart PlayPause Disable
-        BIT3: Music Play
-        BIT2: Music Pause
-        BIT1: reserved(0)
-        BIT0: reserved(0)
+            BIT6: PPGLEDPWR Auto (CMD 0x13 0x01)
+            BIT5: Smart PlayPause Enable
+            BIT4: Smart PlayPause Disable
+            BIT3: Music Play
+            BIT2: Music Pause
+            BIT1: reserved(0)
+            BIT0: reserved(0)
     */
     SndpSettingsBitMap_t BitMap;
     memcpy(&BitMap, cmd_info->value, 3);
@@ -2012,18 +1877,18 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
         /******************proximity map*******************/
         if(BitMap.proximity_off)
         {
-            sndp_dev_sleep_app_set_proximity_onoff(false, 0x00, false);
+            sndp_dev_sleep_app_set_proximity_onoff(false, 0x00);
             if (sndp_is_tws_link_connected()) {
                 sndp_comm_cmd_send_lr_sync_Proximity_Notification_ONOFF(0x00);
             }
         }
         if(BitMap.proximity_on)
         {
-            sndp_dev_sleep_app_set_proximity_onoff(false, 0x01, false);
+            sndp_dev_sleep_app_set_proximity_onoff(false, 0x01);
             if (sndp_is_tws_link_connected()) {
                 sndp_comm_cmd_send_lr_sync_Proximity_Notification_ONOFF(0x01);
             }
-            sndp_comm_cmd_sleepapp_report_proximity();
+            sndp_comm_cmd_sleepapp_start_report_proximity();
         }
         /******************proximity map*******************/
 
@@ -2325,7 +2190,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_co
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app_comm_cmd_info_s *cmd_info)
 {
     sndp_comm_sleepapp_report_sleep_tracking = true;
-    // sndp_sleep_comm_main_rsp_cmd(cmd_info);
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
@@ -2423,6 +2288,178 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, 
 	return 0;
 }
 
+static uint8_t* pack_ppg_data(uint8_t* notify_data, uint16_t ppg_raw_data_len, int32_t* ppg_raw_data) {
+    uint8_t* p = notify_data;
+    
+    // 1. 打包LR_flag 1字节
+    if(sndp_dev_is_left_earphone())
+        *p++ = 0x01;
+    else
+        *p++ = 0x02;
+
+    // 2. 打包ppg_raw_data_len（1字节）
+    *p++ = (uint8_t)ppg_raw_data_len;           // 低字节
+
+    // 3. 打包32个int32的低3字节 32*3=96字节
+    for (int i = 0; i < 32; i++) {
+        *p++ = (uint8_t)(ppg_raw_data[i] & 0xFF);         // 最低字节
+        *p++ = (uint8_t)((ppg_raw_data[i] >> 8) & 0xFF);  // 中间字节
+        *p++ = (uint8_t)((ppg_raw_data[i] >> 16) & 0xFF); // 最高字节（低3字节中的）
+    }
+    
+    return notify_data;  // 返回缓冲区起始位置
+}
+
+uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len)
+{
+    if(!sndp_comm_ble_is_connected()){
+        COMM_CMD_TRACE(0, "ble is not connected, not report ppg");
+        return 0;
+    }
+
+    if(sndp_hr_mearsuring_get_dump_state() == 0){
+        COMM_CMD_TRACE(0, "dump state is off, not report ppg");
+        return 0;
+    }
+    pack_ppg_data(ppg_notify_data, ppg_raw_len, ppg_raw_data);
+
+    // COMM_CMD_TRACE(1, "report ppg to app, len=%d", ppg_raw_len);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_PPG_NOTIFICATION, sizeof(ppg_notify_data)+1, ppg_notify_data);
+
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t acc_raw_len)
+{
+    if(!sndp_comm_ble_is_connected()){
+        COMM_CMD_TRACE(0, "ble is not connected, not report accelerometer");
+        return 0;
+    }
+
+    if(sndp_hr_mearsuring_get_dump_state() == 0){
+        COMM_CMD_TRACE(0, "dump state is off, not report accelerometer");
+        return 0;
+    }
+
+    // COMM_CMD_TRACE(1, "report accelerometer to app, len=%d", acc_raw_len);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION, acc_raw_len*sizeof(int16_t)+1, (uint8_t *)acc_raw_data);
+
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
+{
+    if (!sndp_is_tws_master_mode()) {
+        return 0;
+    }
+    
+    unsigned short proximity_value_local = 0;
+    unsigned short proximity_value_peer = 0;
+    uint8_t sendvalue[5] = {0};
+
+    sndp_dev_hr_read_proximity_value(&proximity_value_local);
+    sndp_dev_sleep_app_set_proximity_data(false, proximity_value_local);
+    proximity_value_peer = sndp_dev_sleep_app_get_proximity_data(true);
+    COMM_CMD_TRACE(2, "local prox=%d, peer prox=%d", proximity_value_local, proximity_value_peer);
+    /*
+        Byte0	Master Source
+                0x01:   Left
+                0x02:   Right
+    --------------------------------------
+        Byte1
+        Byte2	Proximity Value (Left)
+    --------------------------------------
+        Byte3
+        Byte4	Proximity Value (Right)
+    */
+    if (sndp_dev_is_left_earphone()) {
+        sendvalue[0] = 0x01;
+        sendvalue[1] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
+        sendvalue[2] = (uint8_t)(proximity_value_local & 0xFF);
+        sendvalue[3] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
+        sendvalue[4] = (uint8_t)(proximity_value_peer & 0xFF);
+    } else {
+        sendvalue[0] = 0x02;
+        sendvalue[1] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
+        sendvalue[2] = (uint8_t)(proximity_value_peer & 0xFF);
+        sendvalue[3] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
+        sendvalue[4] = (uint8_t)(proximity_value_local & 0xFF);
+    }
+
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION, sizeof(sendvalue)+1, sendvalue);
+    return 0;
+}
+
+POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_peer(void)
+{
+    unsigned short proximity_value_local = 0;
+    sndp_dev_hr_read_proximity_value(&proximity_value_local);
+    sndp_dev_sleep_app_set_proximity_data(false, proximity_value_local);
+    sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(proximity_value_local);
+
+    if (sndp_dev_sleep_app_get_proximity_onoff(false) && sndp_comm_proximity_slave_timer_running) {
+        sndp_delay_exec_start(sndp_comm_proximity_report_interval_ms,
+                              (uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer,
+                              0, 0, 0);
+    }
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_sleepapp_start_report_proximity(void)
+{
+    if (!sndp_is_tws_master_mode()) { 
+        return 0;
+    }
+
+    if (!sndp_dev_sleep_app_get_proximity_onoff(false)) {
+        return 0;
+    }
+
+    if(!sndp_comm_ble_is_connected()){
+        return 0;
+    }
+    sndp_comm_cmd_sleepapp_report_proximity_to_app();
+    sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(sndp_dev_sleep_app_get_proximity_data(false));
+
+    sndp_delay_exec_start(sndp_comm_proximity_report_interval_ms,
+                          (uint32_t)sndp_comm_cmd_sleepapp_start_report_proximity,
+                          0, 0, 0);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_sleepapp_stop_report_proximity(void)
+{
+    if (!sndp_is_tws_master_mode()) { 
+        return 0;
+    }
+
+    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_start_report_proximity);
+    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer);
+    sndp_comm_proximity_slave_timer_running = false;
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_sleepapp_proximity_role_switch_update(void)
+{
+    if (!sndp_dev_sleep_app_get_proximity_onoff(false)) {
+        return 0;
+    }
+
+    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_start_report_proximity);
+    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer);
+    sndp_comm_proximity_slave_timer_running = false;
+
+    if (sndp_is_tws_master_mode()) {
+        sndp_comm_cmd_sleepapp_start_report_proximity();
+    } else if (sndp_is_tws_slave_mode()) {
+        sndp_delay_exec_start(sndp_comm_proximity_report_interval_ms,
+                              (uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer,
+                              0, 0, 0);
+        sndp_comm_proximity_slave_timer_running = true;
+    }
+
+    return 0;
+}
 
 /*
 BLE packet format:
@@ -2431,34 +2468,35 @@ Flag  |  Parameter  |  Length	|  Cmd	       |       Data
 0x57  |  0x4D 0x43	|  CMD and  |  data length |   Command	NULL allowed，but no more than 240 bytes
 */
 static const sndp_sleep_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
-    { SLEEP_APP_CMDID_SET_EQ_MODE             , "APP_SET_EQ_MODE"      , sleep_comm_cmd_recv_app_set_eq_mode               },
-    { SLEEP_APP_CMDID_GET_EQ_MODE             , "APP_GET_EQ_MODE"       , sleep_comm_cmd_recv_app_get_eq_mode               },
-    { SLEEP_APP_CMDID_SET_EQ_PARAM         , "APP_SET_EQ_PARAM"  , sleep_comm_cmd_recv_app_set_eq_param           },
-    { SLEEP_APP_CMDID_GET_EQ_PARAM         , "APP_GET_EQ_PARAM"  , sleep_comm_cmd_recv_app_get_eq_param           },
-    { SLEEP_APP_CMDID_FIND_MY_EARPHONE         , "APP_FIND_MY_EARPHONE"  , sleep_comm_cmd_recv_app_find_my_earphone           },
-    { SLEEP_APP_CMDID_SET_ANC_MODE         , "APP_SET_ANC_MODE"  , sleep_comm_cmd_recv_app_set_anc_mode           },
-    { SLEEP_APP_CMDID_GET_ANC_MODE         , "APP_GET_ANC_MODE"  , sleep_comm_cmd_recv_app_get_anc_mode           },
-    { SLEEP_APP_CMDID_PPG_SETING         , "APP_SET_PPG_SETTING"  , sleep_comm_cmd_recv_app_set_ppg_setting           },
-    { SLEEP_APP_CMDID_PPG_NOTIFICATION   , "APP_PPG_NOTIFICATION",  sleep_comm_cmd_recv_ppg_notification},
-    { SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION         , "APP_GET_PROXIMITY_NOTIFICATION"  , sleep_comm_cmd_recv_app_get_proximity_notification           },
-    { SLEEP_APP_CMDID_GET_BATTERY_STATUS         , "APP_GET_BATTERY_STATUS"  , sleep_comm_cmd_recv_app_get_battery_status           },
-    { SLEEP_APP_CMDID_GET_DEVICE_INFO         , "APP_GET_DEVICE_INFO"  , sleep_comm_cmd_recv_app_get_device_info           },
-    { SLEEP_APP_CMDID_SET_TOUCH_ENABLE        , "APP_SET_TOUCH_ENABLE"  , sleep_comm_cmd_recv_app_set_touch_enable           },
-    { SLEEP_APP_CMDID_SET_VOICE_PROMPT_ENABLE , "APP_SET_VOICE_PROMPT_ENABLE"  , sleep_comm_cmd_recv_app_set_voice_prompt_enable           },
-    { SLEEP_APP_CMDID_SET_TOUCH_KEY_MAPPING , "APP_SET_TOUCH_KEY_MAPPING"  , sleep_comm_cmd_recv_app_set_touch_key_mapping           },
-    { SLEEP_APP_CMDID_GET_TOUCH_KEY_MAPPING , "APP_GET_TOUCH_KEY_MAPPING"  , sleep_comm_cmd_recv_app_get_touch_key_mapping           },
-    { SLEEP_APP_CMDID_SET_SMART_PLAY_PAUSE , "APP_SET_SMART_PLAY_PAUSE"  , sleep_comm_cmd_recv_app_set_smart_play_pause           },
-    { SLEEP_APP_CMDID_GET_SMART_PLAY_PAUSE , "APP_GET_SMART_PLAY_PAUSE"  , sleep_comm_cmd_recv_app_get_smart_play_pause           },
-    { SLEEP_APP_CMDID_SET_SETTINGS , "APP_SET_SETTINGS"  , sleep_comm_cmd_recv_app_set_settings           },
-    { SLEEP_APP_CMDID_GET_SETTINGS , "APP_GET_SETTINGS"  , sleep_comm_cmd_recv_app_get_settings           },
-    { SLEEP_APP_CMDID_SENSOR_CONTROL , "APP_SENSOR_CONTROL"  , sleep_comm_cmd_recv_app_sensor_control           },
-    { SLEEP_APP_CMDID_EARBUDS_STATUS_LED , "APP_EARBUDS_STATUS_LED_CONTROL"  , sleep_comm_cmd_recv_app_earbuds_status_led_control           },
-    { SLEEP_APP_CMDID_PPG_AUTO_LED_ENABLE_DISABLE , "APP_PPG_AUTO_LED_ENABLE_DISABLE"  , sleep_comm_cmd_recv_app_ppg_auto_led_enable_disable           },
-    { SLEEP_APP_CMDID_START_HEARTRATE , "APP_START_HEARTRATE"  , sleep_comm_cmd_recv_app_start_heartrate           },
-    { SLEEP_APP_CMDID_STOP_HEARTRATE , "APP_STOP_HEARTRATE"  , sleep_comm_cmd_recv_app_stop_heartrate           },
-    { SLEEP_APP_CMDID_START_SLEEP, "APP_START_SLEEP"  , sleep_comm_cmd_recv_app_start_sleep           },
-    { SLEEP_APP_CMDID_SLEEP_TRACKING, "APP_SLEEP_TRACKING"  , sleep_comm_cmd_recv_app_sleep_tracking           },
-    { SLEEP_APP_CMDID_STOP_SLEEP, "APP_STOP_SLEEP"  , sleep_comm_cmd_recv_app_stop_sleep           },
+    { SLEEP_APP_CMDID_SET_EQ_MODE,                    "APP_SET_EQ_MODE",                    sleep_comm_cmd_recv_app_set_eq_mode },
+    { SLEEP_APP_CMDID_GET_EQ_MODE,                    "APP_GET_EQ_MODE",                    sleep_comm_cmd_recv_app_get_eq_mode },
+    { SLEEP_APP_CMDID_SET_EQ_PARAM,                   "APP_SET_EQ_PARAM",                   sleep_comm_cmd_recv_app_set_eq_param },
+    { SLEEP_APP_CMDID_GET_EQ_PARAM,                   "APP_GET_EQ_PARAM",                   sleep_comm_cmd_recv_app_get_eq_param },
+    { SLEEP_APP_CMDID_FIND_MY_EARPHONE,               "APP_FIND_MY_EARPHONE",               sleep_comm_cmd_recv_app_find_my_earphone },
+    { SLEEP_APP_CMDID_SET_ANC_MODE,                   "APP_SET_ANC_MODE",                   sleep_comm_cmd_recv_app_set_anc_mode },
+    { SLEEP_APP_CMDID_GET_ANC_MODE,                   "APP_GET_ANC_MODE",                   sleep_comm_cmd_recv_app_get_anc_mode },
+    { SLEEP_APP_CMDID_PPG_SETING,                     "APP_SET_PPG_SETTING",                sleep_comm_cmd_recv_app_set_ppg_setting },
+    { SLEEP_APP_CMDID_PPG_NOTIFICATION,               "APP_PPG_NOTIFICATION",               sleep_comm_cmd_recv_ppg_notification },
+    { SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION,     "APP_GET_PROXIMITY_NOTIFICATION",     sleep_comm_cmd_recv_app_get_proximity_notification },
+    { SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION, "APP_GET_ACCELEROMETER_NOTIFICATION", sleep_comm_cmd_recv_app_get_accelerometer_notification },
+    { SLEEP_APP_CMDID_GET_BATTERY_STATUS,             "APP_GET_BATTERY_STATUS",             sleep_comm_cmd_recv_app_get_battery_status },
+    { SLEEP_APP_CMDID_GET_DEVICE_INFO,                "APP_GET_DEVICE_INFO",                sleep_comm_cmd_recv_app_get_device_info },
+    { SLEEP_APP_CMDID_SET_TOUCH_ENABLE,               "APP_SET_TOUCH_ENABLE",               sleep_comm_cmd_recv_app_set_touch_enable },
+    { SLEEP_APP_CMDID_SET_VOICE_PROMPT_ENABLE,        "APP_SET_VOICE_PROMPT_ENABLE",        sleep_comm_cmd_recv_app_set_voice_prompt_enable },
+    { SLEEP_APP_CMDID_SET_TOUCH_KEY_MAPPING,          "APP_SET_TOUCH_KEY_MAPPING",          sleep_comm_cmd_recv_app_set_touch_key_mapping },
+    { SLEEP_APP_CMDID_GET_TOUCH_KEY_MAPPING,          "APP_GET_TOUCH_KEY_MAPPING",          sleep_comm_cmd_recv_app_get_touch_key_mapping },
+    { SLEEP_APP_CMDID_SET_SMART_PLAY_PAUSE,           "APP_SET_SMART_PLAY_PAUSE",           sleep_comm_cmd_recv_app_set_smart_play_pause },
+    { SLEEP_APP_CMDID_GET_SMART_PLAY_PAUSE,           "APP_GET_SMART_PLAY_PAUSE",           sleep_comm_cmd_recv_app_get_smart_play_pause },
+    { SLEEP_APP_CMDID_SET_SETTINGS,                   "APP_SET_SETTINGS",                   sleep_comm_cmd_recv_app_set_settings },
+    { SLEEP_APP_CMDID_GET_SETTINGS,                   "APP_GET_SETTINGS",                   sleep_comm_cmd_recv_app_get_settings },
+    { SLEEP_APP_CMDID_SENSOR_CONTROL,                 "APP_SENSOR_CONTROL",                 sleep_comm_cmd_recv_app_sensor_control },
+    { SLEEP_APP_CMDID_EARBUDS_STATUS_LED,             "APP_EARBUDS_STATUS_LED_CONTROL",     sleep_comm_cmd_recv_app_earbuds_status_led_control },
+    { SLEEP_APP_CMDID_PPG_AUTO_LED_ENABLE_DISABLE,    "APP_PPG_AUTO_LED_ENABLE_DISABLE",    sleep_comm_cmd_recv_app_ppg_auto_led_enable_disable },
+    { SLEEP_APP_CMDID_START_HEARTRATE,                "APP_START_HEARTRATE",                sleep_comm_cmd_recv_app_start_heartrate },
+    { SLEEP_APP_CMDID_STOP_HEARTRATE,                 "APP_STOP_HEARTRATE",                 sleep_comm_cmd_recv_app_stop_heartrate },
+    { SLEEP_APP_CMDID_START_SLEEP,                    "APP_START_SLEEP",                    sleep_comm_cmd_recv_app_start_sleep },
+    { SLEEP_APP_CMDID_SLEEP_TRACKING,                 "APP_SLEEP_TRACKING",                 sleep_comm_cmd_recv_app_sleep_tracking },
+    { SLEEP_APP_CMDID_STOP_SLEEP,                     "APP_STOP_SLEEP",                     sleep_comm_cmd_recv_app_stop_sleep },
 };
 static const int32_t sndp_sleep_app_comm_cmd_hdlr_cnt = sizeof(sleep_app_comm_cmd_hdlr_list) / sizeof(sleep_app_comm_cmd_hdlr_list[0]);
 static sleep_app_comm_cmd_info_s sndp_sleep_app_comm_exec_cmd;

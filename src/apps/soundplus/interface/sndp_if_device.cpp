@@ -1818,20 +1818,13 @@ uint8_t sndp_dev_sleep_app_get_splaypause_onoff(bool peer)
 	}
 }
 
-uint8_t sndp_dev_sleep_app_set_proximity_onoff(bool peer, uint8_t onoff, bool sava)
+uint8_t sndp_dev_sleep_app_set_proximity_onoff(bool peer, uint8_t onoff)
 {
 	SNDP_IF_TRACE(0, "enter");
 	if(peer) {
-		sndp_dev_ctx.peer.sleep_app_flag.sleep_proximity_onoff = onoff;
+		sndp_dev_ctx.peer.sleep_proximity_onoff = onoff;
 	} else {
-		sndp_dev_ctx.local.sleep_app_flag.sleep_proximity_onoff = onoff;
-	}
-
-	sleep_flag_run.sleep_proximity_onoff = onoff;
-	if(sava)
-	{
-		sleep_flag_flash.sleep_proximity_onoff = onoff;
-		sndp_save_app_flag_to_flash();		
+		sndp_dev_ctx.local.sleep_proximity_onoff = onoff;
 	}
 
 	return 0;
@@ -1840,9 +1833,9 @@ uint8_t sndp_dev_sleep_app_set_proximity_onoff(bool peer, uint8_t onoff, bool sa
 uint8_t sndp_dev_sleep_app_get_proximity_onoff(bool peer)
 {
 	if(peer) {
-		return sndp_dev_ctx.peer.sleep_app_flag.sleep_proximity_onoff;
+		return sndp_dev_ctx.peer.sleep_proximity_onoff;
 	} else {
-		return sndp_dev_ctx.local.sleep_app_flag.sleep_proximity_onoff;
+		return sndp_dev_ctx.local.sleep_proximity_onoff;
 	}
 }
 
@@ -1905,7 +1898,6 @@ void sndp_set_default_flag(void)
 	sleep_flag_flash.sleep_gesture_onoff = 1;
 	sleep_flag_flash.sleep_prompt_onoff = 1;
 	sleep_flag_flash.sleep_splaypause_onoff = 1;
-	sleep_flag_flash.sleep_proximity_onoff = 0;
 
 	/*****************from flash running flag*****************************/
 	sleep_flag_run.sleep_eq_index = 0;
@@ -1913,7 +1905,6 @@ void sndp_set_default_flag(void)
 	sleep_flag_run.sleep_gesture_onoff = 1;
 	sleep_flag_run.sleep_prompt_onoff = 1;	
 	sleep_flag_run.sleep_splaypause_onoff = 1;
-	sleep_flag_run.sleep_proximity_onoff = 0;
 	sleep_flag_ptr->key = SNDP_DA_PARAM_FIELD_VALID;
 	memcpy(sleep_flag_ptr->data, &sleep_flag_flash, sizeof(sndp_sleep_app_flag));
 	sndp_da_write_field(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
@@ -1962,7 +1953,6 @@ void sndp_load_sleep_app_param(void)
 	sndp_dev_sleep_app_set_eq_index(false, sleep_flag_run.sleep_eq_index, false);
 	sndp_dev_sleep_app_anc_mode_set(false, sleep_flag_run.sleep_anc_mode, false);
 	sndp_dev_sleep_app_set_splaypause_onoff(false, sleep_flag_run.sleep_splaypause_onoff, false);
-	sndp_dev_sleep_app_set_proximity_onoff(false, sleep_flag_run.sleep_proximity_onoff, false);
 }
 #endif
 
