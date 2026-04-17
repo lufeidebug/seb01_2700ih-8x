@@ -2301,7 +2301,7 @@ static uint8_t* pack_ppg_data(uint8_t* notify_data, uint16_t ppg_raw_data_len, i
     *p++ = (uint8_t)ppg_raw_data_len;           // 低字节
 
     // 3. 打包32个int32的低3字节 32*3=96字节
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < ppg_raw_data_len; i++) {
         *p++ = (uint8_t)(ppg_raw_data[i] & 0xFF);         // 最低字节
         *p++ = (uint8_t)((ppg_raw_data[i] >> 8) & 0xFF);  // 中间字节
         *p++ = (uint8_t)((ppg_raw_data[i] >> 16) & 0xFF); // 最高字节（低3字节中的）
@@ -2321,10 +2321,11 @@ uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t p
         COMM_CMD_TRACE(0, "dump state is off, not report ppg");
         return 0;
     }
-    pack_ppg_data(ppg_notify_data, ppg_raw_len, ppg_raw_data);
+    uint16_t ppg_samples_len = ppg_raw_len > 32 ? 32 : ppg_raw_len; // 最多打包32个数据点
+    pack_ppg_data(ppg_notify_data, ppg_samples_len, ppg_raw_data);
 
-    // COMM_CMD_TRACE(1, "report ppg to app, len=%d", ppg_raw_len);
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_PPG_NOTIFICATION, sizeof(ppg_notify_data)+1, ppg_notify_data);
+    // COMM_CMD_TRACE(1, "report ppg to app, len=%d", ppg_samples_len);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_PPG_NOTIFICATION, ppg_samples_len*3+1+1+1, (uint8_t *)ppg_notify_data);
 
     return 0;
 }
