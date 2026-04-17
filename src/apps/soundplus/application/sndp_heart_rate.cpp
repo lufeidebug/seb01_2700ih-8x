@@ -607,7 +607,6 @@ void sndp_acc_notification_stop(void)
 #if defined(__SNDP_HEART_RATE_MGR__)
 static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 {
-    int32_t *hr_ppg_raw_data_ptr = &hr_ppg_raw_data[0];
     //HR_TRACE(0, "cnt=%d", cnt);
     if(hr_ctx.hr_running || hr_ctx.sleep_running) {
         //SNDP_DUMP32("%08X ", data,  cnt > 16?16:cnt);
@@ -627,9 +626,11 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 
         if(hr_ppg_raw_len >= 32) {
             // HR_TRACE(0, "ppg notification, len=%d", hr_ppg_raw_len);
-            // DUMP32("%08X ", hr_ppg_raw_data_ptr, 32);
+            // DUMP32("%08X ", hr_ppg_raw_data, 32);
+            
             //report PPG data
-            sndp_comm_cmd_sleepapp_report_ppg_ntf(hr_ppg_raw_data_ptr, hr_ppg_raw_len);
+            sndp_comm_cmd_sleepapp_report_ppg_ntf(hr_ppg_raw_data, hr_ppg_raw_len);
+            
             //clear buff
             memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
             hr_ppg_raw_len = 0;
