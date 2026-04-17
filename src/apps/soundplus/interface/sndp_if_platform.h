@@ -240,6 +240,7 @@ uint8_t *sndp_get_nvrecord_bt_peer_address(void);
 
 int sndp_language_switch_handler(int new_lan);
 void sndp_bt_switch(bool onoff, bool sync);
+uint8_t sndp_get_is_shutting_down(void);
 #if defined(__SNDP_SLEEP_APP__)
 void sndp_load_eq_param(void);
 void sndp_set_crc(uint32_t *crc, uint8_t *data_ptr, uint32_t data_len);

@@ -1200,7 +1200,13 @@ void media_PlayAudio(AUD_ID_ENUM id,uint8_t device_id)
         return;
     }
 #endif
-
+#if defined(__SNDP_PROJ__)
+    if(sndp_get_is_shutting_down() && (id != AUDIO_ID_POWER_OFF))
+    {
+        AUDIO_BT_TRACE(1,"[UIAPP]%s, is shutting down",__func__);
+        return;
+    }
+#endif
 #ifdef BESUI_COMM_EN
     if(uictl.poweroff_start_flag)
     {
