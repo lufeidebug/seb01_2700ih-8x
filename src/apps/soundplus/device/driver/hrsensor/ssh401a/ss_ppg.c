@@ -449,7 +449,6 @@ void ss_ppg_fifo_parse(unsigned char* fifo_data, unsigned char fifo_length)
             adc_data |= fifo_data[idx + 1] << 8;
             adc_data |= fifo_data[idx + 2];
 
-#if 0 //modify by lzw 20260416.
             if (fifo_flag == 1) //Saturation Occurs
             {
                 //Saturated data is ignored and replaced with the value just before saturation.
@@ -459,8 +458,6 @@ void ss_ppg_fifo_parse(unsigned char* fifo_data, unsigned char fifo_length)
             {
                 g_pre_adc_data[fifo_header] = adc_data;
             }
-#endif
-
 
             if (fifo_header == 0 || fifo_header == 1)
                 ppg_data->seq0 = adc_data;
