@@ -1268,8 +1268,13 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
     		        //other reason, shutdown time is set to 15 minutes
                     sndp_enter_mobile_reconnect();
     			} else { 
-    				//REMOTE_USER_TERMINATED         
-    				sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+    				//REMOTE_USER_TERMINATED   
+                    if(sndp_is_tws_link_connected()) {
+                        sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+                    } else {
+                        sndp_call_func_in_app_thread((uint32_t)sndp_enter_freeman_pairing, 0, 0, 0);
+                    }
+    				    
     			}
 #else
                 sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
