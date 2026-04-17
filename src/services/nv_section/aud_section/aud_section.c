@@ -398,7 +398,7 @@ int anc_section_nv_erase(uint32_t start_addr, uint32_t len, bool is_async)
     uint32_t p_size = 0;
     enum HAL_FLASH_ID_T flash_id;
 
-    norflash_api_get_dev_id(NORFLASH_API_MODULE_ID_ANC, &flash_id);
+    norflash_api_get_dev_id(NORFLASH_API_MODULE_ID_AUDIO, &flash_id);
     hal_norflash_get_size(flash_id, &t_size, &b_size, &s_size, &p_size);
 
     len = ((len + (s_size-1))/s_size) * s_size;
@@ -417,7 +417,7 @@ int anc_section_nv_erase(uint32_t start_addr, uint32_t len, bool is_async)
         {
             break;
         }
-        ret = norflash_api_erase(NORFLASH_API_MODULE_ID_ANC, start_addr,
+        ret = norflash_api_erase(NORFLASH_API_MODULE_ID_AUDIO, start_addr,
                                  s_size, is_async);
         if(ret != NORFLASH_API_OK)
         {
@@ -445,7 +445,7 @@ int anc_section_nv_write(uint32_t start_addr, uint8_t* ptr, uint32_t len, bool i
     uint32_t p_size = 0;
     enum HAL_FLASH_ID_T flash_id;
 
-    norflash_api_get_dev_id(NORFLASH_API_MODULE_ID_ANC, &flash_id);
+    norflash_api_get_dev_id(NORFLASH_API_MODULE_ID_AUDIO, &flash_id);
     hal_norflash_get_size(flash_id, &t_size, &b_size, &s_size, &p_size);
 
     // judge start addr and len sector size alignment
@@ -469,7 +469,7 @@ int anc_section_nv_write(uint32_t start_addr, uint8_t* ptr, uint32_t len, bool i
 
         do
         {
-            ret = norflash_api_write(NORFLASH_API_MODULE_ID_ANC,
+            ret = norflash_api_write(NORFLASH_API_MODULE_ID_AUDIO,
                                      start_addr + written_len,
                                      ptr + written_len,
                                      write_len,
@@ -484,7 +484,7 @@ int anc_section_nv_write(uint32_t start_addr, uint8_t* ptr, uint32_t len, bool i
             else if (NORFLASH_API_BUFFER_FULL == ret)
             {
                 NV_SECTION_TRACE(1, "%s: buffer full! To flush it.", __func__);
-                audio_section_pending_op(NORFLASH_API_MODULE_ID_ANC, NORFLASH_API_WRITTING);
+                audio_section_pending_op(NORFLASH_API_MODULE_ID_AUDIO, NORFLASH_API_WRITTING);
             }
             else
             {
