@@ -41,12 +41,13 @@ int ss_ppg_example_main(ExampleMode exam_mode)
             return SS_ERROR_BASE;
         }
     }
-
+#if 0
     if (ss_ppg_start_measurement() != SS_SUCCESS)
     {
         os_api_print_log("start_measurement failed");
         return SS_ERROR_BASE;
     }
+#endif
 
     /*
     The measured PPG data is callback as a function pointer of the 'callback_ppg_data' member of the SS_OS_API structure.

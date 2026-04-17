@@ -261,11 +261,13 @@ void sndp_dev_wear_init(void)
 #if defined(__SNDP_WEAR_DETECT_MGR__)
 	sndp_hal_wear_detection_init();
 	sndp_hal_wear_detection_set_wear_status_changed_callback(sndp_dev_wear_status_changed);
+#if 0    
 	if(sndp_dev_iobox_is_in_box(false)) {
 		sndp_dev_wear_disable_detection();
 	} else {
 		sndp_dev_wear_enable_detection();
 	}
+#endif    
 #endif
 #if defined(__SNDP_PWRON_ENTER_TOUCH_CALI__)
 	sndp_dev_enable_touch_calibration(true);

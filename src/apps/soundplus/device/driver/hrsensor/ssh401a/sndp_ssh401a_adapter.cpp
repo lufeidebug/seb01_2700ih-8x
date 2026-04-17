@@ -325,12 +325,14 @@ int32_t ssh401a_init(void)
 
 int32_t ssh401a_enter_standby_mode(void)
 {
+    SSH401A_TRACE(0, ".");
     ss_ppg_stop_measurement();
     return SNDP_HAL_RET_FAIL;
 }
 
 int32_t ssh401a_enter_detection_mode(void)
 {
+    SSH401A_TRACE(0, ".");
 #if 0    
     ssh401a_inited = false;
     ssh401a_init();
