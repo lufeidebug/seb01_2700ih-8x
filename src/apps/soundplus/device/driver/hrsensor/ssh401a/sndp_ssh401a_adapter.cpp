@@ -77,7 +77,7 @@ static sndp_hal_wear_status_e ssh401a_wear_status = SNDP_HAL_WEAR_OFF;
 
 
 static multi_heap_handle_t ssh401a_heap;
-static uint8_t ssh401a_heap_buf[1024];
+static uint8_t ssh401a_heap_buf[64*3*4 + 4];
 
 static SS_OS_API ssh401a_os_api_config;
 
@@ -325,14 +325,18 @@ int32_t ssh401a_init(void)
 
 int32_t ssh401a_enter_standby_mode(void)
 {
-    ssh401a_power_switch(0);
+    ss_ppg_stop_measurement();
     return SNDP_HAL_RET_FAIL;
 }
 
 int32_t ssh401a_enter_detection_mode(void)
 {
+#if 0    
     ssh401a_inited = false;
     ssh401a_init();
+#else    
+    ss_ppg_start_measurement();
+#endif
     return SNDP_HAL_RET_FAIL;
 }
 
@@ -480,25 +484,14 @@ static int32_t ssh401a_check_curr_status()
     return SNDP_HAL_RET_OK;
 }
 
-static int32_t ssh401a_wear_enter_standby_mode(void)
-{
-    ss_ppg_stop_measurement();
-    return SNDP_HAL_RET_FAIL;
-}
-
-static int32_t ssh401a_wear_enter_detection_mode(void)
-{
-    ss_ppg_start_measurement();
-    return SNDP_HAL_RET_FAIL;
-}
 
 extern "C" const sndp_hal_wear_detection_s sndp_wear_detection_ssh401a = {
     .init                               = ssh401a_init,
     .set_wear_status_changed_callback   = ssh401a_set_wear_status_changed_callback,
     .get_curr_status                    = ssh401a_get_curr_status,
     .check_curr_status                  = ssh401a_check_curr_status,
-    .enter_standby_mode                 = ssh401a_wear_enter_standby_mode,
-    .enter_detection_mode               = ssh401a_wear_enter_detection_mode,
+    .enter_standby_mode                 = ssh401a_enter_standby_mode,
+    .enter_detection_mode               = ssh401a_enter_detection_mode,
 };
 #endif
 
