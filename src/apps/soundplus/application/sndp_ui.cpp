@@ -12,6 +12,7 @@
 #include "app_audio.h"
 #include "app_key.h"
 #include "bta_tws_ux_api.h"
+#include "bts_ble_api.h"
 
 #include "sndp_ui.h"
 #include "sndp_if_common.h"
@@ -532,6 +533,7 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
         sndp_dev_wear_disable_detection();
         bta_tws_box_event_entry(BTA_TWS_CLOSE);
         sndp_bt_set_access_mode(SNDP_BT_NOT_ACCESSIBEL);
+        bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_BOX, false);
         
  #if defined(__BTIF_EARPHONE__)
         app_stop_10_second_timer(APP_PAIR_TIMER_ID);
@@ -550,6 +552,7 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 #else
         sndp_ui_bt_event_exec_after_power_on();
 #endif
+        bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_BOX, true);
     }
     
 }
@@ -1313,11 +1316,15 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 		case SNDP_BT_CONN_STATUS_TWS_DISCONNECTED:
 			sndp_update_audio_channel(false);
 			sndp_dev_clear_device_info(true);
+            bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_CUSTOM, true);
 			break;
             
 		case SNDP_BT_CONN_STATUS_TWS_CONNECTED:
 			sndp_update_audio_channel(true);
             sndp_ui_all_status_sync_send();
+            if(sndp_is_tws_slave_mode()) {
+                bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_CUSTOM, false);
+            }
 			break;
 
 		case SNDP_BT_CONN_STATUS_A2DP_DISCONNECTED:
