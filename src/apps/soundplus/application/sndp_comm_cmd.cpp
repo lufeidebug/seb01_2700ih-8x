@@ -2350,7 +2350,8 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t a
 
 static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
 {
-    if (!sndp_is_tws_master_mode()) {
+    if (!sndp_is_tws_master_mode() && sndp_is_tws_link_connected()) {
+        COMM_CMD_TRACE(0, "not in master mode, skip reporting proximity");
         return 0;
     }
     
@@ -2375,16 +2376,16 @@ static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
     */
     if (sndp_dev_is_left_earphone()) {
         sendvalue[0] = 0x01;
-        sendvalue[1] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
-        sendvalue[2] = (uint8_t)(proximity_value_local & 0xFF);
-        sendvalue[3] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
-        sendvalue[4] = (uint8_t)(proximity_value_peer & 0xFF);
+        sendvalue[1] = (uint8_t)(proximity_value_local & 0xFF);
+        sendvalue[2] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
+        sendvalue[3] = (uint8_t)(proximity_value_peer & 0xFF);
+        sendvalue[4] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
     } else {
         sendvalue[0] = 0x02;
-        sendvalue[1] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
-        sendvalue[2] = (uint8_t)(proximity_value_peer & 0xFF);
-        sendvalue[3] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
-        sendvalue[4] = (uint8_t)(proximity_value_local & 0xFF);
+        sendvalue[1] = (uint8_t)(proximity_value_peer & 0xFF);
+        sendvalue[2] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
+        sendvalue[3] = (uint8_t)(proximity_value_local & 0xFF);
+        sendvalue[4] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
     }
 
     sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION, sizeof(sendvalue)+1, sendvalue);
