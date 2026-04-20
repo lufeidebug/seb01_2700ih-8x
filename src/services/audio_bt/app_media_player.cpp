@@ -113,6 +113,7 @@
 
 #if defined(__SNDP_UI__)
 #include "sndp_if_device.h"
+#include "sndp_if_platform.h"
 #endif
 
 #if defined(AUDIO_PROMPT_USE_DAC2_ENABLED)
@@ -1193,6 +1194,8 @@ void media_PlayAudio_single_play(AUD_ID_ENUM id,uint8_t device_id)
 
 void media_PlayAudio(AUD_ID_ENUM id,uint8_t device_id)
 {
+
+#if defined(__SNDP_PROJ__)
 #if defined(__SNDP_SLEEP_APP__)
     if(!sndp_dev_sleep_app_get_prompt_onoff(false))
     {
@@ -1200,8 +1203,7 @@ void media_PlayAudio(AUD_ID_ENUM id,uint8_t device_id)
         return;
     }
 #endif
-#if defined(__SNDP_PROJ__)
-    if(sndp_get_is_shutting_down() && (id != AUDIO_ID_POWER_OFF))
+    if(sndp_get_is_shutting_down() && (id != AUD_ID_POWER_OFF))
     {
         AUDIO_BT_TRACE(1,"[UIAPP]%s, is shutting down",__func__);
         return;
