@@ -2350,11 +2350,6 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t a
 
 static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
 {
-    if (!sndp_is_tws_master_mode() && sndp_is_tws_link_connected()) {
-        COMM_CMD_TRACE(0, "not in master mode, skip reporting proximity");
-        return 0;
-    }
-    
     unsigned short proximity_value_local = 0;
     unsigned short proximity_value_peer = 0;
     uint8_t sendvalue[5] = {0};
@@ -2409,9 +2404,10 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_p
 
 static uint32_t sndp_comm_cmd_sleepapp_start_report_proximity(void)
 {
-    if (!sndp_is_tws_master_mode()) { 
-        return 0;
-    }
+    // if (!sndp_is_tws_master_mode() && sndp_is_tws_link_connected()) {
+    //     COMM_CMD_TRACE(0, "not in master mode, skip reporting proximity");
+    //     return 0;
+    // }
 
     if (!sndp_dev_sleep_app_get_proximity_onoff(false)) {
         return 0;
