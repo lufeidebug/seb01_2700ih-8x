@@ -812,7 +812,11 @@ static void sndp_dev_charger_charging_mode_changed(sndp_hal_charger_mode_e mode)
 			break;
 		case SNDP_HAL_CHARGER_MODE_FULL_CHARGING:
 			sndp_dev_charger_set_charging_status(false, SNDP_DEV_CHARGER_CHARGING_FULL);
+#if 0
             sndp_dev_bat_pwr_measure();
+#else
+            sndp_app_shutdown(SNDP_SHUTDOWN_REASON_CHARGING_FULL);
+#endif
 			break;
 	}
 }
