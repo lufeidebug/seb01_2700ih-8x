@@ -2132,7 +2132,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sleep_app
     pSensorCtrlReplyMap.receive_status = 0x00; // success
     pSensorCtrlReplyMap.reg_addr = pSensorCtrlMap->reg_addr;
     pSensorCtrlReplyMap.select_sensor = pSensorCtrlMap->sensor_select;
-    pSensorCtrlReplyMap.write_read = 0x02; // read only
+    pSensorCtrlReplyMap.write_read = pSensorCtrlMap->write_read;
     pSensorCtrlReplyMap.read_lenth = read_len;
     memcpy(pSensorCtrlReplyMap.read_value, read_value, read_len);
     cmd_info->data_len = 0x09;
