@@ -1865,6 +1865,50 @@ uint8_t sndp_dev_sleep_app_set_proximity_data(bool peer, unsigned short data)
 	return 0;
 }
 
+void sndp_dev_sleep_app_wear_cnt(uint8_t ear_side, uint8_t wear_status)
+{
+	if(ear_side == SNDP_DEV_EARSIDE_LEFT)
+	{
+		if(wear_status == SNDP_DEV_WEAR_ON)
+		{
+			sndp_dev_ctx.peer.sleep_wear_cnt[SNDP_DEV_LEFT_WEAR_CNT]++;
+		}
+		else if(wear_status == SNDP_DEV_WEAR_OFF)
+		{
+			sndp_dev_ctx.peer.sleep_wear_cnt[SNDP_DEV_LEFT_UNWEAR_CNT]++;
+		}
+		else
+		{
+			//SNDP_DEV_WEAR_UNKNOWN
+		}
+	}
+	else
+	{
+		if(wear_status == SNDP_DEV_WEAR_ON)
+		{
+			sndp_dev_ctx.peer.sleep_wear_cnt[SNDP_DEV_RIGHT_WEAR_CNT]++;
+		}
+		else if(wear_status == SNDP_DEV_WEAR_OFF)
+		{
+			sndp_dev_ctx.peer.sleep_wear_cnt[SNDP_DEV_RIGHT_UNWEAR_CNT]++;
+		}
+		else
+		{
+			//SNDP_DEV_WEAR_UNKNOWN
+		}
+	}
+}
+
+uint16_t *sndp_dev_sleep_app_get_wear_cnt(void)
+{
+		return &sndp_dev_ctx.peer.sleep_wear_cnt[0];
+}
+
+void sndp_dev_sleep_app_clean_wear_cnt(void)
+{
+	memset(&sndp_dev_ctx.peer.sleep_wear_cnt[0], 0, sizeof(uint16_t)*SNDP_DEV_WEAR_CNT_MAX);
+}
+
 void sndp_save_app_flag_to_flash(void)
 {
 	// Save the custom EQ parameters to flash, so that it can be loaded and used after power on.

@@ -509,7 +509,15 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 		bta_tws_box_event_entry(BTA_TWS_WEAR_DOWN);
 
 	}
-
+#if defined(__SNDP_SLEEP_APP__)
+        //统计当前耳机佩戴和脱戴次数
+        if(sndp_dev_is_left_earphone()){
+            sndp_comm_cmd_sleepapp_wear_state_update(SNDP_DEV_EARSIDE_LEFT, wear_status);
+        }
+        else if(sndp_dev_is_right_earphone()){
+            sndp_comm_cmd_sleepapp_wear_state_update(SNDP_DEV_EARSIDE_RIGHT, wear_status);
+        }
+#endif
 	sndp_ui_wear_action(wear_status, false);
 }
 

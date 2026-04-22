@@ -85,6 +85,7 @@ static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_peer(void);
 static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void);
 static uint32_t sndp_comm_cmd_sleepapp_stop_report_proximity(void);
 static bool sndp_comm_sleepapp_report_sleep_tracking = false;
+static uint8_t wear_state_update_onoff = 0;
 static uint8_t ppg_notify_data[98] = {0};
 #endif
 
@@ -479,6 +480,15 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_wear_status(sndp_comm_cmd_info_s *cmd
     if(cmd_info->data_len == 1) {
     	sndp_dev_wear_set_status(true, (sndp_dev_wear_status_e)cmd_info->data[0]);
         sndp_call_func_in_app_thread((uint32_t) sndp_ui_wear_action, cmd_info->data[0], true, 0);
+#if defined(__SNDP_SLEEP_APP__)
+        //统计对耳传来的佩戴和脱戴次数，才会发送数据给app。
+        if(sndp_dev_is_left_earphone()){
+           sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_wear_state_update,SNDP_DEV_EARSIDE_RIGHT,cmd_info->data[0],0);
+        }
+        else if(sndp_dev_is_right_earphone()){
+            sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_wear_state_update,SNDP_DEV_EARSIDE_LEFT,cmd_info->data[0],0);
+        }
+#endif
     }
 	return 0;
 }
@@ -2203,6 +2213,18 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_com
     return 0;
 }
 
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_wear_state(sleep_app_comm_cmd_info_s *cmd_info)
+{
+    wear_state_update_onoff = cmd_info->value[0];
+    COMM_CMD_TRACE(1,"wear_state_update_onoff:%d", wear_state_update_onoff);
+    if(wear_state_update_onoff == 0)
+    {
+        sndp_dev_sleep_app_clean_wear_cnt();
+    }
+
+    return 0;
+}
+
 uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
                                                     uint16_t position_and_control,
                                                     int16_t result_code)
@@ -2459,6 +2481,50 @@ uint32_t sndp_comm_cmd_sleepapp_proximity_role_switch_update(void)
     return 0;
 }
 
+uint32_t sndp_comm_cmd_sleepapp_wear_state_update(uint8_t lR_flag, uint8_t wear_state)
+{
+    /*
+        Byte0  left/right
+        Byte1  wear state
+        Byte2
+        Byte3  wear on cnt
+        Byte4  
+        Byte5  wear off cnt
+    */
+    uint16_t wear_onoff_cnt[SNDP_DEV_WEAR_CNT_MAX] = {0};
+    uint8_t sendvalue[6] = {0};
+
+    if(!sndp_comm_ble_is_connected())
+    {
+        COMM_CMD_TRACE(0,"ble not connected,wear state update no use......");
+        return 0;
+    }
+
+    if(wear_state_update_onoff == 0)
+    {
+        COMM_CMD_TRACE(0,"wear_state_update_onoff is 0");
+        return 0;        
+    }
+    
+    sndp_dev_sleep_app_wear_cnt(lR_flag, wear_state);
+    memcpy(wear_onoff_cnt, sndp_dev_sleep_app_get_wear_cnt(), sizeof(wear_onoff_cnt));
+    COMM_CMD_TRACE(0,"wear cnt:%d, %d, %d, %d", wear_onoff_cnt[0], wear_onoff_cnt[1],wear_onoff_cnt[2],wear_onoff_cnt[3]);
+    sendvalue[0] = lR_flag;
+    sendvalue[1] = wear_state;
+    if(lR_flag == SNDP_DEV_EARSIDE_LEFT){
+        sendvalue[2] = wear_onoff_cnt[SNDP_DEV_LEFT_WEAR_CNT] & 0xff;
+        sendvalue[3] = (wear_onoff_cnt[SNDP_DEV_LEFT_WEAR_CNT] >> 8) & 0xff;
+        sendvalue[4] = wear_onoff_cnt[SNDP_DEV_LEFT_UNWEAR_CNT] & 0xff;
+        sendvalue[5] = (wear_onoff_cnt[SNDP_DEV_LEFT_UNWEAR_CNT] >> 8) & 0xff;
+    }else{
+        sendvalue[2] = wear_onoff_cnt[SNDP_DEV_RIGHT_WEAR_CNT] & 0xff;
+        sendvalue[3] = (wear_onoff_cnt[SNDP_DEV_RIGHT_WEAR_CNT] >> 8) & 0xff;
+        sendvalue[4] = wear_onoff_cnt[SNDP_DEV_RIGHT_UNWEAR_CNT] & 0xff;
+        sendvalue[5] = (wear_onoff_cnt[SNDP_DEV_RIGHT_UNWEAR_CNT] >> 8) & 0xff;
+    }
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_WEAR_STATE_UPDATE, sizeof(sendvalue)+1, sendvalue);
+    return 0;
+}
 /*
 BLE packet format:
 Flag  |  Parameter  |  Length	|  Cmd	       |       Data
@@ -2495,6 +2561,7 @@ static const sndp_sleep_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
     { SLEEP_APP_CMDID_START_SLEEP,                    "APP_START_SLEEP",                    sleep_comm_cmd_recv_app_start_sleep },
     { SLEEP_APP_CMDID_SLEEP_TRACKING,                 "APP_SLEEP_TRACKING",                 sleep_comm_cmd_recv_app_sleep_tracking },
     { SLEEP_APP_CMDID_STOP_SLEEP,                     "APP_STOP_SLEEP",                     sleep_comm_cmd_recv_app_stop_sleep },
+    { SLEEP_APP_CMDID_WEAR_STATE_UPDATE,              "APP_WEAR_STATE",                     sleep_comm_cmd_recv_app_wear_state },
 };
 static const int32_t sndp_sleep_app_comm_cmd_hdlr_cnt = sizeof(sleep_app_comm_cmd_hdlr_list) / sizeof(sleep_app_comm_cmd_hdlr_list[0]);
 static sleep_app_comm_cmd_info_s sndp_sleep_app_comm_exec_cmd;

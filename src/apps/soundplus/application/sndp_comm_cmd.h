@@ -316,6 +316,8 @@ typedef enum {
                                                     rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_STOP_SLEEP = 0x36, /* recv: 0 bytes. 
                                                     rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_WEAR_STATE_UPDATE = 0x37, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
 } sleep_app_cmd_id_e;
 
 typedef enum {
@@ -384,6 +386,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
                                                     int16_t result_code);
 uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len);
 uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t acc_raw_len);
+uint32_t sndp_comm_cmd_sleepapp_wear_state_update(uint8_t lR_flag, uint8_t wear_state);
 #endif
 #ifdef __cplusplus
 }
