@@ -73,7 +73,7 @@ typedef struct {
 
     bool lowpwr_check_enable;
     uint16_t lowpwr_warning_cnt;
-    uint32_t lowpwr_warning_last_time;
+    uint32_t lowpwr_warning_time;
     uint16_t lowpwr_shutdown_cnt;
     
     uint32_t close_discharge_time;
@@ -1169,6 +1169,9 @@ static void sndp_ui_bat_charging_check(void)
 
 static void sndp_ui_bat_lowpwr_check(void)
 {
+    bool lowpwr_warning = false;
+
+    
 	if(sndp_dev_charger_is_plugin(false)) {
 		return;
 	} 
@@ -1180,30 +1183,43 @@ static void sndp_ui_bat_lowpwr_check(void)
 		
 	/* Low powr warning check */
 	if(sndp_dev_get_bat_percentage(false) < SPUI_LOWPWR_WARNING_PERCENTAGE) {
-		sndp_ui_ctx.lowpwr_warning_last_time += SPUI_TIME_TODO_INTERVAL;
+		sndp_ui_ctx.lowpwr_warning_time += SPUI_TIME_TODO_INTERVAL;
+        lowpwr_warning = false;
+    
 		SPUI_TRACE(0, "cnt=%d, time=%d",
 		    sndp_ui_ctx.lowpwr_warning_cnt,
-		    sndp_ui_ctx.lowpwr_warning_last_time);
+		    sndp_ui_ctx.lowpwr_warning_time);
 
         if(sndp_ui_ctx.lowpwr_warning_cnt == 0) {
-            sndp_ui_ctx.lowpwr_warning_last_time = 0;
-            sndp_ui_ctx.lowpwr_warning_cnt++;
-            media_PlayAudio(AUD_ID_BT_CHARGE_PLEASE, 0);
+            sndp_ui_ctx.lowpwr_warning_time = 0;
+            sndp_ui_ctx.lowpwr_warning_cnt = 1;
+            lowpwr_warning = true;
             
-        } else if(sndp_ui_ctx.lowpwr_warning_last_time >= SPUI_LOWPWR_WARNING_INTERVAL) {
-			sndp_ui_ctx.lowpwr_warning_last_time = 0;
+        } else if(sndp_ui_ctx.lowpwr_warning_time >= SPUI_LOWPWR_WARNING_INTERVAL) {
+			sndp_ui_ctx.lowpwr_warning_time = 0;
 			sndp_ui_ctx.lowpwr_warning_cnt++;
 
 #if 0
 			if(sndp_ui_ctx.lowpwr_warning_cnt < SPUI_LOWPWR_WARNING_CNT_MAX) {
-				media_PlayAudio(AUD_ID_BT_CHARGE_PLEASE, 0);
+                lowpwr_warning = true;
 			}
 #else
-            media_PlayAudio(AUD_ID_BT_CHARGE_PLEASE, 0);
+            lowpwr_warning = true;
 #endif
 		}
+
+        if(lowpwr_warning) {
+            if(sndp_is_tws_link_connected()) {
+                if(sndp_dev_get_bat_percentage(false) < sndp_dev_get_bat_percentage(true)) {
+                    media_PlayAudio(AUD_ID_BT_CHARGE_PLEASE, 0);
+                }
+            } else {
+                media_PlayAudio(AUD_ID_BT_CHARGE_PLEASE, 0);
+            }
+        }
+        
 	} else {
-		sndp_ui_ctx.lowpwr_warning_last_time = 0;
+		sndp_ui_ctx.lowpwr_warning_time = 0;
 		sndp_ui_ctx.lowpwr_warning_cnt = 0;
 	}
 
