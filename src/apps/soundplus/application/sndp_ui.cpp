@@ -57,8 +57,8 @@
 #define SPUI_LOWPWR_SHUTDOWN_VOLTAGE			(3300)	//mv
 #define SPUI_LOWPWR_SHUTDOWN_CHECK_CNT			(3)		//times, 10s*times
 
-#define SPUI_WORKING_TEMPERATURE_MAX			(50)	
-#define SPUI_WORKING_TEMPERATURE_MIN			(0)
+#define SPUI_WORKING_TEMPERATURE_HIGH			(50)	
+#define SPUI_WORKING_TEMPERATURE_LOW			(-10)
 #define SPUI_TEMPERATURE_ABNORMAL_DURATION		(30)	//seconds
 
 #define SPUI_CLOSE_DISCHARGE_MAX				(60*1)		//seconds
@@ -78,7 +78,6 @@ typedef struct {
     
     uint32_t close_discharge_time;
 
-    bool temperature_check_enable;
     uint16_t temperature_exp_shutdown_time; 
 
     bool wear_play_music_allowed;
@@ -1218,16 +1217,12 @@ static void sndp_ui_bat_lowpwr_check(void)
 
 }
 
-static void sndp_ui_working_temperature_check(void)
+static void sndp_ui_temperature_measure_callback(int16_t temperature)
 {
-	if(!sndp_ui_ctx.temperature_check_enable)
-		return;
-
-	int16_t temperature = sndp_dev_temperature_get_value(false);
 	SPUI_TRACE(1, "T=%d", temperature);
-	
-	if(temperature > SPUI_WORKING_TEMPERATURE_MAX
-		|| temperature < SPUI_WORKING_TEMPERATURE_MIN ) {
+
+    if(temperature > SPUI_WORKING_TEMPERATURE_HIGH
+		|| temperature < SPUI_WORKING_TEMPERATURE_LOW ) {
 
 		sndp_ui_ctx.temperature_exp_shutdown_time += SPUI_TIME_TODO_INTERVAL;
 
@@ -1237,13 +1232,6 @@ static void sndp_ui_working_temperature_check(void)
 	} else {
 		sndp_ui_ctx.temperature_exp_shutdown_time = 0;
 	}
-}
-
-static void sndp_ui_temperature_measure_callback(int16_t temperature)
-{
-	SPUI_TRACE(1, "T=%d", temperature);
-	sndp_ui_ctx.temperature_check_enable = true;
-    sndp_ui_working_temperature_check();
 }
 
 

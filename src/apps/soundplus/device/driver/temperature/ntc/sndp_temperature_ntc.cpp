@@ -138,14 +138,14 @@ static uint16_t sndp_temp_ntc_conver_volt_to_temperature(void)
 	TEMP_NTC_TRACE(3, "volt=%d, lT=%d, cT=%d,", sndp_ntc_ctx.voltage, sndp_ntc_ctx.last_temp, sndp_ntc_ctx.curr_temp);
 	
 	/* Report temperature after measurement */
-	if(sndp_ntc_ctx.curr_temp != sndp_ntc_ctx.last_temp) {
+	//if(sndp_ntc_ctx.curr_temp != sndp_ntc_ctx.last_temp) {
 		sndp_ntc_ctx.last_temp = sndp_ntc_ctx.curr_temp;
 		
 		if(p_sndp_hal_ntc_measure_cb) {
 			p_sndp_hal_ntc_measure_cb(sndp_ntc_ctx.curr_temp);
 		}
 
-	}
+	//}
 	
 	return sndp_ntc_ctx.curr_temp;
 	
