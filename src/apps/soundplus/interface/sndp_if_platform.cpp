@@ -705,9 +705,27 @@ void sndp_disconnect_all_mobile_link(void)
 
 void sndp_clear_mobile_pairing_list(void)
 {
-	app_ibrt_if_nvrecord_delete_all_mobile_record();
+#if 0    
+    app_ibrt_if_nvrecord_delete_all_mobile_record();
     sndp_get_mobile_pairing_count();
+#else
+    nvrec_btdevicerecord* pNvRecord;
+    ibrt_link_type_e link_type;
+    int record_num = nv_record_get_paired_dev_list(&pNvRecord);
+
+    if (record_num > 0){
+        for(uint8_t i = 0; i < record_num; i++){
+            link_type = app_tws_ibrt_get_link_type_by_addr(&pNvRecord[i].record.bdAddr);
+            if (link_type == MOBILE_LINK) {
+                nv_record_ddbrec_delete(&pNvRecord[i].record.bdAddr);
+            }
+        }
+    }
+
+   sndp_get_mobile_pairing_count();
+#endif
 }
+
 
 uint8_t sndp_get_mobile_pairing_count(void)
 {
