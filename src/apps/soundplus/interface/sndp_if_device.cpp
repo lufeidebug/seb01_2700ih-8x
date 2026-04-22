@@ -746,7 +746,7 @@ void sndp_dev_charger_set_charging_current(void)
 	
 	if(sndp_dev_charger_is_plugin(false)) {
 		uint8_t temp = sndp_dev_temperature_get_value(false);
-		if(temp <= 0)
+		if(temp < 0)
 			set_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
 		else if(temp < 15)
 			set_current = SNDP_HAL_CHARGING_CURRENT_HALF;

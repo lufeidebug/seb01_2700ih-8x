@@ -57,6 +57,9 @@
 #define SPUI_LOWPWR_SHUTDOWN_VOLTAGE			(3300)	//mv
 #define SPUI_LOWPWR_SHUTDOWN_CHECK_CNT			(3)		//times, 10s*times
 
+#define SPUI_CHARGIN_TEMPERATURE_HIGH			(45)	
+#define SPUI_CHARGIN_TEMPERATURE_LOW			(0)
+
 #define SPUI_WORKING_TEMPERATURE_HIGH			(50)	
 #define SPUI_WORKING_TEMPERATURE_LOW			(-10)
 #define SPUI_TEMPERATURE_ABNORMAL_DURATION		(30)	//seconds
@@ -1245,17 +1248,21 @@ static void sndp_ui_temperature_measure_callback(int16_t temperature)
 {
 	SPUI_TRACE(1, "T=%d", temperature);
 
-    if(temperature > SPUI_WORKING_TEMPERATURE_HIGH
-		|| temperature < SPUI_WORKING_TEMPERATURE_LOW ) {
+    if(sndp_dev_charger_is_plugin(false)) {
+        if(temperature < SPUI_CHARGIN_TEMPERATURE_LOW  || temperature > SPUI_CHARGIN_TEMPERATURE_HIGH) {
+            sndp_call_func_in_app_thread((uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_TEMPERATURE, 0, 0);
+    	} 
+    } else {
+        if(temperature < SPUI_WORKING_TEMPERATURE_LOW || temperature > SPUI_WORKING_TEMPERATURE_HIGH) {
+    		sndp_ui_ctx.temperature_exp_shutdown_time += SPUI_TIME_TODO_INTERVAL;
 
-		sndp_ui_ctx.temperature_exp_shutdown_time += SPUI_TIME_TODO_INTERVAL;
-
-		if(sndp_ui_ctx.temperature_exp_shutdown_time >= SPUI_TEMPERATURE_ABNORMAL_DURATION) {
-			sndp_call_func_in_app_thread((uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_TEMPERATURE, 0, 0);
-		}
-	} else {
-		sndp_ui_ctx.temperature_exp_shutdown_time = 0;
-	}
+    		if(sndp_ui_ctx.temperature_exp_shutdown_time >= SPUI_TEMPERATURE_ABNORMAL_DURATION) {
+    			sndp_call_func_in_app_thread((uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_TEMPERATURE, 0, 0);
+    		}
+    	} else {
+    		sndp_ui_ctx.temperature_exp_shutdown_time = 0;
+    	}
+    }
 }
 
 
