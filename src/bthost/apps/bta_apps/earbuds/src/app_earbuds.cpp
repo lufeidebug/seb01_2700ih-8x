@@ -370,6 +370,28 @@ static void hfp_audio_status_changed_handler(const bt_bdaddr_t *addr, bt_hfp_aud
     TRACE(0, "custom_ui d(%x)hfp_audio %d codec %d reason %d", device_id, state, codec, error_code);
 }
 
+static void hfp_callsetup_status_changed_handler(const bt_bdaddr_t *address, bt_hfp_callsetup_state_t callsetup)
+{
+    uint8_t device_id = bta_get_device_id_by_addr(address);
+    
+    TRACE(0, "custom_ui d(%x)hfp_callsetup %d", device_id, callsetup);
+    
+    switch(callsetup) {
+        case BT_HFP_CALLSETUP_NONE: // No call setup
+            sndp_call_set_in_out_flag(0);
+            break;
+        case BT_HFP_CALLSETUP_INCOMING: // Incoming call setup
+            sndp_call_set_in_out_flag(1);
+            break;
+        case BT_HFP_CALLSETUP_OUTGOING: // Outgoing call setup
+            sndp_call_set_in_out_flag(2);
+            break;
+        case BT_HFP_CALLSETUP_ALERTING:  // Call is alerting
+            break;
+    }
+}
+
+
 static bool process_factory_test_cmd(uint8_t test_type)
 {
     bool need_block = false;
@@ -718,6 +740,7 @@ void app_bta_init(void)
     {
         .connection_state_cb = hfp_connection_state_changed_handler,
         .audio_status_cb = hfp_audio_status_changed_handler,
+        .callsetup_status_cb = hfp_callsetup_status_changed_handler,
     };
     bta_hf_register_callbacks(BT_HFP_HF_CB_USER_APP, &hfp_hf_callbacks);
 

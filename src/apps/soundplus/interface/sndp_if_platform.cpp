@@ -1021,7 +1021,7 @@ bool sndp_call_is_active(void)
 		device = app_bt_get_device(id);
 		if(device == NULL)
 			continue;
-#if 0		
+#if 1		
 	    SNDP_IF_TRACE(5, "id=%d, audio_state=%d, callSetup=%d, call=%d, callheld=%d", 
 	    		id,
 	    		device->hf_audio_state,
@@ -1047,7 +1047,7 @@ bool sndp_call_is_incoming(void)
 {
 	struct BT_DEVICE_T* device;
 
-#if 0	
+#if 1	
 	if(sndp_call_get_in_out_flag() != 1)
 		return false;
 #endif
@@ -1073,7 +1073,7 @@ bool sndp_call_is_outgoing(void)
 {
 	struct BT_DEVICE_T* device;
 
-#if 0	
+#if 1	
 	if(sndp_call_get_in_out_flag() != 2)
 		return false;
 #endif
