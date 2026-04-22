@@ -705,9 +705,27 @@ void sndp_disconnect_all_mobile_link(void)
 
 void sndp_clear_mobile_pairing_list(void)
 {
-	app_ibrt_if_nvrecord_delete_all_mobile_record();
+#if 0    
+    app_ibrt_if_nvrecord_delete_all_mobile_record();
     sndp_get_mobile_pairing_count();
+#else
+    nvrec_btdevicerecord* pNvRecord;
+    ibrt_link_type_e link_type;
+    int record_num = nv_record_get_paired_dev_list(&pNvRecord);
+
+    if (record_num > 0){
+        for(uint8_t i = 0; i < record_num; i++){
+            link_type = app_tws_ibrt_get_link_type_by_addr(&pNvRecord[i].record.bdAddr);
+            if (link_type == MOBILE_LINK) {
+                nv_record_ddbrec_delete(&pNvRecord[i].record.bdAddr);
+            }
+        }
+    }
+
+   sndp_get_mobile_pairing_count();
+#endif
 }
+
 
 uint8_t sndp_get_mobile_pairing_count(void)
 {
@@ -1003,7 +1021,7 @@ bool sndp_call_is_active(void)
 		device = app_bt_get_device(id);
 		if(device == NULL)
 			continue;
-#if 0		
+#if 1		
 	    SNDP_IF_TRACE(5, "id=%d, audio_state=%d, callSetup=%d, call=%d, callheld=%d", 
 	    		id,
 	    		device->hf_audio_state,
@@ -1029,7 +1047,7 @@ bool sndp_call_is_incoming(void)
 {
 	struct BT_DEVICE_T* device;
 
-#if 0	
+#if 1	
 	if(sndp_call_get_in_out_flag() != 1)
 		return false;
 #endif
@@ -1055,7 +1073,7 @@ bool sndp_call_is_outgoing(void)
 {
 	struct BT_DEVICE_T* device;
 
-#if 0	
+#if 1	
 	if(sndp_call_get_in_out_flag() != 2)
 		return false;
 #endif
