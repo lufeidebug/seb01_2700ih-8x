@@ -1690,17 +1690,55 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_accelerometer_notifi
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_battery_status(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    uint8_t left_bat_per = sndp_dev_get_bat_percentage(false)&0x7f;
-    uint8_t right_bat_per = sndp_dev_get_bat_percentage(true)&0x7f;
-    sndp_dev_bat_info_s chargbox = {0};
+    /*
+        Byte0	Left battery
+                0xFF:  not connected
+                BIT7:  1 (in the charging case)
+                       0 (out of charging case)
+                BIT6~0: battery level
+        Byte1	Right battery
+                0xFF:  not connected
+                BIT7:  1 (in the charging case)
+                       0 (out of charging case)
+                BIT6~0: battery level
+        Byte2	Cradle battery
+                0xFF:   not connected
+                BIT7:   1 (in the charging case)
+                        0 (out of charging case)
+                BIT6~0: battery level   
+    */
+    SndpGetBattryMap_t reply_battery;
+    memset(&reply_battery, 0, sizeof(SndpGetBattryMap_t));
+    
+    if(sndp_dev_is_left_earphone())
+    {
+        reply_battery.bits.left_charging_statu = sndp_dev_charger_is_charging(false);
+        reply_battery.bits.left_battery_level = sndp_dev_get_bat_percentage(false);
 
-    sndp_dev_get_box_bat_info(&chargbox);
+        if(sndp_is_tws_link_connected()){
+            reply_battery.bits.right_charging_statu = sndp_dev_charger_is_charging(true);
+            reply_battery.bits.right_battery_level = sndp_dev_get_bat_percentage(true);
+        }else{
+            reply_battery.charging_byte[1] = 0xff;
+        }
 
-    cmd_info->data_len = 4;
-    cmd_info->value[0] = left_bat_per;
-    cmd_info->value[1] = right_bat_per;
-    cmd_info->value[2] = chargbox.bat_per;
+        reply_battery.charging_byte[2] = 0xff;
+    }
 
+    if(sndp_dev_is_right_earphone())
+    {
+        reply_battery.bits.right_charging_statu = sndp_dev_charger_is_charging(false);
+        reply_battery.bits.right_battery_level = sndp_dev_get_bat_percentage(false);
+
+        if(sndp_is_tws_link_connected()){
+            reply_battery.bits.left_charging_statu = sndp_dev_charger_is_charging(true);
+            reply_battery.bits.left_battery_level = sndp_dev_get_bat_percentage(true);
+        }else{
+            reply_battery.charging_byte[1] = 0xff;
+        }
+
+        reply_battery.charging_byte[2] = 0xff;        
+    }
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }

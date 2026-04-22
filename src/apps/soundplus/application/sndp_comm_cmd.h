@@ -378,6 +378,27 @@ typedef struct{
     uint8_t read_value[3];
 }SndpSensorCtrlReplyMap_t;
 
+typedef union
+{
+    struct 
+    {
+        //byte0
+        uint8_t left_charging_statu : 1;
+        uint8_t left_battery_level : 7;
+
+        //byte1
+        uint8_t right_charging_statu : 1;
+        uint8_t right_battery_level : 7;
+
+        //byte2
+        uint8_t cradle_charging_status : 1;
+        uint8_t cradle_battery_level : 7;
+    } bits;
+
+    uint8_t charging_byte[3];
+}SndpGetBattryMap_t;
+
+
 uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, uint8_t resulcode);
 uint32_t sndp_comm_cmd_sleepapp_proximity_role_switch_update(void);
 uint32_t sndp_comm_cmd_send_lr_sync_anc_mode(uint8_t ancmode,uint8_t is_save);
