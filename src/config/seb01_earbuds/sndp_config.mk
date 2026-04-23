@@ -73,7 +73,7 @@ export SNDP_ALGO_MGR                            := 1
 export SNDP_MIC_GAIN_SETTING                    := 1
 export SNDP_REBOOT_FORCE_PAIRING                := 1
 export SNDP_AUDIO_TEST                          := 0
-export SNDP_BT_NAME                             := 0
+export SNDP_BT_NAME                             := 1
 export SNDP_TEST_TWS_PAIRING                    := 0
 export SNDP_TEST_FREEMAN_PAIRING                := 0
 export SNDP_TEST_RF_DUT                         := 0
@@ -362,6 +362,8 @@ endif
 
 ifeq ($(SNDP_BT_NAME),1)
     KBUILD_CPPFLAGS += -D__SNDP_BT_NAME__
+    
+    KBUILD_CPPFLAGS += -D__SNDP_BT_NAME_INVARIABLE__
 endif
 
 ifeq ($(SNDP_TEST_TWS_PAIRING),1)

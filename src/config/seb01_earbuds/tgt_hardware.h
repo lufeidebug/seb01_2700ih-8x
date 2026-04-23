@@ -300,6 +300,12 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP app_hrsensor_en_pin_cfg;
 
 #endif
 
+#if defined(__SNDP_BT_NAME__)
+#define SNDP_BT_NAME        "For me buds Pro\0";
+#define SNDP_BLE_NAME       "For me buds Pro\0";
+#endif
+
+
 #ifdef __cplusplus
 }
 #endif
