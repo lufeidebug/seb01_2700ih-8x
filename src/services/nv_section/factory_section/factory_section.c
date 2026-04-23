@@ -342,6 +342,9 @@ int factory_section_set_ble_address(uint8_t* bleAddr)
 
 uint8_t* factory_section_get_bt_name(void)
 {
+#if defined(__SNDP_BT_NAME_INVARIABLE__)
+    return (uint8_t *)BT_LOCAL_NAME;
+#else
     if (factory_section_p)
     {
         if (1 == nv_record_dev_rev)
@@ -357,6 +360,7 @@ uint8_t* factory_section_get_bt_name(void)
     {
         return (uint8_t *)BT_LOCAL_NAME;
     }
+#endif    
 }
 
 int factory_section_set_bt_name(const char *name,int len)
@@ -450,6 +454,9 @@ int factory_section_set_ble_name(const char *name,int len)
 
 uint8_t* factory_section_get_ble_name(void)
 {
+#if defined(__SNDP_BT_NAME_INVARIABLE__)
+    return (uint8_t *)BLE_DEFAULT_NAME;
+#else
     if (factory_section_p)
     {
         if (1 == nv_record_dev_rev)
@@ -465,6 +472,7 @@ uint8_t* factory_section_get_ble_name(void)
     {
         return (uint8_t *)BLE_DEFAULT_NAME;
     }
+#endif    
 }
 
 uint32_t factory_section_get_version(void)

@@ -32,6 +32,10 @@
 #include "factory_section.h"
 #include "heap_api.h"
 #include "besbt.h"
+#if defined(__SNDP_BT_NAME_INVARIABLE__)
+#include "tgt_hardware.h"
+#endif
+
 
 // #define nv_record_verbose_log
 
@@ -1077,6 +1081,11 @@ bool nvrec_dev_localname_addr_init(dev_addr_name *dev)
             dev->localname = (char *)&p_devdata_cache[rev2_dev_name];
             dev->ble_name = (char *)&p_devdata_cache[rev2_dev_ble_name];
         }
+
+#if defined(__SNDP_BT_NAME_INVARIABLE__)
+        dev->localname = SNDP_BT_NAME;
+        dev->ble_name = SNDP_BLE_NAME;
+#endif
 
         if (strlen(dev->localname) < CLASSIC_BTNAME_LEN)
         {
