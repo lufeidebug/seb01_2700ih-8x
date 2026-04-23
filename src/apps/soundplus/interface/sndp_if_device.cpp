@@ -1800,7 +1800,7 @@ bool sndp_dev_sleep_app_get_gesture_onoff(bool peer)
 
 void sndp_dev_sleep_app_set_splaypause_onoff(bool peer, uint8_t onoff, bool sava)
 {
-	SNDP_IF_TRACE(0, "enter");
+	SNDP_IF_TRACE(0, "onoff:%d,save:%d",onoff,sava);
 	if(peer) {
 		sndp_dev_ctx.peer.sleep_app_flag.sleep_splaypause_onoff = onoff;
 	} else {
@@ -1926,13 +1926,13 @@ void sndp_save_app_flag_to_flash(void)
 		SNDP_IF_TRACE(0, "app flag changed, write to flash %d",sleep_flag_ptr->data_crc);
 		// SNDP_IF_TRACE(0, "eq:%d anc:%d",test_flag->sleep_eq_index, test_flag->sleep_anc_mode);
 		// SNDP_IF_TRACE(0, "gesture:%d prompt:%d",test_flag->sleep_gesture_onoff, test_flag->sleep_prompt_onoff);
-		// SNDP_IF_TRACE(0, "splaypause:%d proximity:%d",test_flag->sleep_splaypause_onoff, test_flag->sleep_proximity_onoff);
+		// SNDP_IF_TRACE(0, "splaypause:%d",test_flag->sleep_splaypause_onoff);
 		sndp_da_write_field(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
 	}
-	// sndp_da_read_field(SNDP_DA_FIELD_APP_DATA, sleep_flag_ptr,sizeof(sndp_da_field_sleep_app_data_s),true);
-	// 	SNDP_IF_TRACE(0, "eq:%d anc:%d",test_flag->sleep_eq_index, test_flag->sleep_anc_mode);
-	// 	SNDP_IF_TRACE(0, "gesture:%d prompt:%d",test_flag->sleep_gesture_onoff, test_flag->sleep_prompt_onoff);
-	// 	SNDP_IF_TRACE(0, "splaypause:%d proximity:%d",test_flag->sleep_splaypause_onoff, test_flag->sleep_proximity_onoff);
+	  // sndp_da_read_field(SNDP_DA_FIELD_APP_DATA, sleep_flag_ptr,sizeof(sndp_da_field_sleep_app_data_s),true);
+		// SNDP_IF_TRACE(0, "eq:%d anc:%d",test_flag->sleep_eq_index, test_flag->sleep_anc_mode);
+		// SNDP_IF_TRACE(0, "gesture:%d prompt:%d",test_flag->sleep_gesture_onoff, test_flag->sleep_prompt_onoff);
+		// SNDP_IF_TRACE(0, "splaypause:%d",test_flag->sleep_splaypause_onoff);
 }
 
 void sndp_set_default_flag(void)
@@ -1994,12 +1994,10 @@ void sndp_load_sleep_app_param(void)
 #endif
 	// SNDP_IF_TRACE(0, "sleep_prompt_onoff=%d, sleep_eq_index=%d", sleep_flag_run.sleep_prompt_onoff, sleep_flag_run.sleep_eq_index);
 	// SNDP_IF_TRACE(0, "sleep_anc_mode=%d, sleep_gesture_onoff=%d", sleep_flag_run.sleep_anc_mode, sleep_flag_run.sleep_gesture_onoff);
-	// SNDP_IF_TRACE(0, "sleep_splaypause_onoff=%d, sleep_proximity_onoff=%d", sleep_flag_run.sleep_splaypause_onoff, sleep_flag_run.sleep_proximity_onoff);
+	// SNDP_IF_TRACE(0, "sleep_splaypause_onoff=%d", sleep_flag_run.sleep_splaypause_onoff);
 
 	sndp_dev_sleep_app_set_prompt_onoff(false, sleep_flag_run.sleep_prompt_onoff, false);
-#if defined(__SNDP_GESTURE_MAP__)
 	sndp_dev_sleep_app_set_gesture_onoff(false, sleep_flag_run.sleep_gesture_onoff, false);
-#endif
 	sndp_dev_sleep_app_set_eq_index(false, sleep_flag_run.sleep_eq_index, false);
 	sndp_dev_sleep_app_anc_mode_set(false, sleep_flag_run.sleep_anc_mode, false);
 	sndp_dev_sleep_app_set_splaypause_onoff(false, sleep_flag_run.sleep_splaypause_onoff, false);

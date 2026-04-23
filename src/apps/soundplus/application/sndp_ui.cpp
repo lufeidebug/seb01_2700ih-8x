@@ -279,11 +279,6 @@ POSSIBLY_UNUSED static void sndp_ui_wear_on_play_music(void)
 		return;
     }
     
-    if(!sndp_ui_ctx.wear_play_music_allowed) {
-        SPUI_TRACE(0, "%d, rtn", __LINE__);
-        return;
-    }
-    
 	if(sndp_is_sco_mode()) {
 		SPUI_TRACE(0, "%d, rtn", __LINE__);
 		return;
@@ -1365,12 +1360,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 		case SNDP_BT_CONN_STATUS_AVRCP_CONNECTED:
 			break;
             
-		case SNDP_BT_CONN_AVRCP_PLAYBACK_STATUS_CHANGED:
-            if(reason == 1) {
-                sndp_ui_ctx.wear_play_music_allowed = true;
-            } else if(reason == 2) {
-                sndp_ui_ctx.wear_play_music_allowed = false;
-            }         
+		case SNDP_BT_CONN_AVRCP_PLAYBACK_STATUS_CHANGED:    
 			break;
 		case SNDP_BT_CONN_STATUS_HFP_DISCONNECTED:
 			break;
