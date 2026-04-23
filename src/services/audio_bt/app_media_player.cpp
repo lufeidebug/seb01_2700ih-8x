@@ -139,7 +139,7 @@
 #ifdef __INTERACTION__
 uint8_t g_findme_fadein_vol = TGT_VOLUME_LEVEL_1;
 #elif defined(__SNDP_FINDME__)
-uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_1;
+uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_16;
 #endif
 #include "sbc_api.h"
 #include "sbc_error_code.h"

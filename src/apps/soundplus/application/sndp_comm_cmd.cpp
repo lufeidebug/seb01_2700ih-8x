@@ -668,9 +668,16 @@ uint32_t sndp_comm_cmd_send_lr_sync_findme_onoff(uint8_t onoff)
 static uint32_t sndp_comm_cmd_recv_lr_sync_findme_onoff(sndp_comm_cmd_info_s *cmd_info)
 {
     if(cmd_info->data_len == 1) {
-      sndp_call_func_in_app_thread((uint32_t)sndp_play_findme,0,0,0);
+        if(cmd_info->data[0])
+        {
+            //stop find me
+        }
+        else
+        {
+            //start find me
+            sndp_call_func_in_app_thread((uint32_t)sndp_play_findme,0,0,0);
+        }
     }
-   
     return 0;
 }
 
@@ -1573,7 +1580,10 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_find_my_earphone(sleep_a
     else
     {
         sndp_call_func_in_app_thread((uint32_t)sndp_play_findme,0,0,0);
+        
     }
+
+    sndp_comm_cmd_send_lr_sync_findme_onoff(cmd_info->value[0]);
 
     cmd_info->value[0] = 0;
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
