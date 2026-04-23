@@ -2216,6 +2216,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_ap
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app_comm_cmd_info_s *cmd_info)
 {
     sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_stop, 0, 0, 0);
+    cmd_info->data_len = 0x02;
     cmd_info->value[0] = 0; // success
     
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
