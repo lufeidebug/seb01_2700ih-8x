@@ -1046,7 +1046,7 @@ int audio_eq_set_cfg_full(const FIR_CFG_T *fir_cfg,
                 enum AUD_SAMPRATE_T sample_rate_hw_dac_iir;
 #ifdef __AUDIO_RESAMPLE__
                 sample_rate_hw_dac_iir=hal_codec_get_real_sample_rate(audio_process.sample_rate,1);
-                AUDIO_PROCESS_TRACE(3,"audio_process.sample_rate:%d, sample_rate_hw_dac_iir: %d.", audio_process.sample_rate, sample_rate_hw_dac_iir);
+                // AUDIO_PROCESS_TRACE(3,"audio_process.sample_rate:%d, sample_rate_hw_dac_iir: %d.", audio_process.sample_rate, sample_rate_hw_dac_iir);
 #else
                 sample_rate_hw_dac_iir=audio_process.sample_rate;
 #endif

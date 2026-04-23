@@ -101,19 +101,19 @@ const IIR_CFG_T audio_eq_hw_dac_iir_jazz = {
     .gain0 = -22,
     .gain1 = -22,
 #else
-    .gain0 = 0,
-    .gain1 = 0,
+    .gain0 = 4,
+    .gain1 = 4,
 #endif
     .num = 8,
     .param = {
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
+        {IIR_TYPE_PEAK,    -6.0,    60.0,    0.8},    // 明显削减低频嗡声
+        {IIR_TYPE_PEAK,     6.0,   120.0,    0.7},    // 显著增强低音温暖感
+        {IIR_TYPE_PEAK,    -4.0,   400.0,    1.0},    // 明显减少中频浑浊
+        {IIR_TYPE_PEAK,     5.0,  1000.0,    1.2},    // 显著提升人声清晰度
+        {IIR_TYPE_PEAK,     8.0,  3000.0,    0.9},    // 大幅突出萨克斯和小号
+        {IIR_TYPE_PEAK,     6.0,  6000.0,    0.8},    // 大幅提升细节和临场感
+        {IIR_TYPE_PEAK,     4.0, 10000.0,    1.0},    // 显著增强高频空气感
+        {IIR_TYPE_PEAK,    -5.0, 15000.0,    1.2},    // 明显控制超高频刺耳感
     }
 };
 const IIR_CFG_T audio_eq_hw_dac_iir_rock = {
@@ -121,19 +121,19 @@ const IIR_CFG_T audio_eq_hw_dac_iir_rock = {
     .gain0 = -22,
     .gain1 = -22,
 #else
-    .gain0 = 0,
-    .gain1 = 0,
+    .gain0 = 7,
+    .gain1 = 7,
 #endif
     .num = 8,
     .param = {
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
+        {IIR_TYPE_PEAK,     8.0,    80.0,    0.6},    // 强力低音冲击
+        {IIR_TYPE_PEAK,     5.0,   200.0,    0.7},    // 显著增强低音饱满度
+        {IIR_TYPE_PEAK,    -4.0,   500.0,    0.9},    // 明显减少浑浊感
+        {IIR_TYPE_PEAK,     6.0,  1500.0,    1.0},    // 显著突出人声
+        {IIR_TYPE_PEAK,    10.0,  3000.0,    0.7},    // 强力提升吉他冲击力
+        {IIR_TYPE_PEAK,     8.0,  5000.0,    0.8},    // 大幅增强鼓点清晰度
+        {IIR_TYPE_PEAK,     6.0,  8000.0,    1.0},    // 显著提升镲片亮度
+        {IIR_TYPE_PEAK,     3.0, 12000.0,    1.2},    // 明显增加空气感
     }
 };
 const IIR_CFG_T audio_eq_hw_dac_iir_classic = {
@@ -141,19 +141,19 @@ const IIR_CFG_T audio_eq_hw_dac_iir_classic = {
     .gain0 = -22,
     .gain1 = -22,
 #else
-    .gain0 = 0,
-    .gain1 = 0,
+    .gain0 = 2,
+    .gain1 = 2,
 #endif
     .num = 8,
-    .param = {
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
+     .param = {
+        {IIR_TYPE_PEAK,     4.0,    40.0,    1.0},    // 显著增强极低频延展
+        {IIR_TYPE_PEAK,     2.0,   100.0,    1.2},    // 明显提升低音自然度
+        {IIR_TYPE_PEAK,    -5.0,   300.0,    1.5},    // 大幅削减低频浑浊
+        {IIR_TYPE_PEAK,     0.0,  1000.0,    1.8},    // 保持中频平坦
+        {IIR_TYPE_PEAK,     4.0,  3000.0,    1.2},    // 显著提升弦乐清晰度
+        {IIR_TYPE_PEAK,     6.0,  6000.0,    1.0},    // 大幅增强细节呈现
+        {IIR_TYPE_PEAK,     8.0, 10000.0,    0.9},    // 强力提升高频泛音
+        {IIR_TYPE_PEAK,     5.0, 16000.0,    1.0},    // 显著增强空气感和空间感
     }
 };
 const IIR_CFG_T audio_eq_hw_dac_iir_relaxed = {
@@ -166,14 +166,14 @@ const IIR_CFG_T audio_eq_hw_dac_iir_relaxed = {
 #endif
     .num = 8,
     .param = {
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
+        {IIR_TYPE_PEAK,     5.0,    80.0,    1.2},    // 大幅增强温暖低音
+        {IIR_TYPE_PEAK,     3.0,   200.0,    1.5},    // 明显提升柔和低频
+        {IIR_TYPE_PEAK,    -8.0,   800.0,    1.0},    // 强力削减刺耳中频
+        {IIR_TYPE_PEAK,    -5.0,  2000.0,    1.2},    // 显著软化人声
+        {IIR_TYPE_PEAK,   -10.0,  4000.0,    0.8},    // 大幅降低刺激性频率
+        {IIR_TYPE_PEAK,    -6.0,  6000.0,    1.0},    // 强力软化高频
+        {IIR_TYPE_PEAK,     3.0, 10000.0,    1.5},    // 适度增强空气感
+        {IIR_TYPE_PEAK,     0.0, 12000.0,    1.8},    // 保持超高频平缓
     }
 };
 const IIR_CFG_T audio_eq_hw_dac_iir_custom_mode = {

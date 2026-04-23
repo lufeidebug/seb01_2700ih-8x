@@ -227,6 +227,9 @@ uint8_t dolby_role = -1;
 #if defined(__SNDP_UI__)
 #include "sndp_if_common.h"
 #include "sndp_if_device.h"
+#if defined(__SNDP_SLEEP_APP__)
+#include "sndp_if_platform.h"
+#endif
 #endif
 
 

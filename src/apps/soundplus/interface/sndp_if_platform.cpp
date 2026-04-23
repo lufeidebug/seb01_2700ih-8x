@@ -1424,7 +1424,7 @@ uint32_t sndp_bt_audio_set_eq(uint8_t index)
     const IIR_CFG_T *iir_cfg=NULL;
     const IIR_CFG_T *iir_cfg_2=NULL;
 
-    SNDP_IF_TRACE(0,"[EQ] index=%d",  index);
+    // SNDP_IF_TRACE(0,"[EQ] index=%d",  index);
 
 		if(index > SNDP_EQ_MODE_RELAXED && index != SNDP_EQ_MODE_CUSTOM_MODE)
 		{
@@ -1450,7 +1450,7 @@ uint32_t sndp_bt_audio_set_eq(uint8_t index)
 uint8_t sndp_bt_audio_updata_eq_for_anc(void)
 {
 	bool anc_status = app_anc_work_status();
-	SNDP_IF_TRACE(1, "anc_status=%d", anc_status);
+	// SNDP_IF_TRACE(1, "anc_status=%d", anc_status);
 	hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_104M);
 
 	if(anc_status)

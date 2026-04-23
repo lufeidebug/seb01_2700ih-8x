@@ -1729,7 +1729,7 @@ void sndp_dev_sleep_app_set_eq_index(bool peer, uint8_t index, bool save_data)
 uint8_t sndp_dev_sleep_app_get_eq_index(bool peer)
 {
 	uint8_t select_eq_num = 0;
-	SNDP_IF_TRACE(1, "index=%d", sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index);
+	// SNDP_IF_TRACE(1, "index=%d", sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index);
 	
 	if(sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index > SNDP_EQ_MODE_RELAXED && sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index != SNDP_EQ_MODE_CUSTOM_MODE) 
 	{
