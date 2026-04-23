@@ -791,11 +791,13 @@ void sndp_ui_gesture_event_local_hdlr(sndp_dev_gesture_event_e gesture_event)
 {
     SPUI_TRACE(0, "event=%d", gesture_event);
 
-#if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_GESTURE_MAP__)
+#if defined(__SNDP_SLEEP_APP__)
     if(!sndp_dev_sleep_app_get_gesture_onoff(false)){
         SPUI_TRACE(0, "gesture detection is off, rtn");
         return;
     }
+#endif
+#if defined(__SNDP_GESTURE_MAP__)
     sndp_dev_gesture_type_t dev_gesture = SNDP_DEV_GESTURE_MAX;
     switch (gesture_event)
     {
@@ -830,7 +832,7 @@ void sndp_ui_gesture_event_local_hdlr(sndp_dev_gesture_event_e gesture_event)
         default:
             break;
     }
-#endif    
+#endif 
 }
 
 /**
@@ -1513,9 +1515,7 @@ static void sndp_ui_all_status_sync_send(void)
         all_dev_sta.sleep_flag.sleep_eq_index = sndp_dev_sleep_app_get_eq_index(false);
         all_dev_sta.sleep_flag.sleep_anc_mode = sndp_dev_sleep_app_anc_mode_get(false);
         all_dev_sta.sleep_flag.sleep_prompt_onoff = sndp_dev_sleep_app_get_prompt_onoff(false);
-#if defined(__SNDP_GESTURE_MAP__)
         all_dev_sta.sleep_flag.sleep_gesture_onoff = sndp_dev_sleep_app_get_gesture_onoff(false);
-#endif
         all_dev_sta.sleep_flag.sleep_splaypause_onoff = sndp_dev_sleep_app_get_splaypause_onoff(false);
         all_dev_sta.sleep_proximity_onoff = sndp_dev_sleep_app_get_proximity_onoff(false);
 #endif
@@ -1538,9 +1538,7 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
         sndp_dev_sleep_app_set_eq_index(false, all_dev_sta.sleep_flag.sleep_eq_index, true);
         sndp_dev_sleep_app_anc_mode_set(false, all_dev_sta.sleep_flag.sleep_anc_mode, true);
         sndp_dev_sleep_app_set_prompt_onoff(false, all_dev_sta.sleep_flag.sleep_prompt_onoff, true);
-#if defined(__SNDP_GESTURE_MAP__)
         sndp_dev_sleep_app_set_gesture_onoff(false, all_dev_sta.sleep_flag.sleep_gesture_onoff, true);
-#endif
         sndp_dev_sleep_app_set_splaypause_onoff(false, all_dev_sta.sleep_flag.sleep_splaypause_onoff, true);
         sndp_dev_sleep_app_set_proximity_onoff(false, all_dev_sta.sleep_proximity_onoff);
 #endif

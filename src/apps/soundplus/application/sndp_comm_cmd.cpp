@@ -614,6 +614,7 @@ uint32_t sndp_comm_cmd_send_lr_sync_gesture_onoff(uint8_t onoff)
 static uint32_t sndp_comm_cmd_recv_lr_sync_gesture_onoff(sndp_comm_cmd_info_s *cmd_info)
 {
      if(cmd_info->data_len == 1) {
+        COMM_CMD_TRACE(0,"data_len:%d data:%d", cmd_info->data_len,cmd_info->data[0]);
         sndp_dev_sleep_app_set_gesture_onoff(false, cmd_info->data[0], true);
     }
     return 0;
@@ -1805,7 +1806,6 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_ap
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_enable(sleep_app_comm_cmd_info_s *cmd_info)
 {
-#if defined(__SNDP_GESTURE_MAP__)
 
     TR_INFO(0, (cmd_info->value[0]==0x01)?"enable touch":"disable touch");
     sndp_dev_sleep_app_set_gesture_onoff(false, cmd_info->value[0], true);
@@ -1814,7 +1814,6 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_enable(sleep_a
     cmd_info->value[0] = 0; // success
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
-#endif
     return 0;
 }
 
