@@ -79,16 +79,17 @@ POSSIBLY_UNUSED static uint8_t dev_test_path = SNDP_COMM_PATH_POGOPIN;
 
 #if defined(__SNDP_SLEEP_APP__)
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_start_report_proximity(void);
-static bool sndp_comm_proximity_slave_timer_running = false;
+bool sndp_comm_proximity_slave_timer_running = false;
 static uint32_t sndp_comm_proximity_report_interval_ms = 1000;
 static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_peer(void);
 static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void);
 static uint32_t sndp_comm_cmd_sleepapp_stop_report_proximity(void);
 static void sndp_findme_loop_handler(uint8_t onoff);
-static bool sndp_comm_sleepapp_report_sleep_tracking = false;
-static uint8_t wear_state_update_onoff = 0;
-static uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
-static uint8_t ppg_notify_data[98] = {0};
+bool sndp_comm_sleepapp_report_sleep_tracking = false;
+uint8_t wear_state_update_onoff = 0;
+uint8_t sndp_sleepapp_report_battery_onoff = 0;
+uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
+uint8_t ppg_notify_data[98] = {0};
 #endif
 
 
@@ -1637,8 +1638,15 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sleep_ap
 POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_comm_cmd_info_s *cmd_info)
 {   
     //if StartHeartrate 0x30 Dump on
-    sndp_hr_mearsuring_set_dump_state(0x01);
-    sndp_ppg_notification_start();
+    uint8_t onoff = cmd_info->value[0];
+    sndp_hr_mearsuring_set_dump_state(onoff);
+    if(onoff){
+        sndp_ppg_notification_start();
+    }else{
+        if(!sndp_hr_running_state()){
+            sndp_ppg_notification_stop();
+        }  
+    }
     COMM_CMD_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state());
     return 0;
 }
@@ -1678,73 +1686,24 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notificati
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_accelerometer_notification(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    sndp_hr_mearsuring_set_dump_state(0x01);
-    sndp_acc_notification_start();
+    uint8_t onoff = cmd_info->value[0];
+    sndp_hr_mearsuring_set_dump_state(onoff);
+    if(onoff){
+        sndp_acc_notification_start();
+    }else{
+        if(!sndp_hr_running_state()){
+            sndp_acc_notification_stop();
+        }
+    }
+    
     COMM_CMD_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state());
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_battery_status(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    /*
-        Byte0	Left battery
-                0xFF:  not connected
-                BIT7:  1 (in the charging case)
-                       0 (out of charging case)
-                BIT6~0: battery level
-        Byte1	Right battery
-                0xFF:  not connected
-                BIT7:  1 (in the charging case)
-                       0 (out of charging case)
-                BIT6~0: battery level
-        Byte2	Cradle battery
-                0xFF:   not connected
-                BIT7:   1 (in the charging case)
-                        0 (out of charging case)
-                BIT6~0: battery level   
-    */
-    SndpGetBattryMap_t reply_battery;
-    memset(&reply_battery, 0, sizeof(SndpGetBattryMap_t));
-    
-    if(sndp_dev_is_left_earphone())
-    {
-        reply_battery.bits.left_charging_statu = (uint8_t)sndp_dev_charger_is_charging(false);
-        reply_battery.bits.left_battery_level = sndp_dev_get_bat_percentage(false);
-
-        if(sndp_is_tws_link_connected()){
-            reply_battery.bits.right_charging_statu = (uint8_t)sndp_dev_charger_is_charging(true);
-            reply_battery.bits.right_battery_level = sndp_dev_get_bat_percentage(true);
-        }else{
-            reply_battery.bits.right_charging_statu = 1;
-            reply_battery.bits.right_battery_level = 0x7f;
-        }
-
-        reply_battery.bits.cradle_charging_status = 1;
-        reply_battery.bits.cradle_battery_level = 0x7f;
-    }
-
-    if(sndp_dev_is_right_earphone())
-    {
-        reply_battery.bits.right_charging_statu = (uint8_t)sndp_dev_charger_is_charging(false);
-        reply_battery.bits.right_battery_level = sndp_dev_get_bat_percentage(false);
-
-        if(sndp_is_tws_link_connected()){
-            reply_battery.bits.left_charging_statu = (uint8_t)sndp_dev_charger_is_charging(true);
-            reply_battery.bits.left_battery_level = sndp_dev_get_bat_percentage(true);
-        }else{
-            reply_battery.bits.left_charging_statu = 1;
-            reply_battery.bits.left_battery_level = 0x7f;
-        }
-
-        reply_battery.bits.cradle_charging_status = 1;
-        reply_battery.bits.cradle_battery_level = 0x7f;        
-    }
-    // COMM_CMD_TRACE(0,"char:%d,lbat:%02x char:%d,rbat:%02x", (uint8_t)sndp_dev_charger_is_charging(false), sndp_dev_get_bat_percentage(false),
-                                            //    (uint8_t)sndp_dev_charger_is_charging(true),sndp_dev_get_bat_percentage(true));
-    // DUMP8("%02x",&reply_battery,sizeof(reply_battery));                                           
-    cmd_info->data_len = 4;
-    memcpy(cmd_info->value,&reply_battery,sizeof(reply_battery));
-    sndp_sleep_comm_main_rsp_cmd(cmd_info);
+    sndp_sleepapp_report_battery_onoff = cmd_info->value[0];
+    sndp_sleep_app_report_battery();
     return 0;
 }
 
@@ -2636,6 +2595,72 @@ static void sndp_findme_loop_handler(uint8_t onoff)
 uint8_t sndp_get_findme_vol(void)
 {
    return sndp_findme_fadein_vol;
+}
+
+void sndp_sleep_app_report_battery(void)
+{
+    /*
+        Byte0	Left battery
+                0xFF:  not connected
+                BIT7:  1 (in the charging case)
+                       0 (out of charging case)
+                BIT6~0: battery level
+        Byte1	Right battery
+                0xFF:  not connected
+                BIT7:  1 (in the charging case)
+                       0 (out of charging case)
+                BIT6~0: battery level
+        Byte2	Cradle battery
+                0xFF:   not connected
+                BIT7:   1 (in the charging case)
+                        0 (out of charging case)
+                BIT6~0: battery level   
+    */
+   if(!sndp_sleepapp_report_battery_onoff)
+   {
+     COMM_CMD_TRACE(0,"rtn battery report off.....");
+     return;
+   }
+    SndpGetBattryMap_t reply_battery;
+    memset(&reply_battery, 0, sizeof(SndpGetBattryMap_t));
+    
+    if(sndp_dev_is_left_earphone())
+    {
+        reply_battery.bits.left_charging_statu = (uint8_t)sndp_dev_charger_is_charging(false);
+        reply_battery.bits.left_battery_level = sndp_dev_get_bat_percentage(false);
+
+        if(sndp_is_tws_link_connected()){
+            reply_battery.bits.right_charging_statu = (uint8_t)sndp_dev_charger_is_charging(true);
+            reply_battery.bits.right_battery_level = sndp_dev_get_bat_percentage(true);
+        }else{
+            reply_battery.bits.right_charging_statu = 1;
+            reply_battery.bits.right_battery_level = 0x7f;
+        }
+
+        reply_battery.bits.cradle_charging_status = 1;
+        reply_battery.bits.cradle_battery_level = 0x7f;
+    }
+
+    if(sndp_dev_is_right_earphone())
+    {
+        reply_battery.bits.right_charging_statu = (uint8_t)sndp_dev_charger_is_charging(false);
+        reply_battery.bits.right_battery_level = sndp_dev_get_bat_percentage(false);
+
+        if(sndp_is_tws_link_connected()){
+            reply_battery.bits.left_charging_statu = (uint8_t)sndp_dev_charger_is_charging(true);
+            reply_battery.bits.left_battery_level = sndp_dev_get_bat_percentage(true);
+        }else{
+            reply_battery.bits.left_charging_statu = 1;
+            reply_battery.bits.left_battery_level = 0x7f;
+        }
+
+        reply_battery.bits.cradle_charging_status = 1;
+        reply_battery.bits.cradle_battery_level = 0x7f;        
+    }
+    // COMM_CMD_TRACE(0,"char:%d,lbat:%02x char:%d,rbat:%02x", (uint8_t)sndp_dev_charger_is_charging(false), sndp_dev_get_bat_percentage(false),
+                                            //    (uint8_t)sndp_dev_charger_is_charging(true),sndp_dev_get_bat_percentage(true));
+    // DUMP8("%02x",&reply_battery,sizeof(reply_battery));                                           
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_BATTERY_STATUS, sizeof(reply_battery)+1, (uint8_t*)&reply_battery);
 }
 /*
 BLE packet format:

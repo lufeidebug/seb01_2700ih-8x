@@ -932,6 +932,9 @@ void sndp_ui_bat_pwr_measure_callback(sndp_dev_bat_info_s old_bat_info, sndp_dev
     SPUI_TRACE(0, "new valid=%d, per=%d", new_bat_info.valid,new_bat_info.bat_per);
     sndp_ui_ctx.lowpwr_check_enable = true;
     sndp_ui_bat_lr_sync();
+    if(old_bat_info.bat_per != new_bat_info.bat_per) {
+        sndp_sleep_app_report_battery();
+    }
 }
 
 

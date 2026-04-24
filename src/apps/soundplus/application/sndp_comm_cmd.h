@@ -414,6 +414,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_ppg_test_data(uint8_t *ppg_raw_data, uint
 uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t acc_raw_len);
 uint32_t sndp_comm_cmd_sleepapp_wear_state_update(uint8_t lR_flag, uint8_t wear_state);
 uint8_t sndp_get_findme_vol(void);
+void sndp_sleep_app_report_battery(void);
 #endif
 #ifdef __cplusplus
 }

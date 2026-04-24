@@ -388,6 +388,11 @@ void sndp_hr_mearsuring_set_dump_state(uint8_t dump_state)
     hr_ctx.dump_state = dump_state;
 }
 
+uint8_t sndp_hr_running_state(void)
+{
+    return hr_ctx.hr_running;
+}
+
 void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
@@ -638,7 +643,7 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
         }
     }
 
-    if(hr_ctx.ppg_notification) {
+    if(hr_ctx.dump_state) {
         for(int i = 0; i < cnt && hr_ppg_raw_len < HR_PPG_SECOND_ALLCH_SAMPLES; i++) {
             hr_ppg_raw_data[hr_ppg_raw_len++] = data[i];
         }
@@ -676,7 +681,7 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
         acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
     }
 
-    if(hr_ctx.acc_notification) {
+    if(hr_ctx.dump_state) {
         for(int i = 0; i < cnt && hr_acc_raw_len < HR_PPG_SECOND_ALLCH_SAMPLES; i++) {
             hr_acc_raw_data[hr_acc_raw_len++] = data[i].x;
             hr_acc_raw_data[hr_acc_raw_len++] = data[i].y;

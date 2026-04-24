@@ -117,6 +117,7 @@ void sndp_hr_app_init(void);
 
 void sndp_ppg_notification_start(void);
 
+uint8_t sndp_hr_running_state(void);
 #ifdef __cplusplus
 	}
 #endif
