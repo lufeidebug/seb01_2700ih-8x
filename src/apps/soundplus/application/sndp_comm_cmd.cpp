@@ -2258,6 +2258,25 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_wear_state(sleep_app_com
     return 0;
 }
 
+POSSIBLY_UNUSED uint32_t sleep_comm_cmd_recv_app_ppg_test_mode(sleep_app_comm_cmd_info_s *cmd_info)
+{
+    uint8_t err_code;
+    
+    if(cmd_info->data_len == 2) {
+        sndp_ppg_test_mode_switch(cmd_info->value[0]);
+        err_code = 0;
+    } else {
+        err_code = 1;
+    }
+
+    cmd_info->data_len = 0x02;
+    cmd_info->value[0] = err_code; 
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
+
+    return 0;
+}
+
+
 uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
                                                     uint16_t position_and_control,
                                                     int16_t result_code)
@@ -2384,6 +2403,36 @@ uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t p
 
     return 0;
 }
+
+uint32_t sndp_comm_cmd_sleepapp_report_ppg_test_data(uint8_t *ppg_raw_data, uint16_t ppg_raw_len)
+{
+    if(!sndp_comm_ble_is_connected()){
+        COMM_CMD_TRACE(0, "ble is not connected, not report ppg");
+        return 0;
+    }
+
+    uint8_t data_len = 0;
+    
+    // 1. 打包LR_flag 1字节
+    if(sndp_dev_is_left_earphone())
+        ppg_notify_data[data_len++] = 0x01;
+    else
+        ppg_notify_data[data_len++] = 0x02;
+
+    // 2. 打包ppg_raw_data_len（1字节）
+    ppg_notify_data[data_len++] = (uint8_t)ppg_raw_len;           // 低字节
+
+    // 3. 打包32个int32的低3字节 32*3=96字节
+    for (int i = 0; i < ppg_raw_len; i++) {
+        ppg_notify_data[data_len++] = ppg_raw_data[i]; 
+    }
+
+    // COMM_CMD_TRACE(1, "report ppg to app, len=%d", ppg_samples_len);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_PPG_NOTIFICATION, data_len, (uint8_t *)ppg_notify_data);
+
+    return 0;
+}
+
 
 uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t acc_raw_len)
 {
@@ -2616,9 +2665,13 @@ static const sndp_sleep_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
     { SLEEP_APP_CMDID_SLEEP_TRACKING,                 "APP_SLEEP_TRACKING",                 sleep_comm_cmd_recv_app_sleep_tracking },
     { SLEEP_APP_CMDID_STOP_SLEEP,                     "APP_STOP_SLEEP",                     sleep_comm_cmd_recv_app_stop_sleep },
     { SLEEP_APP_CMDID_WEAR_STATE_UPDATE,              "APP_WEAR_STATE",                     sleep_comm_cmd_recv_app_wear_state },
+    { SLEEP_APP_CMDID_PPG_TEST_MODE,                  "APP_PPG_TEST_MODE",                  sleep_comm_cmd_recv_app_ppg_test_mode },
 };
+
+
 static const int32_t sndp_sleep_app_comm_cmd_hdlr_cnt = sizeof(sleep_app_comm_cmd_hdlr_list) / sizeof(sleep_app_comm_cmd_hdlr_list[0]);
 static sleep_app_comm_cmd_info_s sndp_sleep_app_comm_exec_cmd;
+
 int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
 {
     sndp_sleep_comm_cmd_handle_s *cmd_hdlr = NULL;

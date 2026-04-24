@@ -33,6 +33,9 @@ int ss_ppg_example_main(ExampleMode exam_mode)
         return SS_ERROR_BASE;
     }
 
+    ss_ppg_interrupt_setting(PROX_INT_EN, 1);
+    
+#if 0    
     if (exam_mode == EXAM_PROX_GREEN)
     {
         if (ss_ppg_example_use_proximity() != SS_SUCCESS)
@@ -41,6 +44,8 @@ int ss_ppg_example_main(ExampleMode exam_mode)
             return SS_ERROR_BASE;
         }
     }
+#endif
+
 #if 0
     if (ss_ppg_start_measurement() != SS_SUCCESS)
     {

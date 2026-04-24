@@ -602,6 +602,25 @@ void sndp_acc_notification_stop(void)
 
 }
 
+void sndp_ppg_test_mode_switch(uint8_t en)
+{
+    SNDP_TRACE(0, "en=%d", en);
+    
+    if(en) {
+        app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
+        
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
+        sndp_hal_hr_ppg_test_mode_switch(true);
+#endif
+    } else {
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
+        sndp_hal_hr_ppg_test_mode_switch(false);
+#endif
+        app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
+    }
+
+}
+
 
 
 #if defined(__SNDP_HEART_RATE_MGR__)
@@ -637,6 +656,12 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
         }
     }
 }
+
+static void sndp_ppg_test_mode_callback(uint8_t *data, uint16_t cnt)
+{
+    sndp_comm_cmd_sleepapp_report_ppg_test_data(data, cnt);
+}
+
 #endif 
 
 
@@ -717,6 +742,7 @@ void sndp_hr_app_init(void)
     // 4. 设置读取心率IC数据回调。
 #if defined(__SNDP_HEART_RATE_MGR__)
     sndp_hal_hr_set_reading_ppg_callback(sndp_hr_read_ppg_callback);
+    sndp_hal_hr_set_ppg_test_mode_callback(sndp_ppg_test_mode_callback);
 #endif   
 
     // 5. 设置读取加速度IC数据回调。

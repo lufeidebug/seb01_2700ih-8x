@@ -231,6 +231,9 @@ int ss_ppg_clear_fifo(void);
  */
 int ss_ppg_verify(void);
 
+int ss_ppg_run_seq1_ir(void);
+int ss_ppg_run_seq1_green(void);
+
 /**
  * @brief Starts the PPG measurement.
  *
@@ -517,6 +520,9 @@ int ss_ppg_mem_get_fifo_data_count(void);
 int ss_ppg_open_fifo(void);
 
 int ss_ppg_close_fifo(void);
+
+int ss_ppg_test_mode_switch(unsigned char en);
+
 
 #ifdef __cplusplus
 }

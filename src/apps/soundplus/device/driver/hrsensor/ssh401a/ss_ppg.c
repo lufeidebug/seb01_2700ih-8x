@@ -32,7 +32,7 @@ static Sensor g_target_sensor;
 static unsigned char g_fifo_onoff = 0;
 static unsigned char g_proximity_sta = 0;
 static SS_PPG ppg_buf[32];
-
+static unsigned char g_ppg_test_mode = 0; //0:disable, 1:enable
 
 static const float g_led_range_list[] = {
     CURRENT_RANGE_16_7,
@@ -194,6 +194,38 @@ int ss_ppg_clear_fifo(void)
 int ss_ppg_read_fifo_count(unsigned char* fifo_count)
 {
     return os_api_i2c_read_byte(REG_FIFO_DATA_CNT, fifo_count);
+}
+
+int ss_ppg_run_seq1_green(void)
+{
+    int ret = SS_SUCCESS;
+
+    for (unsigned char idx = 0; idx < ss_ppg_register_seq1_green_ssh401_count; idx++)
+    {
+        ret = os_api_i2c_write_byte(ss_ppg_init_register_seq1_green_ssh401[idx][0], ss_ppg_init_register_seq1_green_ssh401[idx][1]); 
+        if (ret != SS_SUCCESS)
+        {
+            return ret;
+        }
+    }
+
+    return SS_SUCCESS;
+}
+
+int ss_ppg_run_seq1_ir(void)
+{
+    int ret = SS_SUCCESS;
+
+    for (unsigned char idx = 0; idx < ss_ppg_register_seq1_ir_ssh401_count; idx++)
+    {
+        ret = os_api_i2c_write_byte(ss_ppg_init_register_seq1_ir_ssh401[idx][0], ss_ppg_init_register_seq1_ir_ssh401[idx][1]); 
+        if (ret != SS_SUCCESS)
+        {
+            return ret;
+        }
+    }
+
+    return SS_SUCCESS;
 }
 
 int ss_ppg_start_measurement(void)
@@ -555,7 +587,6 @@ void ss_ppg_interrupt_handler(void)
 
     ss_ppg_fifo_parse(fifo_data, read_len);
 
-    os_api_free(fifo_data);
 
     //notify PPG data
     int data_count = ss_ppg_mem_get_fifo_data_count();
@@ -573,9 +604,19 @@ void ss_ppg_interrupt_handler(void)
             memcpy(&ppg_buf[idx], ppg_data, sizeof(SS_PPG));
         }
 
-        os_api_callback_ppg_data(ppg_buf, data_count);
+
+        if (g_ppg_test_mode)
+        {
+            os_api_callback_ppg_test_data(fifo_data, read_len);
+        }
+        else
+        {
+            os_api_callback_ppg_data(ppg_buf, data_count);
+        }
     }
     //
+
+    os_api_free(fifo_data);
 }
 
 int ss_ppg_set_led_current(Seq seq, LEDCurrentRange range, float current)
@@ -599,7 +640,8 @@ int ss_ppg_set_led_current(Seq seq, LEDCurrentRange range, float current)
         ret = os_api_i2c_write_byte(REG_SEQ0_LED_CUR, targetRegValue);
         if (ret != SS_SUCCESS)
             return ret;
-        ret = os_api_i2c_write_byte(REG_SEQ0_LED_RANGE, (unsigned char)g_led_range_list[(int)range]);
+        //ret = os_api_i2c_write_byte(REG_SEQ0_LED_RANGE, (unsigned char)g_led_range_list[(int)range]);
+        ret = os_api_i2c_write_byte(REG_SEQ0_LED_RANGE, (unsigned char)range); //[260423] fixed by SoluM
         if (ret != SS_SUCCESS)
             return ret;
     }
@@ -609,7 +651,8 @@ int ss_ppg_set_led_current(Seq seq, LEDCurrentRange range, float current)
         if (ret != SS_SUCCESS)
             return ret;
 
-        ret = os_api_i2c_write_byte(REG_SEQ1_LED_RANGE, (unsigned char)g_led_range_list[(int)range]);
+        //ret = os_api_i2c_write_byte(REG_SEQ1_LED_RANGE, (unsigned char)g_led_range_list[(int)range]);
+        ret = os_api_i2c_write_byte(REG_SEQ1_LED_RANGE, (unsigned char)range); //[260423] fixed by SoluM
         if (ret != SS_SUCCESS)
             return ret;
     }
@@ -619,7 +662,8 @@ int ss_ppg_set_led_current(Seq seq, LEDCurrentRange range, float current)
         if (ret != SS_SUCCESS)
             return ret;
         
-        ret = os_api_i2c_write_byte(REG_SEQ2_LED_RANGE, (unsigned char)g_led_range_list[(int)range]);
+        //ret = os_api_i2c_write_byte(REG_SEQ2_LED_RANGE, (unsigned char)g_led_range_list[(int)range]);
+        ret = os_api_i2c_write_byte(REG_SEQ2_LED_RANGE, (unsigned char)range); //[260423] fixed by SoluM
         if (ret != SS_SUCCESS)
             return ret;
     }
@@ -748,3 +792,10 @@ static int clear_fifo(void)
     
     return ss_ppg_clear_fifo();
 }
+
+int ss_ppg_test_mode_switch(unsigned char en)
+{
+    g_ppg_test_mode = en;
+    return 0;
+}
+

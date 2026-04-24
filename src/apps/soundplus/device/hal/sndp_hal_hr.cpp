@@ -137,7 +137,19 @@ int32_t sndp_hal_hr_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_l
 	return SNDP_HAL_RET_FAIL;
 }
 
+int32_t sndp_hal_hr_set_ppg_test_mode_callback(sndp_hal_hr_ppg_test_mode_callback callback)
+{
+    if((p_hal_hr != NULL) && (p_hal_hr->set_ppg_test_mode_callback != NULL))
+        return p_hal_hr->set_ppg_test_mode_callback(callback);
+    return SNDP_HAL_RET_FAIL;
+}
 
+int32_t sndp_hal_hr_ppg_test_mode_switch(uint8_t en)
+{
+	if((p_hal_hr != NULL) && (p_hal_hr->ppg_test_mode_switch != NULL))
+		return p_hal_hr->ppg_test_mode_switch(en);
+	return SNDP_HAL_RET_FAIL;
+}
 
 
 #endif	/* __SNDP_HRSENSOR_SUPPORT__ */

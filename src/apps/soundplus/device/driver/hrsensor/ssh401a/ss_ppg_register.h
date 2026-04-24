@@ -355,11 +355,20 @@ extern "C" {
 #define REG_CHIP_ID             0xFA
 
 
+//SOLUM test version (260423)
 /** @cond INTERNAL */
 #define REG_HIDDEN_KEY          0xFF
 #define REG_H_AFE_TIME          0x37
-#define REG_H_TIA_GAIN          0x86
-#define REG_H_INT_GAIN          0x87
+#define REG_SEQ0_H_TIA_GAIN    0x86
+#define REG_SEQ0_H_INT_GAIN    0x87
+#define REG_SEQ1_H_TIA_GAIN    0x88
+#define REG_SEQ1_H_INT_GAIN    0x89
+#define REG_DDAC_H_LIN_CAL     0xA3
+#define REG_INT_MODE_SET       0x03
+#define REG_PROX_GAIN          0xB6
+#define REG_PROX_AVG_FLT       0x2F
+
+
 /** @endcond */
 
 #ifdef __cplusplus

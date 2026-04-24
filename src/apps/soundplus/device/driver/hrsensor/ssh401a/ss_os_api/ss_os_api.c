@@ -219,3 +219,20 @@ void os_api_callback_ppg_data(SS_PPG* ppg_data, int cnt)
     }
 }
 
+void os_api_callback_ppg_test_data(unsigned char* fifo_data, int fifo_cnt)
+{
+    if (g_func_config == (void*)0)
+    {
+        return;
+    }
+    else if (g_func_config->callback_ppg_test_data == (void*)0)
+    {
+        return;
+    }
+    else
+    {
+        g_func_config->callback_ppg_test_data(fifo_data, fifo_cnt);
+    }
+}
+
+

@@ -37,4 +37,10 @@ int ss_ppg_register_init_count(Sensor sensor);
  */
 const unsigned char (*ss_ppg_register_get_table(Sensor sensor))[2];
 
+extern const unsigned char ss_ppg_init_register_seq1_ir_ssh401[][2];
+extern const int ss_ppg_register_seq1_ir_ssh401_count;
+
+extern const unsigned char ss_ppg_init_register_seq1_green_ssh401[][2];
+extern const int ss_ppg_register_seq1_green_ssh401_count;
+
 #endif /* SS_PPG_INIT_TABLE_H_ */
