@@ -114,6 +114,9 @@
 #if defined(__SNDP_UI__)
 #include "sndp_if_device.h"
 #include "sndp_if_platform.h"
+#if defined(__SNDP_FINDME__)
+#include "sndp_comm_cmd.h"
+#endif
 #endif
 
 #if defined(AUDIO_PROMPT_USE_DAC2_ENABLED)
@@ -138,8 +141,6 @@
 
 #ifdef __INTERACTION__
 uint8_t g_findme_fadein_vol = TGT_VOLUME_LEVEL_1;
-#elif defined(__SNDP_FINDME__)
-uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_16;
 #endif
 #include "sbc_api.h"
 #include "sbc_error_code.h"
@@ -3035,7 +3036,7 @@ int app_play_audio_onoff(bool onoff, APP_AUDIO_STATUS* status)
 #elif defined(__SNDP_FINDME__)
         if(aud_id == AUD_ID_BT_FINDME)
         {
-            stream_cfg.vol = sndp_findme_fadein_vol;
+            stream_cfg.vol = sndp_get_findme_vol();
         }
         else
 #endif

@@ -84,8 +84,10 @@ static uint32_t sndp_comm_proximity_report_interval_ms = 1000;
 static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_peer(void);
 static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void);
 static uint32_t sndp_comm_cmd_sleepapp_stop_report_proximity(void);
+static void sndp_findme_loop_handler(uint8_t onoff);
 static bool sndp_comm_sleepapp_report_sleep_tracking = false;
 static uint8_t wear_state_update_onoff = 0;
+static uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
 static uint8_t ppg_notify_data[98] = {0};
 #endif
 
@@ -668,15 +670,7 @@ uint32_t sndp_comm_cmd_send_lr_sync_findme_onoff(uint8_t onoff)
 static uint32_t sndp_comm_cmd_recv_lr_sync_findme_onoff(sndp_comm_cmd_info_s *cmd_info)
 {
     if(cmd_info->data_len == 1) {
-        if(cmd_info->data[0])
-        {
-            //stop find me
-        }
-        else
-        {
-            //start find me
-            sndp_call_func_in_app_thread((uint32_t)sndp_play_findme,0,0,0);
-        }
+
     }
     return 0;
 }
@@ -1573,16 +1567,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_find_my_earphone(sleep_a
         0x01：stop
     */
     COMM_CMD_TRACE(0, "findme earphone = %d",cmd_info->value[0]);
-    if(cmd_info->value[0]) 
-    {
-        //stop findme
-    }
-    else
-    {
-        sndp_call_func_in_app_thread((uint32_t)sndp_play_findme,0,0,0);
-        
-    }
-
+    sndp_delay_exec_start(100, (uint32_t)sndp_findme_loop_handler,cmd_info->value[0],0,0);
     sndp_comm_cmd_send_lr_sync_findme_onoff(cmd_info->value[0]);
 
     cmd_info->value[0] = 0;
@@ -2572,6 +2557,27 @@ uint32_t sndp_comm_cmd_sleepapp_wear_state_update(uint8_t lR_flag, uint8_t wear_
     }
     sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_WEAR_STATE_UPDATE, sizeof(sendvalue)+1, sendvalue);
     return 0;
+}
+
+static void sndp_findme_loop_handler(uint8_t onoff)
+{
+   if(onoff)
+   {
+     COMM_CMD_TRACE(0,"stop findeme....");
+     sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
+     return;
+   }
+   
+   sndp_play_findme();
+   if(sndp_findme_fadein_vol < TGT_VOLUME_LEVEL_16){
+        sndp_findme_fadein_vol++;
+   }
+   sndp_delay_exec_start(2800, (uint32_t)sndp_findme_loop_handler,0,0,0);
+}
+
+uint8_t sndp_get_findme_vol(void)
+{
+   return sndp_findme_fadein_vol;
 }
 /*
 BLE packet format:

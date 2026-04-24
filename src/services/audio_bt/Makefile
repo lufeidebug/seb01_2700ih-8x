@@ -107,7 +107,8 @@ endif
 
 ifeq ($(SNDP_UI),1)
 ccflags-y += \
-		-Iapps/soundplus/interface
+		-Iapps/soundplus/interface \
+		-Iapps/soundplus/application
 endif
 
 ifeq ($(ANC_NOISE_TRACKER),1)
