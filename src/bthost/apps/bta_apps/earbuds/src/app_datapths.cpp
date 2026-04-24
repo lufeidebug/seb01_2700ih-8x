@@ -101,16 +101,19 @@ static const bt_gatt_attr_t *app_datapaths_build_attr_list(uint8_t *p_attr_size)
     attr_info.is_128_bits_attr_uuid = true;
 
     attr_info.attr_uuid = datapath_service_uuid_128_le;
+    attr_info.attr_perm = BT_GATT_PERM_SEC_NONE;
     datapath_attr_list[APP_DPS_ATTR_TYPE_SERVICE] =
         bta_gatts_build_attr(BT_ATTR_TYPE_PRI_SERVICE, &attr_info, &datapath_attr_mem[APP_DPS_ATTR_TYPE_SERVICE]);
 
     attr_info.attr_prop = BT_GATT_PROP_WR_REQ | BT_GATT_PROP_WR_CMD | BT_GATT_PROP_RD_REQ;
     attr_info.attr_uuid = datapath_rx_character_uuid_128_le;
+    attr_info.attr_perm = BT_GATT_PERM_SEC_NONE;
     datapath_attr_list[APP_DPS_ATTR_TYPE_RX_CHARACTER] =
         bta_gatts_build_attr(BT_ATTR_TYPE_CHARACTER, &attr_info, &datapath_attr_mem[APP_DPS_ATTR_TYPE_RX_CHARACTER]);
 
     attr_info.attr_prop = BT_GATT_PROP_NTF_PROP;
     attr_info.attr_uuid = datapath_tx_character_uuid_128_le;
+    attr_info.attr_perm = BT_GATT_PERM_SEC_NONE;
     datapath_attr_list[APP_DPS_ATTR_TYPE_TX_CHARACTER] =
         bta_gatts_build_attr(BT_ATTR_TYPE_CHARACTER, &attr_info, &datapath_attr_mem[APP_DPS_ATTR_TYPE_TX_CHARACTER]);
 
@@ -119,17 +122,19 @@ static const bt_gatt_attr_t *app_datapaths_build_attr_list(uint8_t *p_attr_size)
 
     attr_info.attr_prop = BT_GATT_PROP_WR_REQ | BT_GATT_PROP_RD_REQ;
     attr_info.attr_uuid = datapath_character_cudd_uuid_16_le;
+    attr_info.attr_perm = BT_GATT_PERM_SEC_NONE;
     datapath_attr_list[APP_DPS_ATTR_TYPE_RX_CUDD] =
         bta_gatts_build_attr(BT_ATTR_TYPE_DESCRIPTOR, &attr_info, &datapath_attr_mem[APP_DPS_ATTR_TYPE_RX_CUDD]);
 
     attr_info.attr_prop = BT_GATT_PROP_WR_REQ | BT_GATT_PROP_RD_REQ;
     attr_info.attr_uuid = datapath_character_cudd_uuid_16_le;
+    attr_info.attr_perm = BT_GATT_PERM_SEC_NONE;
     datapath_attr_list[APP_DPS_ATTR_TYPE_TX_CUDD] =
         bta_gatts_build_attr(BT_ATTR_TYPE_DESCRIPTOR, &attr_info, &datapath_attr_mem[APP_DPS_ATTR_TYPE_TX_CUDD]);
 
     attr_info.attr_prop = BT_GATT_PROP_WR_REQ | BT_GATT_PROP_RD_REQ;
     // Need Write enc permissin
-    attr_info.attr_perm = BT_GATT_PERM_WR_ENC;
+    attr_info.attr_perm = BT_GATT_PERM_SEC_NONE;
     attr_info.attr_uuid = datapath_character_cccd_uuid_16_le;
     datapath_attr_list[APP_DPS_ATTR_TYPE_TX_CCCD] =
         bta_gatts_build_attr(BT_ATTR_TYPE_DESCRIPTOR, &attr_info, &datapath_attr_mem[APP_DPS_ATTR_TYPE_TX_CCCD]);
