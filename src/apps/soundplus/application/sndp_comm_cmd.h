@@ -385,16 +385,18 @@ typedef union
     struct 
     {
         //byte0
-        uint8_t left_charging_statu : 1;
         uint8_t left_battery_level : 7;
+        uint8_t left_charging_statu : 1;
+        
 
         //byte1
+         uint8_t right_battery_level : 7;
         uint8_t right_charging_statu : 1;
-        uint8_t right_battery_level : 7;
+       
 
         //byte2
-        uint8_t cradle_charging_status : 1;
         uint8_t cradle_battery_level : 7;
+        uint8_t cradle_charging_status : 1;
     } bits;
 
     uint8_t charging_byte[3];

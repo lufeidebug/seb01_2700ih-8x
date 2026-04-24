@@ -1708,33 +1708,42 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_battery_status(sleep
     
     if(sndp_dev_is_left_earphone())
     {
-        reply_battery.bits.left_charging_statu = sndp_dev_charger_is_charging(false);
+        reply_battery.bits.left_charging_statu = (uint8_t)sndp_dev_charger_is_charging(false);
         reply_battery.bits.left_battery_level = sndp_dev_get_bat_percentage(false);
 
         if(sndp_is_tws_link_connected()){
-            reply_battery.bits.right_charging_statu = sndp_dev_charger_is_charging(true);
+            reply_battery.bits.right_charging_statu = (uint8_t)sndp_dev_charger_is_charging(true);
             reply_battery.bits.right_battery_level = sndp_dev_get_bat_percentage(true);
         }else{
-            reply_battery.charging_byte[1] = 0xff;
+            reply_battery.bits.right_charging_statu = 1;
+            reply_battery.bits.right_battery_level = 0x7f;
         }
 
-        reply_battery.charging_byte[2] = 0xff;
+        reply_battery.bits.cradle_charging_status = 1;
+        reply_battery.bits.cradle_battery_level = 0x7f;
     }
 
     if(sndp_dev_is_right_earphone())
     {
-        reply_battery.bits.right_charging_statu = sndp_dev_charger_is_charging(false);
+        reply_battery.bits.right_charging_statu = (uint8_t)sndp_dev_charger_is_charging(false);
         reply_battery.bits.right_battery_level = sndp_dev_get_bat_percentage(false);
 
         if(sndp_is_tws_link_connected()){
-            reply_battery.bits.left_charging_statu = sndp_dev_charger_is_charging(true);
+            reply_battery.bits.left_charging_statu = (uint8_t)sndp_dev_charger_is_charging(true);
             reply_battery.bits.left_battery_level = sndp_dev_get_bat_percentage(true);
         }else{
-            reply_battery.charging_byte[1] = 0xff;
+            reply_battery.bits.left_charging_statu = 1;
+            reply_battery.bits.left_battery_level = 0x7f;
         }
 
-        reply_battery.charging_byte[2] = 0xff;        
+        reply_battery.bits.cradle_charging_status = 1;
+        reply_battery.bits.cradle_battery_level = 0x7f;        
     }
+    // COMM_CMD_TRACE(0,"char:%d,lbat:%02x char:%d,rbat:%02x", (uint8_t)sndp_dev_charger_is_charging(false), sndp_dev_get_bat_percentage(false),
+                                            //    (uint8_t)sndp_dev_charger_is_charging(true),sndp_dev_get_bat_percentage(true));
+    // DUMP8("%02x",&reply_battery,sizeof(reply_battery));                                           
+    cmd_info->data_len = 4;
+    memcpy(cmd_info->value,&reply_battery,sizeof(reply_battery));
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
