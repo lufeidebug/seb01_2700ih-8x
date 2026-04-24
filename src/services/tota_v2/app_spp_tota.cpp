@@ -47,6 +47,12 @@
 #endif
 #include "bta_bt_api.h"
 
+
+#if defined(__SNDP_COMM_SPP_USE_OTA_CHANNEL__)
+#include "sndp_comm_spp.h"
+#endif
+
+
 typedef struct{
     bool isConnected;
     bt_spp_channel_t *pSppDevice;
@@ -194,6 +200,13 @@ static int tota_spp_handle_data_event_func(const bt_bdaddr_t *remote, bt_spp_eve
     TOTA_V2_TRACE(1,"spp tota v2 rx:%d", dataLen);
     //TOTA_V2_DUMP8("[0x%x]", pData, dataLen);
 
+#if defined(__SNDP_COMM_SPP_USE_OTA_CHANNEL__)
+    if (sndp_comm_spp_cmd_check(pData, dataLen)) {
+        sndp_comm_spp_recv_data(pData, dataLen);
+        return 0;
+    }
+#endif
+
 #ifdef SPP_DEBUG_TOOL
     if (app_spp_debug_cmd_check(pData, dataLen)) {
         uint8_t *ret_buf = app_spp_debug_cmd_process(pData, dataLen, &dataLen);
@@ -224,6 +237,10 @@ static int spp_tota_callback(const bt_bdaddr_t *remote, bt_spp_event_t event, bt
         otaParam.event = BES_OTA_CONN;
         app_ota_push_rx_data(SPP_RX_DATA_SELF_OTA_OVER_TOTA, &otaParam);
 #endif
+#if defined(__SNDP_COMM_SPP_USE_OTA_CHANNEL__)
+        sndp_comm_spp_set_connect_sta(true);
+#endif        
+
         if (tota_spp_ctl.callBack->connected_cb)
         {
             tota_spp_ctl.callBack->connected_cb();
@@ -237,6 +254,10 @@ static int spp_tota_callback(const bt_bdaddr_t *remote, bt_spp_event_t event, bt
         otaParam.event = BES_OTA_DISCONN;
         app_ota_push_rx_data(SPP_RX_DATA_SELF_OTA_OVER_TOTA, &otaParam);
 #endif
+#if defined(__SNDP_COMM_SPP_USE_OTA_CHANNEL__)
+        sndp_comm_spp_set_connect_sta(false);
+#endif 
+
         if (tota_spp_ctl.callBack->disconnected_cb)
         {
             tota_spp_ctl.callBack->disconnected_cb();
@@ -294,6 +315,14 @@ bool app_spp_tota_send_data(uint8_t* ptrData, uint16_t length)
     bool ret = bta_spp_send_data(tota_spp_ctl.pSppDevice->rfcomm_handle, ptrData, length);
     return ret;
 }
+
+#if defined(__SNDP_COMM_SPP_USE_OTA_CHANNEL__)
+extern "C" bool sndp_spp_tota_send_data(uint8_t* ptrData, uint16_t length)
+{
+    return app_spp_tota_send_data(ptrData, length);
+}
+#endif
+
 
 // static inline void _update_tx_buf(void)
 // {

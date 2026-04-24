@@ -121,3 +121,7 @@ subdir-ccflags-y += -Iapps/besui \
 		            -Iapps/besui/stereo_ui
 endif
 
+ifeq ($(SNDP_COMM_SPP),1)
+subdir-ccflags-y += -Iapps/soundplus/application
+endif
+

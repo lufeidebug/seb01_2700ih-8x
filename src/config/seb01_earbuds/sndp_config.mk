@@ -275,6 +275,7 @@ endif
 
 ifeq ($(SNDP_COMM_SPP),1)
     KBUILD_CPPFLAGS += -D__SNDP_COMM_SPP__
+    KBUILD_CPPFLAGS += -D__SNDP_COMM_SPP_USE_OTA_CHANNEL__
 endif
 
 ifeq ($(SNDP_COMM_MS),1)

@@ -19,6 +19,57 @@
 #include "sndp_comm_spp.h"
 
 
+#if defined(__SNDP_COMM_SPP_USE_OTA_CHANNEL__)
+extern "C" bool sndp_spp_tota_send_data(uint8_t* ptrData, uint16_t length);
+
+
+static bool sndp_spp_is_connected = false;
+
+
+bool sndp_comm_spp_cmd_check(uint8_t *data, uint16_t data_len)
+{
+    COMM_SPP_TRACE(2, "len=%d", data_len);
+    DUMP8("0x%02x ", data, (data_len > 16) ? 16 : data_len);
+    return sndp_comm_protocol_data_is_valid(data, data_len);
+}
+
+int32_t sndp_comm_spp_recv_data(uint8_t *data, uint16_t data_len)
+{
+    if(data == NULL) {
+        return -1;
+    }
+        
+    COMM_SPP_TRACE(2, "len=%d", data_len);
+    DUMP8("0x%02x ", data, (data_len > 16) ? 16 : data_len);
+    sndp_comm_main_recv_queue_push_data(SNDP_COMM_PATH_SPP, data, data_len);
+    return 0;
+}
+
+int32_t sndp_comm_spp_send_data(uint8_t *data, uint16_t data_len)
+{
+	sndp_spp_tota_send_data(data, data_len);
+	return 0;
+}
+
+
+void sndp_comm_spp_set_connect_sta(bool conn)
+{
+    sndp_spp_is_connected = conn;
+}
+
+bool sndp_comm_spp_is_connected(void)
+{
+    return sndp_spp_is_connected;
+}
+
+int32_t sndp_comm_spp_init(void)
+{
+	COMM_SPP_TRACE(0, "done.");
+	return 0;
+}
+
+
+#else //__SNDP_COMM_SPP_USE_OTA_CHANNEL__
 
 /**************************************************************************************************
 * Constant
@@ -346,7 +397,7 @@ int32_t sndp_comm_spp_init(void)
 
     memset(&comm_spp_ctx, 0, sizeof(sndp_comm_spp_context_s));
     comm_spp_ctx.is_sending = false;
-    comm_spp_ctx.is_sending = false;
+    comm_spp_ctx.is_connected = false;
     
     bta_spp_create_port(COMM_SPP_RFCOMM_CHANNEL_NUM, sndp_comm_spp_sdp_attributes, ARRAY_SIZE(sndp_comm_spp_sdp_attributes));
     bta_spp_set_callback(COMM_SPP_RFCOMM_CHANNEL_NUM, COMM_SPP_MAX_PACKET_SIZE*COMM_SPP_MAX_PACKET_NUM, sndp_comm_spp_server_callback, NULL);
@@ -357,6 +408,8 @@ int32_t sndp_comm_spp_init(void)
 	COMM_SPP_TRACE(0, "done.");
 	return 0;
 }
+
+#endif  //__SNDP_COMM_SPP_USE_OTA_CHANNEL__
 
 #endif	/* __SNDP_COMM_SPP__ */
 

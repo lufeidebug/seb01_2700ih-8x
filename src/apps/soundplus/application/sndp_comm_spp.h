@@ -20,10 +20,22 @@ extern "C" {
 #define COMM_SPP_EXIT()
 #endif
 
+#if defined(__SNDP_COMM_SPP_USE_OTA_CHANNEL__)
+
+bool sndp_comm_spp_cmd_check(uint8_t *data, uint16_t data_len);
+int32_t sndp_comm_spp_recv_data(uint8_t *data, uint16_t data_len);
+int32_t sndp_comm_spp_send_data(uint8_t *data, uint16_t data_len);
+void sndp_comm_spp_set_connect_sta(bool conn);
+bool sndp_comm_spp_is_connected(void);
+int32_t sndp_comm_spp_init(void);
+
+#else //__SNDP_COMM_SPP_USE_OTA_CHANNEL__
 
 int32_t sndp_comm_spp_send_data(uint8_t *data, uint16_t data_len);
 bool sndp_comm_spp_is_connected(void);
 int32_t sndp_comm_spp_init(void);
+
+#endif
 
 
 #ifdef __cplusplus

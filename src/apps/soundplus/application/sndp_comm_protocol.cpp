@@ -207,6 +207,43 @@ uint16_t sndp_comm_protocol_find_next_frame_idx(uint8_t *recv_data, uint16_t dat
     
 }
 
+bool sndp_comm_protocol_data_is_valid(uint8_t *recv_data, uint16_t recv_len)											
+{
+    if(recv_data == NULL) {
+        return false;
+    }
+    
+	uint8_t flag = recv_data[SNDP_COMM_FRAME_FLAG_IDX];
+	uint16_t cmd_data_len = (uint16_t)((recv_data[SNDP_COMM_FRAME_DLEN_IDX]<<8)|(recv_data[SNDP_COMM_FRAME_DLEN_IDX+1]));
+
+	if(flag != SNDP_COMM_FRAME_FLAG) {
+        COMM_PROTOCOL_TRACE(1, "Invalid flag(%02X), return", flag);
+		return false;
+	}
+	
+	if(cmd_data_len > SNDP_COMM_FRAME_CMD_DLEN_MAX) {
+        COMM_PROTOCOL_TRACE(1, "Invalid cmd_data_len(%d) > MAX(%d), return", cmd_data_len, SNDP_COMM_FRAME_CMD_DLEN_MAX);
+		return false;
+	}
+
+    if(recv_len < SNDP_COMM_FRAME_HEAD_LEN + cmd_data_len + SNDP_COMM_FRAME_CRC_LEN ) {    
+        COMM_PROTOCOL_TRACE(2, "recv_len(%d) < frame_len(%d), wait more, return", 
+                recv_len, 
+                SNDP_COMM_FRAME_HEAD_LEN + cmd_data_len + SNDP_COMM_FRAME_CRC_LEN);
+		return false;
+	}
+
+	uint16_t crc_idx = SNDP_COMM_FRAME_HEAD_LEN + cmd_data_len;
+	uint16_t recv_crc = (uint16_t)((recv_data[crc_idx]<<8)|(recv_data[crc_idx + 1]));
+	uint16_t calc_crc = sndp_comm_protocol_calc_crc16(SNDP_COMM_CRC_INIT_VAL, recv_data, 0, SNDP_COMM_FRAME_HEAD_LEN + cmd_data_len);
+    
+	if(recv_crc != calc_crc) {
+        COMM_PROTOCOL_TRACE(2, "Invalid CRC, recv(%04X) != calc(%04X), return", recv_crc, calc_crc);
+		return false;
+	}
+
+	return true;
+}
 
 
 #endif	/* __SNDP_COMM_MGR__ */
