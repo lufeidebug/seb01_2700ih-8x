@@ -1337,15 +1337,19 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 		case SNDP_BT_CONN_STATUS_TWS_DISCONNECTED:
 			sndp_update_audio_channel(false);
 			sndp_dev_clear_device_info(true);
+#if 0        
             bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_CUSTOM, true);
+#endif
 			break;
             
 		case SNDP_BT_CONN_STATUS_TWS_CONNECTED:
 			sndp_update_audio_channel(true);
             sndp_ui_all_status_sync_send();
+#if 0        
             if(sndp_is_tws_slave_mode()) {
                 bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_CUSTOM, false);
             }
+#endif            
 			break;
 
 		case SNDP_BT_CONN_STATUS_A2DP_DISCONNECTED:
