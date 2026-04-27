@@ -118,6 +118,12 @@ void sndp_hr_app_init(void);
 void sndp_ppg_notification_start(void);
 
 uint8_t sndp_hr_running_state(void);
+
+void sndp_dbbeats_put_sleep_sensor_data(void);
+
+void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
+                                uint8_t screen_status[],
+                                int8_t sound_state);
 #ifdef __cplusplus
 	}
 #endif

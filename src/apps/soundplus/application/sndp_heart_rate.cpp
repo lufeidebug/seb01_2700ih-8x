@@ -344,23 +344,23 @@ static void sndp_hr_process_thread(void const *argument)
             sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_report_hr, (uint32_t)hrv_ptr, count, result_code);
         }
         
-        if(hr_ctx.sleep_running) {
-            sleep_analysis_time++;
+        // if(hr_ctx.sleep_running) {
+        //     sleep_analysis_time++;
 
-            if(sleep_analysis_time >= 30) {
-                sleep_analysis_time = 0;
-                SNDP_TRACE(0, "sleep analyse...");
+        //     if(sleep_analysis_time >= 30) {
+        //         sleep_analysis_time = 0;
+        //         SNDP_TRACE(0, "sleep analyse...");
                 
-                // sleep_step_13: Input sensor data
-                dbbeats_put_sleep_sensor_data();
+        //         // sleep_step_13: Input sensor data
+        //         dbbeats_put_sleep_sensor_data();
 
-                dbbeats_put_sleep_app_data(
-                    sleep_app_accel, 
-                    sleep_screen_status, 
-                    0);
+        //         dbbeats_put_sleep_app_data(
+        //             sleep_app_accel, 
+        //             sleep_screen_status, 
+        //             0);
 
-            }
-        }
+        //     }
+        // }
 #endif
 
         hr_measure_time++;
@@ -451,7 +451,21 @@ void sndp_hr_mearsuring_stop(void)
 
 }
 
+void sndp_dbbeats_put_sleep_sensor_data(void)
+{
+    dbbeats_put_sleep_sensor_data();
+}
 
+void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
+                                uint8_t screen_status[],
+                                int8_t sound_state)
+{
+    memset(sleep_app_accel, 0, sizeof(sleep_app_accel));
+    memset(sleep_screen_status, 0, sizeof(sleep_screen_status));
+    memcpy(sleep_app_accel, accel_data_m, sizeof(sleep_app_accel));
+    memcpy(sleep_screen_status, sleep_screen_status, sizeof(sleep_screen_status));
+    dbbeats_put_sleep_app_data(sleep_app_accel, sleep_screen_status, sound_state);
+}
 // Define callback function
 void sndp_sleep_analysis_callback(int8_t *sleep_stage,
                    int8_t sleep_position,

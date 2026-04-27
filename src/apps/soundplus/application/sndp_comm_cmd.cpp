@@ -85,7 +85,6 @@ static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_peer(void);
 static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void);
 static uint32_t sndp_comm_cmd_sleepapp_stop_report_proximity(void);
 static void sndp_findme_loop_handler(uint8_t onoff);
-bool sndp_comm_sleepapp_report_sleep_tracking = false;
 uint8_t wear_state_update_onoff = 0;
 uint8_t sndp_sleepapp_report_battery_onoff = 0;
 uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
@@ -2200,8 +2199,11 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_co
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    sndp_comm_sleepapp_report_sleep_tracking = true;
-    sndp_sleep_comm_main_rsp_cmd(cmd_info);
+    int16_t *accel_data_m = (int16_t*)&cmd_info->value[0];
+    uint8_t *screen_status = &cmd_info->value[180];
+    uint8_t sound_state = cmd_info->value[210];
+   sndp_dbbeats_put_sleep_sensor_data();
+   sndp_dbbeats_put_sleep_app_data(accel_data_m, screen_status, sound_state);
     return 0;
 }
 
@@ -2265,23 +2267,22 @@ uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
         sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);
         return 1;
     }
-    if(sndp_comm_sleepapp_report_sleep_tracking){
-        uint8_t sendvalue[44];
-        uint8_t sendlen = 0;
-        memset(sendvalue, 0, sizeof(sendvalue));
-        memcpy(sendvalue, sleep_stage, 40);
-        sendlen += 40;
-        sendvalue[sendlen] = (uint8_t)((position_and_control >> 8) & 0xFF);
-        sendlen++;
-        sendvalue[sendlen] = position_and_control & 0xFF;
-        sendlen++;
-        sendvalue[sendlen] = (uint8_t)((result_code >> 8) & 0xFF);
-        sendlen++;
-        sendvalue[sendlen] = (uint8_t)(result_code & 0xFF);
-        sendlen++;
-        sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_SLEEP_TRACKING, sendlen+1, sendvalue);
-        sndp_comm_sleepapp_report_sleep_tracking = false;
-    }
+
+    uint8_t sendvalue[44];
+    uint8_t sendlen = 0;
+    memset(sendvalue, 0, sizeof(sendvalue));
+    memcpy(sendvalue, sleep_stage, 40);
+    sendlen += 40;
+    sendvalue[sendlen] = (uint8_t)((position_and_control >> 8) & 0xFF);
+    sendlen++;
+    sendvalue[sendlen] = position_and_control & 0xFF;
+    sendlen++;
+    sendvalue[sendlen] = (uint8_t)((result_code >> 8) & 0xFF);
+    sendlen++;
+    sendvalue[sendlen] = (uint8_t)(result_code & 0xFF);
+    sendlen++;
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_SLEEP_TRACKING, sendlen+1, sendvalue);
+
     return 0;
 }
 
