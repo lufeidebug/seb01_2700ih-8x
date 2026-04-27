@@ -2264,7 +2264,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
    if(!sndp_comm_ble_is_connected())
     {
         COMM_CMD_TRACE(0, "BLE is not connected, stop sleep stage reporting");
-        sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);
+        // sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);
         return 1;
     }
 
