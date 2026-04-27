@@ -2308,7 +2308,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, 
     if(!sndp_comm_ble_is_connected())
     {
         COMM_CMD_TRACE(0, "BLE is not connected, stop hr");
-        sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_stop, 0, 0, 0);
+        // sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_stop, 0, 0, 0);
         return 1;
     }
 
