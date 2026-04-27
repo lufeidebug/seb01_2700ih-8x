@@ -289,7 +289,7 @@ POSSIBLY_UNUSED static void sndp_ui_wear_on_play_music(void)
 		return;
 	}
 #if defined(__SNDP_SLEEP_APP__)
-    if(1)//(sndp_dev_sleep_app_get_splaypause_onoff(false) == 0)
+    if((sndp_dev_sleep_app_get_splaypause_onoff(false) == 0)
     {
 		SPUI_TRACE(0, "%d, rtn", __LINE__);
 		return;        

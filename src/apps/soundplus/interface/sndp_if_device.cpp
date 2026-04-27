@@ -1947,14 +1947,14 @@ void sndp_set_default_flag(void)
 	sleep_flag_flash.sleep_anc_mode = 0;
 	sleep_flag_flash.sleep_gesture_onoff = 1;
 	sleep_flag_flash.sleep_prompt_onoff = 1;
-	sleep_flag_flash.sleep_splaypause_onoff = 1;
+	sleep_flag_flash.sleep_splaypause_onoff = 0;
 
 	/*****************from flash running flag*****************************/
 	sleep_flag_run.sleep_eq_index = 0;
 	sleep_flag_run.sleep_anc_mode = 0;
 	sleep_flag_run.sleep_gesture_onoff = 1;
 	sleep_flag_run.sleep_prompt_onoff = 1;	
-	sleep_flag_run.sleep_splaypause_onoff = 1;
+	sleep_flag_run.sleep_splaypause_onoff = 0;
 	sleep_flag_ptr->key = SNDP_DA_PARAM_FIELD_VALID;
 	memcpy(sleep_flag_ptr->data, &sleep_flag_flash, sizeof(sndp_sleep_app_flag));
 	sndp_da_write_field(SNDP_DA_FIELD_APP_DATA, (uint8_t *)sleep_flag_ptr, sizeof(sndp_da_field_sleep_app_data_s),true);
