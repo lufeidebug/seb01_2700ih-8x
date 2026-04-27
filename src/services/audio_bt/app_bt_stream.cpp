@@ -3935,6 +3935,7 @@ static int bt_a2dp_player(enum PLAYER_OPER_T on, enum APP_SYSFREQ_FREQ_T freq)
 #ifdef ANC_APP
         anc_status_record = 0xff;
 #if defined(__SNDP_SLEEP_APP__)
+        sndp_clean_user_record();
         sndp_bt_audio_updata_eq_for_anc();
 #else
         bt_audio_updata_eq_for_anc(app_anc_work_status());

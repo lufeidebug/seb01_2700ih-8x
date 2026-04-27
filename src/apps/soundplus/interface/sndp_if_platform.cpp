@@ -89,7 +89,8 @@ static uint8_t sndp_call_in_out = 0; // 0:none, 1:incoming, 2:outgoing
 static sndp_pairing_type_e sndp_pairing_type = SNDP_PAIRING_NONE; // 0:未配对，1：对耳配对，2：单耳配对。
 static sndp_pairing_state_e sndp_pairing_status = SNDP_PAIR_STA_NONE; //0:未配对，1：配对中，2：配对成功，3：配对超时。
 uint8_t sndp_is_shutting_down = 0; // 0:正常，1：正在关机流程中
- 
+uint8_t sndp_user_eq_record = 0xff;
+uint8_t sndp_user_anc_record = 0xff;
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
@@ -1424,9 +1425,9 @@ uint32_t sndp_bt_audio_set_eq(uint8_t index)
     const IIR_CFG_T *iir_cfg=NULL;
     const IIR_CFG_T *iir_cfg_2=NULL;
 
-    // SNDP_IF_TRACE(0,"[EQ] index=%d",  index);
+    SNDP_IF_TRACE(0,"[EQ] index=%d",  index);
 
-		if(index > SNDP_EQ_MODE_RELAXED && index != SNDP_EQ_MODE_CUSTOM_MODE)
+		if(index >= EQ_HW_DAC_IIR_LIST_NUM)
 		{
 				SNDP_IF_TRACE(0,"[EQ] SET index %u > EQ_HW_DAC_IIR_LIST_NUM", index);
 				return 1;
@@ -1447,23 +1448,34 @@ uint32_t sndp_bt_audio_set_eq(uint8_t index)
     return audio_eq_set_cfg_full(fir_cfg,fir_cfg_2,iir_cfg,iir_cfg_2,AUDIO_EQ_TYPE_HW_DAC_IIR);
 }
 
+void sndp_clean_user_record(void)
+{
+	sndp_user_eq_record = 0xff;
+	sndp_user_anc_record = 0xff;
+}
+
 uint8_t sndp_bt_audio_updata_eq_for_anc(void)
 {
-	bool anc_status = app_anc_work_status();
-	// SNDP_IF_TRACE(1, "anc_status=%d", anc_status);
-	hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_104M);
-
-	if(anc_status)
-	{
-		sndp_bt_audio_set_eq(sndp_dev_sleep_app_get_eq_index(false) + EQ_HW_DAC_IIR_LIST_NUM/2);
-	}
-	else
-	{
-		sndp_bt_audio_set_eq(sndp_dev_sleep_app_get_eq_index(false));
-	}
+	bool sndp_anc_status = app_anc_work_status();
+	uint8_t sndp_eq_index = sndp_dev_sleep_app_get_eq_index(false);
 	
-
-	hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_32K);
+	if(sndp_user_eq_record != sndp_eq_index || sndp_user_anc_record != sndp_anc_status) {
+		SNDP_TRACE(4, "anc_status=%d,eq_index=%d,rec_anc=%d,rec_eq=%d", sndp_anc_status,sndp_eq_index,sndp_user_anc_record,sndp_user_eq_record);
+		if(sndp_anc_status != 0)
+		{
+			sndp_user_anc_record = sndp_anc_status;
+			sndp_user_eq_record = sndp_eq_index;
+			hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_104M);
+			sndp_bt_audio_set_eq(sndp_eq_index + EQ_HW_DAC_IIR_LIST_NUM/2);
+			hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_32K);
+		}
+		else
+		{
+			sndp_user_eq_record = sndp_eq_index;
+			sndp_user_anc_record = sndp_anc_status;
+			sndp_bt_audio_set_eq(sndp_eq_index);
+		}	
+	}
 	return 0;
 
 }

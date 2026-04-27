@@ -252,6 +252,7 @@ void sndp_save_eq_param_to_flash(void);
 #endif
 uint32_t sndp_bt_audio_set_eq(uint8_t index);
 uint8_t sndp_bt_audio_updata_eq_for_anc(void);
+void sndp_clean_user_record(void);
 #endif
 void sndp_play_findme(void);
 #ifdef __cplusplus
