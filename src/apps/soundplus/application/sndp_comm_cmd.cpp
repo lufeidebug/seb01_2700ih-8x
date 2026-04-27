@@ -2286,7 +2286,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
     return 0;
 }
 
-uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, uint8_t resulcode)
+uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data)
 {	
     /*
         Byte0   HR
@@ -2311,23 +2311,56 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, 
         // sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_stop, 0, 0, 0);
         return 1;
     }
-
-    uint8_t sendvalue[16];
+    sndp_hr_dbbeats_data *dbbeats_data_ptr = (sndp_hr_dbbeats_data *)dbbeats_data;
+    HrvIndices *sendhr_ptr = (HrvIndices *)sendhr;
+    uint8_t sendvalue[17];
     uint8_t sendlen = 0;
     memset(sendvalue, 0, sizeof(sendvalue));
-#if defined(__SNDP_HR_ALGO__)
-    memcpy(sendvalue, sendhr, sizeof(HrvIndices));
-    sendlen += sizeof(HrvIndices);
-#else
-    memcpy(sendvalue, "Noalgo", sizeof("Noalgo"));
-    sendlen += sizeof("Noalgo");
-#endif
-    sendvalue[sendlen] = sendhrcount;
-    sendlen++;
-    sendvalue[sendlen] = resulcode;
-    sendlen++;
 
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING, sendlen+1, sendvalue);
+    sendvalue[sendlen] = sendhr_ptr->HR & 0xFF;
+    sendlen++;
+    sendvalue[sendlen] = (sendhr_ptr->HR>>8) & 0xFF;
+    sendlen++;
+    sendvalue[sendlen] = sendhr_ptr->SDNN & 0xFF;
+    sendlen++;
+    sendvalue[sendlen] = (sendhr_ptr->SDNN>>8) & 0xFF;
+    sendlen++;
+    sendvalue[sendlen] = sendhr_ptr->coherence & 0xFF;
+    sendlen++;
+    sendvalue[sendlen] = (sendhr_ptr->coherence>>8) & 0xFF;
+    sendlen++;
+    sendvalue[sendlen] = 0;
+    sendlen++;
+    sendvalue[sendlen] = dbbeats_data_ptr->count;
+    sendlen++;
+    sendvalue[sendlen] = dbbeats_data_ptr->result_code & 0xFF;
+    sendlen++;
+    sendvalue[sendlen] = (dbbeats_data_ptr->result_code>>8) & 0xFF;
+    sendlen++;
+    if(sndp_hr_mearsuring_get_dump_state())
+    {
+        if(sndp_dev_is_left_earphone()){
+            sendvalue[sendlen] = 0x01;
+        }else if(sndp_dev_is_right_earphone()){
+            sendvalue[sendlen] = 0x02;
+        }
+        sendlen++;
+        sendvalue[sendlen] = dbbeats_data_ptr->is_contact;
+        sendlen++;
+        sendvalue[sendlen] = dbbeats_data_ptr->led_state;
+        sendlen++;
+        sendvalue[sendlen] = dbbeats_data_ptr->pck_interval & 0xFF;
+        sendlen++;
+        sendvalue[sendlen] = (dbbeats_data_ptr->pck_interval>>8) & 0xFF;
+        sendlen++;
+        sendvalue[sendlen] = (dbbeats_data_ptr->pck_interval>>16) & 0xFF;
+        sendlen++;
+        sendvalue[sendlen] = (dbbeats_data_ptr->pck_interval>>24) & 0xFF;
+        sendlen++;
+        sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING_WITH_DUMP, sendlen+1, sendvalue);
+    }else{
+        sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING, sendlen+1, sendvalue);
+    }
 	return 0;
 }
 

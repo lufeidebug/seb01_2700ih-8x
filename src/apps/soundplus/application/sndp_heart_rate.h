@@ -22,7 +22,13 @@ extern "C" {
 #define HR_DUMP
 #endif
 
-
+typedef struct {
+    int16_t result_code;
+    int8_t count;
+    uint8_t is_contact;
+    int8_t led_state;    
+    int32_t pck_interval;
+} sndp_hr_dbbeats_data;
 
 /**
  * @brief       Start heartrate mearsuring

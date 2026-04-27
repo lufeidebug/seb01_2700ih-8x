@@ -403,7 +403,7 @@ typedef union
 }SndpGetBattryMap_t;
 
 
-uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t sendhrcount, uint8_t resulcode);
+uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data);
 uint32_t sndp_comm_cmd_sleepapp_proximity_role_switch_update(void);
 uint32_t sndp_comm_cmd_send_lr_sync_anc_mode(uint8_t ancmode,uint8_t is_save);
 uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,

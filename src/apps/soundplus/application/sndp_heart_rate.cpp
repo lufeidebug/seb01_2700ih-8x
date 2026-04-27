@@ -228,8 +228,7 @@ static void sndp_hr_process_thread(void const *argument)
     POSSIBLY_UNUSED struct HrvIndices hrv;
     POSSIBLY_UNUSED uint8_t* hrv_ptr = (uint8_t*)&hrv;
 #endif
-    POSSIBLY_UNUSED int16_t result_code;
-    POSSIBLY_UNUSED int8_t count;
+    POSSIBLY_UNUSED sndp_hr_dbbeats_data dbbeats_data;
     POSSIBLY_UNUSED int8_t led;
     POSSIBLY_UNUSED int32_t acc_queue_len;
     POSSIBLY_UNUSED int32_t acc_data_len;
@@ -311,20 +310,24 @@ static void sndp_hr_process_thread(void const *argument)
 
         // hr_setp_7: Input data
         // sleep_step_7: Input data
+        dbbeats_data.is_contact = 1;
+        dbbeats_data.led_state = 50;
+        dbbeats_data.pck_interval = 1000;
         dbbeats_put_heartrate_data(
                 hr_acc_raw_data, 
                 hr_ppg_raw_data, 
                 hr_dev_state, 
-                1, 50, 
+                dbbeats_data.is_contact, 
+                dbbeats_data.led_state, 
                 HR_ACC_SECOND_ALLCH_SAMPLES, 
                 HR_PPG_SECOND_ALLCH_SAMPLES, 
                 HR_DEV_SECOND_ALLCH_SAMPLES, 
-                1000);
+                dbbeats_data.pck_interval);
 
         // hr_setp_8: Return results
         // sleep_step_8: Return results
 		 memset(&hrv, 0, sizeof(struct HrvIndices));
-        dbbeats_get_heartrate_data(&hrv, &result_code, &count, &led, &debug_dump);
+        dbbeats_get_heartrate_data(&hrv, &dbbeats_data.result_code, &dbbeats_data.count, &led, &debug_dump);
 
 #if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)    
         end_time = hal_sys_timer_get();
@@ -333,15 +336,15 @@ static void sndp_hr_process_thread(void const *argument)
 
         // hr_setp_9: Display hr results
         // sleep_step_9: Display hr results
-        if(result_code == 1 && hrv.HR > 1) {
+        if(dbbeats_data.result_code == 1 && hrv.HR > 1) {
             SNDP_TRACE(0, "HR: %d BPM, SDNN: %d ms", hrv.HR, hrv.SDNN);
-        } else if (result_code == 101) {
+        } else if (dbbeats_data.result_code == 101) {
             SNDP_TRACE(0, "HR: Sensor detached");
         }
 
         // hr_setp_10: Report results
         if(hr_ctx.hr_running) {
-            sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_report_hr, (uint32_t)hrv_ptr, count, result_code);
+                sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_report_hr, (uint32_t)hrv_ptr, (uint32_t)&dbbeats_data, 0);
         }
         
         // if(hr_ctx.sleep_running) {
