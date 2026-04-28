@@ -328,10 +328,10 @@ static void app_datapaths_tx_data_sent(uint16_t connhdl, const uint32_t *dummy)
 static void app_datapaths_rx_data_received(uint8_t conidx, uint16_t connhdl, const uint8_t *data, uint16_t len)
 {
     // loop back the received data
-    if (app_datapaths_get_tx_ntf_en_by_connhdl(connhdl))
-    {
-        app_datapath_server_send_data_via_notification(connhdl, (uint8_t *)data, len);
-    }
+    // if (app_datapaths_get_tx_ntf_en_by_connhdl(connhdl))
+    // {
+    //     app_datapath_server_send_data_via_notification(connhdl, (uint8_t *)data, len);
+    // }
 
     TRACE(2, "%s length %d", __func__, len);
 
