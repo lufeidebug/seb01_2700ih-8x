@@ -1607,7 +1607,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sleep_ap
      0x02: PPG 128Hz
      0x03: PPG 256Hz
      */
-    if(cmd_info->value[0] == 0x01){
+    if(cmd_info->value[0] == 0x01 || cmd_info->value[0] == 0x00){
         cmd_info->value[0] = 0x00; //success
     }else{
         cmd_info->value[0] = 0x01;
