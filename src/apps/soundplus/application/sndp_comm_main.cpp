@@ -650,7 +650,7 @@ int32_t sleep_app_comm_main_send_cmd_by_id(sleep_app_cmd_id_e cmd_id, uint8_t da
     sleep_app_comm_cmd_info_s *cmd = &sndp_sleep_comm_send_cmd;
     
     cmd->flag = AppFlag;
-    cmd->data_len = datalen;
+    cmd->data_len = datalen + SLEEP_APP_CMD_LEN;
     cmd->cmd = cmd_id;
     if(datalen > 0 && datalen < SLEEP_APP_COMM_DATA_LEN_MAX && cmd_data != NULL) {
         memcpy(cmd->value, cmd_data, datalen);

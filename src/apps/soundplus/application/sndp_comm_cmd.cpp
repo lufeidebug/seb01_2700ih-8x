@@ -2281,7 +2281,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
     sendlen++;
     sendvalue[sendlen] = (uint8_t)(result_code & 0xFF);
     sendlen++;
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_SLEEP_TRACKING, sendlen+1, sendvalue);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_SLEEP_TRACKING, sendlen, sendvalue);
 
     return 0;
 }
@@ -2357,16 +2357,16 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data
         sendlen++;
         sendvalue[sendlen] = (dbbeats_data_ptr->pck_interval>>24) & 0xFF;
         sendlen++;
-        sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING_WITH_DUMP, sendlen+1, sendvalue);
+        sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING_WITH_DUMP, sendlen, sendvalue);
     }else{
-        sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING, sendlen+1, sendvalue);
+        sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING, sendlen, sendvalue);
     }
 	return 0;
 }
 
-static uint8_t* pack_ppg_data(uint8_t* notify_data, uint16_t ppg_raw_data_len, int32_t* ppg_raw_data) {
+static uint8_t pack_ppg_data(uint8_t* notify_data, uint16_t ppg_raw_data_len, int32_t* ppg_raw_data) {
     uint8_t* p = notify_data;
-    
+    uint8_t len = 0;
     // 1. 打包LR_flag 1字节
     if(sndp_dev_is_left_earphone())
         *p++ = 0x01;
@@ -2383,7 +2383,8 @@ static uint8_t* pack_ppg_data(uint8_t* notify_data, uint16_t ppg_raw_data_len, i
         *p++ = (uint8_t)((ppg_raw_data[i] >> 16) & 0xFF); // 最高字节（低3字节中的）
     }
     
-    return notify_data;  // 返回缓冲区起始位置
+    len = ppg_raw_data_len*3 + 1 + 1;
+    return len;  // 返回缓冲区起始位置
 }
 
 uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len)
@@ -2398,10 +2399,10 @@ uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t p
         return 0;
     }
     uint16_t ppg_samples_len = ppg_raw_len > 32 ? 32 : ppg_raw_len; // 最多打包32个数据点
-    pack_ppg_data(ppg_notify_data, ppg_samples_len, ppg_raw_data);
+    uint8_t notify_len = pack_ppg_data(ppg_notify_data, ppg_samples_len, ppg_raw_data);
 
     // COMM_CMD_TRACE(1, "report ppg to app, len=%d", ppg_samples_len);
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_PPG_NOTIFICATION, ppg_samples_len*3+1+1+1, (uint8_t *)ppg_notify_data);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_PPG_NOTIFICATION, notify_len, (uint8_t *)ppg_notify_data);
 
     return 0;
 }
@@ -2449,7 +2450,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t a
     }
 
     // COMM_CMD_TRACE(1, "report accelerometer to app, len=%d", acc_raw_len);
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION, acc_raw_len*sizeof(int16_t)+1, (uint8_t *)acc_raw_data);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION, acc_raw_len*sizeof(int16_t), (uint8_t *)acc_raw_data);
 
     return 0;
 }
@@ -2489,7 +2490,7 @@ static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
         sendvalue[4] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
     }
 
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION, sizeof(sendvalue)+1, sendvalue);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION, sizeof(sendvalue), sendvalue);
     return 0;
 }
 
@@ -2606,7 +2607,7 @@ uint32_t sndp_comm_cmd_sleepapp_wear_state_update(uint8_t lR_flag, uint8_t wear_
         sendvalue[4] = wear_onoff_cnt[SNDP_DEV_RIGHT_UNWEAR_CNT] & 0xff;
         sendvalue[5] = (wear_onoff_cnt[SNDP_DEV_RIGHT_UNWEAR_CNT] >> 8) & 0xff;
     }
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_WEAR_STATE_UPDATE, sizeof(sendvalue)+1, sendvalue);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_WEAR_STATE_UPDATE, sizeof(sendvalue), sendvalue);
     return 0;
 }
 
@@ -2694,7 +2695,7 @@ void sndp_sleep_app_report_battery(void)
     // COMM_CMD_TRACE(0,"char:%d,lbat:%02x char:%d,rbat:%02x", (uint8_t)sndp_dev_charger_is_charging(false), sndp_dev_get_bat_percentage(false),
                                             //    (uint8_t)sndp_dev_charger_is_charging(true),sndp_dev_get_bat_percentage(true));
     // DUMP8("%02x",&reply_battery,sizeof(reply_battery));                                           
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_BATTERY_STATUS, sizeof(reply_battery)+1, (uint8_t*)&reply_battery);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_BATTERY_STATUS, sizeof(reply_battery), (uint8_t*)&reply_battery);
 }
 /*
 BLE packet format:
