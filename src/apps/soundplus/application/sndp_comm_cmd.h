@@ -109,9 +109,6 @@ typedef enum {
     COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x32, /* desc: 左右耳同步手势使能开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */    
-    COMM_CMDID_LR_SYNC_FINDME_ONOFF                 = 0x33, /* desc: 左右耳同步开关findme提示音。
-                                                             * recv: 1 bytes, onoff(1)
-                                                             * rsp : 0 bytes */ 
     COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF = 0x34, /* desc: 左右耳同步 proximity 上报开关。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */ 

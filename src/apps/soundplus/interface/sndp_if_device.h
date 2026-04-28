@@ -201,6 +201,8 @@ typedef struct {
 	uint8_t sleep_proximity_onoff;
 	unsigned short sleep_proximity_data;
 	uint8_t sleep_accelerometer_onoff;
+	uint8_t sleep_heartrate_onoff;
+	uint8_t sleep_stage_onoff;
 	uint16_t sleep_wear_cnt[SNDP_DEV_WEAR_CNT_MAX]; 
 #endif
 } sndp_dev_earbuds_param_s;
@@ -419,6 +421,10 @@ unsigned short sndp_dev_sleep_app_get_proximity_data(bool peer);
 uint8_t sndp_dev_sleep_app_set_proximity_data(bool peer, unsigned short data);
 void sndp_dev_sleep_app_wear_cnt(uint8_t ear_side, uint8_t wear_status);
 uint16_t *sndp_dev_sleep_app_get_wear_cnt(void);
+uint8_t sndp_dev_sleep_app_set_heartrate_onoff(bool peer, uint8_t onoff);
+uint8_t sndp_dev_sleep_app_get_heartrate_onoff(bool peer);
+uint8_t sndp_dev_sleep_app_set_stage_onoff(bool peer, uint8_t onoff);
+uint8_t sndp_dev_sleep_app_get_stage_onoff(bool peer);
 void sndp_dev_sleep_app_clean_wear_cnt(void);
 #endif
 /************************************************** prompt end **************************************************/

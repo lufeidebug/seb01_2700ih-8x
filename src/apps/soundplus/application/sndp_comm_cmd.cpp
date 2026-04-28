@@ -660,21 +660,6 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_update_mapping(sndp_comm_cmd_info_s *
     return 0;
 }
 
-uint32_t sndp_comm_cmd_send_lr_sync_findme_onoff(uint8_t onoff)
-{
-    uint8_t data = onoff;
-    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_FINDME_ONOFF, &data, 1);
-    return 0;
-}
-
-static uint32_t sndp_comm_cmd_recv_lr_sync_findme_onoff(sndp_comm_cmd_info_s *cmd_info)
-{
-    if(cmd_info->data_len == 1) {
-
-    }
-    return 0;
-}
-
 uint32_t sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(unsigned short proximity_value)
 {
     uint8_t data[2];
@@ -1380,7 +1365,6 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_LR_SYNC_GESTRUE_ONOFF           , "LR_SYNC_GESTRUE_ONOFF"    , sndp_comm_cmd_recv_lr_sync_gesture_onoff           },
     { COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF          , "LR_SYNC_SPLAYPAUSE_ONOFF"   , sndp_comm_cmd_recv_lr_sync_splaypause_onoff          },
     { COMM_CMDID_LR_SYNC_UPDATE_MAPPING         , "LR_SYNC_UPDATE_MAPPING"  , sndp_comm_cmd_recv_lr_sync_update_mapping         },
-    { COMM_CMDID_LR_SYNC_FINDME_ONOFF           , "LR_SYNC_FINEDME_ONOFF"  , sndp_comm_cmd_recv_lr_sync_findme_onoff         },
     { COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF          , "LR_SYNC_Proximity_Notification_ONOFF"  , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_ONOFF         },
     { COMM_CMDID_LR_SYNC_Proximity_Notification_DATA           , "LR_SYNC_Proximity_Notification_DATA"  , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_DATA         },
     { COMM_CMDID_LR_SYNC_START_HEARTRATE_MEASUREMENT           , "LR_SYNC_START_HR_MEASURE"  , sndp_comm_cmd_recv_lr_sync_start_heartrate_measure         },
@@ -1568,7 +1552,6 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_find_my_earphone(sleep_a
     */
     COMM_CMD_TRACE(0, "findme earphone = %d",cmd_info->value[0]);
     sndp_delay_exec_start(100, (uint32_t)sndp_findme_loop_handler,cmd_info->value[0],0,0);
-    sndp_comm_cmd_send_lr_sync_findme_onoff(cmd_info->value[0]);
 
     cmd_info->value[0] = 0;
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -2171,6 +2154,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_ap
     uint8_t dump_data = cmd_info->value[1];
     sndp_hr_mearsuring_set_sampling_rate(sampling_rate);
     sndp_hr_mearsuring_set_dump_state(dump_data);
+    sndp_dev_sleep_app_set_heartrate_onoff(false, 0x01);
     sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_start, sampling_rate, dump_data, 0);
     return 0;
 }
@@ -2181,16 +2165,19 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app
     cmd_info->data_len = 0x02;
     cmd_info->value[0] = 0; // success
     
+    sndp_dev_sleep_app_set_heartrate_onoff(false, 0x00);
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    uint32_t sleep_mode = cmd_info->value[0]<<24 | cmd_info->value[1]<<16 | cmd_info->value[2]<<8 | cmd_info->value[3];
+    uint32_t sleep_control = cmd_info->value[0]<<24 | cmd_info->value[1]<<16 | cmd_info->value[2]<<8 | cmd_info->value[3];
     DUMP8("0x%02x ", cmd_info->value, 4);
-    COMM_CMD_TRACE(1, "sleep mode=%d", sleep_mode);
-    sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_start, sleep_mode, 0, 0);
+    COMM_CMD_TRACE(1, "sleep control=%d", sleep_control);
+    sndp_set_sleep_control((int32_t)sleep_control);
+    sndp_dev_sleep_app_set_stage_onoff(false, 0x01);
+    sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_start, sleep_control, 0, 0);
     cmd_info->data_len = 0x02;
     cmd_info->value[0] = 0; // success
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -2211,6 +2198,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_com
 {
     cmd_info->data_len = 0x02;
     cmd_info->value[0] = 0; // success
+    sndp_dev_sleep_app_set_stage_onoff(false, 0x00);
     sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;

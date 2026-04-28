@@ -1865,6 +1865,48 @@ uint8_t sndp_dev_sleep_app_set_proximity_data(bool peer, unsigned short data)
 	return 0;
 }
 
+uint8_t sndp_dev_sleep_app_set_heartrate_onoff(bool peer, uint8_t onoff)
+{
+	SNDP_IF_TRACE(0, "enter");
+	if(peer) {
+		sndp_dev_ctx.peer.sleep_heartrate_onoff = onoff;
+	} else {
+		sndp_dev_ctx.local.sleep_heartrate_onoff = onoff;
+	}
+
+	return 0;
+}
+
+uint8_t sndp_dev_sleep_app_get_heartrate_onoff(bool peer)
+{
+	if(peer) {
+		return sndp_dev_ctx.peer.sleep_heartrate_onoff;
+	} else {
+		return sndp_dev_ctx.local.sleep_heartrate_onoff;
+	}
+}
+
+uint8_t sndp_dev_sleep_app_set_stage_onoff(bool peer, uint8_t onoff)
+{
+	SNDP_IF_TRACE(0, "enter");
+	if(peer) {
+		sndp_dev_ctx.peer.sleep_stage_onoff = onoff;
+	} else {
+		sndp_dev_ctx.local.sleep_stage_onoff = onoff;
+	}
+
+	return 0;
+}
+
+uint8_t sndp_dev_sleep_app_get_stage_onoff(bool peer)
+{
+	if(peer) {
+		return sndp_dev_ctx.peer.sleep_stage_onoff;
+	} else {
+		return sndp_dev_ctx.local.sleep_stage_onoff;
+	}
+}
+
 void sndp_dev_sleep_app_wear_cnt(uint8_t ear_side, uint8_t wear_status)
 {
 	if(ear_side == SNDP_DEV_EARSIDE_LEFT)
@@ -2001,6 +2043,8 @@ void sndp_load_sleep_app_param(void)
 	sndp_dev_sleep_app_set_eq_index(false, sleep_flag_run.sleep_eq_index, false);
 	sndp_dev_sleep_app_anc_mode_set(false, sleep_flag_run.sleep_anc_mode, false);
 	sndp_dev_sleep_app_set_splaypause_onoff(false, sleep_flag_run.sleep_splaypause_onoff, false);
+	sndp_dev_sleep_app_set_heartrate_onoff(false, 0);
+	sndp_dev_sleep_app_set_stage_onoff(false, 0);
 }
 #endif
 

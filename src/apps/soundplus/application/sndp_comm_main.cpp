@@ -42,12 +42,6 @@
 #if defined(__SNDP_SLEEP_APP__)
 static sleep_app_comm_cmd_info_s sndp_sleep_comm_recv_cmd;
 static sleep_app_comm_cmd_info_s sndp_sleep_comm_send_cmd;
-inline void SleepAppFlagGet(uint32_t *flagaddr, uint8_t *dataaddr)
-{
-    ((uint8_t*)flagaddr)[2] = dataaddr[0];
-    ((uint8_t*)flagaddr)[1] = dataaddr[1];
-    ((uint8_t*)flagaddr)[0] = dataaddr[2];
-}
 #endif
 /**************************************************************************************************
 * Prototype
@@ -317,6 +311,13 @@ static int32_t sndp_comm_main_execute_cmd(sndp_comm_cmd_info_s *cmd)
 }
 
 #if defined(__SNDP_SLEEP_APP__)
+inline void SleepAppFlagGet(uint32_t *flagaddr, uint8_t *dataaddr)
+{
+    ((uint8_t*)flagaddr)[2] = dataaddr[0];
+    ((uint8_t*)flagaddr)[1] = dataaddr[1];
+    ((uint8_t*)flagaddr)[0] = dataaddr[2];
+}
+
 static int32_t sleep_app_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
 {
     sleep_comm_execute_cmd_hdlr(cmd);

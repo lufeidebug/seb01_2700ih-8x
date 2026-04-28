@@ -399,17 +399,27 @@ static POSSIBLY_UNUSED void sndp_ui_wear_off_close_anc(void)
 static POSSIBLY_UNUSED void sndp_ui_wear_on_start_hr(void)
 {
 	SPUI_TRACE(0, "starting");
-#if defined(__SNDP_HEART_RATE_MGR__)            
-    //sndp_hr_mearsuring_start(1, 0);
-    //sndp_sleep_analysis_start(0);
+#if defined(__SNDP_HEART_RATE_MGR__)
+    if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
+        sndp_hr_mearsuring_start(sndp_hr_mearsuring_get_sampling_rate(), sndp_hr_mearsuring_get_dump_state());
+    }            
+    
+    if(sndp_dev_sleep_app_get_stage_onoff(false)) {
+        sndp_sleep_analysis_start(sndp_get_sleep_control());
+    }
 #endif    
 }
 
 static POSSIBLY_UNUSED void sndp_ui_wear_off_stop_hr(void)
 {
-#if defined(__SNDP_HEART_RATE_MGR__)            
-    sndp_hr_mearsuring_stop();
-    sndp_sleep_analysis_stop();
+#if defined(__SNDP_HEART_RATE_MGR__) 
+    if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
+        sndp_hr_mearsuring_stop();
+    }           
+    
+    if(sndp_dev_sleep_app_get_stage_onoff(false)) {
+        sndp_sleep_analysis_stop();
+    }
 #endif
 
 	SPUI_TRACE(0, "stopped");
@@ -446,7 +456,7 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds, 0, 0, 0);
             sndp_delay_exec_start(300, (uint32_t)sndp_ui_wear_on_play_music, 0, 0, 0);
 			sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_role_switch, 0, 0, 0);          
-            // sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_start_hr, 0, 0, 0); 
+            sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_start_hr, 0, 0, 0); 
             sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_open_anc, 0, 0, 0);  
             sndp_delay_exec_start(2000, (uint32_t)sndp_ui_wear_on_enable_gesture, 0, 0, 0);
             

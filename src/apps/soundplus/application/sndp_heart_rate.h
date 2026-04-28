@@ -125,6 +125,10 @@ void sndp_ppg_notification_start(void);
 
 uint8_t sndp_hr_running_state(void);
 
+void sndp_set_sleep_control(int32_t sleep_control);
+
+int32_t sndp_get_sleep_control(void);
+
 void sndp_dbbeats_put_sleep_sensor_data(void);
 
 void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],

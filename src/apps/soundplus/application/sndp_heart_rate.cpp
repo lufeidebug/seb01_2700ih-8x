@@ -83,6 +83,7 @@ typedef struct {
     bool acc_notification;
     uint8_t sampling_rate;
     uint8_t dump_state;
+    int32_t sleep_control;
 } sndp_hr_ctx_s;
 
 
@@ -389,6 +390,16 @@ uint8_t sndp_hr_mearsuring_get_dump_state(void)
 void sndp_hr_mearsuring_set_dump_state(uint8_t dump_state)
 {
     hr_ctx.dump_state = dump_state;
+}
+
+void sndp_set_sleep_control(int32_t sleep_control)
+{
+    hr_ctx.sleep_control = sleep_control;
+}
+
+int32_t sndp_get_sleep_control(void)
+{
+    return hr_ctx.sleep_control;
 }
 
 uint8_t sndp_hr_running_state(void)
