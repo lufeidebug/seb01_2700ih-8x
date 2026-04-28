@@ -88,7 +88,6 @@ static void sndp_findme_loop_handler(uint8_t onoff);
 uint8_t wear_state_update_onoff = 0;
 uint8_t sndp_sleepapp_report_battery_onoff = 0;
 uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
-uint8_t ppg_notify_data[2+64*3] = {0};
 #endif
 
 
@@ -1524,6 +1523,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_param(sleep_app_c
 {
     IIR_CFG_T sleep_iir_cfg;
     int8_t eq_gain = 0;
+    
     sndp_get_custom_eq_param((uint8_t*)&sleep_iir_cfg);
     cmd_info->data_len = 9;
     for(int i=0; i<8; i++)
@@ -1569,7 +1569,9 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
             0x04: ANC ON (Adaptive)
             0x05: Transparent
     */
+    
     uint8_t anc_mode = cmd_info->value[0];
+    
     if(anc_mode == 2 || anc_mode == 3 || anc_mode == 4)
     {
         anc_mode = SNDP_ANC_MODE_1; //only support strong and off
@@ -1599,7 +1601,6 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_anc_mode(sleep_app_c
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sleep_app_comm_cmd_info_s *cmd_info)
 {
-    cmd_info->data_len = 0x02;
     /*
      value[0] : 
      0x00: PPG OFF
@@ -1607,6 +1608,8 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sleep_ap
      0x02: PPG 128Hz
      0x03: PPG 256Hz
      */
+     
+    cmd_info->data_len = 0x02;
     if(cmd_info->value[0] == 0x01 || cmd_info->value[0] == 0x00){
         cmd_info->value[0] = 0x00; //success
     }else{
@@ -1621,6 +1624,7 @@ POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_
 {   
     //if StartHeartrate 0x30 Dump on
     uint8_t onoff = cmd_info->value[0];
+    
     sndp_hr_mearsuring_set_dump_state(onoff);
     if(onoff){
         sndp_ppg_notification_start();
@@ -1636,6 +1640,7 @@ POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_set_local_proximity(void)
 {
     unsigned short proximity_value = 0;
+    
     sndp_dev_hr_read_proximity_value(&proximity_value);
     sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(proximity_value);
     sndp_dev_sleep_app_set_proximity_data(false, proximity_value);
@@ -1645,6 +1650,7 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_set_local_proximity(void)
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notification(sleep_app_comm_cmd_info_s *cmd_info)
 {
     uint8_t get_proximity_onoff = cmd_info->value[0];
+    
     TR_INFO(0, (get_proximity_onoff == 0x01) ? "enable proximity" : "disable proximity");
 
     sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_start_report_proximity);
@@ -1669,6 +1675,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notificati
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_accelerometer_notification(sleep_app_comm_cmd_info_s *cmd_info)
 {
     uint8_t onoff = cmd_info->value[0];
+    
     sndp_hr_mearsuring_set_dump_state(onoff);
     if(onoff){
         sndp_acc_notification_start();
@@ -1995,6 +2002,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
         }
 
     }
+    
     cmd_info->data_len = 0x02;
     cmd_info->value[0] = 0; // success
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -2015,21 +2023,21 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_settings(sleep_app_c
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sleep_app_comm_cmd_info_s *cmd_info)
 {
-        /* receving data format from app:
-            BYTE0 Reserve：
-                    default 0x00
-            BYTE1 Sensor Select
-                    0x01=PPG, 0x02=Acc
-            BYTE2 Write or Read
-                    0x01=Write, 0x02=Read
-            BYTE3 Read length（max 0x03）
-                    (0x00 = Write only)
-            BYTE4 Register Address
+    /* receving data format from app:
+        BYTE0 Reserve：
+                default 0x00
+        BYTE1 Sensor Select
+                0x01=PPG, 0x02=Acc
+        BYTE2 Write or Read
+                0x01=Write, 0x02=Read
+        BYTE3 Read length（max 0x03）
+                (0x00 = Write only)
+        BYTE4 Register Address
 
-            BYTE5 Write Values
-                Write only
-        */
-       /* reply data format to app:
+        BYTE5 Write Values
+            Write only
+    */
+    /* reply data format to app:
         BYTE0   Receive Status
                 0x00= Success, 0x01 = Fail
 
@@ -2037,18 +2045,20 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sleep_app
 
         BYTE2    Selected Sensor
                  0x01 = PPG, 0x02= Acc
-        
+
         BYTE3   Write or Read
                 0x02 = Read (read only)
 
         BYTE4   Read length (max 0x03)
 
         BYTE[5~7]	 Register Read Values 
-       */
+    */
+    
     SndpSensorCtrlMap_t *pSensorCtrlMap = (SndpSensorCtrlMap_t *)cmd_info->value;
     SndpSensorCtrlReplyMap_t pSensorCtrlReplyMap;
     uint8_t read_value[3] = {0};
     uint8_t read_len = 0;
+    
     memset(&pSensorCtrlReplyMap, 0, sizeof(pSensorCtrlReplyMap));
     if(cmd_info->data_len != 7){
         COMM_CMD_TRACE(0, "invalid data_len=%d", cmd_info->data_len);
@@ -2298,10 +2308,12 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data
         // sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_stop, 0, 0, 0);
         return 1;
     }
+    
     sndp_hr_dbbeats_data *dbbeats_data_ptr = (sndp_hr_dbbeats_data *)dbbeats_data;
     HrvIndices *sendhr_ptr = (HrvIndices *)sendhr;
     uint8_t sendvalue[17];
     uint8_t sendlen = 0;
+    
     memset(sendvalue, 0, sizeof(sendvalue));
 
     sendvalue[sendlen] = sendhr_ptr->HR & 0xFF;
@@ -2351,29 +2363,6 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data
 	return 0;
 }
 
-static uint8_t pack_ppg_data(uint8_t* notify_data, uint16_t ppg_raw_data_len, int32_t* ppg_raw_data) {
-    uint8_t* p = notify_data;
-    uint8_t len = 0;
-    // 1. 打包LR_flag 1字节
-    if(sndp_dev_is_left_earphone())
-        *p++ = 0x01;
-    else
-        *p++ = 0x02;
-
-    // 2. 打包ppg_raw_data_len（1字节）
-    *p++ = (uint8_t)ppg_raw_data_len;           // 低字节
-
-    // 3. 打包32个int32的低3字节 32*3=96字节
-    for (int i = 0; i < ppg_raw_data_len; i++) {
-        *p++ = (uint8_t)(ppg_raw_data[i] & 0xFF);         // 最低字节
-        *p++ = (uint8_t)((ppg_raw_data[i] >> 8) & 0xFF);  // 中间字节
-        *p++ = (uint8_t)((ppg_raw_data[i] >> 16) & 0xFF); // 最高字节（低3字节中的）
-    }
-    
-    len = ppg_raw_data_len*3 + 1 + 1;
-    return len;  // 返回缓冲区起始位置
-}
-
 uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len)
 {
     if(!sndp_comm_ble_is_connected()){
@@ -2385,12 +2374,32 @@ uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t p
         COMM_CMD_TRACE(0, "dump state is off, not report ppg");
         return 0;
     }
-    uint16_t ppg_samples_len = ppg_raw_len > 64 ? 64 : ppg_raw_len; // 最多打包32个数据点
-    uint8_t notify_len = pack_ppg_data(ppg_notify_data, ppg_samples_len, ppg_raw_data);
 
-    // COMM_CMD_TRACE(1, "report ppg to app, len=%d", ppg_samples_len);
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_PPG_NOTIFICATION, notify_len, (uint8_t *)ppg_notify_data);
+    uint8_t data_len = 0;
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
 
+    // 1. 打包LR_flag 1字节
+    if(sndp_dev_is_left_earphone())
+        cmd->value[data_len++] = 0x01;
+    else
+        cmd->value[data_len++] = 0x02;
+
+    // 2. 打包sampleSize（1字节）
+    uint8_t ppg_samples_size = (uint8_t)(ppg_raw_len > 64 ? 64 : ppg_raw_len); // 最多打包64个数据点
+    cmd->value[data_len++] = ppg_samples_size;           // 低字节
+
+    // 3. 打包ppg_samples_size个int32的低3字节 ppg_samples_size*3=96字节
+    for (int i = 0; i < ppg_samples_size; i++) {
+        cmd->value[data_len++] = (uint8_t)(ppg_raw_data[i] & 0xFF);         // 最低字节
+        cmd->value[data_len++] = (uint8_t)((ppg_raw_data[i] >> 8) & 0xFF);  // 中间字节
+        cmd->value[data_len++] = (uint8_t)((ppg_raw_data[i] >> 16) & 0xFF); // 最高字节（低3字节中的）
+    }
+    
+    cmd->flag = AppFlag;
+    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+    cmd->cmd = SLEEP_APP_CMDID_PPG_NOTIFICATION;
+    sleep_app_comm_main_send_cmd(cmd);
+    
     return 0;
 }
 
@@ -2402,25 +2411,27 @@ uint32_t sndp_comm_cmd_sleepapp_report_ppg_test_data(uint8_t *ppg_raw_data, uint
     }
 
     uint8_t data_len = 0;
-    
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
+
     // 1. 打包LR_flag 1字节
     if(sndp_dev_is_left_earphone())
-        ppg_notify_data[data_len++] = 0x01;
+        cmd->value[data_len++] = 0x01;
     else
-        ppg_notify_data[data_len++] = 0x02;
+        cmd->value[data_len++] = 0x02;
 
-    ppg_raw_len = ppg_raw_len > 192 ? 192 : ppg_raw_len;
-    
     // 2. 打包ppg_raw_data_len（1字节）
-    ppg_notify_data[data_len++] = (uint8_t)ppg_raw_len;           // 低字节
+    ppg_raw_len = ppg_raw_len > 192 ? 192 : ppg_raw_len;
+    cmd->value[data_len++] = (uint8_t)ppg_raw_len;
 
     // 3. 填充FIFO原始数据。
     for (int i = 0; i < ppg_raw_len; i++) {
-        ppg_notify_data[data_len++] = ppg_raw_data[i]; 
+        cmd->value[data_len++] = ppg_raw_data[i]; 
     }
-
-    // COMM_CMD_TRACE(1, "report test ppg to app, len=%d", ppg_samples_len);
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_PPG_NOTIFICATION, data_len, (uint8_t *)ppg_notify_data);
+    
+    cmd->flag = AppFlag;
+    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+    cmd->cmd = SLEEP_APP_CMDID_PPG_NOTIFICATION;
+    sleep_app_comm_main_send_cmd(cmd);
 
     return 0;
 }
@@ -2602,23 +2613,23 @@ uint32_t sndp_comm_cmd_sleepapp_wear_state_update(uint8_t lR_flag, uint8_t wear_
 
 static void sndp_findme_loop_handler(uint8_t onoff)
 {
-   if(onoff)
-   {
-     COMM_CMD_TRACE(0,"stop findeme....");
-     sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
-     return;
-   }
+    if(onoff)
+    {
+        COMM_CMD_TRACE(0,"stop findeme....");
+        sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
+        return;
+    }
    
-   sndp_play_findme();
-   if(sndp_findme_fadein_vol < TGT_VOLUME_LEVEL_16){
+    sndp_play_findme();
+    if(sndp_findme_fadein_vol < TGT_VOLUME_LEVEL_16){
         sndp_findme_fadein_vol++;
-   }
-   sndp_delay_exec_start(2800, (uint32_t)sndp_findme_loop_handler,0,0,0);
+    }
+    sndp_delay_exec_start(2800, (uint32_t)sndp_findme_loop_handler,0,0,0);
 }
 
 uint8_t sndp_get_findme_vol(void)
 {
-   return sndp_findme_fadein_vol;
+    return sndp_findme_fadein_vol;
 }
 
 void sndp_sleep_app_report_battery(void)
@@ -2640,11 +2651,12 @@ void sndp_sleep_app_report_battery(void)
                         0 (out of charging case)
                 BIT6~0: battery level   
     */
-   if(!sndp_sleepapp_report_battery_onoff)
-   {
-     COMM_CMD_TRACE(0,"rtn battery report off.....");
-     return;
-   }
+    if(!sndp_sleepapp_report_battery_onoff)
+    {
+        COMM_CMD_TRACE(0,"rtn battery report off.....");
+        return;
+    }
+    
     SndpGetBattryMap_t reply_battery;
     memset(&reply_battery, 0, sizeof(SndpGetBattryMap_t));
     
@@ -2686,6 +2698,7 @@ void sndp_sleep_app_report_battery(void)
     // DUMP8("%02x",&reply_battery,sizeof(reply_battery));                                           
     sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_BATTERY_STATUS, sizeof(reply_battery), (uint8_t*)&reply_battery);
 }
+
 /*
 BLE packet format:
 Flag  |  Parameter  |  Length	|  Cmd	       |       Data

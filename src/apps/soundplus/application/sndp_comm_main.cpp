@@ -618,50 +618,6 @@ int32_t sndp_comm_main_send_cmd(sndp_comm_cmd_info_s *cmd)
     return 0;
 }
 
-#if defined(__SNDP_SLEEP_APP__)
-int32_t sleep_app_comm_main_send_cmd(sleep_app_comm_cmd_info_s *cmd)
-{
-    if(cmd == NULL) {
-        return -1;
-    }
-    sndp_comm_path_id_e send_path = SNDP_COMM_PATH_NONE;
-    uint32_t send_frame_len =sleep_protocol_pack_send_data(cmd, sndp_comm_send_frame, sizeof(sndp_comm_send_frame));
-    if(send_frame_len == 0) {
-        return -2;
-    }
-
-    DUMP8("%02X ", sndp_comm_send_frame, (send_frame_len > 32) ? (32) : (send_frame_len));
-    SNDP_TRACE(0, "\n");
-
-#if defined(__SNDP_COMM_BLE__)                
-        if(sndp_comm_ble_is_connected()) {
-                send_path = SNDP_COMM_PATH_BLE;
-        }
-#endif
-#if defined(__SNDP_COMM_SPP__)                
-        if(sndp_comm_spp_is_connected()) {
-                send_path = SNDP_COMM_PATH_SPP;
-        }
-#endif    
-    sndp_comm_main_send_data(send_path, sndp_comm_send_frame, SLEEP_APP_COMM_HEAD_LEN + cmd->data_len);
-    return 0;
-}
-int32_t sleep_app_comm_main_send_cmd_by_id(sleep_app_cmd_id_e cmd_id, uint8_t datalen, uint8_t *cmd_data)
-{
-    sleep_app_comm_cmd_info_s *cmd = &sndp_sleep_comm_send_cmd;
-    
-    cmd->flag = AppFlag;
-    cmd->data_len = datalen + SLEEP_APP_CMD_LEN;
-    cmd->cmd = cmd_id;
-    if(datalen > 0 && datalen < SLEEP_APP_COMM_DATA_LEN_MAX && cmd_data != NULL) {
-        memcpy(cmd->value, cmd_data, datalen);
-    }
-
-    sleep_app_comm_main_send_cmd(cmd);
-    return 0;
-}
-#endif
-
 int32_t sndp_comm_main_send_cmd_by_id(sndp_comm_cmd_id_e cmd_id, uint8_t from, uint8_t to, uint8_t path, uint8_t *cmd_data, uint16_t cmd_data_len)
 {
     sndp_comm_cmd_info_s *cmd = &sndp_comm_send_cmd;
@@ -707,17 +663,70 @@ int32_t sndp_comm_main_rsp_cmd(sndp_comm_cmd_info_s *rsp_cmd)
 }
 
 #if defined(__SNDP_SLEEP_APP__)
+int32_t sleep_app_comm_main_send_cmd(sleep_app_comm_cmd_info_s *cmd)
+{
+    if(cmd == NULL) {
+        return -1;
+    }
+    
+    sndp_comm_path_id_e send_path = SNDP_COMM_PATH_NONE;
+    uint32_t send_frame_len =sleep_protocol_pack_send_data(cmd, sndp_comm_send_frame, sizeof(sndp_comm_send_frame));
+    if(send_frame_len == 0) {
+        return -2;
+    }
+
+    DUMP8("%02X ", sndp_comm_send_frame, (send_frame_len > 32) ? (32) : (send_frame_len));
+    SNDP_TRACE(0, "\n");
+
+#if defined(__SNDP_COMM_BLE__)                
+    if(sndp_comm_ble_is_connected()) {
+        send_path = SNDP_COMM_PATH_BLE;
+    }
+#endif
+#if defined(__SNDP_COMM_SPP__)                
+    if(sndp_comm_spp_is_connected()) {
+        send_path = SNDP_COMM_PATH_SPP;
+    }
+#endif    
+
+    sndp_comm_main_send_data(send_path, sndp_comm_send_frame, SLEEP_APP_COMM_HEAD_LEN + cmd->data_len);
+    return 0;
+}
+
+int32_t sleep_app_comm_main_send_cmd_by_id(sleep_app_cmd_id_e cmd_id, uint8_t datalen, uint8_t *cmd_data)
+{
+    sleep_app_comm_cmd_info_s *cmd = &sndp_sleep_comm_send_cmd;
+    
+    cmd->flag = AppFlag;
+    cmd->data_len = datalen + SLEEP_APP_CMD_LEN;
+    cmd->cmd = cmd_id;
+    if(datalen > 0 && datalen < SLEEP_APP_COMM_DATA_LEN_MAX && cmd_data != NULL) {
+        memcpy(cmd->value, cmd_data, datalen);
+    }
+
+    sleep_app_comm_main_send_cmd(cmd);
+    return 0;
+}
+
+sleep_app_comm_cmd_info_s * sleep_app_comm_main_get_send_cmd(void)
+{
+    return &sndp_sleep_comm_send_cmd;
+}
+
 int32_t sndp_sleep_comm_main_rsp_cmd(sleep_app_comm_cmd_info_s *rsp_cmd)
 {
     sleep_app_comm_cmd_info_s *cmd = &sndp_sleep_comm_recv_cmd;
+    
     if(rsp_cmd == NULL) {
         return -1;
     }
+    
     cmd->flag = AppFlag;
     cmd->cmd = rsp_cmd->cmd;
     cmd->data_len = rsp_cmd->data_len;
-    if(cmd->data_len > 0 && cmd->data_len < SLEEP_APP_COMM_DATA_LEN_MAX)
+    if(cmd->data_len > 0 && cmd->data_len < SLEEP_APP_COMM_DATA_LEN_MAX) {
         memcpy(cmd->value, rsp_cmd->value, cmd->data_len);
+    }
 
     COMM_MIAN_TRACE(0, "Sleep cmd(%02X), data_len=%d", cmd->cmd, cmd->data_len);
 
