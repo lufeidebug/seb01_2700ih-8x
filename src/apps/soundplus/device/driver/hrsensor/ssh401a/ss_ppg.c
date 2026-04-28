@@ -31,7 +31,7 @@ static unsigned short g_selected_sps = 32;
 static Sensor g_target_sensor;
 static unsigned char g_fifo_onoff = 0;
 static unsigned char g_proximity_sta = 0;
-static SS_PPG ppg_buf[32];
+static SS_PPG ppg_buf[64];
 static unsigned char g_ppg_test_mode = 0; //0:disable, 1:enable
 
 static const float g_led_range_list[] = {
@@ -594,8 +594,8 @@ void ss_ppg_interrupt_handler(void)
     {
         ss_ppg_interrupt_clear();
 
-        if(data_count > 32) {
-            data_count = 32;
+        if(data_count > 64) {
+            data_count = 64;
         }
 
         for (int idx=0; idx < data_count; idx++)

@@ -88,7 +88,7 @@ static void sndp_findme_loop_handler(uint8_t onoff);
 uint8_t wear_state_update_onoff = 0;
 uint8_t sndp_sleepapp_report_battery_onoff = 0;
 uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
-uint8_t ppg_notify_data[98] = {0};
+uint8_t ppg_notify_data[2+64*3] = {0};
 #endif
 
 
@@ -2398,7 +2398,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t p
         COMM_CMD_TRACE(0, "dump state is off, not report ppg");
         return 0;
     }
-    uint16_t ppg_samples_len = ppg_raw_len > 32 ? 32 : ppg_raw_len; // 最多打包32个数据点
+    uint16_t ppg_samples_len = ppg_raw_len > 64 ? 64 : ppg_raw_len; // 最多打包32个数据点
     uint8_t notify_len = pack_ppg_data(ppg_notify_data, ppg_samples_len, ppg_raw_data);
 
     // COMM_CMD_TRACE(1, "report ppg to app, len=%d", ppg_samples_len);
@@ -2422,15 +2422,17 @@ uint32_t sndp_comm_cmd_sleepapp_report_ppg_test_data(uint8_t *ppg_raw_data, uint
     else
         ppg_notify_data[data_len++] = 0x02;
 
+    ppg_raw_len = ppg_raw_len > 192 ? 192 : ppg_raw_len;
+    
     // 2. 打包ppg_raw_data_len（1字节）
     ppg_notify_data[data_len++] = (uint8_t)ppg_raw_len;           // 低字节
 
-    // 3. 打包32个int32的低3字节 32*3=96字节
+    // 3. 填充FIFO原始数据。
     for (int i = 0; i < ppg_raw_len; i++) {
         ppg_notify_data[data_len++] = ppg_raw_data[i]; 
     }
 
-    // COMM_CMD_TRACE(1, "report ppg to app, len=%d", ppg_samples_len);
+    // COMM_CMD_TRACE(1, "report test ppg to app, len=%d", ppg_samples_len);
     sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_PPG_NOTIFICATION, data_len, (uint8_t *)ppg_notify_data);
 
     return 0;
