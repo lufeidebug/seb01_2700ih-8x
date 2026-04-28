@@ -131,6 +131,7 @@ POSSIBLY_UNUSED static uint16_t hr_measure_time = 0;
 
 POSSIBLY_UNUSED static int16_t sleep_app_accel[90];
 POSSIBLY_UNUSED static uint8_t sleep_screen_status[30];
+POSSIBLY_UNUSED static uint8_t sleep_sound_state;
 POSSIBLY_UNUSED static uint16_t sleep_analysis_time = 0;
 
 POSSIBLY_UNUSED static uint16_t hr_ppg_raw_len = 0;
@@ -348,23 +349,23 @@ static void sndp_hr_process_thread(void const *argument)
                 sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_report_hr, (uint32_t)hrv_ptr, (uint32_t)&dbbeats_data, 0);
         }
         
-        // if(hr_ctx.sleep_running) {
-        //     sleep_analysis_time++;
+        if(hr_ctx.sleep_running) {
+            sleep_analysis_time++;
 
-        //     if(sleep_analysis_time >= 30) {
-        //         sleep_analysis_time = 0;
-        //         SNDP_TRACE(0, "sleep analyse...");
+            if(sleep_analysis_time >= 30) {
+                sleep_analysis_time = 0;
+                SNDP_TRACE(0, "sleep analyse...");
                 
-        //         // sleep_step_13: Input sensor data
-        //         dbbeats_put_sleep_sensor_data();
+                // sleep_step_13: Input sensor data
+                dbbeats_put_sleep_sensor_data();
 
-        //         dbbeats_put_sleep_app_data(
-        //             sleep_app_accel, 
-        //             sleep_screen_status, 
-        //             0);
+                dbbeats_put_sleep_app_data(
+                    sleep_app_accel, 
+                    sleep_screen_status, 
+                    sleep_sound_state);
 
-        //     }
-        // }
+            }
+        }
 #endif
 
         hr_measure_time++;
@@ -476,9 +477,11 @@ void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
 {
     memset(sleep_app_accel, 0, sizeof(sleep_app_accel));
     memset(sleep_screen_status, 0, sizeof(sleep_screen_status));
+    sleep_sound_state = 0;
+
     memcpy(sleep_app_accel, accel_data_m, sizeof(sleep_app_accel));
-    memcpy(sleep_screen_status, sleep_screen_status, sizeof(sleep_screen_status));
-    dbbeats_put_sleep_app_data(sleep_app_accel, sleep_screen_status, sound_state);
+    memcpy(sleep_screen_status, screen_status, sizeof(sleep_screen_status));
+    sleep_sound_state = sound_state;
 }
 // Define callback function
 void sndp_sleep_analysis_callback(int8_t *sleep_stage,

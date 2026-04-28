@@ -2189,7 +2189,6 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app
     int16_t *accel_data_m = (int16_t*)&cmd_info->value[0];
     uint8_t *screen_status = &cmd_info->value[180];
     uint8_t sound_state = cmd_info->value[210];
-   sndp_dbbeats_put_sleep_sensor_data();
    sndp_dbbeats_put_sleep_app_data(accel_data_m, screen_status, sound_state);
     return 0;
 }
