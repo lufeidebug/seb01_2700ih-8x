@@ -1899,20 +1899,22 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
             //not support
         }else if(BitMap.ppg_64hz)
         {
-            //not support
+            sndp_hr_mearsuring_set_sampling_rate(0x01);
         }else if(BitMap.ppg_off)
         {
-            //not support   
+            sndp_hr_mearsuring_set_sampling_rate(0x00);  
         }
 
         if(BitMap.accel_off)
         {
-            //not support
+            sndp_hr_mearsuring_set_dump_state(0x00);
+            sndp_acc_notification_stop();
         }
 
         if(BitMap.accel_on)
         {
-            //not support
+            sndp_hr_mearsuring_set_dump_state(0x01);
+            sndp_acc_notification_start();
         }
     }
     
@@ -1940,7 +1942,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
         {
             sndp_anc_mode_set_locally((sndp_anc_mode_e)anc_mode);
         }
-        sndp_dev_sleep_app_anc_mode_set(false, (sndp_anc_mode_e)anc_mode, true);
+        sndp_dev_sleep_app_anc_mode_set(false, (sndp_anc_mode_e)anc_mode, false);
         sndp_comm_cmd_send_lr_sync_anc_mode(anc_mode, 1);
         /******************anc map*******************/
 
@@ -1974,11 +1976,11 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
         //byte3 bit0~bit7 of struct
         if(BitMap.music_pause)
         {
-            //not support
+            sndp_music_ctrl(SNDP_MUSIC_CTRL_PAUSE);
         }
         else if(BitMap.music_play)
         {
-            //not support
+            sndp_music_ctrl(SNDP_MUSIC_CTRL_PLAY);
         }
 
         if(BitMap.smart_playpause_enable)
@@ -2176,6 +2178,8 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app
     cmd_info->value[0] = 0; // success
     
     sndp_dev_sleep_app_set_heartrate_onoff(false, 0x00);
+    sndp_hr_mearsuring_set_dump_state(0x00);
+    sndp_hr_mearsuring_set_sampling_rate(0x00);
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
