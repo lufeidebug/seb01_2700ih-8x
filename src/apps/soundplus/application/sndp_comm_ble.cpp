@@ -8,8 +8,16 @@
 #include "cqueue.h"
 #include "bta_ble_api.h"
 #include "bts_ble_api.h"
+#include "factory_section.h"
+#include "nvrecord_extension.h"
+#include "nvrecord_env.h"
+#include "ble_core_common.h"
+#include "app_custom.h"
+
 
 #include "sndp_if_common.h"
+#include "sndp_if_platform.h"
+
 #include "sndp_comm_main.h"
 #include "sndp_comm_ble.h"
 
@@ -219,6 +227,116 @@ bool sndp_comm_ble_is_connected(void)
 	return (sndp_comm_ble_ctx.conn_status == SNDP_COMM_BLE_CONNECTED) ? (true) : (false);
 }
 
+void sndp_comm_ble_set_adv_data(void)
+{
+    struct nvrecord_env_t *nvrecord_env;
+    uint8_t local_ble_addr[6] = {0};
+    uint8_t local_bt_addr[6] = {0};
+    bt_bdaddr_t peer_bt_addr;
+    uint8_t adv_data[64];
+    uint8_t adv_data_size = 0;
+    uint8_t scan_rsp_data[32];
+    uint8_t scan_rsp_data_size = 0;
+    uint8_t adv_data_max = sizeof(adv_data);
+
+    factory_section_original_bleaddr_get(local_ble_addr);
+    factory_section_original_btaddr_get(local_bt_addr);
+    
+    nv_record_env_get(&nvrecord_env);
+    if(nvrecord_env->ibrt_mode.mode != 0xFF) {
+        memcpy(&peer_bt_addr, &nvrecord_env->ibrt_mode.record.bdAddr, sizeof(bt_bdaddr_t));
+    } else {
+        memset(&peer_bt_addr, 0, sizeof(bt_bdaddr_t));
+    }
+
+    adv_data[adv_data_size++] = 0x02;
+    adv_data[adv_data_size++] = 0x01;
+    adv_data[adv_data_size++] = 0x06;
+
+    //Manufacturer Type Data
+    adv_data[adv_data_size++] = 0x0E; //Manufacturer Length
+    adv_data[adv_data_size++] = 0xFF; //Manufacturer Type
+
+    //Manufacturer: Commpany ID
+    adv_data[adv_data_size++] = 0x00;
+    adv_data[adv_data_size++] = 0x00; 
+
+    //Manufacturer: Device Product Key
+    adv_data[adv_data_size++] = 0x00;
+    adv_data[adv_data_size++] = 0x00; 
+
+    //Manufacturer: BLE MAC addr
+    for(int i = 0; i < 6; i++) {
+        adv_data[adv_data_size++] = local_ble_addr[5-i];
+    }
+
+    //Manufacturer: Mobile connect status
+    if(sndp_is_tws_slave_mode())
+        adv_data[adv_data_size++] = sndp_is_master_mobile_link_connected(); 
+    else
+        adv_data[adv_data_size++] = sndp_is_slave_ibrt_link_connected(); 
+
+    //Manufacturer: TWS connect status
+    adv_data[adv_data_size++] = sndp_is_tws_link_connected(); 
+
+    //Manufacturer: Reserved
+    adv_data[adv_data_size++] = 0x00; 
+
+
+    //BT name Type Data
+    uint8_t* ble_name = factory_section_get_ble_name();
+    int ble_name_len = strlen((char *)ble_name);
+    if(ble_name_len > adv_data_max - adv_data_size) {
+        ble_name_len = adv_data_max - adv_data_size;
+    } 
+
+    adv_data[adv_data_size++] = 1 + ble_name_len; 
+    adv_data[adv_data_size++] = 0x09; 
+    memcpy(&adv_data[adv_data_size++], ble_name, ble_name_len);
+    adv_data_size += ble_name_len;
+
+    //Classic BT package Type Data
+    if(adv_data_max - adv_data_size >= 6) {
+        adv_data[adv_data_size++] = 0x07; 
+        adv_data[adv_data_size++] = 0x1B; 
+        if(nvrecord_env->ibrt_mode.mode != 0xFF) {
+            for(int i = 0; i < 6; i++) {
+                adv_data[adv_data_size++] = peer_bt_addr.address[i];
+            }
+        } else {
+            for(int i = 0; i < 6; i++) {
+                adv_data[adv_data_size++] = local_bt_addr[i];
+            }
+        }
+    } else {
+        scan_rsp_data[scan_rsp_data_size++] = 0x07; 
+        scan_rsp_data[scan_rsp_data_size++] = 0x1B; 
+        if(nvrecord_env->ibrt_mode.mode != 0xFF) {
+            for(int i = 0; i < 6; i++) {
+                scan_rsp_data[scan_rsp_data_size++] = peer_bt_addr.address[i];
+            }
+        } else {
+            for(int i = 0; i < 6; i++) {
+                scan_rsp_data[scan_rsp_data_size++] = local_bt_addr[i];
+            }
+        }
+    }
+    
+    app_ble_custom_adv_write_data(BLE_ADV_ACTIVITY_USER_0,
+                    true,
+                    BLE_ADV_PUBLIC_STATIC,
+                    (const uint8_t *)local_bt_addr,
+                    (const ble_bdaddr_t *)&peer_bt_addr,
+                    160,
+                    ADV_TYPE_UNDIRECT,
+                    ADV_MODE_EXTENDED,
+                    12,
+                    (const uint8_t *)adv_data, adv_data_size,
+                    (const uint8_t *)scan_rsp_data, scan_rsp_data_size);
+
+    app_ble_custom_adv_start(BLE_ADV_ACTIVITY_USER_0);
+ 
+}
 
 int32_t sndp_comm_ble_init(void)
 {
@@ -248,6 +366,9 @@ int32_t sndp_comm_ble_init(void)
     sndp_comm_ble_ctx.inited = true;
     sndp_comm_ble_ctx.conidx = 0;
 	COMM_BLE_TRACE(0, "done.");
+
+    sndp_comm_ble_set_adv_data();
+    
 	return 0;
 }
 
