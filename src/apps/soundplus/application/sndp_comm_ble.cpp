@@ -54,7 +54,7 @@ static CQueue sndp_comm_ble_send_queue;
 static osMutexId sndp_comm_ble_send_queue_mutex_id = NULL;
 osMutexDef(sndp_comm_ble_send_queue_mutex);
 
-static uint8_t sndp_comm_ble_send_queue_buf[SNDP_COMM_BLE_SEND_BUF_SIZE];
+static uint8_t sndp_comm_ble_send_queue_buf[SNDP_COMM_BLE_SEND_BUF_SIZE*3];
 static uint8_t sndp_comm_ble_send_pop_buf[SNDP_COMM_BLE_SEND_BUF_SIZE];
 
 osTimerDef(BLE_SEND_TIMEOUT_TIMER, sndp_comm_ble_send_timeout_timer_handler);
