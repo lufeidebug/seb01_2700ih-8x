@@ -66,7 +66,7 @@ then
         make T=prod_test/ota_copy CHIP=$CHIPID $OTA_BOOTLOADER_CFG DEBUG=1 -sj GEN_LIB=1 $DEBUG_LIB_CFG ||{ echo "$LINENO command failed"; exit 1; }
 elif [[ "$COMMAND" == 'lst' ]];
 then
-    make T=$TARGET_LIST $BUILD_CUSTOMER_CFG -j64 lst all ||{ echo "$LINENO command failed"; exit 1; }
+    make T=$TARGET_LIST $BUILD_CUSTOMER_CFG DEBUG=1 $DEBUG_LIB_CFG -j64 lst all ||{ echo "$LINENO command failed"; exit 1; }
 elif [[ "$COMMAND" == 'debugoff' ]];
 then
     make T=$TARGET_LIST $BUILD_CUSTOMER_CFG DEBUG=0 $NO_DEBUG_LIB_CFG -j64 ||{ echo "$LINENO command failed"; exit 1; }
