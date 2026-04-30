@@ -1572,10 +1572,6 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
     
     uint8_t anc_mode = cmd_info->value[0];
     
-    if(anc_mode == 2 || anc_mode == 3 || anc_mode == 4)
-    {
-        anc_mode = SNDP_ANC_MODE_1; //only support strong and off
-    }
     COMM_CMD_TRACE(1, "anc mode=%d", anc_mode);
     if(sndp_dev_wear_is_worn(false))
     {

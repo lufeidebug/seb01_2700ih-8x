@@ -245,8 +245,13 @@ static void sndp_ui_anc_switch(void)
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_ON, 0);
 #endif
-		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
-        sndp_dev_sleep_app_anc_mode_set(false, sndp_anc_get_mode_index(), false);
+        uint8_t flash_anc_mode = SNDP_ANC_MODE_1;
+        if(flash_anc_mode > SNDP_ANC_MODE_OFF && flash_anc_mode < SNDP_ANC_MODE_TRANSPARENT)
+        {
+            flash_anc_mode = sndp_dev_sleep_app_flash_anc_mode_get();
+        }
+		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)flash_anc_mode, 0, 0);
+        sndp_dev_sleep_app_anc_mode_set(false, flash_anc_mode, false);
 	} else if(sndp_anc_is_on()) {
         SPUI_TRACE(0, "ANC_TT");
 

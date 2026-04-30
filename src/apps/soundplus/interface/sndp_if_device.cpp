@@ -1771,6 +1771,11 @@ uint8_t sndp_dev_sleep_app_anc_mode_get(bool peer)
 		return sndp_dev_ctx.local.sleep_app_flag.sleep_anc_mode;
 }
 
+uint8_t sndp_dev_sleep_app_flash_anc_mode_get(void)
+{
+	return sleep_flag_flash.sleep_anc_mode;
+}
+
 /**************************************************set eq mode end************************************************/
 void sndp_dev_sleep_app_set_gesture_onoff(bool peer, uint8_t onoff, bool sava)
 {

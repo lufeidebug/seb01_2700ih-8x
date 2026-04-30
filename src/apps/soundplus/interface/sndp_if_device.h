@@ -411,6 +411,7 @@ bool sndp_dev_sleep_app_get_prompt_onoff(bool peer);
 void sndp_save_app_flag_to_flash(void);
 void sndp_dev_sleep_app_anc_mode_set(bool peer,uint8_t anc_mode,bool sava_data);
 uint8_t sndp_dev_sleep_app_anc_mode_get(bool peer);
+uint8_t sndp_dev_sleep_app_flash_anc_mode_get(void);
 void sndp_dev_sleep_app_set_gesture_onoff(bool peer, uint8_t onoff, bool sava);
 bool sndp_dev_sleep_app_get_gesture_onoff(bool peer);
 void sndp_dev_sleep_app_set_splaypause_onoff(bool peer, uint8_t onoff, bool sava);
