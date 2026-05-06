@@ -42,7 +42,11 @@
 #define AUDIO_DUMP_CRC_LEN              (4)
 #define AUDIO_DUMP_DATA_LEN             (4)
 #if defined(__SNDP_PROJ__)
+#if defined(SNDP_TX_DUMP_ENABLE)
+#define AUDIO_DUMP_MAX_SAMPLE_BYTES     (sizeof(int))
+#else
 #define AUDIO_DUMP_MAX_SAMPLE_BYTES     (sizeof(short))
+#endif
 #define AUDIO_DUMP_MAX_FRAME_LEN        (256)
 #define AUDIO_DUMP_MAX_CHANNEL_NUM      (4)
 #else

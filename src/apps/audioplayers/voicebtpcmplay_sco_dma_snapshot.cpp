@@ -39,7 +39,11 @@
 #include "bt_sco_codec.h"
 #include "bt_drv.h"
 #include "arm_math_ex.h"
-
+#ifdef __SNDP_USE_BES_ALGO__ 
+#ifdef SNDP_TX_DUMP_ENABLE
+#include "audio_dump.h"
+#endif
+#endif
 #ifdef IBRT
 #include "bts_core_if.h"
 #include "bts_tws_api.h"
@@ -375,8 +379,28 @@ int process_uplink_bt_voice_frames(uint8_t *in_buf, uint32_t in_len, uint8_t *re
     pcm_len = pcm_len / (SPEECH_CODEC_CAPTURE_CHANNEL_NUM + 1) * SPEECH_CODEC_CAPTURE_CHANNEL_NUM;
 #endif
 
+#ifdef __SNDP_USE_BES_ALGO__
+#ifdef SNDP_TX_DUMP_ENABLE
+    audio_dump_clear_up();
+    for(uint32_t j=0; j<SNDP_BES_ALGO_CHANNEL_NUM; j++){
+        audio_dump_add_channel_data_from_multi_channels_32bit_to_16bit(j, pcm_buf, pcm_len/SNDP_BES_ALGO_CHANNEL_NUM, SNDP_BES_ALGO_CHANNEL_NUM, j, 8);
+    }
+    audio_dump_add_channel_data_from_multi_channels_32bit_to_16bit(SNDP_BES_ALGO_CHANNEL_NUM, aec_echo_buf, pcm_len/SNDP_BES_ALGO_CHANNEL_NUM, 1, 0, 8);
+#endif
+    TX_PCM_T sndp_1mic_pcm_buf[SPEECH_SCO_FRAME_MS * 16000 / 1000 * SNDP_BES_ALGO_CHANNEL_NUM];
+    int sndp_1mic_pcm_len = pcm_len / SNDP_BES_ALGO_CHANNEL_NUM;
+#endif
+
     if (g_bypass_tx_algo_sel_ch == 0xFF) {
-        speech_tx_process(pcm_buf, aec_echo_buf, &pcm_len);
+#ifdef __SNDP_USE_BES_ALGO__
+            for(uint32_t i = 0; i < sizeof(sndp_1mic_pcm_buf)/sizeof(TX_PCM_T); i++) {
+                sndp_1mic_pcm_buf[i] = pcm_buf[SNDP_BES_ALGO_CHANNEL_NUM*i + 1];
+            }
+            speech_tx_process(sndp_1mic_pcm_buf, aec_echo_buf, &sndp_1mic_pcm_len);
+#else
+            speech_tx_process(pcm_buf, aec_echo_buf, &pcm_len);
+#endif 
+        
     } else {
     	/* This function supports 1-4 channels of audio dump
     	*  Please use this function when "audio channel > 1", see:
@@ -390,7 +414,12 @@ int process_uplink_bt_voice_frames(uint8_t *in_buf, uint32_t in_len, uint8_t *re
         }
         pcm_len = pcm_len / SPEECH_CODEC_CAPTURE_CHANNEL_NUM;
     }
-
+#ifdef __SNDP_USE_BES_ALGO__    
+#ifdef SNDP_TX_DUMP_ENABLE
+        audio_dump_add_channel_data_from_multi_channels_32bit_to_16bit(SNDP_BES_ALGO_CHANNEL_NUM+1, pcm_buf, sndp_1mic_pcm_len, 1, 0, 8);
+        audio_dump_run();
+#endif
+#endif
 #if defined(SPEECH_TX_24BIT) && !defined(XIAOMI_TX_3MIC_ENABLE)
     arm_q23_to_q15((q23_t *)pcm_buf, (q15_t *)pcm_buf, pcm_len);
 #endif
@@ -550,7 +579,11 @@ int voicebtpcm_pcm_audio_init(int _sco_sample_rate,
     } else {
         ASSERT(0, "[%s] g_bt_sco_codec_ptr != NULL", __func__);
     }
-
+#ifdef __SNDP_USE_BES_ALGO__ 
+#ifdef SNDP_TX_DUMP_ENABLE
+    audio_dump_init(SPEECH_SCO_FRAME_MS * sco_sample_rate / 1000, sizeof(short), SNDP_BES_ALGO_CHANNEL_NUM+1+1);
+#endif
+#endif
     speech_inited = true;
 
     return 0;

@@ -43,6 +43,12 @@ extern "C" {
 #endif
 #endif
 
+#if defined(SNDP_TX_DUMP_ENABLE)
+#ifndef AUDIO_DEBUG
+#define AUDIO_DEBUG
+#endif
+#endif
+
 // #define INTERSYS_RAW_DATA_ONLY
 #if defined(BESUI_TWS_EN) || defined(__SNDP_AUDIO_TEST_MIC_DUMP__)
 #ifdef AUDIO_DEBUG

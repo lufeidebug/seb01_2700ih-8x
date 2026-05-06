@@ -291,12 +291,14 @@ ifeq ($(SNDP_ALGO_MGR),1)
     KBUILD_CPPFLAGS += -D__SNDP_ALGO_MGR__
 
     export SNDP_ALGO_ENC                        := 0
-    export SNDP_USE_BES_ALGO                    := 1
+    export SNDP_USE_BES_ALGO                    := 0
 endif
 
 ifeq ($(SNDP_USE_BES_ALGO), 1)
-    export SNDP_BES_ALGO_CHANNEL_NUM            := 1
+    export SNDP_BES_ALGO_CHANNEL_NUM            := 2
+    KBUILD_CPPFLAGS += -DSNDP_BES_ALGO_CHANNEL_NUM=$(SNDP_BES_ALGO_CHANNEL_NUM)
     KBUILD_CPPFLAGS += -D__SNDP_USE_BES_ALGO__
+#     KBUILD_CPPFLAGS += -DSNDP_TX_DUMP_ENABLE
 endif
 
 ifeq ($(SNDP_ALGO_ENC),1)

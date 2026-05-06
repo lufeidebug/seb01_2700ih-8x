@@ -6792,7 +6792,11 @@ static int bt_sco_player(bool on, enum APP_SYSFREQ_FREQ_T freq)
         memset(&hf_sendbuff_ctrl, 0, sizeof(hf_sendbuff_ctrl));
 #endif
 
+#ifndef __SNDP_USE_BES_ALGO__
         sco_cap_chan_num = (enum AUD_CHANNEL_NUM_T)SPEECH_CODEC_CAPTURE_CHANNEL_NUM;
+#else
+        sco_cap_chan_num = (enum AUD_CHANNEL_NUM_T)SNDP_BES_ALGO_CHANNEL_NUM;
+#endif
 
 #if defined(FPGA)
         sco_cap_chan_num = AUD_CHANNEL_NUM_2;
