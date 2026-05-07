@@ -212,7 +212,7 @@ int32_t da217e_open_single_tap_interrupt(uint8_t th)
 {
 	int32_t ret = 0;
 
-	ret |= da217e_reg_write(DA217E_REG_TAP_DUR, 0x81); //0x00
+	ret |= da217e_reg_write(DA217E_REG_TAP_DUR, 0x00); //0x00改为00后，解决三击时只触发两次中断的问题。
 	ret |= da217e_reg_write(DA217E_REG_TAP_THS, th); //0x05-0x1f
 	ret |= da217e_reg_write(DA217E_REG_INT_MAP1, 0x20);
 	ret |= da217e_reg_write(DA217E_REG_INT_LATCH, 0xEE);  //latch 100ms
@@ -351,6 +351,7 @@ int32_t da217e_close_fifo_int(void)
 
 static void da217_tap_timer_handler(void const *param)
 {
+    da217e_reg_write(DA217E_REG_TAP_THS, 0x05);
 	if(da217e_drv_if.tap_event_cb) {
         da217e_drv_if.tap_event_cb(da217e_tap_cnt);
     }
@@ -379,6 +380,9 @@ void da217e_drv_deal_tap_interruption(void)
         }
 #else
         da217e_tap_cnt++;
+        if(1 == da217e_tap_cnt) {
+            da217e_reg_write(DA217E_REG_TAP_THS, 0x07);
+        }
         osTimerStop(da217_tap_timer);
         osTimerStart(da217_tap_timer, 600);
 #endif
@@ -432,13 +436,13 @@ int32_t da217e_drv_init(da217e_drv_if_s * drv_if)
         return -1;
     }
 
-    //da217e_reg_mask_write(0x00, 0x24, 0x24);
-	//da217e_drv_delay_ms(50); //delay 50ms
+    da217e_reg_mask_write(0x00, 0x24, 0x24);
+	da217e_drv_delay_ms(50); //delay 50ms
  
 	//printf("------da217e chip id = %x-----\r\n",data_m); 
 
 	ret |= da217e_reg_write(DA217E_REG_RESOLUTION_RANGE, 0x01);               //+/-4G,14bit
-	ret |= da217e_reg_write(DA217E_REG_MODE_BW, 0x00);          //normal mode
+	ret |= da217e_reg_write(DA217E_REG_MODE_BW, 0x10);          //normal mode
 	ret |= da217e_reg_write(DA217E_REG_ODR_AXIS, 0x07);      //ODR = 125hz
 
 #if 0	
@@ -457,7 +461,7 @@ int32_t da217e_drv_init(da217e_drv_if_s * drv_if)
 
 #endif
 
-	ret |= da217e_open_single_tap_interrupt(0x08); //enalbe single tap and set tap threshold 0x05 - 0x1f   
+	ret |= da217e_open_single_tap_interrupt(0x05); //enalbe single tap and set tap threshold 0x05 - 0x1f   
 	return ret;
 }
 
