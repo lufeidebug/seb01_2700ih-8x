@@ -10,7 +10,10 @@ extern "C" {
 
 uint32_t sndp_white_noise_play_start(void);
 uint32_t sndp_white_noise_play_stop(void);
-void sndp_white_noise_switch(void);
+bool sndp_white_noise_is_running(void);
+bool sndp_white_noise_is_turnon(void);
+void sndp_white_noise_turnon_and_play(bool play);
+void sndp_white_noise_turnoff(void);
 
 
 

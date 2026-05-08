@@ -11,6 +11,7 @@
 #include "audioflinger.h"
 #include "audio_dump.h"
 #include "cqueue.h"
+#include "math.h"
 
 #include "sndp_app_white_noise.h"
 
@@ -25,7 +26,7 @@
 #endif
 
 
-#define SNDP_WN_PLAY_SAMPLE_RATE                    (AUD_SAMPRATE_44100)
+#define SNDP_WN_PLAY_SAMPLE_RATE                    (AUD_SAMPRATE_16000)//(AUD_SAMPRATE_44100)
 #define SNDP_WN_PLAY_SAMPLE_BITS                    (AUD_BITS_16)
 #define SNDP_WN_PLAY_SAMPLE_BYTE                    (2)
 #define SNDP_WN_PLAY_CHANN_NUMBER                   (AUD_CHANNEL_NUM_1)
@@ -35,7 +36,7 @@
 #define SNDP_WN_PLAY_FRAME_ALLCH_DLEN               ((SNDP_WN_PLAY_FRAME_1CH_DLEN) * (SNDP_WN_PLAY_CHANN_NUMBER))
 
 #define SNDP_WN_PLAY_STREAM_BUFF_SIZE               ((SNDP_WN_PLAY_FRAME_ALLCH_DLEN) * 2)		//pingpang buff 长度大一样
-#define	SNDP_WN_PLAY_VOLUME                         (TGT_VOLUME_LEVEL_8)
+#define	SNDP_WN_PLAY_VOLUME                         (TGT_VOLUME_LEVEL_4)
 
 #define SNDP_WN_STREAM_ID                           (AUD_STREAM_ID_2)
 
@@ -44,6 +45,8 @@
 * Prototype
 **************************************************************************************************/
 typedef struct {
+    bool onoff;
+
     bool is_playback_running;
 } sndp_wn_ctx_s;
 
@@ -55,8 +58,9 @@ static sndp_wn_ctx_s wn_ctx;
 
 static uint8_t wn_play_stream_buff[SNDP_WN_PLAY_STREAM_BUFF_SIZE];
 
-static const short wn_audio_data[] = {
-	#include "res/white_noise/white_noise_mono_44p1khz_16bit.txt"
+POSSIBLY_UNUSED  static const uint8_t wn_audio_data[] = {
+	//#include "res/white_noise/white_noise_mono_44p1khz_16bit.txt"
+    #include "res/white_noise/white_noise_mono_16khz_16bit.txt"
 };
 
 static const uint32_t c_wn_audio_data_size = sizeof(wn_audio_data)/sizeof(wn_audio_data[0]);
@@ -68,21 +72,51 @@ static const uint32_t c_wn_audio_data_size = sizeof(wn_audio_data)/sizeof(wn_aud
 
 POSSIBLY_UNUSED uint32_t sndp_white_noise_play_more_data(uint8_t *buf, uint32_t len)
 {
-	//WN_TRACE(1, "len=%d", len);
-
 	if(!wn_ctx.is_playback_running) {
+        //WN_TRACE(1, "%d, rtn", __LINE__);
 		memset(buf, 0, len);
 		return len;
 	}
 
+    
+#if 1    
 	static uint32_t offset = 0;
-	uint8_t *p_data = (uint8_t *)wn_audio_data;
+    int16_t *play_pcm16 = (int16_t *)buf;
+    uint32_t play_pcm16_len = len / 2;
+    int16_t *src_pcm16 = (int16_t *)wn_audio_data;
+    uint32_t src_pcm16_size = c_wn_audio_data_size/2;
+
+    //WN_TRACE(1, "play_len=%d, offset=%d, src_size=%d", play_pcm16_len, offset, src_pcm16_size);
 	
-	for(uint32_t i = 0; i < len; i++) {
-		buf[i] = p_data[offset++];
-		if(offset >= c_wn_audio_data_size)
-			offset = 0;
+	for(uint32_t i = 0; i < play_pcm16_len; i++) {
+        if(offset >= src_pcm16_size) {
+    			offset = 0;
+        }
+		play_pcm16[i] = src_pcm16[offset++];
 	}
+#endif
+
+#if 0 //for test. Generate 1khz sinusoidal curve wave.
+        float A = 5000;
+        uint32_t curve_freq = 1000;
+        uint32_t sample_freq = 16000;
+        uint32_t cycle_samples = sample_freq/curve_freq;
+        float degree_per = 360.0f / cycle_samples;
+        float PI = 3.1415926f;
+        float degree;
+        static uint32_t idx = 0;
+        int16_t *pcm16 = (int16_t *)buf;
+    
+        for(int i = 0; i < 240; i++) {
+            degree = degree_per * idx;
+            pcm16[i] = (int16_t)(A * sin(PI/180*degree));
+            
+            idx++;
+            if(idx >= cycle_samples)
+                idx = 0;
+        }
+        //DUMP16("%04x, ", radio_buf, 16);
+#endif
 
     return len;
 }
@@ -133,15 +167,35 @@ uint32_t sndp_white_noise_play_stop(void)
 	return 0;
 }
 
-void sndp_white_noise_switch(void)
+bool sndp_white_noise_is_running(void)
 {
-    if(wn_ctx.is_playback_running) {
-        sndp_white_noise_play_stop();
-    } else {
+    //WN_TRACE(1, "is_playback_running=%d", wn_ctx.is_playback_running);
+    return wn_ctx.is_playback_running;
+}
+
+bool sndp_white_noise_is_turnon(void)
+{
+    //WN_TRACE(1, "onoff=%d", wn_ctx.onoff);
+    return wn_ctx.onoff;
+}
+
+void sndp_white_noise_turnon_and_play(bool play) 
+{
+    WN_TRACE(1, "play=%d", play);
+    
+    wn_ctx.onoff = true;
+    
+	if(play) {
         sndp_white_noise_play_start();
     }
 }
 
+void sndp_white_noise_turnoff(void) 
+{
+	WN_TRACE(1, ".");
+    wn_ctx.onoff = false;
+    sndp_white_noise_play_stop();
+}
 
 #endif	/* __SNDP_APP_WHITE_NOISE__ */
 

@@ -13,6 +13,7 @@
 #include "app_key.h"
 #include "bta_tws_ux_api.h"
 #include "bts_ble_api.h"
+#include "bta_ble_api.h"
 
 #include "sndp_ui.h"
 #include "sndp_if_common.h"
@@ -38,6 +39,10 @@
 
 #if defined(__SNDP_AUDIO_TEST__)
 #include "sndp_audio_test.h"
+#endif
+
+#if defined(__SNDP_APP_WHITE_NOISE__)
+#include "sndp_app_white_noise.h"
 #endif
 
 
@@ -118,71 +123,39 @@ static sndp_ui_pairing_type_e sndp_ui_pairing_type = SNDP_UI_PAIRING_NONE;  //0:
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
+void sndp_ui_working_mode_switch_tone(AUD_ID_ENUM id)
+{
+#ifdef MEDIA_PLAYER_SUPPORT            
+    media_PlayAudio(id, 0);
+#endif    
+}
 
 void sndp_ui_working_mode_switch(void)
 {
-#if 0
+    sndp_delay_exec_stop((uint32_t) sndp_ui_working_mode_switch_tone);
+    //sndp_delay_exec_stop((uint32_t) sndp_white_noise_play_start);
+    
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
         SPUI_TRACE(0, "BT_MODE");
-        //Close ANC
-        sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
-
-        //Close sleep analysis, save data.
-#if defined(__SNDP_HEART_RATE_MGR__)        
-        //sndp_sleep_analysis_stop();
-#endif
-
-        //Set the working mode to BT mode.
-        sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_BT);
-
-        //Play prompt sound.
-#ifdef MEDIA_PLAYER_SUPPORT            
-        media_PlayAudio(AUD_ID_WORKING_MODE_BT, 0);
-#endif
-
-        //Open BT.
-        sndp_bt_switch(true, true);
         
-    } else {
-        SPUI_TRACE(0, "SLEEP_MODE");
-        
-        //Close BT.
-        sndp_bt_switch(false, true);
-
-        //set the working mode to Sleep mode.
-        sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_SLEEP);
-
-        //Play prompt sound.
-#ifdef MEDIA_PLAYER_SUPPORT            
-        media_PlayAudio(AUD_ID_WORKING_MODE_SLEEP, 0);
+#if defined(__SNDP_APP_WHITE_NOISE__)
+        sndp_white_noise_turnoff();
 #endif
 
-        //Open ANC.
-        sndp_anc_mode_set(sndp_anc_get_mode_index());
-
-        //Open sleep analysis.
 #if defined(__SNDP_HEART_RATE_MGR__)        
-        //sndp_sleep_analysis_start(0);
+        //sndp_hr_mearsuring_stop();
+        sndp_sleep_analysis_start(0);
 #endif
 
-    }
-#else
-    if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
-        SPUI_TRACE(0, "BT_MODE");
+        //sndp_bt_switch(true, true);
+        bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_CUSTOM, true);
         
         //Set the working mode to BT mode.
         sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_BT);
 
         //Play prompt sound.
-#ifdef MEDIA_PLAYER_SUPPORT            
-        media_PlayAudio(AUD_ID_WORKING_MODE_BT, 0);
-#endif
+        sndp_delay_exec_start(100, (uint32_t) sndp_ui_working_mode_switch_tone, AUD_ID_WORKING_MODE_BT, 0, 0);
 
-#if defined(__SNDP_HEART_RATE_MGR__)        
-        sndp_hr_mearsuring_stop();
-        //sndp_sleep_analysis_start(0);
-#endif
-        
     } else {
         SPUI_TRACE(0, "SLEEP_MODE");
         
@@ -190,17 +163,24 @@ void sndp_ui_working_mode_switch(void)
         sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_SLEEP);
 
         //Play prompt sound.
-#ifdef MEDIA_PLAYER_SUPPORT            
-        media_PlayAudio(AUD_ID_WORKING_MODE_SLEEP, 0);
-#endif
+        sndp_ui_working_mode_switch_tone(AUD_ID_WORKING_MODE_SLEEP);
+
+        //sndp_bt_switch(false, true);
+        bta_ble_disconnect_all();
+        bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_CUSTOM, false);
+
+
         //Open sleep analysis.
 #if defined(__SNDP_HEART_RATE_MGR__)        
-        sndp_hr_mearsuring_start(1, 0);
-        //sndp_sleep_analysis_start(0);
+        //sndp_hr_mearsuring_start(1, 0);
+        sndp_sleep_analysis_start(0);
 #endif
 
-    }
-#endif    
+#if defined(__SNDP_APP_WHITE_NOISE__)
+        sndp_white_noise_turnon_and_play(false);
+#endif
+
+    }  
 }
 
 
@@ -235,7 +215,7 @@ void sndp_ui_volume_dec(uint8_t type, uint8_t level)
 
 //---------------------------------------- anc ctrl --------------------------------------------
 
-static void sndp_ui_anc_switch(void) 
+POSSIBLY_UNUSED static void sndp_ui_anc_switch(void) 
 {
     sndp_delay_exec_stop((uint32_t)sndp_anc_mode_set);
     
@@ -245,12 +225,8 @@ static void sndp_ui_anc_switch(void)
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_ON, 0);
 #endif
-        uint8_t flash_anc_mode = sndp_dev_sleep_app_flash_anc_mode_get();
-        if(flash_anc_mode <= SNDP_ANC_MODE_OFF && flash_anc_mode >= SNDP_ANC_MODE_TRANSPARENT) {
-            flash_anc_mode = SNDP_ANC_MODE_1;
-        }
-		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)flash_anc_mode, 0, 0);
-        sndp_dev_sleep_app_anc_mode_set(false, flash_anc_mode, false);
+		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
+        sndp_dev_sleep_app_anc_mode_set(false, sndp_anc_get_mode_index(), false);
 	} else if(sndp_anc_is_on()) {
         SPUI_TRACE(0, "ANC_TT");
 
@@ -641,7 +617,6 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
 void sndp_ui_gesture_1click_hdlr(bool remote)
 {
     SPUI_TRACE(0, "remote=%d", remote);
-    //sndp_ui_working_mode_switch();
 }
 
 void sndp_ui_gesture_2click_hdlr(bool remote)
@@ -1129,7 +1104,13 @@ int sndp_ui_prompt_finish_cb(int aud_id)
 
     } else if(aud_id == AUD_ID_POWER_OFF) {
 
-    } 
+    } else {
+#if defined(__SNDP_APP_WHITE_NOISE__)        
+        if(sndp_white_noise_is_turnon() && sndp_dev_wear_is_worn(false)) {
+            sndp_white_noise_play_start();
+        }      
+#endif        
+    }
 
 	return 0;
 }
@@ -1139,6 +1120,12 @@ int sndp_ui_prompt_start_cb(int aud_id)
 	SPUI_TRACE(1, "aud_id=%02x", aud_id);
     sndp_ui_prompt_sta = true;
     
+#if defined(__SNDP_APP_WHITE_NOISE__)
+    if(sndp_white_noise_is_running()) {
+        sndp_white_noise_play_stop();
+    }
+#endif
+
 	return 0;
 }
 
