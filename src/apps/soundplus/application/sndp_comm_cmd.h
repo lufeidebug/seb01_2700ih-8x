@@ -315,6 +315,10 @@ typedef enum {
                                                     rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_WEAR_STATE_UPDATE = 0x37, /* recv: 0 bytes. 
                                                     rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_GESTURE_EVENT_UPDATE = 0x38, /* recv: 0 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_TAP_UPDATE = 0x39, /* recv: 0 bytes. 
+                                                rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_PPG_TEST_MODE = 0xFD, /* recv: 1 bytes. 
                                                     rsp: 1 bytes, error code(1). */
 } sleep_app_cmd_id_e;
@@ -412,6 +416,10 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t a
 uint32_t sndp_comm_cmd_sleepapp_wear_state_update(uint8_t lR_flag, uint8_t wear_state);
 uint8_t sndp_get_findme_vol(void);
 void sndp_sleep_app_report_battery(void);
+#ifdef __SNDP_SEND_GESTURE__
+void sndp_sleep_app_report_gesture(uint32_t gesture);
+void sndp_sleep_app_report_tap(void);
+#endif
 #endif
 #ifdef __cplusplus
 }

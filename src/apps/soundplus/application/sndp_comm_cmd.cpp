@@ -2699,6 +2699,44 @@ void sndp_sleep_app_report_battery(void)
     sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_BATTERY_STATUS, sizeof(reply_battery), (uint8_t*)&reply_battery);
 }
 
+#ifdef __SNDP_SEND_GESTURE__
+void sndp_sleep_app_report_gesture(uint32_t gesture)
+{
+    /*
+        SNDP_DEV_GESTURE_EVENT_NONE, == 0
+        SNDP_DEV_GESTURE_EVENT_PRESS_DOWN, == 1
+        SNDP_DEV_GESTURE_EVENT_PRESS_UP, == 2
+        SNDP_DEV_GESTURE_EVENT_1_CLICK, == 3
+        SNDP_DEV_GESTURE_EVENT_2_CLICK, == 4
+        SNDP_DEV_GESTURE_EVENT_3_CLICK, == 5
+        SNDP_DEV_GESTURE_EVENT_4_CLICK, == 6
+        SNDP_DEV_GESTURE_EVENT_5_CLICK, == 7
+        SNDP_DEV_GESTURE_EVENT_LONG_PRESS, == 8
+        SNDP_DEV_GESTURE_EVENT_LLONG_PRESS, == 9
+        SNDP_DEV_GESTURE_EVENT_REPEAT,  == 10
+        SNDP_DEV_GESTURE_EVENT_SLIDE_UP, == 11
+        SNDP_DEV_GESTURE_EVENT_SLIDE_DOWN, == 12
+    */
+    if(!sndp_comm_ble_is_connected())
+    {
+        COMM_CMD_TRACE(0,"ble not connected,gesture no send......");
+        return;
+    }
+    uint8_t reply_gesture = gesture;
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GESTURE_EVENT_UPDATE, sizeof(reply_gesture), &reply_gesture);
+}
+
+void sndp_sleep_app_report_tap(void)
+{
+    if(!sndp_comm_ble_is_connected())
+    {
+        COMM_CMD_TRACE(0,"ble not connected,tap no send......");
+        return;
+    }
+    uint8_t reply_tap = 0x00;
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_TAP_UPDATE, sizeof(reply_tap), &reply_tap);
+}
+#endif
 /*
 BLE packet format:
 Flag  |  Parameter  |  Length	|  Cmd	       |       Data

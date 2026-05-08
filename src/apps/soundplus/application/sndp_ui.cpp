@@ -817,6 +817,10 @@ void sndp_ui_gesture_event_local_hdlr(sndp_dev_gesture_event_e gesture_event)
             break;
     }
 #endif 
+    //send gesture event to app
+#ifdef __SNDP_SEND_GESTURE__
+    sndp_sleep_app_report_gesture((uint32_t)gesture_event);
+#endif
 }
 
 /**

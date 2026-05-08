@@ -20,6 +20,7 @@
 #endif
 #if defined(__SNDP_GESTURE_MGR__)
 #include "sndp_hal_gesture.h"
+#include "sndp_comm_cmd.h"
 #endif
 
 
@@ -169,6 +170,10 @@ static void da217e_read_fifo_cb(da217e_drv_acc_data_s *data, uint16_t cnt)
 static void da217e_deal_int1_data(void)
 {
     da217e_drv_deal_tap_interruption();
+    //send tap interrupt to app
+#ifdef __SNDP_SEND_GESTURE__
+    sndp_sleep_app_report_tap();
+#endif
 }
 
 static void da217e_deal_int2_data(void)
