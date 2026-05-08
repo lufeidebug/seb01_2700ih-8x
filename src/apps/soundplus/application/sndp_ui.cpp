@@ -245,10 +245,9 @@ static void sndp_ui_anc_switch(void)
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_ON, 0);
 #endif
-        uint8_t flash_anc_mode = SNDP_ANC_MODE_1;
-        if(flash_anc_mode > SNDP_ANC_MODE_OFF && flash_anc_mode < SNDP_ANC_MODE_TRANSPARENT)
-        {
-            flash_anc_mode = sndp_dev_sleep_app_flash_anc_mode_get();
+        uint8_t flash_anc_mode = sndp_dev_sleep_app_flash_anc_mode_get();
+        if(flash_anc_mode <= SNDP_ANC_MODE_OFF && flash_anc_mode >= SNDP_ANC_MODE_TRANSPARENT) {
+            flash_anc_mode = SNDP_ANC_MODE_1;
         }
 		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)flash_anc_mode, 0, 0);
         sndp_dev_sleep_app_anc_mode_set(false, flash_anc_mode, false);

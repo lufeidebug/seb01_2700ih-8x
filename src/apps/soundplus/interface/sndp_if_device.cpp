@@ -1773,7 +1773,15 @@ uint8_t sndp_dev_sleep_app_anc_mode_get(bool peer)
 
 uint8_t sndp_dev_sleep_app_flash_anc_mode_get(void)
 {
-	return sleep_flag_flash.sleep_anc_mode;
+	sndp_da_field_sleep_app_data_s* sleep_flag_ptr = &sleep_app_data_global;
+	if(sleep_flag_ptr->key == SNDP_DA_PARAM_FIELD_VALID)
+	{
+		return sleep_flag_flash.sleep_anc_mode;
+	}
+	else
+	{
+		return 0xff;
+	}	
 }
 
 /**************************************************set eq mode end************************************************/
