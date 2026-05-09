@@ -643,6 +643,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_splaypause_onoff(sndp_comm_cmd_info_s
     return 0;
 }
 
+#if defined(__SNDP_GESTURE_MAP__)
 uint32_t sndp_comm_cmd_send_lr_sync_update_mapping(gesture_map_t* mapping, uint16_t data_len)
 {
     sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_UPDATE_MAPPING, (uint8_t*)mapping, data_len);
@@ -651,7 +652,6 @@ uint32_t sndp_comm_cmd_send_lr_sync_update_mapping(gesture_map_t* mapping, uint1
 
 static uint32_t sndp_comm_cmd_recv_lr_sync_update_mapping(sndp_comm_cmd_info_s *cmd_info)
 {
-#if defined(__SNDP_GESTURE_MAP__)
     for(int i = 0; i<SNDP_DEV_GESTURE_MAX*2; i++) {
         if(cmd_info->data[3*i] == 0) {
             if(sndp_dev_is_left_earphone()){
@@ -668,9 +668,9 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_update_mapping(sndp_comm_cmd_info_s *
             }
         }
     }
-#endif
     return 0;
 }
+#endif
 
 uint32_t sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(unsigned short proximity_value)
 {
@@ -1683,7 +1683,9 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_LR_SYNC_PROMPT_ONOFF           , "LR_SYNC_PROMPT_ONOFF"    , sndp_comm_cmd_recv_lr_sync_prompt_onoff           },
     { COMM_CMDID_LR_SYNC_GESTRUE_ONOFF           , "LR_SYNC_GESTRUE_ONOFF"    , sndp_comm_cmd_recv_lr_sync_gesture_onoff           },
     { COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF          , "LR_SYNC_SPLAYPAUSE_ONOFF"   , sndp_comm_cmd_recv_lr_sync_splaypause_onoff          },
+#if defined(__SNDP_GESTURE_MAP__)
     { COMM_CMDID_LR_SYNC_UPDATE_MAPPING         , "LR_SYNC_UPDATE_MAPPING"  , sndp_comm_cmd_recv_lr_sync_update_mapping         },
+#endif
     { COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF          , "LR_SYNC_Proximity_Notification_ONOFF"  , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_ONOFF         },
     { COMM_CMDID_LR_SYNC_Proximity_Notification_DATA           , "LR_SYNC_Proximity_Notification_DATA"  , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_DATA         },
     { COMM_CMDID_LR_SYNC_START_HEARTRATE_MEASUREMENT           , "LR_SYNC_START_HR_MEASURE"  , sndp_comm_cmd_recv_lr_sync_start_heartrate_measure         },
@@ -2170,9 +2172,9 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_touch_key_mapping(sl
         cmd_info->value[3*i+1] = gesture_map_get[i].key_behavior;
         cmd_info->value[3*i+2] = gesture_map_get[i].key_function;
     }
-#endif
     cmd_info->data_len = 0x19;
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
+#endif
     return 0;
 }
 
@@ -2986,7 +2988,10 @@ static void sndp_findme_loop_handler(uint8_t onoff)
    
     sndp_play_findme();
     if(sndp_findme_fadein_vol < TGT_VOLUME_LEVEL_16){
-        sndp_findme_fadein_vol++;
+        sndp_findme_fadein_vol += 2;
+        if(sndp_findme_fadein_vol >= TGT_VOLUME_LEVEL_16){
+            sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_16;
+        }
     }
     sndp_delay_exec_start(2800, (uint32_t)sndp_findme_loop_handler,0,0,0);
 }
