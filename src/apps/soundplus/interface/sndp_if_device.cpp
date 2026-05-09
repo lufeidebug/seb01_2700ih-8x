@@ -646,18 +646,32 @@ void sndp_dev_cover_init(void)
 
 /************************************************** Temperature Info Start **************************************************/
 
-int16_t sndp_dev_temperature_get_value(bool peer)
+int16_t sndp_dev_temperature_get_temperature(bool peer)
 {
 	return (peer) ? (sndp_dev_ctx.peer.temperature) : (sndp_dev_ctx.local.temperature);
 }
 
-void sndp_dev_temperature_set_value(bool peer, int16_t temperature)
+void sndp_dev_temperature_set_temperature(bool peer, int16_t temperature)
 {
 	if(peer) 
 		sndp_dev_ctx.peer.temperature = temperature;
 	else
 		sndp_dev_ctx.local.temperature = temperature;
 }
+
+int16_t sndp_dev_temperature_get_ntc_voltage(bool peer)
+{
+	return (peer) ? (sndp_dev_ctx.peer.ntc_voltage) : (sndp_dev_ctx.local.ntc_voltage);
+}
+
+void sndp_dev_temperature_set_ntc_voltage(bool peer, uint16_t voltage)
+{
+	if(peer) 
+		sndp_dev_ctx.peer.ntc_voltage = voltage;
+	else
+		sndp_dev_ctx.local.ntc_voltage = voltage;
+}
+
 
 void sndp_dev_temperature_measure(void)
 {
@@ -668,11 +682,12 @@ void sndp_dev_temperature_measure(void)
 }
 
 #if defined(__SNDP_TEMPERATURE_MGR__)
-static void sndp_dev_temperature_measure_callback(int16_t temperature)
+static void sndp_dev_temperature_measure_callback(int16_t temperature, uint16_t voltage)
 {
 	SNDP_IF_TRACE(1, "temperature=%d", temperature);
 
-	sndp_dev_temperature_set_value(false, temperature);
+	sndp_dev_temperature_set_temperature(false, temperature);
+    sndp_dev_temperature_set_ntc_voltage(false, voltage);
 
 	if(sndp_dev_temperature_measure_cb_ptr) {
         sndp_call_func_in_app_thread((uint32_t)sndp_dev_temperature_measure_cb_ptr, temperature, 0, 0);
@@ -689,7 +704,7 @@ void sndp_dev_temperature_init(void)
 {
 	SNDP_IF_TRACE_ENTER();
 
-	sndp_dev_temperature_set_value(false, 25);
+	sndp_dev_temperature_set_temperature(false, 25);
 #if defined(__SNDP_TEMPERATURE_MGR__)
 	sndp_hal_temperature_init();
 	sndp_hal_temperature_set_measure_callback(sndp_dev_temperature_measure_callback);
@@ -745,7 +760,7 @@ void sndp_dev_charger_set_charging_current(void)
 	sndp_hal_charging_current_e set_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
 	
 	if(sndp_dev_charger_is_plugin(false)) {
-		uint8_t temp = sndp_dev_temperature_get_value(false);
+		uint8_t temp = sndp_dev_temperature_get_temperature(false);
 		if(temp < 0)
 			set_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
 		else if(temp < 15)
@@ -1393,13 +1408,14 @@ static uint8_t sndp_dev_dev_sn[SNDP_DEV_DEV_SN_LEN + 1];
 
 void sndp_dev_get_default_sn(uint8_t *buf, uint16_t buf_size)
 {
-    uint8_t local_bt_addr[6] = {0};
-
     if(buf_size < SNDP_DEV_DEV_SN_LEN) {
         return;
     }
     
     memset(buf, 0, buf_size);  
+    
+#if 0    
+    uint8_t local_bt_addr[6] = {0};
 	factory_section_original_btaddr_get(local_bt_addr);
     sprintf((char *)buf, "SEB01%02X%02X%02X%02X%02X%02X", 
         local_bt_addr[5],
@@ -1408,7 +1424,10 @@ void sndp_dev_get_default_sn(uint8_t *buf, uint16_t buf_size)
         local_bt_addr[2],
         local_bt_addr[1],
         local_bt_addr[0]);
-   
+#else
+    sprintf((char *)buf, "0000000000000");
+#endif
+
 }
 
 uint8_t *sndp_dev_get_dev_sn(void) 
@@ -1417,11 +1436,13 @@ uint8_t *sndp_dev_get_dev_sn(void)
 
     memset(sndp_dev_dev_sn, 0, sizeof(sndp_dev_dev_sn));    
     if(sndp_da_read_field(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), false) == 0) {
-        if(field_sn.valid == 0xA1B2C3D4 ) {
+        if(field_sn.key == SNDP_DA_PARAM_FIELD_VALID ) {
             memcpy(sndp_dev_dev_sn, field_sn.sn, SNDP_DEV_DEV_SN_LEN);
         } else {
             sndp_dev_get_default_sn(sndp_dev_dev_sn, sizeof(sndp_dev_dev_sn));
         }
+    } else {
+        sndp_dev_get_default_sn(sndp_dev_dev_sn, sizeof(sndp_dev_dev_sn));
     }
     return sndp_dev_dev_sn;
 }
@@ -1438,7 +1459,6 @@ bool sndp_dev_save_dev_sn(uint8_t *sn, uint16_t sn_len)
     SNDP_IF_TRACE(2, "sn_len=%d, sn:%s", sn_len, sn);
 
     memset(&field_sn.sn, 0, SNDP_DEV_DEV_SN_LEN);
-    field_sn.valid = SNDP_SN_VALID_FLAG;
     strncpy((char *)field_sn.sn, (char *)sn, sn_len);
     if(sndp_da_write_field(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
         memset(&field_sn, 0, sizeof(sndp_da_field_sn_s));

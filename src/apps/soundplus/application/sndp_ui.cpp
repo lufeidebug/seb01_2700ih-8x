@@ -45,6 +45,10 @@
 #include "sndp_app_white_noise.h"
 #endif
 
+#if defined(__SNDP_PRODUCT_TEST__)
+#include "sndp_product_test.h"
+#endif
+
 
 /**************************************************************************************************
 * Constant
@@ -863,6 +867,10 @@ static void sndp_ui_gesture_event_generated(sndp_dev_gesture_event_e gesture_eve
 
     SPUI_TRACE(0, "event=%d", gesture_event);
 
+    if(sndp_pt_click_test_is_opened()) {
+        sndp_comm_cmd_send_pt_click_test_report((uint8_t)(gesture_event - SNDP_DEV_GESTURE_EVENT_1_CLICK + 1));
+    }
+    
     if(!sndp_dev_wear_is_worn(false)) {
         SPUI_TRACE(0, "not worn, rtn");
         return;
@@ -1482,7 +1490,7 @@ static void sndp_ui_dev_status_print(void)
 		SNDP_TRACE(2, "[chg sta] loc:%4d, peer:%4d", sndp_dev_charger_get_charging_status(false), sndp_dev_charger_get_charging_status(true));
 		SNDP_TRACE(2, "[percent] loc:%4d, peer:%4d", sndp_dev_get_bat_percentage(false), sndp_dev_get_bat_percentage(true));
 		SNDP_TRACE(2, "[voltage] loc:%4d, peer:%4d", sndp_dev_get_bat_voltage(false), sndp_dev_get_bat_voltage(true));       
-		SNDP_TRACE(2, "[temp   ] loc:%4d, peer:%4d", sndp_dev_temperature_get_value(false), sndp_dev_temperature_get_value(true));
+		SNDP_TRACE(2, "[temp   ] loc:%4d, peer:%4d", sndp_dev_temperature_get_temperature(false), sndp_dev_temperature_get_temperature(true));
 		SNDP_TRACE(2, "[wear   ] loc:%4s, peer:%4s", sndp_dev_wear_is_worn(false) ? str_wear_on : str_wear_off, sndp_dev_wear_is_worn(true) ? str_wear_on : str_wear_off);
         SNDP_TRACE(2, "[cover  ] loc:%4s, peer:%4s", sndp_dev_cover_is_opened(false) ? str_cover_open : str_cover_close, sndp_dev_cover_is_opened(true) ? str_cover_open : str_cover_close);
         SNDP_TRACE(2, "[iobox  ] loc:%4s, peer:%4s", sndp_dev_iobox_is_in_box(false) ? str_iobox_in : str_iobox_out, sndp_dev_iobox_is_in_box(true) ? str_iobox_in : str_iobox_out);
@@ -1491,7 +1499,7 @@ static void sndp_ui_dev_status_print(void)
 		SNDP_TRACE(1, "[chg sta] loc:%4d, peer:----", sndp_dev_charger_get_charging_status(false));
 		SNDP_TRACE(1, "[percent] loc:%4d, peer:----", sndp_dev_get_bat_percentage(false));
 		SNDP_TRACE(1, "[voltage] loc:%4d, peer:----", sndp_dev_get_bat_voltage(false));     
-		SNDP_TRACE(1, "[temp   ] loc:%4d, peer:----", sndp_dev_temperature_get_value(false));
+		SNDP_TRACE(1, "[temp   ] loc:%4d, peer:----", sndp_dev_temperature_get_temperature(false));
 		SNDP_TRACE(1, "[wear   ] loc:%4s, peer:----", sndp_dev_wear_is_worn(false) ? str_wear_on : str_wear_off);
         SNDP_TRACE(1, "[cover  ] loc:%4s, peer:----", sndp_dev_cover_is_opened(false) ? str_cover_open : str_cover_close);
         SNDP_TRACE(1, "[iobox  ] loc:%4s, peer:----", sndp_dev_iobox_is_in_box(false) ? str_iobox_in : str_iobox_out);

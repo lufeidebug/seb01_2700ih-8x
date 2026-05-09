@@ -8,14 +8,19 @@
 #include "hal_bootmode.h"
 #include "tgt_hardware.h"
 #include "app_utils.h"
+#include "nvrecord_extension.h"
+#include "nvrecord_env.h"
 #include "factory_section.h"
 #include "app_media_player.h"
 #include "app_anc.h"
 #include "iir_process.h"
+#include "app_tws_ibrt.h"
 
 #include "sndp_if_common.h"
 #include "sndp_if_device.h"
 #include "sndp_if_platform.h"
+#include "sndp_if_data_access.h"
+
 #include "sndp_ui.h"
 
 #include "sndp_comm_protocol.h"
@@ -886,9 +891,9 @@ static uint32_t sndp_comm_cmd_recv_pt_query_fw_ver(sndp_comm_cmd_info_s *cmd_inf
     cmd_info->data_len = 0;
 	cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
 	cmd_info->data[cmd_info->data_len++] = fw_ver[0];
-	cmd_info->data[cmd_info->data_len++] = fw_ver[1];;
-	cmd_info->data[cmd_info->data_len++] = fw_ver[2];;
-	cmd_info->data[cmd_info->data_len++] = fw_ver[3];;
+	cmd_info->data[cmd_info->data_len++] = fw_ver[1];
+	cmd_info->data[cmd_info->data_len++] = fw_ver[2];
+	cmd_info->data[cmd_info->data_len++] = fw_ver[3];
 	sndp_comm_main_rsp_cmd(cmd_info);
 	return 0;
 }
@@ -950,7 +955,7 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_query_wear_status(sndp_com
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_query_dev_sn(sndp_comm_cmd_info_s *cmd_info)
+POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_read_dev_sn(sndp_comm_cmd_info_s *cmd_info)
 {
 	uint8_t *sn = NULL;
 	uint16_t sn_len;
@@ -979,7 +984,7 @@ static uint32_t sndp_comm_cmd_recv_pt_write_dev_sn(sndp_comm_cmd_info_s *cmd_inf
 	return 0;
 }
 
-static uint32_t sndp_comm_cmd_recv_pt_query_bt_addr(sndp_comm_cmd_info_s *cmd_info)
+static uint32_t sndp_comm_cmd_recv_pt_read_bt_addr(sndp_comm_cmd_info_s *cmd_info)
 {
 	uint8_t *bt_addr = sndp_dev_get_bt_addr(false);
 	
@@ -993,11 +998,20 @@ static uint32_t sndp_comm_cmd_recv_pt_query_bt_addr(sndp_comm_cmd_info_s *cmd_in
 
 static uint32_t sndp_comm_cmd_recv_pt_set_bt_addr(sndp_comm_cmd_info_s *cmd_info)
 {
-    sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NOT_SUPPORT);
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+    
+    if(cmd_info->data_len == 6) {
+        if(factory_section_set_bt_address(&cmd_info->data[0]) != 0) {
+            err_code = SNDP_COMM_ERROR_SAVE_FAIL;
+        }
+    } else {
+        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+    }
+    sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
 	return 0;
 }
 
-static uint32_t sndp_comm_cmd_recv_pt_query_ble_addr(sndp_comm_cmd_info_s *cmd_info)
+static uint32_t sndp_comm_cmd_recv_pt_read_ble_addr(sndp_comm_cmd_info_s *cmd_info)
 {
 	uint8_t *ble_addr = sndp_dev_get_ble_addr(false);
 
@@ -1015,7 +1029,7 @@ static uint32_t sndp_comm_cmd_recv_pt_set_ble_addr(sndp_comm_cmd_info_s *cmd_inf
 	return 0;
 }
 
-static uint32_t sndp_comm_cmd_recv_pt_query_frequency_offset(sndp_comm_cmd_info_s *cmd_info)
+static uint32_t sndp_comm_cmd_recv_pt_read_frequency_offset(sndp_comm_cmd_info_s *cmd_info)
 {
     uint8_t err_code = SNDP_COMM_ERROR_NONE;
     uint32_t xtal_fcap = 0;
@@ -1098,6 +1112,13 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_gsensor(sndp_comm_cmd
 	sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NOT_SUPPORT);
 	return 0;
 }
+
+uint32_t sndp_comm_cmd_send_pt_test_gsensor_report(uint8_t *data, uint16_t data_len)
+{   
+    return 0;
+}
+
+
 
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_hrsensor(sndp_comm_cmd_info_s *cmd_info)
 {
@@ -1234,37 +1255,328 @@ static uint32_t sndp_comm_cmd_recv_pt_read_hall_status(sndp_comm_cmd_info_s *cmd
     return 0;
 }
 
-static uint32_t sndp_comm_cmd_recv_pt_read_proximity_value(sndp_comm_cmd_info_s *cmd_info)
+static uint32_t sndp_comm_cmd_recv_pt_test_ir(sndp_comm_cmd_info_s *cmd_info)
 {
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+    uint8_t op_code;
     uint16_t value = 0;
+    uint16_t high_threshold;
+    uint16_t low_threshold;
+    uint8_t send_data[10];
+    uint8_t send_len = 0;
 
-    sndp_dev_hr_read_proximity_value(&value);
+    if(cmd_info->data_len > 0) {
+        op_code = cmd_info->data[0];
+        if(op_code == 0x01) {   //read proximity value
+            sndp_dev_hr_read_proximity_value(&value);
+            
+            send_len = 0;
+            send_data[send_len++] = op_code;
+            send_data[send_len++] = (uint8_t)((value>>8)&0xff);
+            send_data[send_len++] = (uint8_t)(value&0xff);
+            
+        } else if(op_code == 0x02) { // read proximity threshold
+            high_threshold = 0;
+            low_threshold = 0;
+            sndp_hal_hr_read_proximity_threshold(&high_threshold, &low_threshold);
+
+            send_len = 0;
+            send_data[send_len++] = op_code;
+            send_data[send_len++] = (uint8_t)((high_threshold>>8)&0xff);
+            send_data[send_len++] = (uint8_t)(high_threshold&0xff);
+            send_data[send_len++] = (uint8_t)((low_threshold>>8)&0xff);
+            send_data[send_len++] = (uint8_t)(low_threshold&0xff);
+            
+        } else if(op_code == 0x03) { // write proximity threshold
+            if(cmd_info->data_len == 5) {
+                high_threshold = (cmd_info->data[1]<<8) | cmd_info->data[2];
+                low_threshold = (cmd_info->data[3]<<8) | cmd_info->data[4];
+                COMM_CMD_TRACE(1, "h=%d, l=%d", high_threshold, low_threshold);
+
+                sndp_hal_hr_write_proximity_threshold(high_threshold, low_threshold);
+
+                high_threshold = 0;
+                low_threshold = 0;
+                sndp_hal_hr_read_proximity_threshold(&high_threshold, &low_threshold);
+                send_len = 0;
+                send_data[send_len++] = op_code;
+                send_data[send_len++] = (uint8_t)((high_threshold>>8)&0xff);
+                send_data[send_len++] = (uint8_t)(high_threshold&0xff);
+                send_data[send_len++] = (uint8_t)((low_threshold>>8)&0xff);
+                send_data[send_len++] = (uint8_t)(low_threshold&0xff);
+            } else {
+                err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+            }
+        }else {
+            err_code = SNDP_COMM_ERROR_NOT_SUPPORT;
+        }
+        
+    } else {
+        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+    }
+
     cmd_info->data_len = 0;
-    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
-    cmd_info->data[cmd_info->data_len++] = (uint8_t)((value>>8)&0xff);
-    cmd_info->data[cmd_info->data_len++] = (uint8_t)(value&0xff);
-    sndp_comm_main_rsp_cmd(cmd_info);
+    cmd_info->data[cmd_info->data_len++] = err_code;
+    for(uint16_t i = 0; i < send_len; i++) {
+        cmd_info->data[cmd_info->data_len++] = send_data[i];
+    }
+   
+	sndp_comm_main_rsp_cmd(cmd_info);
+   
     return 0;
 }
 
-static uint32_t sndp_comm_cmd_recv_pt_write_proximity_thresold(sndp_comm_cmd_info_s *cmd_info)
+
+static uint32_t sndp_comm_cmd_recv_pt_query_bt_name(sndp_comm_cmd_info_s *cmd_info)
+{
+    uint8_t *bt_name = NULL;
+    uint16_t name_len;
+
+    bt_name = factory_section_get_bt_name();
+    
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    if(bt_name != NULL) {
+        name_len = strlen((char *)bt_name);
+        if(name_len > SNDP_COMM_FRAME_CMD_DLEN_MAX - 1) {
+            name_len = SNDP_COMM_FRAME_CMD_DLEN_MAX - 1;
+        }
+        
+        memcpy(&cmd_info->data[cmd_info->data_len], bt_name, name_len);
+        cmd_info->data_len += name_len;
+        cmd_info->data[cmd_info->data_len] = 0;
+    }
+    
+	sndp_comm_main_rsp_cmd(cmd_info);
+   
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_query_tws_pairing_addr(sndp_comm_cmd_info_s *cmd_info)
+{
+    struct nvrecord_env_t *nvrecord_env;
+        
+    nv_record_env_get(&nvrecord_env);
+    
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    
+    if(nvrecord_env->ibrt_mode.mode != 0xFF) {
+        memcpy(&cmd_info->data[cmd_info->data_len], nvrecord_env->ibrt_mode.record.bdAddr.address, 6);
+    } else {
+        memset(&cmd_info->data[cmd_info->data_len], 0x00, 6);
+    }
+
+    cmd_info->data_len += 6;
+
+    sndp_comm_main_rsp_cmd(cmd_info);
+   
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_del_tws_pairing_addr(sndp_comm_cmd_info_s *cmd_info)
+{
+    ibrt_config_t ibrt_config;
+    uint8_t local_addr[6] = {0};
+
+    factory_section_original_btaddr_get(local_addr);
+
+
+    ibrt_config.nv_role = 0xFF;
+    memcpy((void *)ibrt_config.local_addr.address, local_addr, 6);
+    memset(ibrt_config.peer_addr.address, 0, 6);
+    sndp_ibrt_reconfig_save_to_nvrecord(&ibrt_config);
+
+    sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NONE);
+   
+    return 0;
+}
+
+
+static uint32_t sndp_comm_cmd_recv_pt_read_test_flag(sndp_comm_cmd_info_s *cmd_info)
+{
+    sndp_da_field_test_flag_s field_test_flag;
+
+    memset(&field_test_flag, 0, sizeof(field_test_flag));
+    if(sndp_da_read_field(SNDP_DA_FIELD_TEST_FLAG, &field_test_flag, sizeof(sndp_da_field_test_flag_s), true) == 0) {
+        if(field_test_flag.key != SNDP_DA_PARAM_FIELD_VALID ) {
+            field_test_flag.test_flag = 0;
+        }
+    }
+
+    COMM_CMD_TRACE(1, "test_flag=%08X", field_test_flag.test_flag);
+
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((field_test_flag.test_flag>>24)&0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((field_test_flag.test_flag>>16)&0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((field_test_flag.test_flag>>8)&0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(field_test_flag.test_flag&0xff);
+	sndp_comm_main_rsp_cmd(cmd_info);
+   
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_write_test_flag(sndp_comm_cmd_info_s *cmd_info)
 {
     uint8_t err_code = SNDP_COMM_ERROR_NONE;
-    uint16_t high_threshold;
-    uint16_t low_threshold;
+    uint8_t test_item_idx;
 
-    if(cmd_info->data_len == 4) {
-        high_threshold = (cmd_info->data[0]<<8) | cmd_info->data[1];
-        low_threshold = (cmd_info->data[2]<<8) | cmd_info->data[3];
-        COMM_CMD_TRACE(1, "h=%d, l=%d", high_threshold, low_threshold);
+    sndp_da_field_test_flag_s field_test_flag;
 
-        sndp_hal_hr_write_proximity_threshold(high_threshold, low_threshold);
+    if(cmd_info->data_len == 1) {
+        test_item_idx = cmd_info->data[0];
+        COMM_CMD_TRACE(1, "test_item_idx=%d", test_item_idx);
+        
+        if(test_item_idx >= 1 && test_item_idx <= 32) {
+            memset(&field_test_flag, 0, sizeof(field_test_flag));
+            sndp_da_read_field(SNDP_DA_FIELD_TEST_FLAG, &field_test_flag, sizeof(sndp_da_field_test_flag_s), true);
+
+            COMM_CMD_TRACE(1, "0 test_flag=%08X", field_test_flag.test_flag);
+            
+            field_test_flag.test_flag |= (1<<(test_item_idx-1));
+
+            COMM_CMD_TRACE(1, "1 test_flag=%08X", field_test_flag.test_flag);
+            
+            if(sndp_da_write_field(SNDP_DA_FIELD_TEST_FLAG, &field_test_flag, sizeof(sndp_da_field_test_flag_s), true) != 0) {
+                err_code = SNDP_COMM_ERROR_SAVE_FAIL;
+            }
+            
+        } else {
+            err_code = SNDP_COMM_ERROR_PARAM_OUT_RANG;
+        }
     } else {
         err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
     }
     
 	sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
    
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_read_sleep_algo_auth(sndp_comm_cmd_info_s *cmd_info)
+{
+	sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NOT_SUPPORT);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_write_dev_color(sndp_comm_cmd_info_s *cmd_info)
+{
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+    sndp_da_field_dev_color_s field_dev_color;
+
+    if(cmd_info->data_len == 1) {
+        memset(&field_dev_color, 0, sizeof(field_dev_color));
+        field_dev_color.dev_color = cmd_info->data[0];
+        COMM_CMD_TRACE(1, "key=%08X, color=%08X", field_dev_color.key, field_dev_color.dev_color);
+        if(sndp_da_write_field(SNDP_DA_FIELD_TEST_FLAG, &field_dev_color, sizeof(sndp_da_field_dev_color_s), true) != 0) {
+            err_code = SNDP_COMM_ERROR_SAVE_FAIL;
+        }
+            
+    } else {
+        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+    }
+    
+	sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
+   
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_read_dev_color(sndp_comm_cmd_info_s *cmd_info)
+{
+    sndp_da_field_dev_color_s field_dev_color;
+
+    memset(&field_dev_color, 0, sizeof(field_dev_color));
+    if(sndp_da_read_field(SNDP_DA_FIELD_TEST_FLAG, &field_dev_color, sizeof(sndp_da_field_dev_color_s), true) == 0) {
+        COMM_CMD_TRACE(1, "key=%08X, color=%08X", field_dev_color.key, field_dev_color.dev_color);
+        
+        if(field_dev_color.key != SNDP_DA_PARAM_FIELD_VALID ) {
+            field_dev_color.dev_color = 0;
+        }
+    }
+
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(field_dev_color.dev_color&0xff);
+	sndp_comm_main_rsp_cmd(cmd_info);
+   
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_switch_anc_mode(sndp_comm_cmd_info_s *cmd_info)
+{
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+
+    if(cmd_info->data_len == 1) {
+        if((sndp_anc_mode_e)cmd_info->data[0] < SNDP_ANC_MODE_QTY) {
+            sndp_anc_mode_set_locally((sndp_anc_mode_e) cmd_info->data[0]);
+        } else {
+            err_code = SNDP_COMM_ERROR_PARAM_OUT_RANG;
+        }
+            
+    } else {
+        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+    }
+    
+	sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_query_ntc_info(sndp_comm_cmd_info_s *cmd_info)
+{
+    int16_t temperature;
+    uint16_t ntc_voltage;
+    
+    temperature = sndp_dev_temperature_get_temperature(false);
+    ntc_voltage = sndp_dev_temperature_get_ntc_voltage(false);
+    
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((temperature>>8)&0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(temperature&0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((ntc_voltage>>8)&0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(ntc_voltage&0xff);
+    
+	sndp_comm_main_rsp_cmd(cmd_info);
+   
+    return 0;
+}
+
+static uint8_t click_test_from = SNDP_COMM_DEVICE_ATE;
+static uint8_t click_test_path = SNDP_COMM_PATH_SPP;
+
+static uint32_t sndp_comm_cmd_recv_pt_switch_click_test(sndp_comm_cmd_info_s *cmd_info)
+{
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+
+    if(cmd_info->data_len == 1) {
+        click_test_from = COMM_GET_FROM(cmd_info->fromto);
+        click_test_path =  cmd_info->path;
+        sndp_pt_switch_click_test(cmd_info->data[0]);
+
+    } else {
+        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+    }
+    
+	sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_pt_click_test_report(uint8_t tap_event)
+{   
+    uint8_t data[4];
+    uint32_t data_len;
+
+    data_len = 0;
+    data[data_len++] = SNDP_COMM_ERROR_NONE;
+    data[data_len++] = tap_event;
+
+    sndp_comm_main_send_cmd_by_id(COMM_CMDID_PT_CLICK_TEST_REPORT, 
+            sndp_comm_get_local_device(), 
+            click_test_from, 
+            click_test_path, 
+            data, 
+            data_len);
     return 0;
 }
 
@@ -1386,18 +1698,18 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
 	{ COMM_CMDID_PT_EXIT_DUT                    , "PT_EXIT_DUT"	            , sndp_comm_cmd_recv_pt_exit_dut_mode		        },
     { COMM_CMDID_PT_QUERY_FW_VER                , "PT_Q_FW_VER"	            , sndp_comm_cmd_recv_pt_query_fw_ver                },
 	{ COMM_CMDID_PT_QUERY_HW_VER                , "PT_Q_HW_VER"	            , sndp_comm_cmd_recv_pt_query_hw_ver                },
-    { COMM_CMDID_PT_QUERY_DEV_SN                , "PT_Q_DEV_SN "            , sndp_comm_cmd_recv_pt_query_dev_sn                },
+    { COMM_CMDID_PT_READ_DEV_SN                 , "PT_R_DEV_SN "            , sndp_comm_cmd_recv_pt_read_dev_sn                },
 	{ COMM_CMDID_PT_WRITE_DEV_SN                , "PT_W_DEV_SN"	            , sndp_comm_cmd_recv_pt_write_dev_sn                },
-    { COMM_CMDID_PT_QUERY_BT_ADDR               , "PT_Q_BT_ADDR"	        , sndp_comm_cmd_recv_pt_query_bt_addr               },
-	{ COMM_CMDID_PT_SET_BT_ADDR                 , "PT_S_BT_ADDR "	        , sndp_comm_cmd_recv_pt_set_bt_addr                 },
-	{ COMM_CMDID_PT_QUERY_BLE_ADDR              , "PT_Q_BLE_ADDR"	        , sndp_comm_cmd_recv_pt_query_ble_addr		        },
-	{ COMM_CMDID_PT_SET_BLE_ADDR                , "PT_SET_BLE_ADDR"	        , sndp_comm_cmd_recv_pt_set_ble_addr		        },
-    { COMM_CMDID_PT_QUERY_RF_FREQUENCY_OFFSET   , "PT_Q_RF_FQ_OFF"          , sndp_comm_cmd_recv_pt_query_frequency_offset      }, 
-	{ COMM_CMDID_PT_WRITE_RF_FREQUENCY_OFFSET   , "PT_W_RF_FQ_OFF"          , sndp_comm_cmd_recv_pt_write_frequency_offset      },	
+    { COMM_CMDID_PT_READ_BT_ADDR                , "PT_R_BT_ADDR"	        , sndp_comm_cmd_recv_pt_read_bt_addr               },
+	{ COMM_CMDID_PT_WRITE_BT_ADDR               , "PT_W_BT_ADDR "	        , sndp_comm_cmd_recv_pt_set_bt_addr                 },
+	{ COMM_CMDID_PT_READ_BLE_ADDR               , "PT_R_BLE_ADDR"	        , sndp_comm_cmd_recv_pt_read_ble_addr		        },
+	{ COMM_CMDID_PT_WRITE_BLE_ADDR              , "PT_W_BLE_ADDR"	        , sndp_comm_cmd_recv_pt_set_ble_addr		        },
+    { COMM_CMDID_PT_READ_RF_FREQ_OFF            , "PT_R_RF_FQ_OFF"          , sndp_comm_cmd_recv_pt_read_frequency_offset      }, 
+	{ COMM_CMDID_PT_WRITE_RF_FREQ_OFF           , "PT_W_RF_FQ_OFF"          , sndp_comm_cmd_recv_pt_write_frequency_offset      },	
 	{ COMM_CMDID_PT_TEST_MIC                    , "PT_TEST_MIC"	            , sndp_comm_cmd_recv_pt_test_mic                    },
     { COMM_CMDID_PT_TEST_SPK                    , "PT_TEST_SPK"	            , sndp_comm_cmd_recv_pt_test_speaker                },
-    { COMM_CMDID_PT_TEST_GSENSOR                , "PT_TEST_GSENSOR"	        , sndp_comm_cmd_recv_pt_test_gsensor                     },
-    { COMM_CMDID_PT_TEST_HRSENSOR               , "PT_TEST_HRSENSOR"	    , sndp_comm_cmd_recv_pt_test_hrsensor                    },
+    { COMM_CMDID_PT_TEST_GSENSOR                , "PT_TEST_GSENSOR"	        , sndp_comm_cmd_recv_pt_test_gsensor                },
+    { COMM_CMDID_PT_TEST_HRSENSOR               , "PT_TEST_HRSENSOR"	    , sndp_comm_cmd_recv_pt_test_hrsensor               },
 	{ COMM_CMDID_PT_QUERY_DEV_STATUS            , "PT_Q_DEV_STA"	        , sndp_comm_cmd_recv_pt_query_dev_status            },
 	{ COMM_CMDID_PT_READ_ANC_CALIB_STATUS       , "PT_R_ANC_CALIB_STA"      , sndp_comm_cmd_recv_pt_read_anc_calib_status       },
     { COMM_CMDID_PT_READ_ALGO_AUTH_RESULT       , "PT_R_ALGO_AUTH_RST"      , sndp_comm_cmd_recv_pt_read_algo_auth_result       },
@@ -1405,8 +1717,18 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_PT_SWITCH_WEAR_STATUS_REPORT   , "PT_S_WEAR_STA_RPT"       , sndp_comm_cmd_recv_pt_switch_wear_status_report   },
     { COMM_CMDID_PT_CHECK_EARSIDE               , "PT_C_EARSIDE"            , sndp_comm_cmd_recv_pt_check_earside               },
     { COMM_CMDID_PT_READ_HALL_STATUS            , "PT_R_HALL_STA"           , sndp_comm_cmd_recv_pt_read_hall_status            },
-    { COMM_CMDID_PT_READ_PROXIMITY_VALUE        , "PT_R_PROX_VALUE"         , sndp_comm_cmd_recv_pt_read_proximity_value        },
-    { COMM_CMDID_PT_WRITE_PROXIMITY_THRESHOLD   , "PT_W_PROX_THRESHOLD"     , sndp_comm_cmd_recv_pt_write_proximity_thresold    },
+    { COMM_CMDID_PT_TEST_IR                     , "PT_TEST_IR"              , sndp_comm_cmd_recv_pt_test_ir                     },
+    { COMM_CMDID_PT_QUERY_BT_NAME               , "PT_Q_BT_NAME"            , sndp_comm_cmd_recv_pt_query_bt_name               },
+    { COMM_CMDID_PT_READ_TWS_PAIRING_ADDR       , "PT_R_TWS_PAIRING_ADDR"   , sndp_comm_cmd_recv_pt_query_tws_pairing_addr      },
+    { COMM_CMDID_PT_DEL_TWS_PAIRING_ADDR        , "PT_D_TWS_PAIRING_ADDR"   , sndp_comm_cmd_recv_pt_del_tws_pairing_addr        },
+    { COMM_CMDID_PT_READ_TEST_FLAG              , "PT_R_TEST_FLAG"          , sndp_comm_cmd_recv_pt_read_test_flag              },
+    { COMM_CMDID_PT_WRITE_TEST_FLAG             , "PT_W_TEST_FLAG"          , sndp_comm_cmd_recv_pt_write_test_flag             },
+    { COMM_CMDID_PT_READ_SLEEP_ALGO_AUTH        , "PT_R_SLEEP_ALGO_AUTH"    , sndp_comm_cmd_recv_pt_read_sleep_algo_auth        },
+    { COMM_CMDID_PT_WRITE_DEV_COLOR             , "PT_W_DEV_COLOR"          , sndp_comm_cmd_recv_pt_write_dev_color             },
+    { COMM_CMDID_PT_READ_DEV_COLOR              , "PT_R_DEV_COLOR"          , sndp_comm_cmd_recv_pt_read_dev_color              },
+    { COMM_CMDID_PT_SWITCH_ANC_MODE             , "PT_S_ANC_MODE"           , sndp_comm_cmd_recv_pt_switch_anc_mode             },
+    { COMM_CMDID_PT_QUERY_NTC_INFO              , "PT_Q_NTC_INFO"           , sndp_comm_cmd_recv_pt_query_ntc_info              },
+    { COMM_CMDID_PT_SWICH_CLICK_TEST            , "PT_S_CLICK_TEST"         , sndp_comm_cmd_recv_pt_switch_click_test           },
 #endif
     
 

@@ -15,6 +15,7 @@ extern "C" {
 typedef enum {
 	SNDP_DA_FIELD_BAT_INFO,
 	SNDP_DA_FIELD_SN,
+	SNDP_DA_FIELD_PROXIMITY_CALIB_DATA,
 	SNDP_DA_FIELD_PPG_CALIB_DATA,
 	SNDP_DA_FIELD_ACC_CALIB_DATA,
 
@@ -25,6 +26,9 @@ typedef enum {
 	SNDP_DA_FIELD_APP_DATA,
 #endif
 
+    SNDP_DA_FIELD_TEST_FLAG,
+    SNDP_DA_FIELD_DEV_COLOR,
+    
 } sndp_da_field_id_e;
 
 
@@ -42,9 +46,14 @@ typedef struct {
 
 typedef struct {
 	uint32_t key;  /* This key must be defined, but it cannot be modified */
-    uint32_t valid;
 	uint8_t sn[20];
 } sndp_da_field_sn_s;
+
+typedef struct {
+	uint32_t key;  /* This key must be defined, but it cannot be modified */
+	uint8_t data[16];
+} sndp_da_field_proximity_calib_data_s;
+
 
 typedef struct {
 	uint32_t key;  /* This key must be defined, but it cannot be modified */
@@ -73,6 +82,16 @@ typedef struct {
 	uint8_t data[16];
 }sndp_da_field_sleep_app_data_s;
 #endif
+
+typedef struct {
+	uint32_t key;  /* This key must be defined, but it cannot be modified */
+	uint32_t test_flag;
+} sndp_da_field_test_flag_s;
+
+typedef struct {
+	uint32_t key;  /* This key must be defined, but it cannot be modified */
+	uint32_t dev_color;
+} sndp_da_field_dev_color_s;
 
 
 typedef struct {
@@ -110,8 +129,11 @@ typedef struct {
 
     /** Add field below this line. */
 	sndp_da_field_sn_s field_sn;
+    sndp_da_field_proximity_calib_data_s field_proximity_calib_data;
 	sndp_da_field_ppg_calib_data_s  field_ppg_calib_data;
     sndp_da_field_acc_calib_data_s  field_acc_calib_data;
+    sndp_da_field_test_flag_s field_test_flag;
+    sndp_da_field_dev_color_s field_dev_color;
 
     /** Add field above this line. */
     uint32_t data_end;

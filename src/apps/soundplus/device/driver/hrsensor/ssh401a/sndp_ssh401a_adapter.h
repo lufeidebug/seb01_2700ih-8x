@@ -16,6 +16,21 @@ extern "C" {
 #define SSH401A_TRACE(num, str, ...)
 #endif
 
+typedef struct {
+	uint16_t high_threshold;
+    uint16_t low_threshold;
+} ssh401a_proximity_calib_data_s;
+
+
+typedef struct {
+	uint8_t data[64];
+} ssh401a_ppg_calib_data_s;
+
+
+int32_t ssh401a_proximity_read_calib_data(ssh401a_proximity_calib_data_s *proximity_calib_data);
+int32_t ssh401a_proximity_write_calib_data(ssh401a_proximity_calib_data_s *proximity_calib_data);
+int32_t ssh401a_ppg_read_calib_data(ssh401a_ppg_calib_data_s *ppg_calib_data);
+int32_t ssh401a_ppg_write_calib_data(ssh401a_ppg_calib_data_s *ppg_calib_data);
 
 
 

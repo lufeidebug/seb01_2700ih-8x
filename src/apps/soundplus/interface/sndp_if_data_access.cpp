@@ -191,6 +191,14 @@ static uint16_t sndp_da_calc_backup_struct_checksum(void)
     addr = (uint32_t)&p_param->field_acc_calib_data;
     checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
 
+    addr = (uint32_t)&p_param->field_test_flag;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+    addr = (uint32_t)&p_param->field_dev_color;
+    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+    
+    
+    //---------------------------------------------------------------------------------
     addr = (uint32_t)&p_param->data_end;
     checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
 
@@ -268,6 +276,49 @@ static bool sndp_da_check_running_data_validity(sndp_da_access_info_s *info)
     return true;
 }
 
+POSSIBLY_UNUSED static bool sndp_da_check_backup_data_validity(sndp_da_access_info_s *info)
+{
+    sndp_da_running_param_s *param;
+    uint32_t struct_checksum;
+    uint32_t data_checksum;
+    
+    if(info == NULL) {
+        SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+        return false;
+    }
+
+    param = (sndp_da_running_param_s *)info->param_buf;
+    if(param == NULL) {
+        SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+        return false;
+    }
+
+    struct_checksum = info->calc_struct_checksum();
+    data_checksum = info->calc_data_checksum(info->param_buf);
+    
+    if((param->struct_ver != info->curr_param_struct_ver)
+        || (param->struct_checksum != struct_checksum)
+        || (param->data_checksum != data_checksum)) {
+
+        SNDP_IF_TRACE(0, "%d, struct_ver: %08X, %08X", __LINE__,
+            param->struct_ver, info->curr_param_struct_ver);
+        
+        SNDP_IF_TRACE(0, "%d, struct_checksum: %08X, %08X", __LINE__,
+            param->struct_checksum, struct_checksum);
+        
+        SNDP_IF_TRACE(0, "%d, data_checksum: %08X, %08X", __LINE__,
+            param->data_checksum, data_checksum);
+        
+        memset(info->param_buf, 0, info->param_size);
+        sndp_da_wirte_param_to_flash(info);
+        
+        return false;
+    }
+
+    return true;
+}
+
+
 
 static int32_t sndp_da_find_running_field_info(sndp_da_field_id_e field_id, sndp_da_field_info_s *field_info)
 {
@@ -298,11 +349,14 @@ static int32_t sndp_da_find_running_field_info(sndp_da_field_id_e field_id, sndp
 
 		default:
 			ret = -1;
-            SNDP_IF_TRACE(0, "Invalid field_id=%d", field_id);
-			//ASSERT(0, "Invalid field_id=%d", field_id);
 			break;
 	}
-	
+
+    if(ret) {
+        SNDP_IF_TRACE(0, "Invalid field_id=%d", field_id);
+    } else {
+        SNDP_IF_TRACE(0, "Valid field_id=%d", field_id);
+    }
 	return ret;
 }
 
@@ -319,6 +373,10 @@ static int32_t sndp_da_find_backup_field_info(sndp_da_field_id_e field_id, sndp_
 			field_info->offset = (uint32_t)&p_param->field_sn;
 			field_info->size = sizeof(sndp_da_field_sn_s);
 			break;  
+        case SNDP_DA_FIELD_PROXIMITY_CALIB_DATA:
+            field_info->offset = (uint32_t)&p_param->field_proximity_calib_data;
+			field_info->size = sizeof(sndp_da_field_proximity_calib_data_s);
+			break;
 		case SNDP_DA_FIELD_PPG_CALIB_DATA:
 			field_info->offset = (uint32_t)&p_param->field_ppg_calib_data;
 			field_info->size = sizeof(sndp_da_field_ppg_calib_data_s);
@@ -327,13 +385,24 @@ static int32_t sndp_da_find_backup_field_info(sndp_da_field_id_e field_id, sndp_
 			field_info->offset = (uint32_t)&p_param->field_acc_calib_data;
 			field_info->size = sizeof(sndp_da_field_acc_calib_data_s);
 			break;
+        case SNDP_DA_FIELD_TEST_FLAG:
+			field_info->offset = (uint32_t)&p_param->field_test_flag;
+			field_info->size = sizeof(sndp_da_field_test_flag_s);
+			break;
+        case SNDP_DA_FIELD_DEV_COLOR:
+			field_info->offset = (uint32_t)&p_param->field_dev_color;
+			field_info->size = sizeof(sndp_da_field_dev_color_s);
+			break;
 		default:
 			ret = -1;
-            SNDP_IF_TRACE(0, "Invalid field_id=%d", field_id);
-			//ASSERT(0, "Invalid field_id=%d", field_id);
 			break;
 	}
-	
+
+    if(ret) {
+        SNDP_IF_TRACE(0, "Invalid field_id=%d", field_id);
+    } else {
+        SNDP_IF_TRACE(0, "Valid field_id=%d", field_id);
+    }
 	return ret;
 }
 
@@ -560,6 +629,7 @@ void sndp_da_init(void)
     sndp_da_check_running_data_validity(&sndp_da_ctx.running_access_info);
     
 	sndp_da_read_param_from_flash(&sndp_da_ctx.backup_access_info);
+    //sndp_da_check_backup_data_validity(&sndp_da_ctx.backup_access_info);
 	
 }
 

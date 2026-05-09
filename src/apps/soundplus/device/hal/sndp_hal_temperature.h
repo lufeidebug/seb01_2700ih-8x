@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 
-typedef void (*sndp_hal_temperature_measure_callback)(int16_t temperature);
+typedef void (*sndp_hal_temperature_measure_callback)(int16_t temperature, uint16_t voltage);
 
 typedef struct {
     /**

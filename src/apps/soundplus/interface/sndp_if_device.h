@@ -182,7 +182,7 @@ typedef struct {
 	sndp_dev_bat_info_s bat_info;
 
 	int16_t temperature;
-
+    uint16_t ntc_voltage;
 
     sndp_dev_charger_plug_e charger_status;
         
@@ -299,8 +299,10 @@ void sndp_dev_io_pmu_check_cover(void);
 
 
 /************************************************** Temperature Info Start **************************************************/
-int16_t sndp_dev_temperature_get_value(bool peer);
-void sndp_dev_temperature_set_value(bool peer, int16_t temperature);
+int16_t sndp_dev_temperature_get_temperature(bool peer);
+void sndp_dev_temperature_set_temperature(bool peer, int16_t temperature);
+int16_t sndp_dev_temperature_get_ntc_voltage(bool peer);
+void sndp_dev_temperature_set_ntc_voltage(bool peer, uint16_t voltage);
 void sndp_dev_temperature_measure(void);
 void sndp_dev_temperature_set_measure_callback(sndp_dev_temperature_measure_cb callback);
 void sndp_dev_temperature_init(sndp_dev_temperature_measure_cb callback);

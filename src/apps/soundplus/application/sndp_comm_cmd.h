@@ -153,21 +153,21 @@ typedef enum {
                                                             rsp: 5 bytes, error code(1) + fw ver(4). */
     COMM_CMDID_PT_QUERY_HW_VER                      = 0x4B, /* recv: 0 bytes. 
                                                             rsp: 3 bytes, error code(1) + hw ver(2). */
-    COMM_CMDID_PT_QUERY_DEV_SN                      = 0x4C, /* recv: 0 bytes. 
+    COMM_CMDID_PT_READ_DEV_SN                       = 0x4C, /* recv: 0 bytes. 
                                                             rsp: 21 bytes, error code(1) + sn(20). */
     COMM_CMDID_PT_WRITE_DEV_SN                      = 0x4D, /* recv: <=20 bytes. 
                                                             rsp: 1 bytes, error code(1). */
-    COMM_CMDID_PT_QUERY_BT_ADDR                     = 0x4E, /* recv: 0 bytes. 
+    COMM_CMDID_PT_READ_BT_ADDR                      = 0x4E, /* recv: 0 bytes. 
                                                             rsp: 1 bytes, error code(1). */
-	COMM_CMDID_PT_SET_BT_ADDR                       = 0x4F, /* recv: 6 bytes. 
+	COMM_CMDID_PT_WRITE_BT_ADDR                     = 0x4F, /* recv: 6 bytes. 
                                                             rsp: 7 bytes, error code(1) + bt mac(6). */
-	COMM_CMDID_PT_QUERY_BLE_ADDR                    = 0x50, /* recv: 0 bytes. 
+	COMM_CMDID_PT_READ_BLE_ADDR                     = 0x50, /* recv: 0 bytes. 
                                                             rsp: 7 bytes, error code(1) + bt mac(6). */
-	COMM_CMDID_PT_SET_BLE_ADDR                      = 0x51, /* recv: 0 bytes. 
+	COMM_CMDID_PT_WRITE_BLE_ADDR                    = 0x51, /* recv: 0 bytes. 
                                                             rsp: 1 bytes, error code(1). */
-    COMM_CMDID_PT_QUERY_RF_FREQUENCY_OFFSET         = 0x52, /* recv: 0 bytes. 
+    COMM_CMDID_PT_READ_RF_FREQ_OFF                  = 0x52, /* recv: 0 bytes. 
                                                             rsp: 7 bytes, error code(1) + bt mac(6). */
-	COMM_CMDID_PT_WRITE_RF_FREQUENCY_OFFSET         = 0x53, /* recv: 0 bytes. 
+	COMM_CMDID_PT_WRITE_RF_FREQ_OFF                 = 0x53, /* recv: 0 bytes. 
                                                             rsp: 1 bytes, error code(1). */
 	COMM_CMDID_PT_TEST_MIC                          = 0x54,	/* recv: 1 bytes. mic index(1)
                                                             rsp: 1 bytes, error code(1). */
@@ -197,10 +197,34 @@ typedef enum {
                                                             rsp: 2 bytes, error code(1) + earsid(1). */
     COMM_CMDID_PT_READ_HALL_STATUS                  = 0x61,	/* recv: 0 bytes. 
                                                             rsp: 2 bytes, error code(1) + earsid(1). */
-    COMM_CMDID_PT_READ_PROXIMITY_VALUE              = 0x62,	/* recv: 0 bytes. 
+    COMM_CMDID_PT_TEST_IR                           = 0x62,	/* recv: 0 bytes. 
                                                             rsp: 3 bytes, error code(1) + value(2). */
-    COMM_CMDID_PT_WRITE_PROXIMITY_THRESHOLD         = 0x63,	/* recv: 4 bytes, high(2) +  low(2). 
+    COMM_CMDID_PT_TEST_IR_REPORT                    = 0x63,	/* recv: 4 bytes, high(2) +  low(2). 
                                                             rsp: 1 bytes, error code(1). */
+    COMM_CMDID_PT_QUERY_BT_NAME                     = 0x64,	/* recv: 4 bytes, high(2) +  low(2). 
+                                                            rsp: 1 bytes, error code(1). */
+    COMM_CMDID_PT_READ_TWS_PAIRING_ADDR             = 0x65,	/* recv: 0 bytes, opcode(1). 
+                                                            rsp: 2 + n bytes, error code(1) + opcode(1) + opdata(n). */
+    COMM_CMDID_PT_DEL_TWS_PAIRING_ADDR              = 0x66,	/* recv: 0 bytes, opcode(1). 
+                                                            rsp: 2 + n bytes, error code(1) + opcode(1) + opdata(n). */
+    COMM_CMDID_PT_READ_TEST_FLAG                    = 0x67,	/* recv: 4 bytes, high(2) +  low(2). 
+                                                            rsp: 1 bytes, error code(1). */
+    COMM_CMDID_PT_WRITE_TEST_FLAG                   = 0x68,	/* recv: 4 bytes, high(2) +  low(2). 
+                                                            rsp: 1 bytes, error code(1). */                                                        
+    COMM_CMDID_PT_READ_SLEEP_ALGO_AUTH              = 0x69,	/* recv: 4 bytes, high(2) +  low(2). 
+                                                            rsp: 1 bytes, error code(1). */  
+    COMM_CMDID_PT_WRITE_DEV_COLOR                   = 0x6A,	/* recv: 4 bytes, high(2) +  low(2). 
+                                                            rsp: 1 bytes, error code(1). */  
+    COMM_CMDID_PT_READ_DEV_COLOR                    = 0x6B,	/* recv: 4 bytes, high(2) +  low(2). 
+                                                            rsp: 1 bytes, error code(1). */ 
+    COMM_CMDID_PT_SWITCH_ANC_MODE                   = 0x6C,	/* recv: 4 bytes, high(2) +  low(2). 
+                                                            rsp: 1 bytes, error code(1). */ 
+    COMM_CMDID_PT_QUERY_NTC_INFO                    = 0x6D,	/* recv: 0 bytes, opcode(1). 
+                                                            rsp: 2 + n bytes, error code(1) + opcode(1) + opdata(n). */
+    COMM_CMDID_PT_SWICH_CLICK_TEST                  = 0x6E,	/* recv: 0 bytes, opcode(1). 
+                                                            rsp: 2 + n bytes, error code(1) + opcode(1) + opdata(n). */
+    COMM_CMDID_PT_CLICK_TEST_REPORT                 = 0x6F,	/* recv: 0 bytes, opcode(1). 
+                                                            rsp: 2 + n bytes, error code(1) + opcode(1) + opdata(n). */
                                                             
     /***** 与APP交互指令 *****/
     COMM_CMDID_APP_QUERY_DEV_INFO                   = 0x81,
@@ -245,6 +269,9 @@ uint32_t sndp_comm_cmd_send_lr_sync_bt_onoff(uint8_t onoff);
 uint32_t sndp_comm_cmd_send_pt_test_touch(uint8_t *data, uint16_t data_len);
 uint32_t sndp_comm_cmd_send_pt_test_ir(uint8_t *data, uint16_t data_len);
 uint32_t sndp_comm_cmd_send_pt_report_wear_status(uint8_t status);
+uint32_t sndp_comm_cmd_send_pt_test_gsensor_report(uint8_t *data, uint16_t data_len);
+uint32_t sndp_comm_cmd_send_pt_click_test_report(uint8_t tap_event);
+
 
 int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd);
 

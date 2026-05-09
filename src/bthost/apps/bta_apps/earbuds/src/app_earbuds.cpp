@@ -378,13 +378,19 @@ static void hfp_callsetup_status_changed_handler(const bt_bdaddr_t *address, bt_
     
     switch(callsetup) {
         case BT_HFP_CALLSETUP_NONE: // No call setup
+#if defined(__SNDP_PROJ__)        
             sndp_call_set_in_out_flag(0);
+#endif
             break;
         case BT_HFP_CALLSETUP_INCOMING: // Incoming call setup
+#if defined(__SNDP_PROJ__)        
             sndp_call_set_in_out_flag(1);
+#endif
             break;
         case BT_HFP_CALLSETUP_OUTGOING: // Outgoing call setup
+#if defined(__SNDP_PROJ__)        
             sndp_call_set_in_out_flag(2);
+#endif
             break;
         case BT_HFP_CALLSETUP_ALERTING:  // Call is alerting
             break;

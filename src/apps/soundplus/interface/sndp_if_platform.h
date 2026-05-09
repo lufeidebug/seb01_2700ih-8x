@@ -175,6 +175,7 @@ void sndp_mobile_pairing_sccessful(void);
 void sndp_enter_mobile_pairing_after_tws_connected(void);
 void sndp_enter_mobile_pairing_directly(void);
 void sndp_tws_pairing_config(uint8_t *addr, uint8_t len);
+void sndp_ibrt_reconfig_save_to_nvrecord(void *config);
 void sndp_ibrt_nvrecord_config_load(void *config);
 int32_t sndp_ibrt_get_tws_pair_addr(uint8_t *addr);
 

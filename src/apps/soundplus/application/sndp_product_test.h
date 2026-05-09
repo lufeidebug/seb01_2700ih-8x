@@ -30,6 +30,8 @@ bool sndp_pt_is_wear_status_report(void);
 
 uint8_t sndp_pt_read_hall_status(void);
 
+void sndp_pt_switch_click_test(uint8_t onoff);
+bool sndp_pt_click_test_is_opened(void);
 
 #ifdef __cplusplus
 }

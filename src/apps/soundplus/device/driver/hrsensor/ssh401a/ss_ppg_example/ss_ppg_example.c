@@ -1,7 +1,13 @@
+#include "stdio.h"
+#include "string.h"
+#include "cmsis_os.h"
+
 #include "ss_ppg.h"
 #include "ss_ppg_errno.h"
 #include "ss_os_api.h"
 #include "ss_ppg_example.h"
+
+#include "sndp_ssh401a_adapter.h"
 
 /**
  * @file ss_ppg_example.c
@@ -21,6 +27,8 @@ extern unsigned char is_ppg_interrupt;
 
 int ss_ppg_example_main(ExampleMode exam_mode)
 {
+    ssh401a_proximity_calib_data_s proximity_calib_data;
+    
     if(ss_ppg_verify() != SS_SUCCESS) 
     {
         os_api_print_log("chip id not match.");
@@ -34,6 +42,12 @@ int ss_ppg_example_main(ExampleMode exam_mode)
     }
 
     ss_ppg_interrupt_setting(PROX_INT_EN, 1);
+
+    if(ssh401a_proximity_read_calib_data(&proximity_calib_data) == 0) {
+        if (ss_ppg_proximity_threshold(proximity_calib_data.high_threshold, proximity_calib_data.low_threshold) != SS_SUCCESS) {
+            return SS_ERROR_BASE;
+        }
+    }
     
 #if 0    
     if (exam_mode == EXAM_PROX_GREEN)

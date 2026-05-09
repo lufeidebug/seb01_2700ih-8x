@@ -36,6 +36,8 @@ typedef struct {
     uint8_t test_mic_index;
 
     bool wear_status_report;
+
+    bool click_test_en;
     
 } sndp_pt_ctx_s;
 
@@ -107,10 +109,23 @@ uint8_t sndp_pt_read_hall_status(void)
     return 0xFF;
 }
 
+void sndp_pt_switch_click_test(uint8_t onoff)
+{
+    pt_ctx.click_test_en = onoff ? true : false;
+}
+
+bool sndp_pt_click_test_is_opened(void)
+{
+    return pt_ctx.click_test_en;
+}
+
+
 int32_t sndp_pt_init(void)
 {
 	pt_ctx.test_mode = 0;
     pt_ctx.test_mic_index = 0;
+    pt_ctx.wear_status_report = false;
+    pt_ctx.click_test_en = false;
 
 	PT_TRACE(0, "done.");
     return 0;
