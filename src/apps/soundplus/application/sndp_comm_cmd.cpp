@@ -643,22 +643,30 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_splaypause_onoff(sndp_comm_cmd_info_s
     return 0;
 }
 
-uint32_t sndp_comm_cmd_send_lr_sync_update_mapping(uint8_t key_behavior,uint8_t key_function)
+uint32_t sndp_comm_cmd_send_lr_sync_update_mapping(gesture_map_t* mapping, uint16_t data_len)
 {
-    uint8_t data[] = {key_behavior, key_function};
-    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_UPDATE_MAPPING, data, sizeof(data));
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_UPDATE_MAPPING, (uint8_t*)mapping, data_len);
     return 0;
 }
 
 static uint32_t sndp_comm_cmd_recv_lr_sync_update_mapping(sndp_comm_cmd_info_s *cmd_info)
 {
 #if defined(__SNDP_GESTURE_MAP__)
-    uint8_t key_behavior = cmd_info->data[0];
-    uint8_t key_function = cmd_info->data[1];
-    if(cmd_info->data_len == 2) {
-
-        sndp_dev_gesture_mapper_update_mapping(false, (sndp_dev_gesture_type_t)key_behavior, (sndp_dev_function_type_t)key_function);
-
+    for(int i = 0; i<SNDP_DEV_GESTURE_MAX*2; i++) {
+        if(cmd_info->data[3*i] == 0) {
+            if(sndp_dev_is_left_earphone()){
+                sndp_dev_gesture_mapper_update_mapping(false, (sndp_dev_gesture_type_t)cmd_info->data[3*i+1], (sndp_dev_function_type_t)cmd_info->data[3*i+2]);
+            }else{
+                sndp_dev_gesture_mapper_update_mapping(true, (sndp_dev_gesture_type_t)cmd_info->data[3*i+1], (sndp_dev_function_type_t)cmd_info->data[3*i+2]);
+            }
+        }
+        if(cmd_info->data[3*i] == 1) {
+            if(sndp_dev_is_left_earphone()){
+                sndp_dev_gesture_mapper_update_mapping(true, (sndp_dev_gesture_type_t)cmd_info->data[3*i+1], (sndp_dev_function_type_t)cmd_info->data[3*i+2]);
+            }else{
+                sndp_dev_gesture_mapper_update_mapping(false, (sndp_dev_gesture_type_t)cmd_info->data[3*i+1], (sndp_dev_function_type_t)cmd_info->data[3*i+2]);
+            }
+        }
     }
 #endif
     return 0;
@@ -2101,28 +2109,46 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_voice_prompt_enable(
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_key_mapping(sleep_app_comm_cmd_info_s *cmd_info)
 {
 #if defined(__SNDP_GESTURE_MAP__)
-    uint8_t lrflag = cmd_info->value[0];
-    uint8_t key_behavior = cmd_info->value[1];
-    uint8_t key_function = cmd_info->value[2];
+    gesture_map_t gesture_map[2*SNDP_DEV_GESTURE_MAX];
 
-    if(lrflag > 2 || key_behavior > 2) {
-        cmd_info->value[0] = 0x01; // fail
-    } else {
-        cmd_info->value[0] = 0x00; // success
+    for(int i=0; i<SNDP_DEV_GESTURE_MAX*2; i++){
+        if(cmd_info->value[3*i+1] >= SNDP_DEV_GESTURE_MAX || cmd_info->value[3*i+2] >= SNDP_FUNC_MAX)
+        {
+            cmd_info->value[0] = 0x01; // fail
+            break;
+        }
+        if(cmd_info->value[3*i] == 0) //left buds key set
+        {
+            if(sndp_dev_is_left_earphone()){
+                sndp_dev_gesture_mapper_update_mapping(false, (sndp_dev_gesture_type_t)cmd_info->value[3*i+1], (sndp_dev_function_type_t)cmd_info->value[3*i+2]);
+            }else{
+                sndp_dev_gesture_mapper_update_mapping(true, (sndp_dev_gesture_type_t)cmd_info->value[3*i+1], (sndp_dev_function_type_t)cmd_info->value[3*i+2]);
+            }
+            gesture_map[i].ear_side = 0;
+            gesture_map[i].key_behavior = (sndp_dev_gesture_type_t)cmd_info->value[3*i+1];
+            gesture_map[i].key_function = (sndp_dev_function_type_t)cmd_info->value[3*i+2];
+        }
+        else if(cmd_info->value[3*i] == 1) //right buds key set
+        {
+            if(sndp_dev_is_right_earphone()){
+                sndp_dev_gesture_mapper_update_mapping(false, (sndp_dev_gesture_type_t)cmd_info->value[3*i+1], (sndp_dev_function_type_t)cmd_info->value[3*i+2]);
+            }else{
+                sndp_dev_gesture_mapper_update_mapping(true, (sndp_dev_gesture_type_t)cmd_info->value[3*i+1], (sndp_dev_function_type_t)cmd_info->value[3*i+2]);
+            }               
+            gesture_map[i].ear_side = 1;
+            gesture_map[i].key_behavior = (sndp_dev_gesture_type_t)cmd_info->value[3*i+1];
+            gesture_map[i].key_function = (sndp_dev_function_type_t)cmd_info->value[3*i+2];
+        }
+        else //invalid
+        {
+            cmd_info->value[0] = 0x01; // fail
+            break;
+        }
     }
 
-    if(lrflag == 0 && sndp_dev_is_left_earphone()){
-        sndp_dev_gesture_mapper_update_mapping(false, (sndp_dev_gesture_type_t)key_behavior, (sndp_dev_function_type_t)key_function);
-    }else{
-        sndp_comm_cmd_send_lr_sync_update_mapping(key_behavior, key_function);
-    }
-
-    if(lrflag == 1 && sndp_dev_is_right_earphone()){
-        sndp_dev_gesture_mapper_update_mapping(false, (sndp_dev_gesture_type_t)key_behavior, (sndp_dev_function_type_t)key_function);
-    }else{
-        sndp_comm_cmd_send_lr_sync_update_mapping(key_behavior, key_function);
-    }
-
+    sndp_comm_cmd_send_lr_sync_update_mapping(gesture_map, sizeof(gesture_map));
+    cmd_info->data_len = 0x02;
+    cmd_info->value[0] = 0x00; // success
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
 #endif
     return 0;
@@ -2130,6 +2156,22 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_touch_key_mapping(sl
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_touch_key_mapping(sleep_app_comm_cmd_info_s *cmd_info)
 {
+#if defined(__SNDP_GESTURE_MAP__)
+    gesture_map_t gesture_map_get[2*SNDP_DEV_GESTURE_MAX];
+    for(int i=0; i<SNDP_DEV_GESTURE_MAX*2; i++){
+        if(i<SNDP_DEV_GESTURE_MAX){
+            gesture_map_get[i].ear_side = 0;
+        }else{
+            gesture_map_get[i].ear_side = 1;
+        }
+        gesture_map_get[i].key_behavior = i%SNDP_DEV_GESTURE_MAX;
+        gesture_map_get[i].key_function = sndp_dev_gesture_mapper_get_function(gesture_map_get[i].ear_side, (sndp_dev_gesture_type_t)gesture_map_get[i].key_behavior);
+        cmd_info->value[3*i] = gesture_map_get[i].ear_side;
+        cmd_info->value[3*i+1] = gesture_map_get[i].key_behavior;
+        cmd_info->value[3*i+2] = gesture_map_get[i].key_function;
+    }
+#endif
+    cmd_info->data_len = 0x19;
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }

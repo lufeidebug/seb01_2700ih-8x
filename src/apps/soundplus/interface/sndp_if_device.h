@@ -126,11 +126,12 @@ typedef struct {
 typedef void (*function_callback_t)(void);
 
 typedef enum {
-    SNDP_FUNC_A = 0,  // 例如：播放/暂停
-    SNDP_FUNC_B = 1,  // 例如：下一曲
-    SNDP_FUNC_C = 2,  // 例如：上一曲
-    SNDP_FUNC_D = 3,  // 例如：唤醒语音助手
-		SNDP_FUNC_E = 4,  // 例如：ANC模式切换
+    SNDP_FUNC_A = 0,
+    SNDP_FUNC_B = 1,
+    SNDP_FUNC_C = 2,
+    SNDP_FUNC_D = 3,
+		SNDP_FUNC_E = 4,
+		SNDP_FUNC_F = 5,
     SNDP_FUNC_MAX
 } sndp_dev_function_type_t;
 typedef enum {
@@ -266,6 +267,7 @@ void sndp_dev_gesture_mapper_init(void);
 bool sndp_dev_gesture_mapper_update_mapping(bool peer, sndp_dev_gesture_type_t gesture, sndp_dev_function_type_t func_type);
 void sndp_dev_gesture_mapper_handle_gesture(sndp_dev_gesture_type_t gesture);
 void sndp_dev_register_gesture_funcs(function_callback_t *func_table);
+uint8_t sndp_dev_gesture_mapper_get_function(bool peer, sndp_dev_gesture_type_t gesture);
 void sndp_dev_gesture_mapper_set_default(sndp_dev_gesture_mapper_t* mapper);
 #endif
 #endif

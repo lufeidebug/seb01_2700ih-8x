@@ -447,6 +447,13 @@ void sndp_sleep_app_report_battery(void);
 void sndp_sleep_app_report_gesture(uint32_t gesture);
 void sndp_sleep_app_report_tap(void);
 #endif
+#if defined(__SNDP_GESTURE_MAP__)
+typedef struct{
+    uint8_t ear_side;
+    uint8_t key_behavior;
+    uint8_t key_function;
+}gesture_map_t;
+#endif
 #endif
 #ifdef __cplusplus
 }

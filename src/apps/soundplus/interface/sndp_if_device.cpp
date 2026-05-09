@@ -356,10 +356,10 @@ void sndp_dev_gesture_mapper_set_default(sndp_dev_gesture_mapper_t* mapper)
 {
     if (!mapper) return;
   
-    sndp_dev_ctx.local.gesture_mapper.ear_mapping_table.func_table[SNDP_DEV_GESTURE_CLICK] = sndp_dev_gesture_func_table[SNDP_FUNC_A];
-    sndp_dev_ctx.local.gesture_mapper.ear_mapping_table.func_table[SNDP_DEV_GESTURE_DOUBLE_CLICK] = sndp_dev_gesture_func_table[SNDP_FUNC_E];
-    sndp_dev_ctx.local.gesture_mapper.ear_mapping_table.func_table[SNDP_DEV_GESTURE_TRIPLE_CLICK] = sndp_dev_gesture_func_table[SNDP_FUNC_C];
-    sndp_dev_ctx.local.gesture_mapper.ear_mapping_table.func_table[SNDP_DEV_GESTURE_LONG_PRESS] = sndp_dev_gesture_func_table[SNDP_FUNC_D];
+    mapper->ear_mapping_table.func_table[SNDP_DEV_GESTURE_CLICK] = sndp_dev_gesture_func_table[SNDP_FUNC_A];
+    mapper->ear_mapping_table.func_table[SNDP_DEV_GESTURE_DOUBLE_CLICK] = sndp_dev_gesture_func_table[SNDP_FUNC_B];
+    mapper->ear_mapping_table.func_table[SNDP_DEV_GESTURE_TRIPLE_CLICK] = sndp_dev_gesture_func_table[SNDP_FUNC_F];
+    mapper->ear_mapping_table.func_table[SNDP_DEV_GESTURE_LONG_PRESS] = sndp_dev_gesture_func_table[SNDP_FUNC_D];
 }
 
 void sndp_dev_gesture_mapper_handle_gesture(sndp_dev_gesture_type_t gesture) 
@@ -392,6 +392,7 @@ bool sndp_dev_gesture_mapper_update_mapping(bool peer, sndp_dev_gesture_type_t g
         case SNDP_FUNC_C: new_func = sndp_dev_gesture_func_table[SNDP_FUNC_C]; break;
         case SNDP_FUNC_D: new_func = sndp_dev_gesture_func_table[SNDP_FUNC_D]; break;
         case SNDP_FUNC_E: new_func = sndp_dev_gesture_func_table[SNDP_FUNC_E]; break;
+				case SNDP_FUNC_F: new_func = sndp_dev_gesture_func_table[SNDP_FUNC_F]; break;
         default: return false;
     }
     
@@ -404,10 +405,30 @@ bool sndp_dev_gesture_mapper_update_mapping(bool peer, sndp_dev_gesture_type_t g
     return true;
 }
 
+uint8_t sndp_dev_gesture_mapper_get_function(bool peer, sndp_dev_gesture_type_t gesture)
+{
+	for(int i = 0; i<SNDP_FUNC_MAX; i++){
+		if(peer){
+			if(sndp_dev_gesture_func_table[i] == sndp_dev_ctx.peer.gesture_mapper.ear_mapping_table.func_table[gesture]){
+				SNDP_IF_TRACE(0,"gesture %d mapped func: %d", gesture, i);
+				return i;
+			}
+		}
+		else{
+			if(sndp_dev_gesture_func_table[i] == sndp_dev_ctx.local.gesture_mapper.ear_mapping_table.func_table[gesture]){
+				SNDP_IF_TRACE(0, "gesture %d mapped func: %d", gesture, i);
+				return i;
+			}
+		}
+	}
+	return 0;
+}
+
 void sndp_dev_gesture_mapper_init(void) 
 {
     memset(&sndp_dev_ctx.local.gesture_mapper, 0, sizeof(sndp_dev_gesture_mapper_t));
     sndp_dev_gesture_mapper_set_default(&sndp_dev_ctx.local.gesture_mapper);
+		sndp_dev_gesture_mapper_set_default(&sndp_dev_ctx.peer.gesture_mapper);
     sndp_dev_ctx.local.gesture_mapper.initialized = true;
 }
 

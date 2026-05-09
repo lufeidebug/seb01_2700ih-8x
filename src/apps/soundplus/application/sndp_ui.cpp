@@ -690,6 +690,11 @@ void sndp_ui_gesture_3click_hdlr(bool remote)
 
 #if defined(__SNDP_SLEEP_APP__)
 #if defined(__SNDP_GESTURE_MAP__)
+void sndp_nofunction(void)
+{
+    SPUI_TRACE(0, "no function");
+}
+
 void sndp_function_play_pause(void) {
     // 实现播放/暂停功能
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
@@ -741,11 +746,16 @@ void sndp_function_anc_mode_switch(void)
 {
     // ANC模式切换
     if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP)) {
+#if 0        
         if(sndp_dev_is_left_earphone()) {
             sndp_ui_anc_switch();
         } else {
             sndp_ui_working_mode_switch();
         }
+#else
+        sndp_ui_anc_switch();
+
+#endif
         
     } else if(sndp_call_is_active()) {
         if(sndp_call_is_threeway_incoming()) {
@@ -755,15 +765,20 @@ void sndp_function_anc_mode_switch(void)
         } 
         
     } else {
+#if 0        
         if(sndp_dev_is_left_earphone()) {
             sndp_ui_anc_switch();
         } else {
             sndp_ui_working_mode_switch();
         }
+#else
+        sndp_ui_anc_switch();
+#endif
     }
 }
 
 static function_callback_t sndp_ui_gesture_func_table[SNDP_FUNC_MAX] = {
+    sndp_nofunction,
     sndp_function_play_pause,        
     sndp_function_next_track,       
     sndp_function_prev_track,       
