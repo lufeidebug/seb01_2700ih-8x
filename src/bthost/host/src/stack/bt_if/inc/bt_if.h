@@ -123,7 +123,6 @@ void btif_pts_rfc_register_channel(void);
 void btif_pts_rfc_close(void);
 void btif_pts_rfc_close_dlci_0(void);
 void btif_pts_rfc_send_data(void);
-void btif_pts_l2c_disc_channel(void);
 void btif_pts_l2c_send_data(void);
 void btif_register_mhdt_mode_change_callback(void (*cb)(struct bdaddr_t remote, bool isIn_mhdt_mode));
 void btif_register_is_pts_address_check_callback(bool (*cb)(void *remote));

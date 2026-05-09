@@ -899,8 +899,6 @@ typedef union {
 
 void btif_a2dp_init(btif_a2dp_callback cb);
 
-bt_status_t btif_a2dp_close_stream_for_PTS(a2dp_stream_t *Stream);
-
 btif_a2dp_stream_t *btif_a2dp_get_stream(uint8_t device_id);
 
 uint16_t btif_avdtp_parse_mediaHeader(btif_media_header_t * header,

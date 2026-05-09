@@ -27,13 +27,6 @@
 /* Open for debug */
 // #define APP_RSSI_DEBUG
 
-
-
-#define APP_RSSI_GET_TWS_HANDLE()       (bts_tws_if_get_tws_acl_handle())
-#define APP_RSSI_IS_TWS_CONNECT()       (bts_tws_if_is_tws_link_connected())
-#define APP_RSSI_IS_TWS_LEFT_SIDE()     (bts_tws_if_is_local_left_side())
-
-
 typedef struct {
     int8_t buf[APP_RSSI_WINDOW_SIZE];
     int8_t value;
@@ -45,7 +38,6 @@ typedef struct {
     uint8_t tail;
 } rssi_window_t;
 
-
 static void app_rssi_window_init(rssi_window_t *w);
 static void app_rssi_window_push(rssi_window_t *w, int8_t value);
 static void app_rssi_window_dump(rssi_window_t *w);
@@ -53,12 +45,10 @@ static int8_t app_rssi_value_get(rssi_window_t *w);
 static int8_t app_rssi_min_value_get(rssi_window_t *w);
 static int8_t app_rssi_max_value_get(rssi_window_t *w);
 
-
 static void app_rssi_read_tws_rssi();
 static void app_rssi_dump_tws_rssi();
 static void app_rssi_read_mobile_rssi();
 static void app_rssi_dump_mobile_rssi();
-
 
 typedef struct
 {
@@ -87,6 +77,60 @@ typedef struct
 } rssi_contrl_t;
 
 static rssi_contrl_t rssi_contrl;
+
+uint16_t app_rssi_get_tws_acl_handle(void)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    return bts_tws_if_get_tws_acl_handle();
+#else
+    return BT_INVALID_CONN_HANDLE;
+#endif
+}
+
+uint16_t app_rssi_get_dev_acl_handle(bt_bdaddr_t *addr)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    return bts_bt_if_get_dev_acl_handle(addr);
+#else
+    return BT_INVALID_CONN_HANDLE;
+#endif
+}
+
+uint16_t app_rssi_get_dev_ibrt_handle(bt_bdaddr_t *addr)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    return bts_ibrt_if_get_dev_ibrt_handle(addr);
+#else
+    return BT_INVALID_CONN_HANDLE;
+#endif
+}
+
+uint8_t app_rssi_get_dev_connected_list(bt_bdaddr_t *addr_list)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    return bts_bt_if_get_dev_connected_list(addr_list);
+#else
+    return 0;
+#endif
+}
+
+bool app_rssi_tws_link_is_connected(void)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    return bts_tws_if_is_tws_link_connected();
+#else
+    return false;
+#endif
+}
+
+bool app_rssi_tws_is_local_left_side(void)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    return bts_tws_if_is_local_left_side();
+#else
+    return false;
+#endif
+}
 
 static void app_rssi_window_init(rssi_window_t *w)
 {
@@ -173,8 +217,8 @@ static int8_t app_rssi_max_value_get(rssi_window_t *w)
 
 uint16_t app_rssi_get_mobile_acl_handle_by_addr(bt_bdaddr_t *addr)
 {
-    uint16_t dev_conhandle = bts_bt_if_get_dev_acl_handle(addr);
-    uint16_t ibrt_conhandle = bts_ibrt_if_get_dev_ibrt_handle(addr);
+    uint16_t dev_conhandle = app_rssi_get_dev_acl_handle(addr);
+    uint16_t ibrt_conhandle = app_rssi_get_dev_ibrt_handle(addr);
 
     if (dev_conhandle != BT_INVALID_CONN_HANDLE && dev_conhandle != 0)
     {
@@ -229,8 +273,8 @@ static void app_rssi_read_tws_rssi()
 {
     rx_agc_t agc = {0};
 
-    if (APP_RSSI_IS_TWS_CONNECT()) {
-        bt_drv_reg_op_read_rssi_in_dbm(APP_RSSI_GET_TWS_HANDLE(), &agc);
+    if (app_rssi_tws_link_is_connected()) {
+        bt_drv_reg_op_read_rssi_in_dbm(app_rssi_get_tws_acl_handle(), &agc);
 
         rssi_contrl.tws_rssi.rxgain = agc.rxgain;
         app_rssi_window_push(&rssi_contrl.tws_window, agc.rssi);
@@ -242,7 +286,7 @@ static void app_rssi_read_tws_rssi()
 
 static void app_rssi_dump_tws_rssi()
 {
-    if (APP_RSSI_IS_TWS_CONNECT()) {
+    if (app_rssi_tws_link_is_connected()) {
 #ifdef APP_RSSI_DEBUG
         app_rssi_window_dump(&rssi_contrl.tws_window);
 #endif
@@ -254,7 +298,7 @@ static void app_rssi_dump_tws_rssi()
 static void app_rssi_read_mobile_rssi()
 {
     static bt_bdaddr_t device_addr[BT_DEVICE_NUM];
-    uint8_t count = bts_bt_if_get_dev_connected_list(&device_addr[0]);
+    uint8_t count = app_rssi_get_dev_connected_list(&device_addr[0]);
 
     for (uint8_t i = 0; i < count; i++) {
         remote_rssi_obj_t *rssi_obj = app_rssi_find_and_new_remote_obj(&device_addr[i]);
@@ -318,7 +362,7 @@ void app_rssi_update_date_pkt(rssi_pkt_t *p_pkt)
         app_rssi_sample_task_start();
     }
 
-    p_pkt->side = APP_RSSI_IS_TWS_LEFT_SIDE();
+    p_pkt->side = app_rssi_tws_is_local_left_side();
 
     p_pkt->tws_rssi = rssi_contrl.tws_rssi;
 
@@ -359,14 +403,14 @@ static void app_rssi_tws_sync_process()
     rssi_tws_pkt_t req_pkt;
     int pos = 0;
 
-    if (!APP_RSSI_IS_TWS_CONNECT()) {
+    if (!app_rssi_tws_link_is_connected()) {
         return;
     }
-
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     if (bts_core_get_ui_role() != BT_IBRT_MASTER) {
         return;
     }
-
+#endif
     for (int i = 0; i < APP_RSSI_MAX_RECORD_NUM; i++) {
         remote_rssi_obj_t *cur_obj = &rssi_contrl.remote_rssi_obj[i];
         if (app_rssi_get_mobile_acl_handle_by_addr(&cur_obj->rssi.addr) != BT_INVALID_CONN_HANDLE) {
@@ -454,10 +498,10 @@ void app_rssi_get_peer_rssi_rsp_handle(uint8_t *p_buff, uint16_t length)
     app_rssi_get_peer_rssi_rsp_handle((rssi_tws_pkt_t *)p_buff);
 }
 
-static void app_rssi_vender_ll_monitor_callback(uint16_t handle, uint8_t ser)
+void app_rssi_vender_ll_monitor_callback(uint16_t handle, uint8_t ser)
 {
-    if (APP_RSSI_IS_TWS_CONNECT()) {
-        if (APP_RSSI_GET_TWS_HANDLE() == handle) {
+    if (app_rssi_tws_link_is_connected()) {
+        if (app_rssi_get_tws_acl_handle() == handle) {
             rssi_contrl.tws_rssi.ser = ser;
             return;
         }
@@ -506,7 +550,9 @@ static void rssi_mnt_sample_timer_callback(void const *param)
 
 void app_rssi_get_peer_mobile_rssi(uint8_t *p_buff, uint16_t length)
 {
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     bts_tws_if_send_cmd_without_rsp(APP_TWS_CMD_GET_PEER_MOBILE_RSSI, p_buff, length);
+#endif
 }
 
 void app_rssi_get_peer_mobile_rssi_rsp_timeout_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
@@ -537,13 +583,13 @@ void app_rssi_init()
     BTAPP_TRACE(0,"init...");
 
     rssi_contrl.sample_timer = osTimerCreate(osTimer(RSSI_SAMPLE_TIMER), osTimerPeriodic, NULL);
-
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     bts_tws_if_add_cmd_table(APP_TWS_CMD_RSSI_USER,
                                 ARRAY_SIZE(g_rssi_cmd_handler_table),
                                 (const bt_tws_cmd_instance_t *)&g_rssi_cmd_handler_table);
 
     bts_bt_if_register_vender_ll_monitor_handle(app_rssi_vender_ll_monitor_callback);
-
+#endif
     if (APP_RSSI_TRIGGER_MODE == APP_RSSI_ALWAYS_TRIGGER) {
         osTimerStart(rssi_contrl.sample_timer, APP_RSSI_BASE_SAMPLE_INTERVAL);
     }

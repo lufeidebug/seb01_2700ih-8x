@@ -50,11 +50,13 @@
 #include "ai_spp.h"
 #endif
 
+#ifdef SWIFT_ENABLED
+#include "app_ble_swift.h"
+#endif
+
 #ifndef TRACE
 #define TRACE(attr, str, ...)               TR_INFO(attr, str, ##__VA_ARGS__)
 #endif
-
-#define PAIRING_MODE_TIMEOUT 120000
 
 static app_headset_attributes_t g_headset_attributes;
 static osTimerId_t g_pairing_mode_timer;
@@ -138,6 +140,7 @@ static void fill_am_attributes(bt_am_attributes_t *attributes)
 
 static void fill_ux_attributes(bta_ux_attributes_t *attributes)
 {
+    attributes->enter_pairing_on_empty_record = true;
     attributes->enter_pairing_on_reconnect_mobile_failed = false;
 }
 
@@ -260,10 +263,19 @@ static void bt_subsys_state_changed_handler(bta_subsys_state_t state)
 
 static void pairing_mode_entered_handler()
 {
-    // TODO: pause music
-
 #ifdef GFPS_ENABLED
-        gfps_enter_fastpairing_mode();
+    gfps_enter_fastpairing_mode();
+#endif
+
+#ifdef SWIFT_ENABLED
+    app_swift_enter_pairing_mode();
+#endif
+}
+
+static void pairing_mode_exited_handler()
+{
+#ifdef SWIFT_ENABLED
+    app_swift_exit_pairing_mode();
 #endif
 }
 
@@ -272,10 +284,11 @@ static void pairing_mode_changed_handler(bool enabled)
     if (enabled)
     {
         pairing_mode_entered_handler();
-        osTimerStart(g_pairing_mode_timer, PAIRING_MODE_TIMEOUT);
+        osTimerStart(g_pairing_mode_timer, g_headset_attributes.pairing_timeout_value);
     }
     else
     {
+        pairing_mode_exited_handler();
         osTimerStop(g_pairing_mode_timer);
     }
 }
@@ -283,6 +296,21 @@ static void pairing_mode_changed_handler(bool enabled)
 static void pairing_mode_timeout(void *argument)
 {
     bta_enable_pairing_mode(false);
+}
+
+static bool security_check_override_for_bt(const bt_bdaddr_t *addr)
+{
+    TRACE(0, "headset: security_check bt");
+
+    // Return true here if you don't care about security check.
+    return false;
+}
+
+static bool security_check_override_for_le(const ble_bdaddr_t *addr)
+{
+    TRACE(0, "headset: security_check le");
+
+    return false;
 }
 
 #define PAGE_COUNT_WHEN_OPEN    2
@@ -293,8 +321,10 @@ static void pairing_mode_timeout(void *argument)
 
 void app_bta_init(void)
 {
+    g_headset_attributes.pairing_timeout_value = 120000;
     g_headset_attributes.open_reconnect_mobile_max_times = PAGE_COUNT_WHEN_OPEN;
     g_headset_attributes.without_reconnect_when_fetch_out_wear_up = false;
+
     bt_am_attributes_t am_attributes = {};
     fill_am_attributes(&am_attributes);
     bta_ux_attributes_t ux_attributes = {};
@@ -331,9 +361,22 @@ void app_bta_init(void)
     };
     bta_register_ui_state_changed_hook(BTA_UX_USER_APP, &ui_state_changed);
 
+    const bta_security_check_override_callbacks_t security_check_override_callbacks =
+    {
+        .connection_request = security_check_override_for_bt,
+        .bt_pairing = security_check_override_for_bt,
+        .le_smp_pairing = security_check_override_for_le,
+    };
+    bta_register_security_check_override_callback(BTA_UX_USER_APP, &security_check_override_callbacks);
+
     bta_normal_init(&am_attributes, &ux_attributes);
 
+    // Call this to disable preemption if not required.
+    // bta_config_preempt(false);
+
     app_bta_earbuds_deprecated_init();
+
+    bt_drv_reg_op_afh_assess_en(true);
 
     app_headset_cmd_init();
 

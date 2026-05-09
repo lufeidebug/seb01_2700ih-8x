@@ -341,7 +341,7 @@ extern const IIR_CFG_T * const POSSIBLY_UNUSED audio_eq_cfg_vol_list[VOL_CTRL_EQ
 #define AUDIO_STEREO_SORROUNDING_NEEDED_SIZE (1024*60)
 #define AUDIO_STEREO_SORROUNDING_NEEDED_SIZE2 (1024*0)
 #elif defined(__VIRTUAL_SURROUND_STEREO__)
-#define AUDIO_STEREO_SORROUNDING_NEEDED_SIZE (1024*90)
+#define AUDIO_STEREO_SORROUNDING_NEEDED_SIZE (1024*120)
 #define AUDIO_STEREO_SORROUNDING_NEEDED_SIZE2 (1024*0)
 #else
 #define AUDIO_STEREO_SORROUNDING_NEEDED_SIZE (0)
@@ -1046,7 +1046,7 @@ int audio_eq_set_cfg_full(const FIR_CFG_T *fir_cfg,
                 enum AUD_SAMPRATE_T sample_rate_hw_dac_iir;
 #ifdef __AUDIO_RESAMPLE__
                 sample_rate_hw_dac_iir=hal_codec_get_real_sample_rate(audio_process.sample_rate,1);
-                // AUDIO_PROCESS_TRACE(3,"audio_process.sample_rate:%d, sample_rate_hw_dac_iir: %d.", audio_process.sample_rate, sample_rate_hw_dac_iir);
+                AUDIO_PROCESS_TRACE(3,"audio_process.sample_rate:%d, sample_rate_hw_dac_iir: %d.", audio_process.sample_rate, sample_rate_hw_dac_iir);
 #else
                 sample_rate_hw_dac_iir=audio_process.sample_rate;
 #endif

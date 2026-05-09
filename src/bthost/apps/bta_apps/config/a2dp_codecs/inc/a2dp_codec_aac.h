@@ -15,7 +15,7 @@
  ****************************************************************************/
 #ifndef __A2DP_CODEC_AAC_H__
 #define __A2DP_CODEC_AAC_H__
-#include "tgt_hardware.h"
+#include "tgt_hardware.h" //Add by lzw@sndp 202604 for MAX_AAC_BITRATE
 
 
 #if defined(__cplusplus)

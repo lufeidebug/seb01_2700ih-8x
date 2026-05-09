@@ -35,11 +35,10 @@
 #include "bts_core_if.h"
 #include "bts_tws_api.h"
 #include "bta_bt_api.h"
+#endif
 #ifdef BT_APP_RSSI
 #include "app_rssi.h"
 #endif
-#endif
-
 #ifdef BESUI_APP_EN
 #include "apps.h"
 #include "app_bt_stream.h"

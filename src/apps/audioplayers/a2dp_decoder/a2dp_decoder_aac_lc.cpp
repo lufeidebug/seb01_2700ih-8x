@@ -49,6 +49,18 @@
 #define AAC_MEMPOOL_SIZE (32*1024)
 #endif
 
+#if defined(A2DP_AAC_PLC_ENABLED)
+#include "sbcplc.h"
+static float *cos_buf = NULL;
+#define AAC_SMOOTH_LEN 1024
+static float *history0 = NULL;
+static float *rcos0 = NULL;
+static struct PLC_State * aac_plc_state0;
+static float *history1 = NULL;
+static float *rcos1 = NULL;
+static struct PLC_State * aac_plc_state1;
+#endif
+
 typedef struct
 {
     A2DP_COMMON_MEDIA_FRAME_HEADER_T header;
@@ -379,7 +391,7 @@ static int a2dp_cp_aac_lc_cp_decode(void)
     aac_frame_t aac_data;
     aac_pcm_frame_t pcm_data;
     int decoder_err;
-    int output_byte = 0;
+    static int output_byte = 4096;
     aac_streaminfo_t stream_info;
     if (cp_codec_reset) {
         cp_codec_reset = false;
@@ -423,6 +435,9 @@ static int a2dp_cp_aac_lc_cp_decode(void)
 
     dec_sum = 0;
     error = 0;
+#if defined(A2DP_AAC_PLC_ENABLED)
+    int chnl_sel = a2dp_audio_context_p->chnl_sel;
+#endif
 
     while (dec_sum < dec_len && error == 0) {
 #ifndef A2DP_NO_CPINCACHE
@@ -475,60 +490,105 @@ static int a2dp_cp_aac_lc_cp_decode(void)
         pcm_data.pcm_data = (short*)(dec_start + dec_sum);
         pcm_data.buffer_size = dec_len - dec_sum;
         pcm_data.valid_size = 0;
-        /* decode one AAC frame */
-        a2dp_audio_aac_lc_channel_select(a2dp_audio_context_p->chnl_sel);
-        decoder_err = aac_decoder_process_frame(aacDec_handle, &aac_data, &pcm_data);
+        int16_t *decoded_buf = (int16_t *)(dec_start+dec_sum);
+
+#ifndef A2DP_NO_CPINCACHE
+        if (p_in_info->timestamp != UINT32_MAX)
+#else
+        if (p_in_info.timestamp != UINT32_MAX)
+#endif
+        {
+            /* decode one AAC frame */
+            a2dp_audio_aac_lc_channel_select(a2dp_audio_context_p->chnl_sel);
+            decoder_err = aac_decoder_process_frame(aacDec_handle, &aac_data, &pcm_data);
 #ifndef A2DP_NO_CPINCACHE
 /*
-        AUDIOPLAYERS_TRACE(0,"[CP][AAC] decoder seq:%d len:%d err:%x", p_in_info->sequenceNumber,
-                                                                (dec_len - dec_sum),
-                                                                decoder_err);
+            AUDIOPLAYERS_TRACE(0,"[CP][AAC] decoder seq:%d len:%d err:%x", p_in_info->sequenceNumber,
+                                                                    (dec_len - dec_sum),
+                                                                    decoder_err);
 */
 #else
 /*
-        AUDIOPLAYERS_TRACE(0,"[CP][AAC] decoder seq:%d len:%d err:%x", p_in_info.sequenceNumber,
-                                                                (dec_len - dec_sum),
-                                                                decoder_err);
+            AUDIOPLAYERS_TRACE(0,"[CP][AAC] decoder seq:%d len:%d err:%x", p_in_info.sequenceNumber,
+                                                                    (dec_len - dec_sum),
+                                                                    decoder_err);
 */
 #endif
-        if (decoder_err != 0){
+            if (decoder_err != 0){
 #ifndef A2DP_NO_CPINCACHE
-            AUDIOPLAYERS_TRACE(0,"[CP][AAC] aac_lc_decode failed:0x%x seq:%d", decoder_err, p_in_info->sequenceNumber);
+                AUDIOPLAYERS_TRACE(0,"[CP][AAC] aac_lc_decode failed:0x%x seq:%d", decoder_err, p_in_info->sequenceNumber);
 #else
-            AUDIOPLAYERS_TRACE(0,"[CP][AAC] aac_lc_decode failed:0x%x seq:%d", decoder_err, p_in_info.sequenceNumber);
+                AUDIOPLAYERS_TRACE(0,"[CP][AAC] aac_lc_decode failed:0x%x seq:%d", decoder_err, p_in_info.sequenceNumber);
 #endif
-            //if aac failed reopen it again
-            a2dp_audio_aac_lc_decoder_reinit();
-            AUDIOPLAYERS_TRACE(0,"[CP][AAC]aac_lc_decode reinin codec \n");
-            if(!need_refill){
-                need_refill = true;
+                //if aac failed reopen it again
+                a2dp_audio_aac_lc_decoder_reinit();
+                AUDIOPLAYERS_TRACE(0,"[CP][AAC]aac_lc_decode reinin codec \n");
+                if(!need_refill){
+                    need_refill = true;
 #ifndef A2DP_NO_CPINCACHE
-                ret = a2dp_cp_consume_in_frame();
-                ASSERT(ret == 0, "%s: a2dp_cp_consume_in_frame() failed: ret=%d", __func__, ret);
+                    ret = a2dp_cp_consume_in_frame();
+                    ASSERT(ret == 0, "%s: a2dp_cp_consume_in_frame() failed: ret=%d", __func__, ret);
 #endif
-                continue;
-            }else{
-                need_refill = false;
+                    continue;
+                }else{
+                    need_refill = false;
+                    error = 1;
+                    goto end_decode;
+                }
+            }
+
+#if defined(A2DP_AAC_PLC_ENABLED)
+            if(chnl_sel == 0 || chnl_sel == 1) {
+                a2dp_plc_good_frame_v2(aac_plc_state0, decoded_buf, decoded_buf, cos_buf, AAC_SMOOTH_LEN, rcos0, 2, 0);
+                a2dp_plc_good_frame_v2(aac_plc_state1, decoded_buf, decoded_buf, cos_buf, AAC_SMOOTH_LEN, rcos1, 2, 1);
+            } else if (chnl_sel == 2){
+                a2dp_plc_good_frame_v2(aac_plc_state0, decoded_buf, decoded_buf, cos_buf, AAC_SMOOTH_LEN, rcos0, 2, chnl_sel - 2);
+            } else if (chnl_sel == 3){
+                a2dp_plc_good_frame_v2(aac_plc_state1, decoded_buf, decoded_buf, cos_buf, AAC_SMOOTH_LEN, rcos1, 2, chnl_sel - 2);
+            }
+#endif
+
+            aac_decoder_get_info(aacDec_handle, &stream_info);
+            if (stream_info.sample_rate <= 0) {
+                AUDIOPLAYERS_TRACE(0,"[CP][AAC]aac_lc_decode invalid stream info");
                 error = 1;
                 goto end_decode;
             }
-        }
 
-        aac_decoder_get_info(aacDec_handle, &stream_info);
-        if (stream_info.sample_rate <= 0) {
-            AUDIOPLAYERS_TRACE(0,"[CP][AAC]aac_lc_decode invalid stream info");
-            error = 1;
-            goto end_decode;
+            output_byte = stream_info.frame_size * stream_info.num_channels * 2;//sizeof(pcm_buffer[0]);
+            ASSERT_A2DP_DECODER(AAC_OUTPUT_FRAME_SAMPLES == stream_info.frame_size, "aac_lc_decode output mismatch samples:%d", stream_info.frame_size);
         }
-
-        output_byte = stream_info.frame_size * stream_info.num_channels * 2;//sizeof(pcm_buffer[0]);
+        else
+        {
+#if defined(A2DP_AAC_PLC_ENABLED)
+            if(chnl_sel == 0 || chnl_sel == 1) {
+                a2dp_plc_bad_frame_v2(aac_plc_state0, decoded_buf, decoded_buf, cos_buf, AAC_SMOOTH_LEN, rcos0, 2, 0);
+                a2dp_plc_bad_frame_v2(aac_plc_state1, decoded_buf, decoded_buf, cos_buf, AAC_SMOOTH_LEN, rcos1, 2, 1);
+            } else if (chnl_sel == 2){
+                a2dp_plc_bad_frame_v2(aac_plc_state0, decoded_buf, decoded_buf, cos_buf, AAC_SMOOTH_LEN, rcos0, 2, chnl_sel - 2);
+            } else if (chnl_sel == 3){
+                a2dp_plc_bad_frame_v2(aac_plc_state1, decoded_buf, decoded_buf, cos_buf, AAC_SMOOTH_LEN, rcos1, 2, chnl_sel - 2);
+            }
+#ifndef A2DP_NO_CPINCACHE
+            AUDIOPLAYERS_TRACE(2, "[AAC] PLC bad frame %d len %d", p_in_info->sequenceNumber, output_byte);
+#else
+            AUDIOPLAYERS_TRACE(2, "[AAC] PLC bad frame %d len %d", p_in_info.sequenceNumber, output_byte);
+#endif
+#else
+            memset(decoded_buf, 0, output_byte);
+#ifndef A2DP_NO_CPINCACHE
+            AUDIOPLAYERS_TRACE(2, "[AAC] bad frame %d len %d", p_in_info->sequenceNumber, output_byte);
+#else
+            AUDIOPLAYERS_TRACE(2, "[AAC] bad frame %d len %d", p_in_info.sequenceNumber, output_byte);
+#endif
+#endif
+        }
         if(a2dp_audio_context_p->output_cfg.bits_depth == 24 &&
         a2dp_audio_context_p->audio_decoder.stream_info.bits_depth == 24){
             a2dp_audio_convert_16bit_to_24bit((int32_t *)pcm_data.pcm_data,
                 (int16_t *)pcm_data.pcm_data, output_byte / sizeof(int16_t));
             output_byte *= 2;
         }
-        ASSERT_A2DP_DECODER(AAC_OUTPUT_FRAME_SAMPLES == stream_info.frame_size, "aac_lc_decode output mismatch samples:%d", stream_info.frame_size);
 
         dec_sum += output_byte;
 
@@ -643,6 +703,18 @@ int a2dp_audio_aac_lc_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
     ASSERT_A2DP_DECODER(aac_mempoll, "aac_mempoll = NULL");
     aac_memhandle = heap_register(aac_mempoll, AAC_MEMPOOL_SIZE);
     aac_heap_api = aac_get_heap_api();
+#if defined(A2DP_AAC_PLC_ENABLED)
+    cos_buf = (float *)a2dp_audio_heap_malloc((AAC_SMOOTH_LEN*4)*sizeof(float));
+    cos_generate(cos_buf, AAC_SMOOTH_LEN*4, AAC_SMOOTH_LEN);
+    history0 = (float *)a2dp_audio_heap_malloc(sizeof(float)*LHIST_MAX);
+    rcos0 = (float *)a2dp_audio_heap_malloc(sizeof(float)*OLAL_MAX);
+    aac_plc_state0 = (struct PLC_State*)a2dp_audio_heap_malloc(sizeof(struct PLC_State));
+    history1 = (float *)a2dp_audio_heap_malloc(sizeof(float)*LHIST_MAX);
+    rcos1 = (float *)a2dp_audio_heap_malloc(sizeof(float)*OLAL_MAX);
+    a2dp_plc_init_v2(aac_plc_state0, 1024, A2DP_PLC_CODEC_TYPE_AAC, history0, rcos0);
+    aac_plc_state1 = (struct PLC_State*)a2dp_audio_heap_malloc(sizeof(struct PLC_State));
+    a2dp_plc_init_v2(aac_plc_state1, 1024, A2DP_PLC_CODEC_TYPE_AAC, history1, rcos1);
+#endif
 #ifdef A2DP_CP_ACCEL
     int ret;
 
@@ -702,6 +774,15 @@ int a2dp_audio_aac_lc_deinit(void)
 {
 #ifdef A2DP_CP_ACCEL
     a2dp_cp_deinit();
+#endif
+#if defined(A2DP_AAC_PLC_ENABLED)
+    a2dp_audio_heap_free(cos_buf);
+    a2dp_audio_heap_free(history0);
+    a2dp_audio_heap_free(rcos0);
+    a2dp_audio_heap_free(aac_plc_state0);
+    a2dp_audio_heap_free(history1);
+    a2dp_audio_heap_free(rcos1);
+    a2dp_audio_heap_free(aac_plc_state1);
 #endif
     a2dp_audio_aac_lc_decoder_deinit();
     a2dp_audio_aac_lc_reorder_deinit();

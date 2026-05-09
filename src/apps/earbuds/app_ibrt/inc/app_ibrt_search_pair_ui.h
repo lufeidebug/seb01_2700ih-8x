@@ -28,6 +28,7 @@ void app_ibrt_enter_limited_mode(void);
 void app_ibrt_exit_limited_mode(void);
 void app_ibrt_reconfig_btAddr_from_nv();
 void app_ibrt_start_tws_searching();
+void app_start_tws_serching_direactly();
 
 #ifdef __cplusplus
 }

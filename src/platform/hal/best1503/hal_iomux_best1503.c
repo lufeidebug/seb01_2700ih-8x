@@ -2080,7 +2080,7 @@ void hal_iomux_single_wire_pmu_uart_tx(uint32_t uart)
 {
 }
 
-
+//Add by lzw@sndp  202603 start
 POSSIBLY_UNUSED void hal_iomux_single_wire_mcu_uart_rx(uint32_t uart)
 {
     if(uart != HAL_UART_ID_1 && uart != HAL_UART_ID_2) {
@@ -2147,30 +2147,32 @@ POSSIBLY_UNUSED void hal_iomux_single_wire_mcu_uart_en()
         hal_gpio_pin_set_dir((enum HAL_GPIO_PIN_T)ctrl_pin.pin, HAL_GPIO_DIR_OUT, 1);
     }
 }
-
+//Add by lzw@sndp 202603 end
 
 
 
 void hal_iomux_single_wire_uart_rx(uint32_t uart)
 {
+//Modify by lzw@sndp 202603 start
 #if defined(__SINGLE_WIRE_MCU_UART__)
     hal_iomux_single_wire_mcu_uart_en();
     hal_iomux_single_wire_mcu_uart_rx(uart);
 #else
     hal_iomux_single_wire_pmu_uart_rx(uart);
 #endif
-
+//Modify by lzw@sndp 202603 end
 }
 
 void hal_iomux_single_wire_uart_tx(uint32_t uart)
 {
+//Modify by lzw@sndp 202603 start
 #if defined(__SINGLE_WIRE_MCU_UART__)
         hal_iomux_single_wire_mcu_uart_en();
         hal_iomux_single_wire_mcu_uart_tx(uart);
 #else
         hal_iomux_single_wire_pmu_uart_tx(uart);
 #endif
-
+//Modify by lzw@sndp 202603 end
 }
 
 void hal_iomux_set_flash_qspi(void)

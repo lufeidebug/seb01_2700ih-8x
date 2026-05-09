@@ -26,7 +26,8 @@ ccflags-y += \
     -Iservices/audio_manager/inc \
     -Iservices/bt_app \
     -Iapps/key \
-    -Iservices/bt_app/a2dp_codecs/include
+    -Iservices/bt_app/a2dp_codecs/include \
+    -Iapps/ota
 
 ifeq ($(BESUI_TWS_EN),1)
 subdir-ccflags-y += -Iapps/besui \

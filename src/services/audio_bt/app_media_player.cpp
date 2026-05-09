@@ -95,7 +95,7 @@
 #include "app_thirdparty.h"
 #endif
 
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
 #include "app_tws_ibrt.h"
 #include "app_ibrt_voice_report.h"
 #include "bts_core_if.h"
@@ -202,7 +202,11 @@ static heap_api_t aac_get_heap_api()
 
 #define APP_AUDIO_PLAYBACK_BUFF_SIZE        (1024 * 1 * sizeof(int16_t) * MEDIA_PLAYER_CHANNEL_NUM * 2)
 #else
+#ifdef MEDIA_STEREO_ENABLE
 #define APP_AUDIO_PLAYBACK_BUFF_SIZE        (128 * 2 * sizeof(int16_t) * 2)
+#else
+#define APP_AUDIO_PLAYBACK_BUFF_SIZE        (128 * 2 * sizeof(int16_t) * MEDIA_PLAYER_CHANNEL_NUM * 2)
+#endif
 #endif
 
 #if defined(AUDIO_ANC_FB_MC_MEDIA) && defined(ANC_APP) && !defined(__AUDIO_RESAMPLE__)
@@ -929,18 +933,17 @@ void trigger_media_stop(AUD_ID_ENUM id, uint8_t device_id)
 }
 
 static bool isProcessCache = false;
-bool is_cache_prompt_in_processing(void)
-{
-    return isProcessCache;
-}
-
-#if defined(IBRT)
 void cache_prompt_flag(bool isProcess)
 {
     isProcessCache = isProcess;
 }
 
-static bool is_prompt_playing_handling_locally(AUD_ID_ENUM promptId, bool iscached)
+bool is_cache_prompt_in_processing(void)
+{
+    return isProcessCache;
+}
+
+bool is_prompt_playing_handling_locally(AUD_ID_ENUM promptId, bool iscached)
 {
     switch ((uint16_t)PROMPT_ID_FROM_ID_VALUE(promptId))
     {
@@ -951,7 +954,6 @@ static bool is_prompt_playing_handling_locally(AUD_ID_ENUM promptId, bool iscach
             return false;
     }
 }
-#endif
 
 static bool media_PlayAudio_handler(AUD_ID_ENUM id,uint8_t device_id, bool isLocalPlaying)
 {
@@ -1033,7 +1035,7 @@ void media_PlayAudio_continuous_end(AUD_ID_ENUM id, uint8_t device_id)
 {
     if (!media_PlayAudio_stop_continuous_prompt())
     {
-#ifdef IBRT
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
         app_tws_stop_peer_prompt();
 #endif
     }
@@ -1043,10 +1045,10 @@ static bool media_check_is_prompt_obsolete(AUD_ID_ENUM id)
 {
     return false;
 }
-
-#ifdef IBRT
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
 static bool media_playAudio_pre_processing(AUD_ID_ENUM id, uint8_t device_id, media_PlayAudio_api func)
 {
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     if (app_prompt_is_on_going && (AUDIO_ID_BT_MUTE != id))
     {
 #ifndef BESUI_TWS_EN
@@ -1082,8 +1084,10 @@ static bool media_playAudio_pre_processing(AUD_ID_ENUM id, uint8_t device_id, me
         }
         return false;
     }
-
     return true;
+#else
+    return false;
+#endif
 }
 
 void app_tws_stop_peer_prompt(void)
@@ -1312,7 +1316,7 @@ static bool media_PlayAudio_standalone_handler(AUD_ID_ENUM id, uint8_t device_id
 void media_PlayAudio_standalone(AUD_ID_ENUM id, uint8_t device_id)
 {
     osMutexWait(promptMutexId, osWaitForever);
-#ifdef BT_SVC_MODULE_IBRT_ENABLED
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     bool isToBeProcessed = media_playAudio_pre_processing(id, device_id, media_PlayAudio);
     if (!isToBeProcessed)
     {
@@ -1341,7 +1345,7 @@ void media_PlayAudio_standalone(AUD_ID_ENUM id, uint8_t device_id)
 
     bool isLocalPlaying = true;
 
-#ifdef BT_SVC_MODULE_IBRT_ENABLED
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     isLocalPlaying = is_prompt_playing_handling_locally(id, false);
 
     if (bts_tws_if_is_tws_link_connected()&&(!isLocalPlaying))
@@ -1373,7 +1377,7 @@ bool media_playAudio_locally_is_continuous_prompt_on_going(void)
 void media_PlayAudio_locally_continuous_start(AUD_ID_ENUM id, uint8_t device_id)
 {
     osMutexWait(promptMutexId, osWaitForever);
-#ifdef IBRT
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     bool isToBeProcessed = media_playAudio_pre_processing(id, device_id, media_PlayAudio);
     if (!isToBeProcessed)
     {
@@ -1420,7 +1424,7 @@ void media_PlayAudio_locally_continuous_end(AUD_ID_ENUM id, uint8_t device_id)
 static bool media_PlayAudio_locally_handler(AUD_ID_ENUM id, uint8_t device_id, bool isLocalPlaying)
 {
     uint16_t aud_param;
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     uint32_t audio_chnl_sel = bts_bt_if_get_audio_chnl_sel();
 
     if (A2DP_AUDIO_CHANNEL_SELECT_LCHNL == audio_chnl_sel)
@@ -1462,7 +1466,7 @@ void media_PlayAudio_locally(AUD_ID_ENUM id, uint8_t device_id)
 static bool media_PlayAudio_standalone_locally_handler(AUD_ID_ENUM id, uint8_t device_id, bool isLocalPlaying)
 {
     uint16_t aud_param;
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     uint32_t audio_chnl_sel = bts_bt_if_get_audio_chnl_sel();
 
     if (A2DP_AUDIO_CHANNEL_SELECT_LCHNL == audio_chnl_sel)
@@ -1530,7 +1534,7 @@ static bool media_PlayAudio_remotely_handler(AUD_ID_ENUM id, uint8_t device_id, 
 {
     uint16_t aud_param;
 
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     uint32_t audio_chnl_sel = bts_bt_if_get_audio_chnl_sel();
 
     if (A2DP_AUDIO_CHANNEL_SELECT_LCHNL == audio_chnl_sel)
@@ -1557,7 +1561,7 @@ static bool media_PlayAudio_remotely_handler(AUD_ID_ENUM id, uint8_t device_id, 
 void media_PlayAudio_remotely(AUD_ID_ENUM id, uint8_t device_id)
 {
     osMutexWait(promptMutexId, osWaitForever);
-#ifdef IBRT
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     bool isToBeProcessed = media_playAudio_pre_processing(id, device_id, media_PlayAudio);
     if (!isToBeProcessed)
     {
@@ -1568,7 +1572,7 @@ void media_PlayAudio_remotely(AUD_ID_ENUM id, uint8_t device_id)
 
     bool isLocalPlaying = true;
 
-#ifdef IBRT
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     isLocalPlaying = is_prompt_playing_handling_locally(id, false);
 
     if (bts_tws_if_is_tws_link_connected()&&(!isLocalPlaying))
@@ -1591,7 +1595,7 @@ static bool media_PlayAudio_standalone_remotely_handler(AUD_ID_ENUM id, uint8_t 
 {
     uint16_t aud_param;
 
-#if defined(IBRT)
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     uint32_t audio_chnl_sel = bts_bt_if_get_audio_chnl_sel();
 
     if (A2DP_AUDIO_CHANNEL_SELECT_LCHNL == audio_chnl_sel)
@@ -2389,25 +2393,24 @@ uint32_t app_play_sbc_more_data(uint8_t *buf, uint32_t len)
             if (g_play_continue_mark) {
                 l = app_play_continue_sbc_more_data(device_id, (uint8_t *)app_play_sbc_cache, len/MEDIA_PLAYER_CHANNEL_NUM);
             } else {
-#ifdef PROMPT_USE_AAC
-                l = app_play_single_sbc_more_data(device_id, (uint8_t *)app_play_sbc_cache, len / MEDIA_PLAYER_CHANNEL_NUM);
-#else
+#ifdef MEDIA_STEREO_ENABLE
                 l = app_play_single_sbc_more_data(device_id, (uint8_t *)app_play_sbc_cache, len);
+#else
+                l = app_play_single_sbc_more_data(device_id, (uint8_t *)app_play_sbc_cache, len/MEDIA_PLAYER_CHANNEL_NUM);
 #endif
             }
-#ifdef PROMPT_USE_AAC
-            if (l != len / MEDIA_PLAYER_CHANNEL_NUM) {
-#else
+#ifdef MEDIA_STEREO_ENABLE
             if (l != len) {
+#else
+            if (l != len / MEDIA_PLAYER_CHANNEL_NUM) {
 #endif
-
 #if defined(__BT_ANC__) || defined(PSAP_FORCE_STREAM_48K)
                 len = dec_len*3;
 #endif
-#ifdef PROMPT_USE_AAC
-                memset(app_play_sbc_cache + l, 0, len / MEDIA_PLAYER_CHANNEL_NUM - l);
-#else
+#ifdef MEDIA_STEREO_ENABLE
                 memset(app_play_sbc_cache+l, 0, len - l);
+#else
+                memset(app_play_sbc_cache+l, 0, len/MEDIA_PLAYER_CHANNEL_NUM-l);
 #endif
                 app_play_sbc_stop_proc_cnt = 1;
             }
@@ -2423,7 +2426,7 @@ uint32_t app_play_sbc_more_data(uint8_t *buf, uint32_t len)
 #endif
             } else if (MEDIA_PLAYER_CHANNEL_NUM == AUD_CHANNEL_NUM_1) {
                 if (IS_PROMPT_CHNLSEl_ALL(g_prompt_chnlsel)
-#ifdef IBRT
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
                     || app_ibrt_voice_report_is_me(PROMPT_CHNLSEl_FROM_ID_VALUE(g_prompt_chnlsel))
 #endif
                     ) {
@@ -2442,7 +2445,7 @@ uint32_t app_play_sbc_more_data(uint8_t *buf, uint32_t len)
 #endif
             } else if (MEDIA_PLAYER_CHANNEL_NUM == AUD_CHANNEL_NUM_1) {
                 if (IS_PROMPT_CHNLSEl_ALL(g_prompt_chnlsel)
-#ifdef BT_SVC_MODULE_IBRT_ENABLED
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
                     || app_ibrt_voice_report_is_me(PROMPT_CHNLSEl_FROM_ID_VALUE(g_prompt_chnlsel))
 #endif
                     ) {
@@ -3053,10 +3056,10 @@ int app_play_audio_onoff(bool onoff, APP_AUDIO_STATUS* status)
         stream_cfg.handler = app_play_sbc_more_data;
 
         stream_cfg.data_size = APP_AUDIO_PLAYBACK_BUFF_SIZE;
-#ifdef PROMPT_USE_AAC
-        g_cache_buff_sz = stream_cfg.data_size / MEDIA_PLAYER_CHANNEL_NUM / 2 ;
-#else
+#ifdef MEDIA_STEREO_ENABLE
         g_cache_buff_sz = stream_cfg.data_size / 2 ;
+#else
+        g_cache_buff_sz = stream_cfg.data_size/MEDIA_PLAYER_CHANNEL_NUM/2 ;
 #endif
 
 #if defined(MEDIA_PLAY_24BIT)
@@ -3526,7 +3529,7 @@ void app_prompt_list_init(void)
         osThreadCreate(osThread(app_prompt_handler_thread), NULL);
 #endif
 
-#ifdef IBRT
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
     app_ibrt_voice_report_register_slave_request_start_callback(app_prompt_stop_wait_master_sync_play_req_timer);
 #endif
 
@@ -3652,7 +3655,7 @@ static bool app_prompt_refresh_list(void)
     if ((node = app_prompt_list_begin(list)) != NULL) {
         pPlayReq = app_prompt_list_node(node);
         AUDIO_BT_TRACE(0, "%s reqType %d local %d", __func__, pPlayReq->reqType, pPlayReq->isLocalPlaying);
-#ifdef IBRT
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
         if (APP_PROMPT_CACHED_ORG_REQUEST == pPlayReq->reqType)
         {
             APP_PROMPT_PLAY_REQ_T localReq = *pPlayReq;
@@ -4016,7 +4019,7 @@ bool prompt_check_user_if_need_to_wait(PROMPT_CHECK_USER_E user)
     }
 }
 
-#ifdef IBRT
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
 void audio_prompt_req_send_failed_cb(uint16_t cmdCode, uint8_t* p_buff, uint16_t length)
 {
     app_tws_voice_prompt_to_play_t req;

@@ -18,7 +18,7 @@
 #include "bt_common_define.h"
 #include "me_api.h"
 #include "hfp_api.h"
-
+#include "a2dp_api.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -125,6 +125,23 @@ typedef enum {
     BT_PROFILE_SYNC_STACK_BTGATT,
 } BT_PROFILE_SYNC_ENUM_T;
 
+typedef enum {
+    BT_WAITING_SYNC_A2DP_STATE = 0x01,
+    BT_WAITING_SYNC_AVRCP_PLAY_STATUS = 0x02,
+    BT_WAITING_SYNC_AVRCP_VOLUME = 0x04,
+    BT_WAITING_SYNC_AVRCP_REPORT = 0x08,
+    BT_WAITING_SYNC_HFP_VOLUME = 0x10,
+    BT_WAITING_SYNC_HFP_CODEC =0x20,
+} BT_WAITING_SYNC_STATUS_ENUM_T;
+
+typedef struct
+{
+    uint8_t  codec_type;
+    uint8_t  sample_bit;
+    uint8_t  sample_rate;
+    uint8_t  vendor_para;
+} __attribute__((packed)) ibrt_codec_t;
+
 typedef struct ibrt_hfp_status_t
 {
     uint8_t audio_state;
@@ -137,6 +154,25 @@ typedef struct ibrt_hfp_status_t
     uint8_t codec_type;
 } __attribute__((packed)) ibrt_hfp_status_t;
 
+typedef struct ibrt_a2dp_status_t
+{
+    ibrt_codec_t codec;
+    uint8_t localVolume;
+    uint8_t avrcp_play_status;
+    bt_a2dp_stream_state_t state;
+    float latency_factor;
+    uint32_t session;
+    bt_bdaddr_t mobile_addr;
+    uint8_t triggerStatus;
+} __attribute__((packed)) ibrt_a2dp_status_t;
+
+typedef struct ibrt_avrcp_status_t
+{
+    uint8_t avrcp_play_status;
+    uint8_t volume_report;
+    uint8_t abs_volume;
+    bt_bdaddr_t mobile_addr;
+} __attribute__((packed)) ibrt_avrcp_status_t;
 #ifdef __cplusplus
 }
 #endif

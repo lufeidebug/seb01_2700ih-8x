@@ -56,8 +56,8 @@ GTAGS
 *.pch
 
 # Libraries
-# *.lib
-# *.a
+*.lib
+#*.a
 *.la
 *.lai
 *.pyd
@@ -79,6 +79,7 @@ GTAGS
 
 # Source insight project files
 /[sS][iI]/
+*.si4project
 
 # Generated project files
 *.ncb
@@ -91,14 +92,13 @@ GTAGS
 #/Release/
 Debug/
 Release/
-/ipch/
 
 # Library dir
 #lib/
 
 # Build dir
 /out/
-*.pre
+
 
 # configuration file
 # *.ini

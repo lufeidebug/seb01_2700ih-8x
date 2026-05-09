@@ -898,14 +898,6 @@ void charger_param_set_onoff(bool open_close_flag, uint8_t battery_current)
         charger_1501p_onoff(open_close_flag);
 }
 #else
-#if defined(CHIP_BEST1501P) || defined(CHIP_BEST1502X) || defined(CHIP_BEST1501)
-enum CHARGER_CHARGE_STATUE_E charger_charge_status_get(void)
-{
-    return CHARGER_CHARGE_STATUS_IDLE;
-}
-#endif
-#endif
-
 void charger_param_set_onoff(bool open_close_flag, uint8_t battery_current)
 {
 #if 0
@@ -949,6 +941,14 @@ void charger_param_set_onoff(bool open_close_flag, uint8_t battery_current)
     //charger_charge_enable();
 #endif
 }
+#if defined(CHIP_BEST1501P) || defined(CHIP_BEST1502X) || defined(CHIP_BEST1501)
+enum CHARGER_CHARGE_STATUE_E charger_charge_status_get(void)
+{
+    return CHARGER_CHARGE_STATUS_IDLE;
+}
+#endif
+#endif
+
 
 //-----------------------------------------------------------------------------------------
 #endif

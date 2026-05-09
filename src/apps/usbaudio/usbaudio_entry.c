@@ -47,7 +47,6 @@
 
 #ifdef USB_AUDIO_SPEECH
 #define CODEC_BUFF_FRAME_NUM            (2 * 16)
-#define USB_BUFF_FRAME_NUM              (CODEC_BUFF_FRAME_NUM * 2)
 #else
 #ifndef CODEC_BUFF_FRAME_NUM
 #define CODEC_BUFF_FRAME_NUM            4

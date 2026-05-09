@@ -409,6 +409,7 @@ typedef struct
     app_anc_mode_t mode;
     uint32_t ctrl;
     FIR_LMS_CALIB_GAIN calib_gain[FIR_CHANNEL_NUM];
+    FIR_LMS_CALIB_GAIN adc_gain[FIR_CHANNEL_NUM];
     bool fir_enable;
     bool fir_status;
     float fb_gain;
@@ -449,6 +450,7 @@ typedef enum
     ANC_FF_FIR_LMS_CTRL_STOP_FIR,
     ANC_FF_FIR_LMS_CTRL_SET_FIR_FLAG,
     ANC_FF_FIR_LMS_CTRL_SET_CALIB_GAIN,
+    ANC_FF_FIR_LMS_CTRL_SET_ADC_GAIN,
     ANC_FF_FIR_LMS_CTRL_SET_FB_GAIN,
     ANC_FF_FIR_LMS_CTRL_SET_TT_NS_CFG,
     ANC_FF_FIR_LMS_CTRL_SET_TT_ALGO_STATUS,
@@ -480,6 +482,8 @@ typedef struct
 
 int32_t fir_lms_anc_set_cfg(app_anc_mode_t mode, enum ANC_TYPE_T anc_type, ANC_GAIN_TIME anc_gain_delay);
 
+static void app_voice_assist_fir_lms_get_adc_gain_impl(FIR_LMS_CALIB_GAIN *adc_gain);
+
 WEAK int32_t event_detection_set_fir_flag(EventDetectionState* st, uint32_t flag)
 {
     return 0;
@@ -489,6 +493,12 @@ WEAK int32_t event_detection_reset(EventDetectionState* st, EventDetectionRes *r
 {
     return 0;
 }
+
+WEAK int hal_codec_get_adc_gain(enum AUD_CHANNEL_MAP_T map, float *gain)
+{
+    return 0;
+}
+
 int32_t app_voice_assist_fir_lms_choose_mode(void)
 {
     voice_assist_fir_lms_inst *ctx = voice_assist_get_ctx();
@@ -735,6 +745,21 @@ int32_t app_voice_assist_fir_lms_set_anc_mode(app_anc_mode_t mode)
     return 0;
 }
 
+int32_t app_voice_assist_fir_lms_update_adc_gain(void)
+{
+    voice_assist_fir_lms_inst *ctx = voice_assist_get_ctx();
+    app_voice_assist_fir_lms_get_adc_gain_impl(ctx->adc_gain);
+#if defined(APP_MCPP_CLI)
+    app_voice_assist_fir_lms_ctrl(_index, ANC_FF_FIR_LMS_CTRL_SET_ADC_GAIN, (uint8_t *)&ctx->adc_gain, sizeof(ctx->adc_gain));
+#else
+    for (uint32_t i = 0; i < FIR_CHANNEL_NUM; i++) {
+        anc_ff_fir_lms_set_adc_gain(fir_st[i], &ctx->adc_gain[i]);
+    }
+#endif
+
+    return 0;
+}
+
 int32_t app_voice_assist_fir_lms_set_fir_flag(uint32_t fir_flag)
 {
     app_voice_assist_fir_lms_ctrl_async(_index, ANC_FF_FIR_LMS_CTRL_SET_FIR_FLAG, (uint8_t *)&fir_flag, sizeof(fir_flag));
@@ -875,6 +900,25 @@ WEAK int32_t app_anc_get_calib_gain(FIR_LMS_CALIB_GAIN *calib_gain)
 
     return 0;
 }
+
+//map from hal_codec_apply_anc_adc_gain_offset
+static void app_voice_assist_fir_lms_get_adc_gain_impl(FIR_LMS_CALIB_GAIN *adc_gain)
+{
+    float gain;
+    hal_codec_get_adc_gain(AUD_CHANNEL_MAP_CH0, &gain);
+    adc_gain[0].ff_gain = gain;
+    hal_codec_get_adc_gain(AUD_CHANNEL_MAP_CH2, &gain);
+    adc_gain[0].fb_gain = gain;
+    VOICE_ASSIST_TRACE(0,"dig ff_l gain:%de-2 ,fb_l gain:%de-2",(int)(adc_gain[0].ff_gain*100),(int)(adc_gain[0].fb_gain*100));
+#if (FIR_CHANNEL_NUM == 2)
+    hal_codec_get_adc_gain(AUD_CHANNEL_MAP_CH1, &gain);
+    adc_gain[1].ff_gain = gain;
+    hal_codec_get_adc_gain(AUD_CHANNEL_MAP_CH3, &gain);
+    adc_gain[1].fb_gain = gain;
+    VOICE_ASSIST_TRACE(0,"dig ff_r gain:%de-2 ,fb_r gain:%de-2",(int)(adc_gain[1].ff_gain*100),(int)(adc_gain[1].fb_gain*100));
+#endif
+}
+
 
 int32_t app_voice_assist_fir_lms_open(app_anc_mode_t mode)
 {
@@ -1978,6 +2022,13 @@ int voice_assist_fir_lms_set_cfg(uint32_t ctrl, uint8_t *tgt_cfg, uint32_t ptr_l
             ctx->ctrl |= (0x1 << ctrl);
             break;
         }
+        case ANC_FF_FIR_LMS_CTRL_SET_ADC_GAIN:
+        {
+            voice_assist_fir_lms_inst *ctx = voice_assist_get_ctx();
+            memcpy(&ctx->adc_gain, tgt_cfg, sizeof(FIR_LMS_CALIB_GAIN) * FIR_CHANNEL_NUM);
+            ctx->ctrl |= (0x1 << ctrl);
+            break;
+        }
         case ANC_FF_FIR_LMS_CTRL_SET_FB_GAIN:
         {
             voice_assist_fir_lms_inst *ctx = voice_assist_get_ctx();
@@ -2057,6 +2108,13 @@ int voice_assist_fir_lms_update_cfg(voice_assist_fir_lms_inst *ctx)
                         anc_ff_fir_lms_set_mc_fir_calib_gain(mc_fir_st[i], &ctx->calib_gain[i]);
 #endif
                      }
+                    break;
+                }
+                case ANC_FF_FIR_LMS_CTRL_SET_ADC_GAIN:
+                {
+                    for (uint32_t i = 0; i < FIR_CHANNEL_NUM; i++) {
+                        anc_ff_fir_lms_set_adc_gain(fir_st[i], &ctx->adc_gain[i]);
+                    }
                     break;
                 }
                 case ANC_FF_FIR_LMS_CTRL_SET_FB_GAIN:
@@ -2197,6 +2255,7 @@ void fir_tool_fir_anc_open(int32_t current_mode)
     _fir_tool_debug = 1;
     fir_tool_trace_cfg();
     app_voice_assist_fir_lms_set_fir_HW_work_mode(ANC_CUSTOM_MODE_FIR_ANC);
+    app_voice_assist_fir_lms_update_adc_gain();
     app_voice_assist_fir_lms_open(current_mode);
 }
 

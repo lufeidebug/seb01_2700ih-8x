@@ -74,9 +74,23 @@ endif #NANDFLASH_PARTITION_ENABLE
 
 endif #NANDFLASH_SUPPORT
 
+#NOR_FLASH_BEGIN
+#FLASH_BASE
 ifeq ($(call value_zero,$(NORFLASH_FS_SIZE)),n)
 subdir-ccflags-y += -DNORFLASH_FS_ADDR=$(NORFLASH_FS_ADDR) -DNORFLASH_FS_SIZE=$(NORFLASH_FS_SIZE)
 endif
+
+#FLASH1_CTL_BASE
+ifeq ($(call value_zero,$(NORFLASH1_FS_SIZE)),n)
+subdir-ccflags-y += -DNORFLASH1_FS_ADDR=$(NORFLASH1_FS_ADDR) -DNORFLASH1_FS_SIZE=$(NORFLASH1_FS_SIZE)
+endif
+
+#FLASH2_CTL_BASE
+ifeq ($(call value_zero,$(NORFLASH2_FS_SIZE)),n)
+subdir-ccflags-y += -DNORFLASH2_FS_ADDR=$(NORFLASH2_FS_ADDR) -DNORFLASH2_FS_SIZE=$(NORFLASH2_FS_SIZE)
+endif
+#NOR_FLASH_END
+
 
 obj-y := $(obj_c:.c=.o) $(obj_s:.S=.o) $(obj_cpp:.cpp=.o)
 

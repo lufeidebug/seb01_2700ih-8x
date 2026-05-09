@@ -281,8 +281,6 @@ void bts_ble_gfps_register_event_callback(bts_ble_gfps_event_cb func);
 void bts_ble_spot_init(bts_ble_gap_adv_actv_prepare_func func);
 #endif
 
-void bts_ble_dult_init(bts_ble_dult_cb_t *cbs);
-
 void bts_ble_gfps_send_beacon_data(uint8_t conidx, uint8_t *data, uint16_t length);
 
 uint8_t bts_ble_gfps_l2cap_send(uint8_t conidx, uint8_t *ptrData, uint32_t length);

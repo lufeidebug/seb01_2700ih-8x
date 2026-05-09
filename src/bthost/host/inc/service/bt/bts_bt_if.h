@@ -366,7 +366,7 @@ bool bts_ui_role_is_slave(void);
 
 void bts_core_set_ui_role(uint8_t ui_role);
 
-btif_connection_role_t bts_tws_if_get_local_tws_role(void);
+btif_connection_role_t bts_tws_if_get_tws_link_bt_role(void);
 
 bool bts_tws_if_is_tws_link_connected(void);
 

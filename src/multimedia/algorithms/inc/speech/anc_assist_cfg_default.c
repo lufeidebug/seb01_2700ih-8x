@@ -33,8 +33,13 @@ AncAssistConfig anc_assist_cfg = {
     .wind_debug_en = 0,
     .noise_debug_en = 0,
 
+#if defined(__SNDP_PROJ__)
     .ff_howling_en  = true,
     .fb_howling_en  = true,
+#else
+    .ff_howling_en  = 0,
+    .fb_howling_en  = 0,
+#endif		
     .noise_en   = 0,
     .noise_classify_en  = 0,
     .wind_en    = 0,

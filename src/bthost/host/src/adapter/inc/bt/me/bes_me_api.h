@@ -167,8 +167,6 @@ void bes_bt_me_cmgr_start_sniff_timer(evm_timer_t* timer, uint32_t time);
 
 bt_status_t bes_bt_me_cmgr_register_callback(void *cmgr_handler, btif_cmgr_callback callback);
 
-void bes_bt_me_acl_set_remote_device_role(uint16_t conn_handle, uint8_t role);
-
 bool bes_bt_me_is_device_profile_connected(uint8_t device_id);
 
 bool bes_bt_me_is_device_hfp_connected(uint8_t device_id);
@@ -281,6 +279,8 @@ void bes_bt_l2cap_create_besaud_extra_channel(void* remote_addr, bt_l2cap_callba
 void bes_bt_l2cap_reset_sigid(const bt_bdaddr_t *addr);
 
 btif_remote_device_t* bes_bt_get_remote_dev_by_address(const bt_bdaddr_t *bdaddr);
+
+uint8_t bes_bt_get_link_bt_role(const bt_bdaddr_t *bdaddr);
 
 bt_status_t bes_bt_set_fix_tws_interval_param(uint16_t duration, uint16_t interval, uint16_t interval_in_sco);
 

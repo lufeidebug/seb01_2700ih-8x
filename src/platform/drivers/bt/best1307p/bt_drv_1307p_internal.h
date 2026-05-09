@@ -646,6 +646,7 @@ bool btdrv_reg_op_check_btc_boot_finish(void);
 void bt_drv_rf_inf_enable_auto_power_down(bool enable);
 #endif
 void dc_iq_calib_1307p(void);
+void btdrv_vco_drive_calib(void);
 #ifdef __cplusplus
 }
 #endif

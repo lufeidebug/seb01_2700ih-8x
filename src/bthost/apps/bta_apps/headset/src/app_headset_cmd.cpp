@@ -12,7 +12,7 @@
 #define TRACE(attr, str, ...)               TR_INFO(attr, str, ##__VA_ARGS__)
 #endif
 
-typedef struct 
+typedef struct
 {
     const char* string;
     void (*cmd_function)(const char* p, uint32_t p_len);
@@ -79,16 +79,6 @@ static void cmd_wear_down(const char* p, uint32_t p_len)
     app_bta_box_event_entry(APP_HEADSET_WEAR_DOWN);
 }
 
-static void cmd_page(const char* p, uint32_t p_len)
-{
-    bt_bdaddr_t addr = {};
-
-    if (str2bdaddr(p, p_len, &addr))
-    {
-        bta_connect_bt_device(&addr, 2, 0);
-    }
-}
-
 static void cmd_enter_pairing(const char* p, uint32_t p_len)
 {
     bta_enable_pairing_mode(true);
@@ -138,16 +128,52 @@ static void cmd_connect_lea_device(const char* p, uint32_t p_len)
     }
 }
 
+static void cmd_remove_bt_device(const char* p, uint32_t p_len)
+{
+    bt_bdaddr_t addr = {};
+
+    if (str2bdaddr(p, p_len, &addr))
+    {
+        bta_remove_bt_device(&addr);
+    }
+}
+
+static void cmd_remove_lea_device(const char* p, uint32_t p_len)
+{
+    bt_bdaddr_t addr = {};
+
+    if (str2bdaddr(p, p_len, &addr))
+    {
+        bta_remove_lea_device(&addr);
+    }
+}
+
+static void cmd_remove_bond(const char* p, uint32_t p_len)
+{
+    bt_bdaddr_t addr = {};
+
+    if (str2bdaddr(p, p_len, &addr))
+    {
+        bta_remove_bond(&addr);
+    }
+}
+
+static void cmd_enable_lea_advertiser(const char* p, uint32_t p_len)
+{
+    bool enable = atoi(p);
+    bta_ux_enable_lea_advertiser(enable);
+}
+
+static void cmd_enable_br_edr_supported(const char* p, uint32_t p_len)
+{
+    bool enable = atoi(p);
+    bta_ux_enable_br_edr_supported(enable);
+}
+
 static void cmd_block_page_when_streaming(const char* p, uint32_t p_len)
 {
     bool block = atoi(p);
     bta_block_page_when_streaming(block);
-}
-
-static void cmd_support_preempt_when_a2dp_streaming(const char* p, uint32_t p_len)
-{
-    bool support = atoi(p);
-    bta_support_preempt_when_a2dp_streaming(support);
 }
 
 static void cmd_without_reconnect_when_fetch_out_wear_up(const char* p, uint32_t p_len)
@@ -164,15 +190,18 @@ static const cmd_table_item_t cmd_table[] =
     { "dock", cmd_dock },
     { "wear_up", cmd_wear_up },
     { "wear_down", cmd_wear_down },
-    { "page", cmd_page },
     { "enter_pairing", cmd_enter_pairing },
     { "exit_pairing", cmd_exit_pairing },
     { "enable_multipoint", cmd_enable_multipoint },
     { "disable_multipoint", cmd_disable_multipoint },
     { "connect_bt", cmd_connect_bt_device },
     { "connect_lea", cmd_connect_lea_device },
+    { "remove_bt", cmd_remove_bt_device },
+    { "remove_lea", cmd_remove_lea_device },
+    { "remove_bond", cmd_remove_bond },
+    { "enable_lea_advertiser", cmd_enable_lea_advertiser },
+    { "enable_br_edr_supported", cmd_enable_br_edr_supported },
     { "block_page_when_streaming", cmd_block_page_when_streaming },
-    { "support_preempt_when_a2dp_streaming", cmd_support_preempt_when_a2dp_streaming },
     { "without_reconnect_when_fetch_out_wear_up", cmd_without_reconnect_when_fetch_out_wear_up },
 };
 

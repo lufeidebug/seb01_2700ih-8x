@@ -76,6 +76,10 @@
 #include "app_ble_battery.h"
 #endif
 
+#ifdef SWIFT_ENABLED
+#include "app_ble_swift.h"
+#endif
+
 #if defined(__SNDP_PROJ__)
 #include "sndp_if_platform.h"
 #endif
@@ -241,7 +245,6 @@ static void tws_link_state_changed_handler(bta_tws_sync_state_t state, uint8_t r
 #if defined(A2DP_AUDIO_STEREO_MIX_CTRL)
             a2dp_audio_stereo_set_mix(true);
 #endif
-            bt_drv_reg_op_afh_assess_en(true);
 #if defined(__SNDP_PROJ__)
             sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_TWS_DISCONNECTED, reason);
 #endif
@@ -253,7 +256,6 @@ static void tws_link_state_changed_handler(bta_tws_sync_state_t state, uint8_t r
 #endif
         break;
         case BTA_TWS_SYNCED:
-            bt_drv_reg_op_afh_assess_en(bta_tws_get_ui_role() == BT_IBRT_MASTER);
 #if defined(__SNDP_PROJ__)
             sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_TWS_CONNECTED, reason);
 #endif            
@@ -269,15 +271,35 @@ static void tws_link_state_changed_handler(bta_tws_sync_state_t state, uint8_t r
 #endif
 }
 
+static void pairing_mode_entered_handler()
+{
+#if !defined(BESUI_TWS_EN) && !defined(BESUI_STEREO_EN)
+#ifdef GFPS_ENABLED
+    gfps_enter_fastpairing_mode();
+#endif
+#endif
+
+#ifdef SWIFT_ENABLED
+    app_swift_enter_pairing_mode();
+#endif
+}
+
+static void pairing_mode_exited_handler()
+{
+#ifdef SWIFT_ENABLED
+    app_swift_exit_pairing_mode();
+#endif
+}
+
 static void pairing_mode_changed_handler(bool enabled)
 {
     if (enabled)
     {
-#if !defined(BESUI_TWS_EN) && !defined(BESUI_STEREO_EN)
-#ifdef GFPS_ENABLED
-        gfps_enter_fastpairing_mode();
-#endif
-#endif
+        pairing_mode_entered_handler();
+    }
+    else
+    {
+        pairing_mode_exited_handler();
     }
 }
 
@@ -286,14 +308,14 @@ static void peer_box_state_changed_handler(bta_tws_box_state_t box_state)
     TRACE(0, "custom_ui peer_box_state %d", box_state);
 }
 
-extern int bt_sco_chain_set_master_role(bool is_master);
+static void local_box_state_changed_handler(bta_tws_box_state_t box_state)
+{
+    TRACE(0, "custom_ui local_box_state %d", box_state);
+}
+
 static void tws_role_switch_state_changed_handler(bt_ui_role_t role)
 {
     TRACE(0, "custom_ui tws_role_switch %d", role);
-
-    bool is_master = role == BT_IBRT_MASTER;
-    bt_sco_chain_set_master_role(is_master);
-    bt_drv_reg_op_afh_assess_en(is_master);
 }
 
 static void disconnect_channels_when_basic_profiles_disconncted(const bt_bdaddr_t *addr)
@@ -370,6 +392,7 @@ static void hfp_audio_status_changed_handler(const bt_bdaddr_t *addr, bt_hfp_aud
     TRACE(0, "custom_ui d(%x)hfp_audio %d codec %d reason %d", device_id, state, codec, error_code);
 }
 
+//Add by lzw@sndp 202604 start
 static void hfp_callsetup_status_changed_handler(const bt_bdaddr_t *address, bt_hfp_callsetup_state_t callsetup)
 {
     uint8_t device_id = bta_get_device_id_by_addr(address);
@@ -396,7 +419,7 @@ static void hfp_callsetup_status_changed_handler(const bt_bdaddr_t *address, bt_
             break;
     }
 }
-
+//Add by lzw@sndp 202604 end
 
 static bool process_factory_test_cmd(uint8_t test_type)
 {
@@ -496,6 +519,8 @@ static void fill_am_attributes(bt_am_attributes_t *attributes)
     attributes->prompt_tone_cant_preempt_music = false;
 
     attributes->resume_pc_sco_by_dis_then_conn_hfp = false;
+
+    attributes->bt_update_active_device_when_incoming_call = false;
 }
 
 static void fill_tws_attributes(bta_tws_attributes_t *attributes)
@@ -708,6 +733,10 @@ static void fill_tws_attributes(bta_tws_attributes_t *attributes)
     attributes->lea_connected_allow_new_connect                = true;
 
     attributes->dev_idle_allow_nonsupport_stay_connected       = true;
+
+    attributes->nv_merge_scope                                 = BTA_TWS_NV_MERGE_SCOPE_MINIMAL;
+
+    attributes->afh_assess_policy                              = BTA_TWS_AFH_ASSESS_POLICY_ON_STREAMING;
 }
 
 void app_bta_init(void)
@@ -746,7 +775,7 @@ void app_bta_init(void)
     {
         .connection_state_cb = hfp_connection_state_changed_handler,
         .audio_status_cb = hfp_audio_status_changed_handler,
-        .callsetup_status_cb = hfp_callsetup_status_changed_handler,
+        .callsetup_status_cb = hfp_callsetup_status_changed_handler, //Add by lzw@sndp 202604 start
     };
     bta_hf_register_callbacks(BT_HFP_HF_CB_USER_APP, &hfp_hf_callbacks);
 
@@ -756,6 +785,7 @@ void app_bta_init(void)
         .tws_sync_state_changed = tws_link_state_changed_handler,
         .pairing_mode_changed = pairing_mode_changed_handler,
         .peer_box_state_changed = peer_box_state_changed_handler,
+        .local_box_state_changed = local_box_state_changed_handler,
         .ui_role_switch_state_changed = tws_role_switch_state_changed_handler,
     };
     bta_tws_register_ui_state_changed_hook(BTA_TWS_UX_USER_APP, &ui_state_changed);
@@ -763,8 +793,6 @@ void app_bta_init(void)
     bta_tws_init(&am_attributes, &tws_attributes);
 
     app_bta_earbuds_deprecated_init();
-
-    bt_drv_reg_op_afh_assess_en(true);
 
     app_ibrt_customif_register_cmd_table();
 
@@ -835,24 +863,4 @@ bool app_bta_bootmode_handler(void)
     {
         return true;
     }
-}
-
-void app_bta_box_event_entry(bta_tws_box_event_t event)
-{
-    if (BTA_TWS_OPEN == event)
-    {
-        bta_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_BOX, true);
-    }
-    else if (BTA_TWS_UNDOCK == event)
-    {
-        bta_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_BOX, true);
-    }
-    else if (BTA_TWS_CLOSE == event)
-    {
-        // disconnect all of the BLE connections when box closed
-        bta_ble_disconnect_all();
-        bta_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_BOX, false);
-    }
-
-    bta_tws_box_event_entry(event);
 }

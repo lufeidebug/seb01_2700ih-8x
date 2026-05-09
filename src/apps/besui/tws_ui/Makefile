@@ -20,6 +20,8 @@ ccflags-y += \
     -Iservices/nv_section/factory_section \
     -Iapps/nv_section/factory_section \
     -Iapps/nv_section/userdata_section \
+    -Iapps/earbuds/app_ibrt/inc \
+    -Ibthost/apps/bta_apps/deprecated/inc \
     -Iservices/ota/bes_ota/inc/ \
     -Iservices/audio_manager/inc \
     $(BT_BLE_AUDIO_POLICY_INCLUDES) \

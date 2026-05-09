@@ -126,16 +126,6 @@ typedef enum {
     IBRT_CONN_HFP_AT_RESULT_DATA    = 19,
 } ibrt_conn_hfp_state;
 
-
-
-typedef struct
-{
-    uint8_t  codec_type;
-    uint8_t  sample_bit;
-    uint8_t  sample_rate;
-    uint8_t  vendor_para;
-} __attribute__((packed)) ibrt_codec_t;
-
 typedef struct
 {
     uint8_t *hfp_data;
@@ -219,6 +209,7 @@ typedef struct
     bool sync_avrcp_status;
     uint64_t basic_profiles;
     data_store_mem_t profile_data;
+    uint8_t waiting_sync_mask;
 } ibrt_mobile_info_t;
 
 typedef struct {
@@ -310,24 +301,4 @@ typedef struct
     unsigned int param1;
     unsigned int param2;
 } app_ibrt_conn_msg_t;
-
-typedef struct ibrt_a2dp_status_t
-{
-    ibrt_codec_t codec;
-    uint8_t localVolume;
-    uint8_t avrcp_play_status;
-    bt_a2dp_stream_state_t state;
-    float latency_factor;
-    uint32_t session;
-    bt_bdaddr_t mobile_addr;
-    uint8_t triggerStatus;
-} __attribute__((packed)) ibrt_a2dp_status_t;
-
-typedef struct ibrt_avrcp_status_t
-{
-    uint8_t avrcp_play_status;
-    uint8_t volume_report;
-    bt_bdaddr_t mobile_addr;
-} __attribute__((packed)) ibrt_avrcp_status_t;
-
 #endif

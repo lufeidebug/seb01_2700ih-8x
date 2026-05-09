@@ -16,6 +16,8 @@ ccflags-y +=  \
     -Iplatform/drivers/capsensor/best1502p/ \
     -Iservices/capsensor/capsensor_algorithm/ \
     -Iconfig/sensor_hub/ \
+    -Ibthost/host/src/service/audio_policy/bt_focus/inc \
+    -Ibthost/host/inc/base \
     -Iapps/common/
 
 ifeq ($(CAPSENSOR_SPP_SERVER), 1)

@@ -85,6 +85,7 @@ void anc_ff_iir_lms_reset_ff_FIR(ANCFFFirLmsSt* st, enum AUD_CHANNEL_MAP_T map);
 void anc_ff_iir_lms_switch_virtual_filt(uint32_t index);
 
 void anc_ff_iir_lms_set_ff_iir_calib_gain(ANCFFFirLmsSt *st, FIR_LMS_CALIB_GAIN *calib_gain);
+void anc_ff_iir_lms_set_adc_gain(ANCFFFirLmsSt *st, FIR_LMS_CALIB_GAIN *adc_gain);
 void anc_ff_iir_lms_update_FB_gain(ANCFFFirLmsSt *st, float gain);
 void anc_ff_iir_lms_clear_ada_iir_cache(void);
 

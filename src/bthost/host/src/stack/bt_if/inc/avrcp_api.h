@@ -264,6 +264,8 @@ typedef U8 btif_avrcp_operation_t;
 
 #define BTIF_AVRCP_OP_PLAY_ITEM                      0x74
 
+#define BTIF_AVRCP_OP_GET_TOTAL_ITEM                 0x75
+
 #define BTIF_AVRCP_OP_SEARCH                         0x80
 
 #define BTIF_AVRCP_OP_ADD_TO_NOW_PLAYING             0x90
@@ -698,6 +700,8 @@ typedef struct
         avrcp_panel_cnf_t panel_cnf;
         avrcp_panel_ind_t panel_ind;
     } p;
+
+    void *context;
 } btif_avrcp_callback_parms_t;
 
 struct avrcp_remote_sdp_info {
@@ -1230,8 +1234,6 @@ typedef uint8_t avrcp_media_type_t;
 
 #define BTIF_AVRCP_MEDIA_TYPE_AUDIO 0x00
 #define BTIF_AVRCP_MEIDA_TYPE_VIDEO 0x01
-
-#define BTIF_AVCTP_RESPONSE_INTERIM            0x0F
 
 typedef struct {
 

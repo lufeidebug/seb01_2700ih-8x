@@ -166,6 +166,8 @@ static A2DP_AUDIO_DETECT_NEXT_PACKET_CALLBACK a2dp_audio_detect_next_packet_call
 static A2DP_AUDIO_DETECT_NEXT_PACKET_CALLBACK a2dp_audio_store_packet_callback = NULL;
 static A2DP_AUDIO_STORE_DATA_NTF_CALLBACK a2dp_audio_store_packet_ntf_callback = NULL;
 
+static bool audio_underflow_in_processing = false;
+
 static float a2dp_audio_latency_factor = A2DP_AUDIO_LATENCY_LOW_FACTOR;
 static float sync_tune_dest_ratio = 1.0f;
 
@@ -1857,7 +1859,7 @@ uint32_t a2dp_audio_playback_handler(uint8_t device_id, uint8_t *buffer, uint32_
     if (a2dp_audio_context.skip_frame_cnt_after_no_cache){
 #if defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH)
         if(list_len == a2dp_audio_context.mute_frame_cnt_after_no_cache){
-#if defined(A2DP_CP_ACCEL) 
+#if defined(A2DP_CP_ACCEL) && !defined(A2DP_CP_REFILL_MAX_WATERLINE_AFTER_NO_CACHE)
             if(a2dp_audio_context.water_line_mut < (a2dp_audio_context.max_waterline_packet_mtu - cp_frame_mtus)){
                 a2dp_audio_context.water_line_mut += cp_frame_mtus;
             }else{
@@ -1868,6 +1870,7 @@ uint32_t a2dp_audio_playback_handler(uint8_t device_id, uint8_t *buffer, uint32_
 #endif
         }else{
             if(list_len > a2dp_audio_context.water_line_mut){
+                audio_underflow_in_processing = false;
                 a2dp_audio_context.skip_frame_cnt_after_no_cache = 0;
                 a2dp_audio_context.mute_frame_cnt_after_no_cache = 0;
 #if defined(A2DP_CP_ACCEL)
@@ -1886,11 +1889,13 @@ uint32_t a2dp_audio_playback_handler(uint8_t device_id, uint8_t *buffer, uint32_
         cp_delay_mtus  *= get_cp_frame_mtus(&a2dp_audio_lastframe_info);
         if (list_len >= (a2dp_audio_context.dest_packet_mut - cp_delay_mtus)){
             a2dp_audio_context.skip_frame_cnt_after_no_cache = 0;
+            audio_underflow_in_processing = false;
             a2dp_audio_context.underflow_inprocess = false;
             app_start_post_chopping_timer();
         }
 #else
         if (list_len >= a2dp_audio_context.dest_packet_mut){
+            audio_underflow_in_processing = false;
             a2dp_audio_context.skip_frame_cnt_after_no_cache = 0;
         }
 #endif
@@ -2066,6 +2071,7 @@ uint32_t a2dp_audio_playback_handler(uint8_t device_id, uint8_t *buffer, uint32_
             goto exit;
         }
         AUDIOPLAYERS_TRACE(2,"CACHE_UNDERFLOW lastseq:%d ftick:%d", lastframe_info->sequenceNumber, hal_fast_sys_timer_get());
+        audio_underflow_in_processing = true;
 #if defined(BT_BUILD_WITH_CUSTOMER_HOST) || defined(BLE_ONLY_ENABLED)
 #else // bes classic bt is disabled
         app_bt_print_buff_status();
@@ -2353,6 +2359,7 @@ int a2dp_audio_init(uint32_t sysfreq, A2DP_AUDIO_CODEC_TYPE codec_type, A2DP_AUD
     a2dp_audio_context.store_packet_status = A2DP_AUDIO_DECODER_STORE_PACKET_STATUS_IDLE;
     a2dp_audio_context.playback_status = A2DP_AUDIO_DECODER_PLAYBACK_STATUS_IDLE;
 
+    audio_underflow_in_processing = false;
     a2dp_audio_sync_init(ratio);
 
 #if A2DP_DECODER_HISTORY_SEQ_SAVE
@@ -3613,3 +3620,7 @@ void a2dp_audio_register_cmd_table(void)
 }
 #endif /* BT_SVC_MODULE_TWS_ENABLED */
 
+bool a2dp_audio_is_cache_underflow()
+{
+    return audio_underflow_in_processing;
+}

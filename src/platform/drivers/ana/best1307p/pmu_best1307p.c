@@ -94,7 +94,8 @@
 #define PMU_DCDC_DIG_1_05V              0xC7
 #define PMU_DCDC_DIG_1_0V               0xBA
 #define PMU_DCDC_DIG_0_95V              0xAD
-#define PMU_DCDC_DIG_0_9V               0x9F
+#define PMU_DCDC_DIG_0_9V               0xA0
+#define PMU_DCDC_DIG_0_86V              0x95
 #define PMU_DCDC_DIG_0_85V              0x92
 #define PMU_DCDC_DIG_0_84V              0x90
 #define PMU_DCDC_DIG_0_8V               0x85
@@ -106,6 +107,9 @@
 #define PMU_DCDC_DIG_0_6V               0x4F
 #define PMU_DCDC_DIG_50_MV              (PMU_DCDC_DIG_0_85V - PMU_DCDC_DIG_0_8V)
 #define PMU_DCDC_DIG_DEFAULT            0x85 /* 0.8V */
+#define PMU_DCDC_DIG_20_MV              0x5
+#define PMU_DCDC_DIG_40_MV              0xB
+#define PMU_DCDC_DIG_60_MV              0x10
 
 // 25mV
 #define PMU_ANA_1_4V                    0x14
@@ -205,6 +209,12 @@
 #define PMU_EFUSE_PAGE_EXT_GPADC_HV_OFFSET_MASK  (0xFFF << PMU_EFUSE_PAGE_EXT_GPADC_HV_OFFSET_SHIFT)
 #define PMU_EFUSE_PAGE_EXT_GPADC_HV_OFFSET(n)    BITFIELD_VAL(PMU_EFUSE_PAGE_EXT_GPADC_HV_OFFSET, n)
 #define PMU_EFUSE_PAGE_EXT_GPADC_HV_BASE         36100
+#define PMU_EFUSE_VMIN_MAP_SHIFT                 12
+#define PMU_EFUSE_VMIN_MAP_MASK                  (0x3 << PMU_EFUSE_VMIN_MAP_SHIFT)
+#define PMU_EFUSE_VMIN_MAP(n)                    BITFIELD_VAL(PMU_EFUSE_VMIN_MAP, n)
+#define PMU_EFUSE_VMIN_HF_MAP_SHIFT              14
+#define PMU_EFUSE_VMIN_HF_MAP_MASK               (0x3 << PMU_EFUSE_VMIN_HF_MAP_SHIFT)
+#define PMU_EFUSE_VMIN_HF_MAP(n)                 BITFIELD_VAL(PMU_EFUSE_VMIN_HF_MAP, n)
 
 #define PMU_EFUSE_GPADC_CALIB_DEFAULT            2000
 
@@ -310,6 +320,9 @@
 #define REG_XTAL_LDO_VTUNE_CH70_MASK               (0x7 << REG_XTAL_LDO_VTUNE_CH70_SHIFT)
 #define REG_XTAL_LDO_VTUNE_CH70(n)                 BITFIELD_VAL(REG_XTAL_LDO_VTUNE_CH70, n)
 
+// RF_REG_543
+#define REG_XTAL_MDLL_PFD_ERROR_DET_EN          (1 << 3)
+
 // RF_REG_544
 #define REG_XTAL_MDLL_LPF_PRECH_BIAS_SHIFT      7
 #define REG_XTAL_MDLL_LPF_PRECH_BIAS_MASK       (0x3 << REG_XTAL_MDLL_LPF_PRECH_BIAS_SHIFT)
@@ -363,6 +376,7 @@ enum RF_ANA_CHG_REG_T {
     RF_REG_524          = 0x524,
     RF_REG_526          = 0x526,
     RF_REG_527          = 0x527,
+    RF_REG_543          = 0x543,
     RF_REG_544          = 0x544,
     RF_REG_550          = 0x550,
     RF_REG_552          = 0x552,
@@ -445,7 +459,7 @@ static OPT_TYPE POSSIBLY_UNUSED uint16_t vhppa_mv = (uint16_t)(VHPPA_VOLT * 1000
 
 static OPT_TYPE POSSIBLY_UNUSED uint8_t ana_act_ldo = PMU_ANA_1_35V;
 
-static OPT_TYPE uint8_t dig_lp_dcdc = PMU_DCDC_DIG_0_65V;
+static OPT_TYPE uint8_t dig_lp_dcdc = PMU_DCDC_DIG_0_7V;
 
 // TODO: Use the value in BL as the default value
 static enum PMU_VCORE_REQ_T BOOT_BSS_LOC pmu_vcore_req;
@@ -492,6 +506,9 @@ static uint8_t SRAM_BSS_DEF(ldo_ramp_map);
 static enum PMU_BOOT_CAUSE_T BOOT_BSS_LOC pmu_boot_reason = PMU_BOOT_CAUSE_NULL;
 
 static bool BOOT_BSS_LOC pmu_boot_first_pwr_up = false;
+
+static uint16_t BOOT_BSS_LOC vmin_offset = 0;
+static uint16_t BOOT_BSS_LOC vmin_hf_offset = 0;
 
 #ifdef RC_CLK_ENABLE
 static enum PMU_CLK_SEL_RC_USER_T rc_clk_user_map = 0;
@@ -1198,6 +1215,10 @@ void BOOT_TEXT_FLASH_LOC pmu_rf_ana_init(void)
     val = SET_BITFIELD(val, REG_XTAL_MDLL_LPF_PRECH_BIAS, 0x0);
     rf_write(RF_REG_544, val);
 
+    rf_read(RF_REG_543, &val);
+    val |= REG_XTAL_MDLL_PFD_ERROR_DET_EN;
+    rf_write(RF_REG_543, val);
+
     // Add 1us delay for mdll calib flag ready
     rf_read(RF_REG_524, &val);
     val = SET_BITFIELD(val, REG_XTAL_MDLL_CAL_WAIT_TIME, 0x10);
@@ -1782,15 +1803,15 @@ static void BOOT_TEXT_SRAM_LOC pmu_dig_get_target_volt(uint16_t *dcdc)
     if (0) {
     } else if (pmu_vcore_req & PMU_VCORE_PMU_RESET) {
         dcdc_volt = PMU_DCDC_DIG_DEFAULT;
-    } else if (pmu_vcore_req & (PMU_VCORE_RS_FREQ_HIGH | PMU_VCORE_SYS_FREQ_MEDIUM)) {
-        dcdc_volt = PMU_DCDC_DIG_0_9V;
+    } else if (pmu_vcore_req & PMU_VCORE_SYS_FREQ_MEDIUM) {
+        dcdc_volt = PMU_DCDC_DIG_0_9V + vmin_hf_offset;
     } else if (pmu_vcore_req & PMU_VCORE_SYS_FREQ_MEDIUM_LOW) {
-        dcdc_volt = PMU_DCDC_DIG_0_85V;
-    } else if (pmu_vcore_req & (PMU_VCORE_SYS_FREQ_LOW | PMU_VCORE_BT_RF)) {
-        dcdc_volt = PMU_DCDC_DIG_0_8V;
+        dcdc_volt = PMU_DCDC_DIG_0_86V + vmin_hf_offset;
+    } else if (pmu_vcore_req & PMU_VCORE_SYS_FREQ_LOW) {
+        dcdc_volt = PMU_DCDC_DIG_0_8V + vmin_offset;
     } else {
         // Common cases
-        dcdc_volt = PMU_DCDC_DIG_0_78V;
+        dcdc_volt = PMU_DCDC_DIG_0_78V + vmin_offset;
     }
 
 #ifdef PMU_VCORE_RISE_MV
@@ -2152,6 +2173,25 @@ int BOOT_TEXT_FLASH_LOC pmu_open(void)
     pmu_efuse_init();
 #endif
 
+    pmu_get_efuse(PMU_EFUSE_PAGE_EXT_GPADC_HV, &val);
+    val_cal = GET_BITFIELD(val, PMU_EFUSE_VMIN_MAP);
+    if (val_cal == 1) {
+        vmin_offset = PMU_DCDC_DIG_20_MV;
+    } else if (val_cal == 2) {
+        vmin_offset = PMU_DCDC_DIG_40_MV;
+    } else if (val_cal == 3) {
+        vmin_offset = PMU_DCDC_DIG_60_MV;
+    }
+    val_cal = GET_BITFIELD(val, PMU_EFUSE_VMIN_HF_MAP);
+    if (val_cal == 1) {
+        vmin_hf_offset = PMU_DCDC_DIG_20_MV;
+    } else if (val_cal == 2) {
+        vmin_hf_offset = PMU_DCDC_DIG_40_MV;
+    } else if (val_cal == 3) {
+        vmin_hf_offset = PMU_DCDC_DIG_60_MV;
+    }
+    PMU_INFO_TRACE(0, "%s: vmin_offset=0x%x vmin_hf_offset=0x%x efuse=0x%x", __func__, vmin_offset, vmin_hf_offset, val);
+
 #ifdef PMU_WAFER_PRINT
     pmu_get_efuse(REG_CP_WAFER_CTX_ID, &val);
     PMU_INFO_TRACE(1, "wafer_ctx_print: wafer_ID=%d", GET_BITFIELD(val, PMU_EFUSE_CP_WAFER_CTX_ID));
@@ -2251,32 +2291,28 @@ int BOOT_TEXT_FLASH_LOC pmu_open(void)
     pmu_get_efuse(PMU_EFUSE_PAGE_EXT_GPADC_LV, &val_efuse);
     val_efuse = GET_BITFIELD(val_efuse, PMU_EFUSE_DCDC_CFG_TYPE);
     PMU_INFO_TRACE(0, "dcdc_cal_type=0x%x", val_efuse);
-    if (val_efuse == 1) {
-        val_cal = 0x7;
+    if (val_efuse == 1 || val_efuse == 0) {
         pmu_read(PMU_REG_BUCK_BUCK_CFG_13A, &val);
         val = SET_BITFIELD(val, REG_BUCK_INTERNAL_FREQUENCY, 0x0);
+        val &= ~REG_BUCK_SLOPE_DOUBLE;
         pmu_write(PMU_REG_BUCK_BUCK_CFG_13A, val);
     } else if (val_efuse == 2) {
-        val_cal = 0x7;
         pmu_read(PMU_REG_BUCK_BUCK_CFG_13A, &val);
+        val = SET_BITFIELD(val, REG_BUCK_INTERNAL_FREQUENCY, 0x1);
         val |= REG_BUCK_SLOPE_DOUBLE;
         pmu_write(PMU_REG_BUCK_BUCK_CFG_13A, val);
-    } else if (val_efuse == 3) {
-        val_cal = 0x7;
-    } else {
-        val_cal = 0x4;
     }
 
     pmu_read(PMU_REG_BUCK_VCORE_CFG, &val);
-    val = SET_BITFIELD(val, REG_BUCK_IS_GAIN_NORMAL, val_cal);
+    val = SET_BITFIELD(val, REG_BUCK_IS_GAIN_NORMAL, 0x7);
     pmu_write(PMU_REG_BUCK_VCORE_CFG, val);
 
     pmu_read(PMU_REG_BUCK_VCORE_RC_CFG, &val);
-    val = SET_BITFIELD(val, REG_BUCK_IS_GAIN_RC, val_cal);
+    val = SET_BITFIELD(val, REG_BUCK_IS_GAIN_RC, 0x7);
     pmu_write(PMU_REG_BUCK_VCORE_RC_CFG, val);
 
     pmu_read(PMU_REG_BUCK_VCORE_LP_CFG, &val);
-    val = SET_BITFIELD(val, REG_BUCK_IS_GAIN_DSLEEP, val_cal);
+    val = SET_BITFIELD(val, REG_BUCK_IS_GAIN_DSLEEP, 0x7);
     pmu_write(PMU_REG_BUCK_VCORE_LP_CFG, val);
 
     pmu_read(PMU_REG_BUCK_BUCK_CFG_138, &val);
@@ -2330,6 +2366,26 @@ int BOOT_TEXT_FLASH_LOC pmu_open(void)
 #ifdef PMU_NTC_MONITOR
     pmu_ntc_monitor_init();
 #endif
+
+    // Set MIC_LDO_EN always on
+    // MIC_LDO_EN switch will affect bandgap
+    pmu_read(PMU_REG_MIC_BIAS_B, &val);
+    val |= REG_MIC_LDO_EN;
+    pmu_write(PMU_REG_MIC_BIAS_B, val);
+    hal_sys_timer_delay_us(PMU_LDO_PU_STABLE_TIME_US);
+
+    pmu_read(PMU_REG_LED_CFG_IO2, &val);
+    // Sel vmem
+    val = SET_BITFIELD(val, REG_LED_IO2_SEL, 0x1);
+    // 36ohm
+    val = SET_BITFIELD(val, REG_LED_IO2_IBIT, 0x0);
+    pmu_write(PMU_REG_LED_CFG_IO2, val);
+
+    // If pmu shutdown abnormally
+    // keeping the LPO always on can ensure the effectiveness of the PMU WDT and pattern reset.
+    pmu_read(PMU_REG_POWER_KEY_CFG, &val);
+    val |= PU_LPO_DR | PU_LPO_REG;
+    pmu_write(PMU_REG_POWER_KEY_CFG, val);
 
 #endif // PMU_INIT || (!FPGA && !PROGRAMMER)
 
@@ -2450,15 +2506,8 @@ void pmu_codec_mic_bias_enable(uint32_t map, int enable)
         val |= REG_MIC_LDO_LOOPCTRL;
         pmu_write(PMU_REG_MIC_BIAS_A, val);
 
-        pmu_read(PMU_REG_MIC_BIAS_B, &val);
-        val |= REG_MIC_LDO_EN;
-        pmu_write(PMU_REG_MIC_BIAS_B, val);
         reg_mic_ldo_en = true;
     } else if (need_ldo_on_cnt == 0) {
-        pmu_read(PMU_REG_MIC_BIAS_B, &val);
-        val &= ~REG_MIC_LDO_EN;
-        pmu_write(PMU_REG_MIC_BIAS_B, val);
-
         pmu_read(PMU_REG_MIC_BIAS_A, &val);
         val &= ~REG_MIC_LDO_LOOPCTRL;
         pmu_write(PMU_REG_MIC_BIAS_A, val);

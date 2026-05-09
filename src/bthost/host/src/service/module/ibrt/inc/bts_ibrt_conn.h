@@ -94,6 +94,8 @@ ibrt_status_t app_ibrt_conn_notify_ui_info(uint8_t *buf, uint16_t len);
  */
 bool app_ibrt_common_chnl_send_data(uint8_t *buf, uint16_t len);
 
+void app_ibrt_internal_gfps_role_switch_prepare();
+
 /**
  ****************************************************************************************
  * @brief Send prepare complete messege
@@ -295,6 +297,8 @@ ibrt_status_t app_ibrt_conn_destroy_device_rsp(uint16_t rsp_seq, uint8_t * addre
 int app_tws_ibrt_start_role_switch(const bt_bdaddr_t *mobile_addr);
 
 bool bts_ibrt_conn_is_ibrt_idle(const bt_bdaddr_t *addr);
+
+bool bts_bt_ibrt_get_ibrt_connection_state(const bt_bdaddr_t* addr);
 
 bool bts_ibrt_conn_is_w4_ibrt(const bt_bdaddr_t *addr);
 

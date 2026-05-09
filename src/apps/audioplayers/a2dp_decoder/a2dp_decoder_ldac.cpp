@@ -24,6 +24,18 @@
 #include "btapp.h"
 #include"ldacBT.h"
 #include "bes_mem_api.h"
+#if defined(A2DP_LDAC_PLC_ENABLED)
+#include "sbcplc.h"
+static float *cos_buf = NULL;
+#define LDAC_SMOOTH_FRAME 1
+#define LDAC_FADE_CNT 4
+static float *history0 = NULL;
+static float *rcos0 = NULL;
+static struct PLC_State * ldac_plc_state0;
+static float *history1 = NULL;
+static float *rcos1 = NULL;
+static struct PLC_State * ldac_plc_state1;
+#endif
 
 typedef struct
 {
@@ -528,15 +540,20 @@ static int a2dp_cp_ldac_mcu_decode(uint8_t *buffer, uint32_t buffer_bytes)
     p_out_info = (struct A2DP_CP_LDAC_OUT_FRM_INFO_T *)out;
     if (p_out_info->pcm_len)
     {
-        a2dp_audio_ldac_lastframe_info.sequenceNumber = p_out_info->in_info.sequenceNumber;
-        a2dp_audio_ldac_lastframe_info.timestamp = p_out_info->in_info.timestamp;
-        a2dp_audio_ldac_lastframe_info.curSubSequenceNumber = p_out_info->in_info.curSubSequenceNumber;
-        a2dp_audio_ldac_lastframe_info.totalSubSequenceNumber = p_out_info->in_info.totalSubSequenceNumber;
-        a2dp_audio_ldac_lastframe_info.frame_samples = p_out_info->frame_samples;
-        a2dp_audio_ldac_lastframe_info.decoded_frames += p_out_info->decoded_frames;
-        a2dp_audio_ldac_lastframe_info.undecode_frames =
-            a2dp_audio_list_length(list) + a2dp_cp_get_in_frame_cnt_by_index(p_out_info->frame_idx) - 1;
-        a2dp_audio_decoder_internal_lastframe_info_set(&a2dp_audio_ldac_lastframe_info);
+#if defined(A2DP_LDAC_PLC_ENABLED)
+        if (p_out_info->in_info.sequenceNumber != UINT16_MAX)
+#endif
+        {
+            a2dp_audio_ldac_lastframe_info.sequenceNumber = p_out_info->in_info.sequenceNumber;
+            a2dp_audio_ldac_lastframe_info.timestamp = p_out_info->in_info.timestamp;
+            a2dp_audio_ldac_lastframe_info.curSubSequenceNumber = p_out_info->in_info.curSubSequenceNumber;
+            a2dp_audio_ldac_lastframe_info.totalSubSequenceNumber = p_out_info->in_info.totalSubSequenceNumber;
+            a2dp_audio_ldac_lastframe_info.frame_samples = p_out_info->frame_samples;
+            a2dp_audio_ldac_lastframe_info.decoded_frames += p_out_info->decoded_frames;
+            a2dp_audio_ldac_lastframe_info.undecode_frames =
+                a2dp_audio_list_length(list) + a2dp_cp_get_in_frame_cnt_by_index(p_out_info->frame_idx) - 1;
+            a2dp_audio_decoder_internal_lastframe_info_set(&a2dp_audio_ldac_lastframe_info);
+        }
     }
 
     if (p_out_info->pcm_len == buffer_bytes)
@@ -590,7 +607,7 @@ int a2dp_cp_ldac_cp_decode(void)
     int32_t dec_sum;
 
     int used_bytes=0;
-    int wrote_bytes=0;
+    static int wrote_bytes = 0;
 
     out_frm_st = a2dp_cp_get_emtpy_out_frame((void **)&out, &out_len);
 
@@ -613,7 +630,11 @@ int a2dp_cp_ldac_cp_decode(void)
     dec_start = (uint8_t *)(p_out_info + 1) + p_out_info->pcm_len;
     dec_len = out_len - (dec_start - (uint8_t *)out);
 
-    if(a2dp_audio_context_p->audio_decoder.stream_info.bits_depth == 24) {
+#if defined(A2DP_LDAC_PLC_ENABLED)
+    int chnl_sel = a2dp_audio_context_p->chnl_sel;
+#endif
+    int bits_depth = a2dp_audio_context_p->audio_decoder.stream_info.bits_depth;
+    if(bits_depth == 24) {
         dec_len /= 2;
     }
 
@@ -623,47 +644,189 @@ int a2dp_cp_ldac_cp_decode(void)
     {
         ret = a2dp_cp_get_in_frame((void **)&in_buf, &in_len);
 
-        if (ret)
+        if (ret==0)
         {
-            AUDIOPLAYERS_TRACE(1,"cp_get_int_frame fail, ret=%d", ret);
+            ASSERT(in_len > sizeof(*p_in_info), "%s: Bad in_len %u (should > %u)", __func__, in_len, sizeof(*p_in_info));
+
+            p_in_info = (struct A2DP_CP_LDAC_IN_FRM_INFO_T *)in_buf;
+            in_buf += sizeof(*p_in_info);
+            in_len -= sizeof(*p_in_info);
+            //AUDIOPLAYERS_TRACE(2,"decode:seq %d %d %d", p_in_info->sequenceNumber, p_in_info->curSubSequenceNumber,p_in_info->totalSubSequenceNumber);
+
+            if(in_buf[0] != 0xaa)
+            {
+                AUDIOPLAYERS_TRACE(2,"decode:seq %d %d", p_in_info->sequenceNumber, p_in_info->curSubSequenceNumber);
+                AUDIOPLAYERS_DUMP8("%x ",in_buf,30);
+            }
+
+#if defined(A2DP_LDAC_PLC_ENABLED)
+            int16_t *decoded_buf = (int16_t *)(dec_start+dec_sum);
+            int smooth_len = LDAC_LIST_SAMPLES * LDAC_SMOOTH_FRAME;
+            if (p_in_info->timestamp != UINT32_MAX)
+#else
+            if (1)
+#endif
+            {
+                ret = ldacBT_decode(LdacDecHandle, in_buf, dec_start+dec_sum, LDACBT_SMPL_FMT_S16, in_len, &used_bytes, &wrote_bytes);
+                //AUDIOPLAYERS_TRACE(0,"%s wb:%d bb:%d pb:%d",__func__,wrote_bytes,dec_len,dec_sum);
+                dec_sum += wrote_bytes;
+                if(ret !=0)
+                {
+                    AUDIOPLAYERS_TRACE(1, "ldac decode error %d",ret);
+                    ret = a2dp_cp_consume_in_frame();
+                    ASSERT(ret == 0, "%s: a2dp_cp_consume_in_frame() failed: ret=%d", __func__, ret);
+                    return A2DP_DECODER_DECODE_ERROR;
+                }
+#if defined(A2DP_LDAC_PLC_ENABLED)
+                if(chnl_sel == 0 || chnl_sel == 1)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_good_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                        a2dp_plc_good_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_good_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                        a2dp_plc_good_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                    }
+                }
+                else if (chnl_sel == 2)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_good_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_good_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                    }
+                }
+                else if (chnl_sel == 3)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_good_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_good_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                    }
+                }
+#endif
+            }
+#if defined(A2DP_LDAC_PLC_ENABLED)
+            else
+            {
+                if (!wrote_bytes)
+                {
+                    wrote_bytes = LDAC_LIST_SAMPLES * 2 * 2;
+                    if (bits_depth == 24)
+                    {
+                        wrote_bytes *= 2;
+                    }
+                }
+                if(chnl_sel == 0 || chnl_sel == 1)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_bad_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                        a2dp_plc_bad_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_bad_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                        a2dp_plc_bad_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                    }
+                }
+                else if (chnl_sel == 2)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_bad_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_bad_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                    }
+                }
+                else if (chnl_sel == 3)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_bad_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_bad_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                    }
+                }
+                AUDIOPLAYERS_TRACE(4, "[LDAC] PLC bad frame %d %d %d len %d", p_in_info->sequenceNumber, p_in_info->curSubSequenceNumber, p_in_info->totalSubSequenceNumber, wrote_bytes);
+                dec_sum += wrote_bytes;
+            }
+#endif
+            ret = a2dp_cp_consume_in_frame();
+            if (ret != 0) {
+                TRACE(2,"%s: a2dp_cp_consume_in_frame() failed: ret=%d", __func__, ret);
+            }
+            ASSERT(ret == 0, "%s: a2dp_cp_consume_in_frame() failed: ret=%d", __func__, ret);
+            memcpy(&p_out_info->in_info, p_in_info, sizeof(*p_in_info));
+            p_out_info->decoded_frames++;
+            p_out_info->frame_samples = LDAC_LIST_SAMPLES;
+            p_out_info->frame_idx = a2dp_cp_get_in_frame_index();
+        }
+        else
+        {
+#if defined(A2DP_LDAC_PLC_ENABLED)
+            int16_t *decoded_buf = (int16_t *)(dec_start+dec_sum);
+            int smooth_len = LDAC_LIST_SAMPLES * LDAC_SMOOTH_FRAME;
+            if(chnl_sel == 0 || chnl_sel == 1)
+            {
+                if(bits_depth == 16)
+                {
+                    a2dp_plc_bad_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                    a2dp_plc_bad_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                }
+                else if(bits_depth == 24)
+                {
+                    a2dp_plc_bad_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                    a2dp_plc_bad_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                }
+            }
+            else if (chnl_sel == 2)
+            {
+                if(bits_depth == 16)
+                {
+                    a2dp_plc_bad_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                }
+                else if(bits_depth == 24)
+                {
+                    a2dp_plc_bad_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                }
+            }
+            else if (chnl_sel == 3)
+            {
+                if(bits_depth == 16)
+                {
+                    a2dp_plc_bad_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                }
+                else if(bits_depth == 24)
+                {
+                    a2dp_plc_bad_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                }
+            }
+            AUDIOPLAYERS_TRACE(1, "[LDAC] PLC bad frame len %d", wrote_bytes);
+            dec_sum += wrote_bytes;
+            p_out_info->in_info.sequenceNumber = UINT16_MAX;
+            p_out_info->decoded_frames++;
+            p_out_info->frame_samples = LDAC_LIST_SAMPLES;
+            AUDIOPLAYERS_TRACE(0, "cp_get_int_frame fail, output plc bad frame");
+#else
+            p_out_info->pcm_len += dec_sum;
+            AUDIOPLAYERS_TRACE(1, "cp_get_int_frame fail, ret=%d", ret);
             return 4;
+#endif
         }
-
-        ASSERT(in_len > sizeof(*p_in_info), "%s: Bad in_len %u (should > %u)", __func__, in_len, sizeof(*p_in_info));
-
-        p_in_info = (struct A2DP_CP_LDAC_IN_FRM_INFO_T *)in_buf;
-        in_buf += sizeof(*p_in_info);
-        in_len -= sizeof(*p_in_info);
-        //AUDIOPLAYERS_TRACE(2,"decode:seq %d %d %d", p_in_info->sequenceNumber, p_in_info->curSubSequenceNumber,p_in_info->totalSubSequenceNumber);
-
-        if(in_buf[0] != 0xaa)
-        {
-            AUDIOPLAYERS_TRACE(2,"decode:seq %d %d", p_in_info->sequenceNumber, p_in_info->curSubSequenceNumber);
-            AUDIOPLAYERS_DUMP8("%x ",in_buf,30);
-        }
-
-        ret = ldacBT_decode(LdacDecHandle, in_buf, dec_start+dec_sum, LDACBT_SMPL_FMT_S16, in_len, &used_bytes, &wrote_bytes);
-        //AUDIOPLAYERS_TRACE(0,"%s wb:%d bb:%d pb:%d",__func__,wrote_bytes,dec_len,dec_sum);
-        dec_sum += wrote_bytes;
-        if(ret !=0)
-        {
-            AUDIOPLAYERS_TRACE(1,"ldac decode error %d",ret);
-            ret=A2DP_DECODER_DECODE_ERROR;
-            return -1;
-        }
-
-        ret = a2dp_cp_consume_in_frame();
-
-        if (ret != 0)
-        {
-            AUDIOPLAYERS_TRACE(2,"%s: a2dp_cp_consume_in_frame() failed: ret=%d", __func__, ret);
-        }
-        ASSERT(ret == 0, "%s: a2dp_cp_consume_in_frame() failed: ret=%d", __func__, ret);
-
-        memcpy(&p_out_info->in_info, p_in_info, sizeof(*p_in_info));
-        p_out_info->decoded_frames++;
-        p_out_info->frame_samples = LDAC_LIST_SAMPLES;
-        p_out_info->frame_idx = a2dp_cp_get_in_frame_index();
     }
 #else
     a2dp_audio_ldac_decoder_frame_t* ldac_decoder_frame_p = NULL;
@@ -674,36 +837,177 @@ int a2dp_cp_ldac_cp_decode(void)
     {
         ldac_decoder_frame_p = (a2dp_audio_ldac_decoder_frame_t *)node->data;
         node = node->next;
-        if(!node)
+        if (node)
+        {
+            set_in_frame_node(node);
+            ldac_decoder_frame_p->header.used = true;
+            p_in_info.sequenceNumber = ldac_decoder_frame_p->header.sequenceNumber;
+            p_in_info.timestamp = ldac_decoder_frame_p->header.timestamp;
+            p_in_info.curSubSequenceNumber = ldac_decoder_frame_p->header.curSubSequenceNumber;
+            p_in_info.totalSubSequenceNumber = ldac_decoder_frame_p->header.totalSubSequenceNumber;
+            if(ldac_decoder_frame_p->header.ptrData[0] != 0xaa)
+            {
+                AUDIOPLAYERS_TRACE(2,"decode:seq %d %d", p_in_info.sequenceNumber, p_in_info.curSubSequenceNumber);
+            }
+#if defined(A2DP_LDAC_PLC_ENABLED)
+            int16_t *decoded_buf = (int16_t *)(dec_start+dec_sum);
+            int smooth_len = LDAC_LIST_SAMPLES * LDAC_SMOOTH_FRAME;
+            if (p_in_info.timestamp != UINT32_MAX)
+#else
+            if (1)
+#endif
+            {
+                ret = ldacBT_decode(LdacDecHandle, ldac_decoder_frame_p->header.ptrData, dec_start+dec_sum, LDACBT_SMPL_FMT_S16, ldac_decoder_frame_p->header.dataLen, &used_bytes, &wrote_bytes);
+                //AUDIOPLAYERS_TRACE(0,"%s wb:%d bb:%d pb:%d",__func__,wrote_bytes,dec_len,dec_sum);
+                dec_sum += wrote_bytes;
+                if(ret !=0)
+                {
+                    AUDIOPLAYERS_TRACE(1,"ldac decode error %d", ret);
+                    ret = a2dp_cp_consume_in_frame();
+                    ASSERT(ret == 0, "a2dp_cp_consume_in_frame failed: ret=%d", ret);
+                    return A2DP_DECODER_DECODE_ERROR;
+                }
+#if defined(A2DP_LDAC_PLC_ENABLED)
+                if(chnl_sel == 0 || chnl_sel == 1)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_good_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                        a2dp_plc_good_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_good_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                        a2dp_plc_good_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                    }
+                }
+                else if (chnl_sel == 2)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_good_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_good_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                    }
+                }
+                else if (chnl_sel == 3)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_good_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_good_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                    }
+                }
+#endif
+            }
+#if defined(A2DP_LDAC_PLC_ENABLED)
+            else
+            {
+                if(chnl_sel == 0 || chnl_sel == 1)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_bad_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                        a2dp_plc_bad_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_bad_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                        a2dp_plc_bad_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                    }
+                }
+                else if (chnl_sel == 2)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_bad_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_bad_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                    }
+                }
+                else if (chnl_sel == 3)
+                {
+                    if(bits_depth == 16)
+                    {
+                        a2dp_plc_bad_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                    }
+                    else if(bits_depth == 24)
+                    {
+                        a2dp_plc_bad_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                    }
+                }
+                AUDIOPLAYERS_TRACE(4, "[LDAC] PLC bad frame %d %d %d len %d", p_in_info.sequenceNumber, p_in_info.curSubSequenceNumber, p_in_info.totalSubSequenceNumber, wrote_bytes);
+                dec_sum += wrote_bytes;
+            }
+#endif
+            p_out_info->in_info.sequenceNumber = p_in_info.sequenceNumber;
+            p_out_info->in_info.timestamp = p_in_info.timestamp;
+            p_out_info->in_info.curSubSequenceNumber = p_in_info.curSubSequenceNumber;
+            p_out_info->in_info.totalSubSequenceNumber = p_in_info.totalSubSequenceNumber;
+
+            p_out_info->decoded_frames++;
+            p_out_info->frame_samples = LDAC_LIST_SAMPLES;
+            p_out_info->frame_idx = a2dp_cp_get_in_frame_index();
+        }
+        else
+        {
+#if defined(A2DP_LDAC_PLC_ENABLED)
+            int16_t *decoded_buf = (int16_t *)(dec_start+dec_sum);
+            int smooth_len = LDAC_LIST_SAMPLES * LDAC_SMOOTH_FRAME;
+            if(chnl_sel == 0 || chnl_sel == 1)
+            {
+                if(bits_depth == 16)
+                {
+                    a2dp_plc_bad_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                    a2dp_plc_bad_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                }
+                else if(bits_depth == 24)
+                {
+                    a2dp_plc_bad_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, 0);
+                    a2dp_plc_bad_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, 1);
+                }
+            }
+            else if (chnl_sel == 2)
+            {
+                if(bits_depth == 16)
+                {
+                    a2dp_plc_bad_frame_v2(ldac_plc_state0, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                }
+                else if(bits_depth == 24)
+                {
+                    a2dp_plc_bad_frame_24bit_v2(ldac_plc_state0, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos0, 2, chnl_sel - 2);
+                }
+            }
+            else if (chnl_sel == 3)
+            {
+                if(bits_depth == 16)
+                {
+                    a2dp_plc_bad_frame_v2(ldac_plc_state1, (short *)decoded_buf, (short *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                }
+                else if(bits_depth == 24)
+                {
+                    a2dp_plc_bad_frame_24bit_v2(ldac_plc_state1, (int32_t *)decoded_buf, (int32_t *)decoded_buf, cos_buf, smooth_len, rcos1, 2, chnl_sel - 2);
+                }
+            }
+            AUDIOPLAYERS_TRACE(1, "[LDAC] PLC bad frame len %d", wrote_bytes);
+            dec_sum += wrote_bytes;
+            p_out_info->in_info.sequenceNumber = UINT16_MAX;
+            p_out_info->decoded_frames++;
+            p_out_info->frame_samples = LDAC_LIST_SAMPLES;
+            AUDIOPLAYERS_TRACE(0, "cp_get_int_frame fail, output plc bad frame");
+#else
+            p_out_info->pcm_len += dec_sum;
+            AUDIOPLAYERS_TRACE(0, "cp_get_int_frame fail, ret=%d", ret);
             return 4;
-        set_in_frame_node(node);
-        ldac_decoder_frame_p->header.used = true;
-        p_in_info.sequenceNumber = ldac_decoder_frame_p->header.sequenceNumber;
-        p_in_info.timestamp = ldac_decoder_frame_p->header.timestamp;
-        p_in_info.curSubSequenceNumber = ldac_decoder_frame_p->header.curSubSequenceNumber;
-        p_in_info.totalSubSequenceNumber = ldac_decoder_frame_p->header.totalSubSequenceNumber;
-        if(ldac_decoder_frame_p->header.ptrData[0] != 0xaa)
-        {
-            AUDIOPLAYERS_TRACE(2,"decode:seq %d %d", p_in_info.sequenceNumber, p_in_info.curSubSequenceNumber);
+#endif
         }
-
-        ret = ldacBT_decode(LdacDecHandle, ldac_decoder_frame_p->header.ptrData, dec_start+dec_sum, LDACBT_SMPL_FMT_S16, ldac_decoder_frame_p->header.dataLen, &used_bytes, &wrote_bytes);
-        //AUDIOPLAYERS_TRACE(0,"%s wb:%d bb:%d pb:%d",__func__,wrote_bytes,dec_len,dec_sum);
-        dec_sum += wrote_bytes;
-        if(ret !=0)
-        {
-            AUDIOPLAYERS_TRACE(1,"ldac decode error %d",ret);
-            ret=A2DP_DECODER_DECODE_ERROR;
-            return -1;
-        }
-        p_out_info->in_info.sequenceNumber = p_in_info.sequenceNumber;
-        p_out_info->in_info.timestamp = p_in_info.timestamp;
-        p_out_info->in_info.curSubSequenceNumber = p_in_info.curSubSequenceNumber;
-        p_out_info->in_info.totalSubSequenceNumber = p_in_info.totalSubSequenceNumber;
-
-        p_out_info->decoded_frames++;
-        p_out_info->frame_samples = LDAC_LIST_SAMPLES;
-        p_out_info->frame_idx = a2dp_cp_get_in_frame_index();
     }
 #endif
     if ( dec_sum != (int32_t)dec_len )
@@ -1477,6 +1781,21 @@ int a2dp_audio_ldac_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
 
     ASSERT(a2dp_audio_context_p->dest_packet_mut < LDAC_MTU_LIMITER, "%s MTU OVERFLOW:%u/%u", __func__, a2dp_audio_context_p->dest_packet_mut, LDAC_MTU_LIMITER);
 
+#if defined(A2DP_LDAC_PLC_ENABLED)
+    int smooth_len = LDAC_LIST_SAMPLES * LDAC_SMOOTH_FRAME;
+    cos_buf = (float *)a2dp_audio_heap_malloc((smooth_len*LDAC_FADE_CNT)*sizeof(float));
+    cos_generate(cos_buf, smooth_len*LDAC_FADE_CNT, smooth_len);
+    A2DP_PLC_CODEC_TYPE ldac_type = sample_count == 96000 ? A2DP_PLC_CODEC_TYPE_LDAC_256 : A2DP_PLC_CODEC_TYPE_LDAC_128;
+    int size = sample_count == 96000 ? 256 : 128;
+    history0 = (float *)a2dp_audio_heap_malloc(sizeof(float)*LHIST_MAX);
+    rcos0 = (float *)a2dp_audio_heap_malloc(sizeof(float)*OLAL_MAX);
+    ldac_plc_state0 = (struct PLC_State*)a2dp_audio_heap_malloc(sizeof(struct PLC_State));
+    a2dp_plc_init_v2(ldac_plc_state0, size, ldac_type, history0, rcos0);
+    history1 = (float *)a2dp_audio_heap_malloc(sizeof(float)*LHIST_MAX);
+    rcos1 = (float *)a2dp_audio_heap_malloc(sizeof(float)*OLAL_MAX);
+    ldac_plc_state1 = (struct PLC_State*)a2dp_audio_heap_malloc(sizeof(struct PLC_State));
+    a2dp_plc_init_v2(ldac_plc_state1, size, ldac_type, history1, rcos1);
+#endif
 #ifdef A2DP_CP_ACCEL
     int ret;
     ret = a2dp_cp_init(a2dp_cp_ldac_cp_decode, CP_PROC_DELAY_1_FRAME);
@@ -1512,9 +1831,17 @@ int a2dp_audio_ldac_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
 
 int a2dp_audio_ldac_deinit(void)
 {
-
 #ifdef A2DP_CP_ACCEL
     a2dp_cp_deinit();
+#endif
+#if defined(A2DP_LDAC_PLC_ENABLED)
+    a2dp_audio_heap_free(cos_buf);
+    a2dp_audio_heap_free(history0);
+    a2dp_audio_heap_free(rcos0);
+    a2dp_audio_heap_free(ldac_plc_state0);
+    a2dp_audio_heap_free(history1);
+    a2dp_audio_heap_free(rcos1);
+    a2dp_audio_heap_free(ldac_plc_state1);
 #endif
     a2dp_audio_ldac_decoder_deinit();
     return A2DP_DECODER_NO_ERROR;

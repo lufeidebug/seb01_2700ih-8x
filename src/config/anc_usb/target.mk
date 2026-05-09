@@ -213,10 +213,10 @@ endif
 
 init-y		:=
 ifeq ($(FULL_APP),1)
-core-y		:= platform/ services/ apps/ utils/cqueue/ utils/list/ multimedia/ utils/intersyshci/
+core-y		:= platform/ services/ apps/ utils/cqueue/ utils/list/ multimedia/ multimedia/algorithms/ utils/intersyshci/
 KBUILD_CPPFLAGS += -Iplatform/cmsis/inc -Iservices/audioflinger -Iplatform/hal -Iservices/fs/ -Iservices/fs/sd -Iservices/fs/fat -Iservices/fs/fat/ChaN
 else
-core-y		:= tests/anc_usb/ platform/cmsis/ platform/hal/ platform/drivers/usb/usb_dev/ platform/drivers/norflash/ platform/drivers/ana/ platform/drivers/codec/ services/audioflinger/ utils/hwtimer_list/ platform/drivers/codec_dsp/
+core-y		:= multimedia/algorithms/ tests/anc_usb/ platform/cmsis/ platform/hal/ platform/drivers/usb/usb_dev/ platform/drivers/norflash/ platform/drivers/ana/ platform/drivers/codec/ services/audioflinger/ utils/hwtimer_list/ platform/drivers/codec_dsp/
 KBUILD_CPPFLAGS += -Iplatform/cmsis/inc -Iplatform/hal -Iplatform/drivers/ana -Iservices/audioflinger
 ifeq ($(RTOS),1)
 # core-y		+= services/fs/

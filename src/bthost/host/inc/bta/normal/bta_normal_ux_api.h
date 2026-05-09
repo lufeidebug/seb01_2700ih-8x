@@ -21,6 +21,7 @@
 
 typedef struct
 {
+    bool enter_pairing_on_empty_record;
     bool enter_pairing_on_reconnect_mobile_failed;
 } bta_ux_attributes_t;
 
@@ -39,7 +40,8 @@ typedef enum
     BTA_UX_USER_BTA,
     BTA_UX_USER_APP,
     BTA_UX_USER_DEPRECATED,
-    BTA_UX_USER_INTERNAL_1,
+    BTA_UX_USER_INTERNAL_1, // BESUI
+    BTA_UX_USER_INTERNAL_2, // GFPS
     BTA_UX_USER_CUSTOMER,
     BTA_UX_USER_MAX,
 } bta_ux_user_t;
@@ -68,11 +70,66 @@ void bta_register_ui_state_changed_hook(bta_ux_user_t user, const bta_ui_state_c
  * @return      true to accept the connection request, false to reject it.
  ****************************************************************************************
  */
-typedef bool (*bta_accept_connection_callback_t)(const bt_bdaddr_t *addr, const uint8_t cod[3], bt_bdaddr_t *preempt);
-void bta_set_accept_connection_callback(bta_accept_connection_callback_t callback);
+typedef bool (*bta_accept_connection_request_callback_t)(const bt_bdaddr_t *addr, const uint8_t cod[3], bt_bdaddr_t *preempt);
+void bta_set_accept_connection_request_callback(bta_accept_connection_request_callback_t callback);
+
+typedef bool (*bta_lea_connection_admitted_callback_t)(const bt_bdaddr_t *addr, bt_bdaddr_t *preempt);
+void bta_set_lea_connection_admitted_callback(bta_lea_connection_admitted_callback_t callback);
+
+/**
+ ****************************************************************************************
+ * @brief   Security Check Override Callbacks
+ *
+ * @details These callbacks are triggered ONLY when a device fails the default
+ *          security check at one of the defined checkpoints.
+ *
+ *          The system uses a "Veto/Override" mechanism:
+ *          It traverses all registered callbacks to ask if any module wishes
+ *          to grant "privilege" to this device.
+ *
+ * @note    Logic: Short-circuit OR.
+ *          If ANY registered callback returns true, the device is granted
+ *          privilege and allowed to pass.
+ ****************************************************************************************
+ */
+typedef struct
+{
+    // Checkpoint 1: Classic BT Connection Request
+    bool (*connection_request)(const bt_bdaddr_t *addr);
+
+    // Checkpoint 2: Classic BT Pairing Request
+    bool (*bt_pairing)(const bt_bdaddr_t *addr);
+
+    // Checkpoint 3: BLE SMP Pairing Request
+    bool (*le_smp_pairing)(const ble_bdaddr_t *addr);
+} bta_security_check_override_callbacks_t;
+
+void bta_register_security_check_override_callback(bta_ux_user_t user, const bta_security_check_override_callbacks_t *callbacks);
 
 void bta_ux_open(uint8_t num_of_loaded_addrs, uint16_t page_count_of_each_addr, uint16_t page_timeout, uint32_t lea_adv_duration);
 void bta_ux_close();
+
+/**
+ ****************************************************************************************
+ * @brief       Controls whether the UX layer permits LEA broadcast advertising.
+ *              Note: This is a UX-level policy flag; actual advertising is managed by
+ *              lower-layer modules.
+ * @param[in]   enable: true to allow LEA broadcast from UX, false to block.
+ * @return      None
+ ****************************************************************************************
+ */
+void bta_ux_enable_lea_advertiser(bool enable);
+
+/**
+ ****************************************************************************************
+ * @brief       Controls BR/EDR support at UX level.
+ *              Enables/disables BR/EDR page and scan, and synchronizes
+ *              LE Audio broadcast parameters to reflect BR/EDR availability.
+ * @param[in]   enable: true to enable BR/EDR support, false to disable.
+ * @return      None
+ ****************************************************************************************
+ */
+void bta_ux_enable_br_edr_supported(bool enable);
 
 void bta_connect_bt_device(const bt_bdaddr_t *addr, uint8_t page_count, uint16_t page_timeout);
 void bta_connect_all_bt_devices(uint8_t page_count, uint16_t page_timeout);
@@ -141,7 +198,9 @@ void bta_block_page(bool block);
  */
 void bta_block_page_when_streaming(bool block);
 
-void bta_support_preempt_when_a2dp_streaming(bool support);
+void bta_config_preempt(bool allow_preempt);
+
+void bta_config_preempt_during_streaming(bool allow_preempt_during_hfp, bool allow_preempt_during_a2dp);
 
 /**
  ****************************************************************************************
@@ -166,6 +225,8 @@ uint8_t bta_find_all_connected_bt_device(bt_bdaddr_list_t *p_dev_addr_l);
 void bta_remove_bt_device(const bt_bdaddr_t *addr);
 
 void bta_remove_lea_device(const bt_bdaddr_t *addr);
+
+void bta_remove_bond(const bt_bdaddr_t *addr);
 
 void bta_remove_all_devices();
 

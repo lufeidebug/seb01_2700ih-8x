@@ -64,11 +64,10 @@ static bool enable_swift = false;
 
 static bool app_swift_adv_param_prepare(bt_ble_gap_cus_adv_param_t *adv_param)
 {
-    uint8_t *data_start = (uint8_t *)(adv_param->adv_data);
-    uint8_t *data_ptr = NULL;
-    uint8_t *length_byte = NULL;
+    uint8_t *data_ptr = (uint8_t *)(adv_param->adv_data);
+    uint8_t *data_start = data_ptr;
+    uint8_t *length_ptr = NULL;
     uint8_t max_len = 0;
-    uint8_t curr_len = 0;
     int left_len = 0;
 
     if (!enable_swift)
@@ -87,14 +86,13 @@ static bool app_swift_adv_param_prepare(bt_ble_gap_cus_adv_param_t *adv_param)
     adv_param->own_addr_type = BT_BLE_GAP_ADV_RPA;
     adv_param->tx_power_dbm = btdrv_reg_op_txpwr_idx_to_rssidbm(4);
 
-    data_start[0] = 0x02;
-    data_start[1] = 0x01;
-    data_start[2] = 0x0a;// BR+LE+Discovrable
+    data_ptr[0] = 0x02;
+    data_ptr[1] = 0x01;
+    data_ptr[2] = 0x0a; // BR + LE + Discovrable
+    data_ptr += 3;
 
-    data_start += 3;
-    data_ptr = data_start;
-
-    length_byte = data_ptr;
+    // reserve for length
+    length_ptr = data_ptr;
     data_ptr += 1;
 
     data_ptr[0] = (SWIFT_MS_VENDER_ID >> 16) & 0xFF;
@@ -117,17 +115,15 @@ static bool app_swift_adv_param_prepare(bt_ble_gap_cus_adv_param_t *adv_param)
     data_ptr += 3;
 #endif
 
-    max_len = (adv_param->adv_mode = BT_GAP_ADV_MODE_LEGACY) ? 31 : SWIFT_ADV_SERVICE_DATA_MAX_LEN;
-    curr_len = data_ptr - data_start;
-    left_len = max_len - curr_len - 1; // -1 for '\0'
+    max_len = (BT_GAP_ADV_MODE_LEGACY == adv_param->adv_mode) ? 31 : SWIFT_ADV_SERVICE_DATA_MAX_LEN;
+    left_len = max_len - (data_ptr - data_start);
 
     bta_ble_get_local_name((char *)data_ptr, left_len);
-    data_ptr += strlen((char *)data_ptr);
+    data_ptr += strlen((char *)data_ptr) + 1; // +1 for '\0'
 
-    curr_len = data_ptr - data_start;
-    *length_byte = curr_len - 1;
+    *length_ptr = data_ptr - length_ptr - 1; // -1 for length_ptr itself
 
-    adv_param->adv_data_size = curr_len;
+    adv_param->adv_data_size = data_ptr - data_start;
 
     return true;
 }

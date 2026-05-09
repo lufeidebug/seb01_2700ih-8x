@@ -180,6 +180,7 @@ int app_bt_stream_ibrt_audio_master_detect_next_packet_cb(uint8_t device_id, bti
     int32_t dma_buffer_samples = app_bt_stream_get_dma_buffer_samples()/2;
     struct BT_DEVICE_T *curr_device = app_bt_get_device(device_id);
     bool in_start_ibrt = !bts_ibrt_if_is_ibrt_idle(&curr_device->remote);
+    bool in_ibrt = bts_bt_ibrt_if_get_ibrt_connection_state(&curr_device->remote);
     bool is_a2dp_exchanged = bts_ibrt_if_a2dp_profile_is_exchanged(&curr_device->remote);
     bool sync_a2dp_in_progress = bts_ibrt_if_is_sync_a2dp_status_onprocess(&curr_device->remote);
     ibrt_link_mode_e dev_mode = bts_bt_if_get_dev_link_mode(&curr_device->remote);
@@ -191,7 +192,7 @@ int app_bt_stream_ibrt_audio_master_detect_next_packet_cb(uint8_t device_id, bti
             AUDIOPLAYERS_TRACE(0, "[AUTO_SYNC][MASTER]cache ok but is_ibrt_master_connected:%d mismatch\n", bts_bt_if_is_dev_link_connected(&curr_device->remote));
             app_ibrt_if_force_audio_retrigger(RETRIGGER_BY_ROLE_MISMATCH);
         }
-        else if (!is_a2dp_exchanged && !in_start_ibrt && !sync_a2dp_in_progress)
+        else if (!is_a2dp_exchanged && !in_start_ibrt && !sync_a2dp_in_progress && !in_ibrt)
         {
             if (dev_mode == IBRT_SNIFF_MODE)
             {
@@ -256,7 +257,7 @@ int app_bt_stream_ibrt_audio_master_detect_next_packet_cb(uint8_t device_id, bti
             else
 #endif
             {
-                sync_info.sequenceNumber = headframe_info.sequenceNumber+1;
+                sync_info.sequenceNumber = headframe_info.sequenceNumber+3;
             }
             a2dp_audio_synchronize_packet(&sync_info, A2DP_AUDIO_SYNCFRAME_MASK_SEQ);
 #else
@@ -793,7 +794,6 @@ void app_bt_stream_ibrt_mobile_link_playback_info_receive(uint8_t device_id, APP
         AUDIOPLAYERS_TRACE(0,"[AUTO_SYNCV2][INFO_RECV] session mismatch skip it loc:%d rmt:%d", a2dp_session_temp, sync_trigger->a2dp_session);
         AUDIOPLAYERS_TRACE(0,"[AUTO_SYNCV2][INFO_RECV] session froce resume and try retrigger");
         bta_tws_a2dp_set_ibrt_session(sync_trigger->a2dp_session,device_id);
-        app_bt_stream_ibrt_audio_mismatch_stopaudio(device_id);
         return;
     }
 
@@ -930,7 +930,6 @@ void app_bt_stream_ibrt_set_trigger_time(uint8_t device_id, APP_TWS_IBRT_AUDIO_S
         AUDIOPLAYERS_TRACE(0,"[STRM_TRIG][A2DP][IBRT] session mismatch skip it loc:%d rmt:%d", a2dp_session_temp, sync_trigger->a2dp_session);
         AUDIOPLAYERS_TRACE(0,"[STRM_TRIG][A2DP][IBRT] session froce resume and try retrigger");
         bta_tws_a2dp_set_ibrt_session(sync_trigger->a2dp_session,device_id);
-        app_bt_stream_ibrt_audio_mismatch_stopaudio(device_id);
         return;
     }
 

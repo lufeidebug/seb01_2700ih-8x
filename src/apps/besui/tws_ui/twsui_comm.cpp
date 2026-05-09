@@ -914,7 +914,7 @@ uint8_t app_gfps_renew_battery_level(uint8_t charge_status, uint8_t *batteryLeve
     if(memcmp(batbuf, batteryLevel, 3) && BT_IBRT_SLAVE != bts_core_get_ui_role())
     {
         memcpy(batbuf, batteryLevel, 3);
-        bes_ble_gap_refresh_adv_state(BLE_ADVERTISING_INTERVAL);
+        bes_ble_gap_refresh_adv_state();
         BESUI_TRACE(0,"[UIGFPS]%s, bat change, refresh adv", __func__);
     }
 #endif

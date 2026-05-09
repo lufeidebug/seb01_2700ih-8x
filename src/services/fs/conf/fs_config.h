@@ -146,6 +146,11 @@ extern uint32_t g_fs_trmask;
 #define CONFIG_FS_SDMMC_CACHE_SEG_NUM 2
 #define CONFIG_FS_SDMMC_CACHE_CODE(cache_seg) {cache_seg[0] = 3866624; cache_seg[1] = 3866624;}
 
+/****************************************************************************
+ * file system nor flash parttition
+ ****************************************************************************/
+#define MAX_NORFLASH_NUM      4
+#define MAX_NORFLASH_PART_NUM 4
 
 /****************************************************************************
  * Pre-processor Compiler

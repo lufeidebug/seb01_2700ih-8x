@@ -40,6 +40,7 @@
 #include "usb_audio_frm_defs.h"
 #include "tgt_hardware.h"
 #include "audio_process.h"
+#include "usbphy.h"
 #if defined(_VENDOR_MSG_SUPPT_)
 #include "usb_vendor_msg.h"
 #endif
@@ -189,6 +190,7 @@ static void uart_i2c_switch(void)
 void ota_enter_usb_dld_mode(void)
 {
     ANC_USB_TRACE(1,"%s",__func__);
+    usbphy_switch_mode(0);
     hal_sw_bootmode_clear(0xffffffff);
     hal_sw_bootmode_set(HAL_SW_BOOTMODE_FORCE_USB_DLD | HAL_SW_BOOTMODE_SKIP_FLASH_BOOT);
     pmu_usb_config(PMU_USB_CONFIG_TYPE_DEVICE);

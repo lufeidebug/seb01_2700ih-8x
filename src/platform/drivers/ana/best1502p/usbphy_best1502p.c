@@ -295,6 +295,65 @@ void usbphy_close(void)
 #endif
 }
 
+void usbphy_switch_mode(int hs_mode)
+{
+    unsigned short val;
+
+    // switch to fs
+    if (!hs_mode) {
+        TRACE(0,"%s,%d",__func__,__LINE__);
+        // close ldo
+        usbphy_read(0x11, &val);
+        val &= ~CFG_USB_LDO_PU;
+        usbphy_write(0x11, val);
+
+        // reset phy and mac
+        usbphy_read(0x1, &val);
+        val &= ~(CFG_ANAPHY_RESETN | CFG_RESETN_MAC | CFG_RESETNCDR);
+        usbphy_write(0x1, val);
+        val |= CFG_ANAPHY_RESETN | CFG_RESETN_MAC | CFG_RESETNCDR;
+        usbphy_write(0x1, val);
+
+        usbphy_read(0x2, &val);
+        val |= CFG_RXRESET;
+        usbphy_write(0x2, val);
+        val &= ~CFG_RXRESET;
+        usbphy_write(0x2, val);
+
+        usbphy_read(0x4, &val);
+        val |= CFG_TXSTATE_RESET;
+        usbphy_write(0x4, val);
+        val &= ~CFG_TXSTATE_RESET;
+        usbphy_write(0x4, val);
+
+        usbphy_read(0xD, &val);
+        val &= ~CFG_RERESTN_HSRXP;
+        usbphy_write(0xD, val);
+        val |= CFG_RERESTN_HSRXP;
+        usbphy_write(0xD, val);
+
+        usbphy_read(0x22, &val);
+        val &= ~(CFG_RESETNTX | CFG_RESETNRX);
+        usbphy_write(0x22, val);
+        val |= CFG_RESETNTX | CFG_RESETNRX;
+        usbphy_write(0x22, val);
+
+        val = 0;
+        usbphy_write(0x06, val);
+
+        val = 0;
+        usbphy_write(0x08, val);
+
+        usbphy_read(0x09, &val);
+        val &= ~CFG_BISTEN;
+        usbphy_write(0x09, val);
+
+        usbphy_read(0x0A, &val);
+        val &= ~CFG_DR_FSTXEN;
+        usbphy_write(0x0A, val);
+    }
+}
+
 void usbphy_sleep(void)
 {
     uint16_t val;

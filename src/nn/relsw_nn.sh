@@ -5,9 +5,9 @@
 DIRS=(
     "nn/beco"
     "nn/cmsis-nn"
-    "nn/core-driver"
-    "nn/core-platform"
-    "nn/core-software"
+    "nn/ethosu-driver"
+    "nn/ethosu-platform"
+    "nn/ethosu-software"
     "nn/tflite-micro")
 
 # Get all files in DIRS

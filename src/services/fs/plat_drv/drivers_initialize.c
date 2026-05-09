@@ -71,7 +71,36 @@ void fs_usbmass_drivers_initialize()
 void fs_norflash_drivers_initialize()
 {
 #if defined(FLASH_BASE) && defined(NORFLASH_FS_SIZE) && (NORFLASH_FS_SIZE > 0)
-    bes_norflash_drivers_register(0, (uint8_t *)NORFLASH_FS_ADDR, NORFLASH_FS_SIZE);
+    struct mtd_dev_conf *flashconf = NULL;
+    bes_norflash_drivers_register(0, (uint8_t *)NORFLASH_FS_ADDR, NORFLASH_FS_SIZE, flashconf);
+#endif
+
+#if defined(FLASH1_CTRL_BASE) && defined(NORFLASH1_FS_SIZE) && (NORFLASH1_FS_SIZE > 0)
+    struct mtd_dev_conf *flash1conf = NULL;
+    bes_norflash_drivers_register(1, (uint8_t *)NORFLASH1_FS_ADDR +REAL_FLASH1_BASE, NORFLASH1_FS_SIZE, flash1conf);
+#endif
+
+#if defined(FLASH2_CTRL_BASE) && defined(NORFLASH2_FS_SIZE) && (NORFLASH2_FS_SIZE > 0)
+    struct mtd_dev_conf flash2conf;
+    /*conf norflash do io size, to imporve read and write performance*/
+    flash2conf.priv_io_enable = 1;
+    flash2conf.block_erase_size = 4096;
+    flash2conf.block_sector_size = 4096;
+
+    /*conf mtd littlefs to imporve read and write performance*/
+    flash2conf.factor.block_size_factor = 1;
+    flash2conf.factor.cache_size_factor = 1;
+    flash2conf.factor.program_size_factor = 1;
+    flash2conf.factor.read_size_factor = 1;
+
+    /*conf norflash partition: 1 enable 0 disable*/
+    flash2conf.partition_enable = 1;
+    flash2conf.partition_num = 4;
+    flash2conf.partition_conf[0] = 1024;
+    flash2conf.partition_conf[1] = 1024;
+    flash2conf.partition_conf[2] = 1024;
+    flash2conf.partition_conf[3] = 1024;
+    bes_norflash_drivers_register(2, (uint8_t *)NORFLASH2_FS_ADDR, NORFLASH2_FS_SIZE, &flash2conf);
 #endif
 }
 

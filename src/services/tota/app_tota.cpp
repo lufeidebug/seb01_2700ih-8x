@@ -937,7 +937,7 @@ void app_tota_crash_dump_send_data(uint16_t cmd_code,uint8_t type,uint8_t crash_
             blk_offset = 0;
             blk_len = 0;
 
-            if(bts_tws_if_is_tws_link_connected()&&(BTIF_BCR_SLAVE == bts_tws_if_get_local_tws_role()))
+            if(bts_tws_if_is_tws_link_connected()&&(BTIF_BCR_SLAVE == bts_tws_if_get_tws_link_bt_role()))
             {
                 total_dump_len = crash_dump_slave_get_totoal_len(crash_id);
             }
@@ -1059,7 +1059,7 @@ void app_tota_crash_dump_send_data(uint16_t cmd_code,uint8_t type,uint8_t crash_
 void app_tota_stay_active_mode(void)
 {
     if(bts_tws_if_is_tws_link_connected()&&\
-        (BTIF_BCR_MASTER == bts_tws_if_get_local_tws_role()))
+        (BTIF_BCR_MASTER == bts_tws_if_get_tws_link_bt_role()))
     {
         bts_tws_if_tws_link_exit_sniff_mode();
     }
@@ -1102,7 +1102,7 @@ static void app_tota_crash_dump_handler(APP_TOTA_CMD_CODE_E funcCode, uint8_t* p
             app_tota_stay_active_mode();
             if(bts_tws_if_is_tws_link_connected())
             {
-                if(BTIF_BCR_MASTER == bts_tws_if_get_local_tws_role())
+                if(BTIF_BCR_MASTER == bts_tws_if_get_tws_link_bt_role())
                 {
                     crash_dump_get_info();
                     TOTA_TRACE(1,"[TOTA_DUMP]Master send :%d",funcCode);
@@ -1120,7 +1120,7 @@ static void app_tota_crash_dump_handler(APP_TOTA_CMD_CODE_E funcCode, uint8_t* p
 
         case OP_TOTA_CRASH_DUMP_PARAM_REQ:
         {
-            if(BTIF_BCR_SLAVE == bts_tws_if_get_local_tws_role())
+            if(BTIF_BCR_SLAVE == bts_tws_if_get_tws_link_bt_role())
             {
                 return;
             }
@@ -1165,14 +1165,14 @@ static void app_tota_crash_dump_handler(APP_TOTA_CMD_CODE_E funcCode, uint8_t* p
             TOTA_TRACE(2,"TOTA_DUMP dump %x %x",ptrParam[0],ptrParam[1]);
 
             if(bts_tws_if_is_tws_link_connected()&&\
-              (BTIF_BCR_MASTER == bts_tws_if_get_local_tws_role())&&
+              (BTIF_BCR_MASTER == bts_tws_if_get_tws_link_bt_role())&&
               (0x01 == ptrParam[0]))
             {
                 crash_dump_get_crash_id(&cur_id,NULL,&type);
                 app_tws_send_crash_dump_req_to_peer(OP_TOTA_CRASH_DUMP_START_REQ,ptrParam[1],cur_id);
             }
-            else if(((BTIF_BCR_UNKNOWN == bts_tws_if_get_local_tws_role()) ||
-                        (bts_tws_if_is_tws_link_connected()&&(BTIF_BCR_MASTER == bts_tws_if_get_local_tws_role())))
+            else if(((BTIF_BCR_UNKNOWN == bts_tws_if_get_tws_link_bt_role()) ||
+                        (bts_tws_if_is_tws_link_connected()&&(BTIF_BCR_MASTER == bts_tws_if_get_tws_link_bt_role())))
                         &&(0x00 == ptrParam[0]))//litisheng
             {
                 if(ptrParam[1] == 1)
@@ -1189,14 +1189,14 @@ static void app_tota_crash_dump_handler(APP_TOTA_CMD_CODE_E funcCode, uint8_t* p
         case OP_TOTA_CRASH_DUMP_RECEIVED_ACK:
         {
             if(bts_tws_if_is_tws_link_connected()&&\
-              (BTIF_BCR_MASTER == bts_tws_if_get_local_tws_role())&&
+              (BTIF_BCR_MASTER == bts_tws_if_get_tws_link_bt_role())&&
               (0x01 == ptrParam[0]))
             {
                 crash_dump_get_crash_id(&cur_id,NULL,&type);
                 app_tws_send_crash_dump_req_to_peer(OP_TOTA_CRASH_DUMP_RECEIVED_ACK,type,cur_id);
             }
-            else if(((BTIF_BCR_UNKNOWN == bts_tws_if_get_local_tws_role()) ||
-                    (bts_tws_if_is_tws_link_connected()&&(BTIF_BCR_MASTER == bts_tws_if_get_local_tws_role())))
+            else if(((BTIF_BCR_UNKNOWN == bts_tws_if_get_tws_link_bt_role()) ||
+                    (bts_tws_if_is_tws_link_connected()&&(BTIF_BCR_MASTER == bts_tws_if_get_tws_link_bt_role())))
                     &&(0x00 == ptrParam[0]))
             {
                 crash_dump_get_crash_id(&cur_id,NULL,&type);
@@ -1207,7 +1207,7 @@ static void app_tota_crash_dump_handler(APP_TOTA_CMD_CODE_E funcCode, uint8_t* p
 
         case OP_TOTA_CRASH_DUMP_ERASE_FLASH:
         {
-            if(bts_tws_if_is_tws_link_connected()&&(BTIF_BCR_MASTER == bts_tws_if_get_local_tws_role()))
+            if(bts_tws_if_is_tws_link_connected()&&(BTIF_BCR_MASTER == bts_tws_if_get_tws_link_bt_role()))
             {
                 app_tws_send_crash_dump_req_to_peer(OP_TOTA_CRASH_DUMP_ERASE_FLASH,0,0);
             }

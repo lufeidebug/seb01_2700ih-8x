@@ -55,6 +55,7 @@ void iir_tool_iir_anc_open(int32_t current_mode, void *cfg);
 void iir_tool_iir_anc_close(void);
 
 void app_voice_assist_iir_lms_set_bth_cfg(void* cfg);
+int32_t app_voice_assist_iir_lms_update_adc_gain(void);
 #ifdef __cplusplus
 }
 #endif

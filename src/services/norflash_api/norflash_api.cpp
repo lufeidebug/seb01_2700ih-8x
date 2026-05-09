@@ -2769,7 +2769,7 @@ enum NORFLASH_API_RET_T norflash_api_init(void)
             }
             if(i == 2)
             {
-#if !(defined(FLASH2_CTRL_BASE) && (defined(FLASH2_CALIB_SECTION_SIZE) || defined(USE_MULTI_FLASH)))
+#if !((defined(FLASH2_CALIB_SECTION_SIZE) || defined(FLASH2_CALIB_SEQ_ADDR)) && defined(USE_MULTI_FLASH))
                 continue;
 #else
                 hal_cmu_clock_enable(HAL_CMU_MOD_H_FLASH2);

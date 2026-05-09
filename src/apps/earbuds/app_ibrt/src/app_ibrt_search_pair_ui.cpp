@@ -30,7 +30,8 @@
 #include "nvrecord_bt.h"
 #include "nvrecord_env.h"
 #include "app_status_ind.h"
-//#include "app_ui_api.h"
+#include "app_ui_api.h"
+#include "bts_bt_if.h"
 
 #ifdef IBRT_UI
 #include "app_ibrt_debug.h"
@@ -232,7 +233,7 @@ void app_bt_manager_ibrt_role_process(const btif_event_t *Event)
 
                 EARBUDS_TRACE(0,"local:%x remd:%x", bt_local_addr[5], p_remote_dev_addr->address[5]);
                 if((bt_local_addr[3]==p_remote_dev_addr->address[3])
-                   &&(bt_local_addrs[4]==p_remote_dev_addr->address[4])
+                   &&(bt_local_addr[4]==p_remote_dev_addr->address[4])
                    &&(bt_local_addr[5]==p_remote_dev_addr->address[5]))
                 {
                     // Tws connection complete, exit limited mode

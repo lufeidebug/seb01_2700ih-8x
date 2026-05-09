@@ -82,6 +82,7 @@ void anc_ff_fir_lms_update_mc_fir(ANCFFFirLmsSt* st,float *mc_fir_new);
 void anc_ff_fir_lms_switch_virtual_filt(uint32_t index);
 
 void anc_ff_fir_lms_set_ff_fir_calib_gain(ANCFFFirLmsSt *st, FIR_LMS_CALIB_GAIN *calib_gain);
+void anc_ff_fir_lms_set_adc_gain(ANCFFFirLmsSt *st, FIR_LMS_CALIB_GAIN *adc_gain);
 void anc_ff_fir_lms_update_FB_gain(ANCFFFirLmsSt *st, float gain);
 
 #if defined(WEAR_LEAK_STATUS_CHANGED_DETECT)

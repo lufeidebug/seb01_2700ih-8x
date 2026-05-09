@@ -77,11 +77,7 @@ then
     make T=$TARGET_LIST clean ||{ echo "$LINENO command failed"; exit 1; }
 elif [[ "$COMMAND" == "gen_lib" ]];
 then
-    make T=$TARGET_LIST $APP_CUSTOMER_CFG $BLE_CFG $ALGO_CFG $OTA_CFG $TWS_CFG $DECODE_DECODER_CFG $SYS_CFG $ALGO_CFG $ROM_CFG $BES_LIB_DIR -j64 GEN_LIB=1 ||{ echo "$LINENO command failed"; exit 1; }
-    if [[ $single_dac == 0 ]];
-    then
-        make T=$TARGET_LIST $APP_CUSTOMER_CFG $BLE_CFG $ALGO_CFG $OTA_CFG $FREEMAN_CFG $DECODE_DECODER_CFG $SYS_CFG $ALGO_CFG $ROM_CFG $BES_LIB_DIR -j64 GEN_LIB=1 ||{ echo "$LINENO command failed"; exit 1; }
-    fi
+    $build_app_cmd $BES_LIB_DIR GEN_LIB=1 ||{ echo "$LINENO command failed"; exit 1; }
     $build_ota_cmd GEN_LIB=1 ||{ echo "$LINENO command failed"; exit 1; }
 elif [[ "$COMMAND" == 'lst' ]];
 then

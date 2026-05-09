@@ -35,7 +35,7 @@ obj-y += ../../services/nv_section/
 obj-y += ../../utils/crc/
 
 export NO_MULTIMEDIA_CODEC ?= 0
-obj-y += ../../multimedia/
+# obj-y += ../../multimedia/
 
 ifeq ($(USB_AUDIO_SPEECH),1)
 obj-y += speech_process.c
@@ -44,7 +44,7 @@ obj-y += ../../apps/audioplayers/bt_sco_chain_thirdparty.c
 else
 obj-y += ../../apps/audioplayers/bt_sco_chain.c
 endif
-obj-y += ../../apps/audioplayers/bt_sco_chain_cfg_default.c
+obj-y += ../../multimedia/algorithms/inc/speech/speech_cfg_default.c
 obj-y += ../../apps/audioplayers/bt_sco_chain_tuning.cpp
 obj-y += ../../apps/common/app_utils.c
 obj-y += ../../utils/heap/
@@ -228,12 +228,13 @@ ANC_USB_CFG_FLAGS += -DSW_CAPTURE_RESAMPLE
 endif
 
 ifeq ($(USB_AUDIO_SPEECH),1)
+export SPEECH_LIB ?= 1
 ANC_USB_CFG_FLAGS += -DUSB_AUDIO_SPEECH
 ANC_USB_CFG_FLAGS += -DSPEECH_CODEC_CAPTURE_CHANNEL_NUM=$(SPEECH_CODEC_CAPTURE_CHANNEL_NUM)
 CFLAGS_bt_sco_chain.o += -DSPEECH_CODEC_CAPTURE_CHANNEL_NUM=$(SPEECH_CODEC_CAPTURE_CHANNEL_NUM)
 CFLAGS_bt_sco_chain.o += -DUSB_AUDIO_APP
-CODEC_BUFF_FRAME_NUM ?= (2 * 16)
-USB_BUFF_FRAME_NUM ?= (2 * $(CODEC_BUFF_FRAME_NUM))
+CODEC_BUFF_FRAME_NUM ?= 8
+USB_BUFF_FRAME_NUM ?= 16
 else
 CODEC_BUFF_FRAME_NUM ?= 4
 USB_BUFF_FRAME_NUM ?= 10

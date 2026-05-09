@@ -195,7 +195,7 @@
 /***************************************************************************
  *BTC activity number configration
  ****************************************************************************/
-#define BLE_ACTIVITY_MAX        (8)
+#define BLE_ACTIVITY_MAX        (12)
 #define MAX_NB_ACTIVE_ACL       (4)
 #define HCI_HANDLE_MIN         (0x80)
 #define HCI_HANDLE_MAX         (HCI_HANDLE_MIN + MAX_NB_ACTIVE_ACL - 1)

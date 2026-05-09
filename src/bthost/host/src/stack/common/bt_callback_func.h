@@ -79,7 +79,6 @@ struct BT_CALLBACK_FUNC_T {
     bool (*stack_buf_check_buf_ava)(int size);
     int (*stack_buf_count_ava_buf)(int size);
     void (*stack_buf_print_statistic)(void);
-    bool (*need_hanlde_specially)(uint8_t* opcode);
 
     // config
     bool (*lhdc_v3)(void);
@@ -88,8 +87,6 @@ struct BT_CALLBACK_FUNC_T {
     bool (*bt_sink_enable)(void);
     bool (*avdtp_cp_enable)(void);
     bool (*bt_source_48k)(void);
-    bool (*source_unknown_cmd_flag)(void);
-    bool (*source_get_all_cap_flag)(void);
     bool (*mark_some_code_for_fuzz_test)(void);
     bool (*use_page_scan_repetition_mode_r1)(void);
     bool (*bt_hid_cod_enable)(void);
@@ -108,10 +105,8 @@ struct BT_CALLBACK_FUNC_T {
     bool (*hf_dont_support_enhanced_call)(void);
     bool (*hf_dont_support_3way_call)(void);
     bool (*force_use_cvsd)(void);
-    bool (*hfp_ag_pts_ecs_02)(void);
     bool (*hfp_ag_pts_ecc)(void);
     bool (*hfp_ag_pts_ecs_01)(void);
-    bool (*hfp_ag_pts_enable)(void);
     bool (*send_l2cap_echo_req)(void);
     bool (*support_enre_mode)(void);
     bool (*le_audio_enabled)(void);
@@ -134,13 +129,13 @@ struct BT_CALLBACK_FUNC_T {
  */
 
 void bt_register_callback_func(struct BT_CALLBACK_FUNC_T* fn);
+struct BT_CALLBACK_FUNC_T *bt_get_callback_func(void);
 uint8_t bt_callback_get_device_id_byaddr(const bt_bdaddr_t *remote);
 void bt_callback_report_source_link_connected(btif_remote_device_t *dev, uint8_t errcode);
 bool bt_callback_is_bt_thread(void);
 struct bt_hf_custom_id_t *bt_callback_get_hf_custom_id(void);
 unsigned char *bt_callback_get_address(void);
 unsigned char *bt_callback_get_ble_address(void);
-bt_bdaddr_t *bt_callback_get_pts_address(void);
 const char *bt_callback_get_ble_local_name(void);
 void *bt_callback_iso_rx_buf_malloc(uint32_t size);
 void bt_callback_iso_rx_buf_free(void *rmem);
@@ -198,8 +193,6 @@ bool bt_callback_cfg_bt_source_enable(void);
 bool bt_callback_cfg_bt_sink_enable(void);
 bool bt_callback_cfg_avdtp_cp_enable(void);
 bool bt_callback_cfg_bt_source_48k(void);
-bool bt_callback_cfg_source_unknown_cmd_flag(void);
-bool bt_callback_cfg_source_get_all_cap_flag(void);
 bool bt_callback_cfg_mark_some_code_for_fuzz_test(void);
 bool bt_callback_cfg_use_page_scan_repetition_mode_r1(void);
 bool bt_callback_cfg_bt_hid_cod_enable(void);
@@ -218,10 +211,8 @@ bool bt_callback_cfg_hf_dont_support_cli_feature(void);
 bool bt_callback_cfg_hf_dont_support_enhanced_call(void);
 bool bt_callback_cfg_hf_dont_support_3way_call(void);
 bool bt_callback_cfg_force_use_cvsd(void);
-bool bt_callback_cfg_hfp_ag_pts_ecs_02(void);
 bool bt_callback_cfg_hfp_ag_pts_ecc(void);
 bool bt_callback_cfg_hfp_ag_pts_ecs_01(void);
-bool bt_callback_cfg_hfp_ag_pts_enable(void);
 bool bt_callback_cfg_send_l2cap_echo_req(void);
 bool bt_callback_cfg_support_enre_mode(void);
 bool bt_callback_cfg_le_audio_enabled(void);

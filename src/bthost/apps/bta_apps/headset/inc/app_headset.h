@@ -25,6 +25,8 @@ extern "C" {
 
 typedef struct
 {
+    uint32_t pairing_timeout_value;
+
     uint16_t open_reconnect_mobile_max_times;
     bool without_reconnect_when_fetch_out_wear_up;
 } app_headset_attributes_t;

@@ -398,7 +398,7 @@ int anc_section_nv_erase(uint32_t start_addr, uint32_t len, bool is_async)
     uint32_t p_size = 0;
     enum HAL_FLASH_ID_T flash_id;
 
-    norflash_api_get_dev_id(NORFLASH_API_MODULE_ID_AUDIO, &flash_id);
+    norflash_api_get_dev_id(NORFLASH_API_MODULE_ID_AUDIO, &flash_id); //Modify by lzw@sndp 202604
     hal_norflash_get_size(flash_id, &t_size, &b_size, &s_size, &p_size);
 
     len = ((len + (s_size-1))/s_size) * s_size;
@@ -418,7 +418,7 @@ int anc_section_nv_erase(uint32_t start_addr, uint32_t len, bool is_async)
             break;
         }
         ret = norflash_api_erase(NORFLASH_API_MODULE_ID_AUDIO, start_addr,
-                                 s_size, is_async);
+                                 s_size, is_async);  //Modify by lzw@sndp 202604
         if(ret != NORFLASH_API_OK)
         {
             NV_SECTION_TRACE(3, "%s:offset = 0x%x,ret = %d.", __func__, start_addr, ret);
@@ -445,7 +445,7 @@ int anc_section_nv_write(uint32_t start_addr, uint8_t* ptr, uint32_t len, bool i
     uint32_t p_size = 0;
     enum HAL_FLASH_ID_T flash_id;
 
-    norflash_api_get_dev_id(NORFLASH_API_MODULE_ID_AUDIO, &flash_id);
+    norflash_api_get_dev_id(NORFLASH_API_MODULE_ID_AUDIO, &flash_id);  //Modify by lzw@sndp 202604
     hal_norflash_get_size(flash_id, &t_size, &b_size, &s_size, &p_size);
 
     // judge start addr and len sector size alignment
@@ -473,7 +473,7 @@ int anc_section_nv_write(uint32_t start_addr, uint8_t* ptr, uint32_t len, bool i
                                      start_addr + written_len,
                                      ptr + written_len,
                                      write_len,
-                                     is_async);
+                                     is_async);  //Modify by lzw@sndp 202604
 
             if (NORFLASH_API_OK == ret)
             {
@@ -484,7 +484,7 @@ int anc_section_nv_write(uint32_t start_addr, uint8_t* ptr, uint32_t len, bool i
             else if (NORFLASH_API_BUFFER_FULL == ret)
             {
                 NV_SECTION_TRACE(1, "%s: buffer full! To flush it.", __func__);
-                audio_section_pending_op(NORFLASH_API_MODULE_ID_AUDIO, NORFLASH_API_WRITTING);
+                audio_section_pending_op(NORFLASH_API_MODULE_ID_AUDIO, NORFLASH_API_WRITTING);  //Modify by lzw@sndp 202604
             }
             else
             {

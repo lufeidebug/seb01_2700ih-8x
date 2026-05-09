@@ -36,7 +36,7 @@ extern bool gma_crc;
 
 #if defined(BES_OTA)
 void app_ibrt_ota_get_version_cmd_send_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
-
+void app_ibrt_ota_cache_slave_reset_info(void);
 void app_ibrt_ota_select_side_cmd_send_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
 
 void app_ibrt_ota_bp_check_cmd_send_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);

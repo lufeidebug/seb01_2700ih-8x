@@ -41,7 +41,7 @@ voice_assist_sync_role_t app_voice_assist_get_tws_bcr_role(void)
 #if defined(VOICE_ASSIST_STEREO)
     return VOICE_ASSIST_TWS_ROLE_PRIMARY;
 #else
-    return bts_tws_if_get_local_tws_role();
+    return bts_tws_if_get_tws_link_bt_role();
 #endif
 }
 

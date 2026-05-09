@@ -46,8 +46,9 @@ static IirResampleState *upsample_st;
 static IirResampleState *downsample_st;
 
 static short *aec_echo_buf = NULL;
+#if defined(SPEECH_TX_AEC2FLOAT) && !defined(SPEECH_TX_AEC_CODEC_REF)
 static IirResampleState *rx_downsample_st;
-
+#endif
 static volatile bool is_speech_init = false;
 
 static void speech_extend(int16_t *in, int16_t *out, int len, int ch_num)
@@ -166,8 +167,9 @@ void speech_process_init(int tx_sample_rate, int tx_channel_num, int tx_sample_b
         upsample_st = iir_resample_init(SPEECH_FRAME_MS_TO_LEN(FFSE_SAMPLE_RATE, tx_frame_ms), AUD_BITS_16, iir_resample_choose_mode(FFSE_SAMPLE_RATE, capture_sample_rate));
         downsample_st = multi_iir_resample_init(SPEECH_FRAME_MS_TO_LEN(capture_sample_rate, tx_frame_ms) * capture_channel_num, AUD_BITS_16, capture_channel_num, iir_resample_choose_mode(capture_sample_rate, FFSE_SAMPLE_RATE));
 
-        //
+#if defined(SPEECH_TX_AEC2FLOAT) && !defined(SPEECH_TX_AEC_CODEC_REF)
         rx_downsample_st = iir_resample_init(SPEECH_FRAME_MS_TO_LEN(playback_sample_rate, rx_frame_ms), AUD_BITS_16, iir_resample_choose_mode(playback_sample_rate, FFSE_SAMPLE_RATE));
+#endif
     }
 
 	aec_echo_buf = speech_calloc(SPEECH_FRAME_MS_TO_LEN(FFSE_SAMPLE_RATE, rx_frame_ms), sizeof(int16_t));
@@ -182,9 +184,9 @@ void speech_process_deinit(void)
     if (resample_needed_flag == true) {
         iir_resample_destroy(upsample_st);
         iir_resample_destroy(downsample_st);
-
+#if defined(SPEECH_TX_AEC2FLOAT) && !defined(SPEECH_TX_AEC_CODEC_REF)
         iir_resample_destroy(rx_downsample_st);
-
+#endif
         resample_needed_flag = false;
     }
 	speech_free(aec_echo_buf);

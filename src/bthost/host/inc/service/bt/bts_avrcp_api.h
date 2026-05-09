@@ -359,6 +359,10 @@ bts_status_t bts_avrcp_ct_send_volume_up(const bt_bdaddr_t *address);
  */
 bts_status_t bts_avrcp_ct_send_volume_down(const bt_bdaddr_t *address);
 
+bts_status_t bts_avrcp_ct_send_fast_forward(const bt_bdaddr_t *address, bool press);
+
+bts_status_t bts_avrcp_ct_send_rewind(const bt_bdaddr_t *address, bool press);
+
 /**
  ****************************************************************************************
  *       ___     ______   ____ ____       _____ ____

@@ -54,6 +54,7 @@ void usbphy_hs_host_mode_enable(void);
 
 void usbphy_hs_host_disconn_clear(void);
 
+void usbphy_switch_mode(int hs_mode);
 #ifdef __cplusplus
 }
 #endif

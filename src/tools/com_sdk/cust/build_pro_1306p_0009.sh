@@ -1,0 +1,35 @@
+#!/bin/bash
+
+TARGET_LIST="best1306p"
+CHIPID="best1306p"
+COMMAND=$1
+
+TYPE_CFG="FREEMAN_ENABLED_STERO=1"
+RES_CFG="RAMCP_SIZE=0x80000"
+COM_CFG="DEBUG=1 APP_TRACE_RX_ENABLE=0 APP_RX_API_ENABLE=0 TRACE_BUF_SIZE=32*1024"
+OTA_CFG="BES_OTA=1 OTA_BIN_COMPRESSED=1"
+ALGO_CFG="A2DP_VIRTUAL_SURROUND=0 A2DP_VIRTUAL_SURROUND_STEREO=0 AUDIO_LIMITER=0 A2DP_LDAC_ON=0"
+ENC_CFG="SPEECH_TX_2MIC_NS8=0 SPEECH_TX_1MIC_NS=0 SPEECH_TX_AEC2FLOAT=0"
+ADV_CFG="TOTA_v2=0 BLE=1 GFPS_ENABLE=0 SPOT_ENABLE=0"
+ANC_CFG="ANC_ENABLE=0 ANC_FF_ENABLED=0 ANC_FB_ENABLED=0 APP_ANC_TEST=0"
+LIB_CFG="BES_LIB_DIR=lib/bes/best1306p/PRO_0009"
+PAIR_CFG="POWER_ON_ENTER_TWS_PAIRING_ENABLED=1"
+set -e
+
+BUILD_CUSTOMER_CFG="-j $TYPE_CFG $COM_CFG $OTA_CFG $ADV_CFG $PAIR_CFG lst all"
+
+if [[ "$COMMAND" == "clean" ]];
+then
+    make T=$TARGET_LIST -j clean ||{ echo "$LINENO command failed"; exit 1; }
+elif [[ "$COMMAND" == "gen_lib" ]];
+then
+        make T=$TARGET_LIST $BUILD_CUSTOMER_CFG -j64 GEN_LIB=1 $LIB_CFG ||{ echo "$LINENO command failed"; exit 1; }
+        make T=prod_test/ota_copy CHIP=$CHIPID OTA_BIN_COMPRESSED=1 DEBUG=1 -j64 GEN_LIB=1 $LIB_CFG ||{ echo "$LINENO command failed"; exit 1; }
+elif [[ "$COMMAND" == 'lst' ]];
+then
+    make T=$TARGET_LIST $BUILD_CUSTOMER_CFG -j64 lst all ||{ echo "$LINENO command failed"; exit 1; }
+else
+    make T=$TARGET_LIST $BUILD_CUSTOMER_CFG $LIB_CFG -j64 ||{ echo "$LINENO command failed"; exit 1; }
+    make T=prod_test/ota_copy CHIP=$CHIPID OTA_BIN_COMPRESSED=1 DEBUG=1 $LIB_CFG -j64 ||{ echo "$LINENO command failed"; exit 1; }
+fi
+echo $BUILD_CUSTOMER_CFG

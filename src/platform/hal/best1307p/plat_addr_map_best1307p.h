@@ -34,11 +34,29 @@ extern "C" {
 #endif
 #define ROM_EXT_SIZE                            0x00060000
 
+#if defined(BTHOST_ROM_TEST)
+#define BTH_ROM_BASE                            0x2c200000
+#define BTH_ROMX_BASE                           0x0c200000
+#else
 #define BTH_ROM_BASE                            0x22100000
 #define BTH_ROMX_BASE                           0x00100000
+#endif
 
 #ifndef BTHOST_ROM_SIZE
+#if defined(BTHOST_ROM_TEST)
+#define BTHOST_ROM_SIZE                         0x0009D800
+#else
 #define BTHOST_ROM_SIZE                         0x0006D800
+#endif
+
+
+/*BTHOST stack ram size for .data and .bss*/
+#define BTHOST_RAM_BASE                         0x20000000
+
+#ifndef BTHOST_RAM_SIZE
+#define BTHOST_RAM_SIZE                         0x00008000
+#endif
+
 #endif
 
 #ifndef BTH_ROM_SIZE

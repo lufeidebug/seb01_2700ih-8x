@@ -1065,7 +1065,7 @@ bool bt_xtal_sync_allow(void)
     remDev = btif_a2dp_get_remote_device(app_tws_get_sink_stream());
     if (btif_me_get_remote_device_state(remDev) != BTIF_BDS_CONNECTED)
         return false;
-    if (btif_me_get_current_role(remDev) != BTIF_BCR_SLAVE)
+    if (btif_me_get_link_bt_role(btif_me_get_remote_device_bdaddr(remDev)) != BTIF_BCR_SLAVE)
         return false;
 #endif
 #else
@@ -1084,7 +1084,7 @@ bool bt_xtal_sync_allow(void)
         }
         if (remDev == NULL)
             return false;
-        if (btif_me_get_current_role(remDev) != BTIF_BCR_SLAVE)
+        if (btif_me_get_link_bt_role(btif_me_get_remote_device_bdaddr(remDev)) != BTIF_BCR_SLAVE)
             return false;
     }
 #endif

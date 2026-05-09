@@ -159,7 +159,7 @@ static int app_fp_rfcomm_accept_channel_request(const bt_bdaddr_t *remote, uint1
         GFPS_TRACE(3,"%s server_channel %d, env %p", __func__, local_server_channel, env);
         ret = false;
     }
-
+    btif_spp_connect_reply(remote, local_server_channel, ret);
     return ret;
 }
 

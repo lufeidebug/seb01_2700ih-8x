@@ -29,6 +29,7 @@
 #include "usb_audio_app.h"
 #include "usb_audio_frm_defs.h"
 #include "cmsis.h"
+#include "heap_api.h"
 #ifdef USB_BLE_AUDIO_HW_TIMER_TRIGGER
 #include "cmsis_os2.h"
 #endif
@@ -47,7 +48,9 @@
 
 #if defined(USB_AUDIO_SPEECH)
 #include "speech_process.h"
-//#include "app_overlay.h"
+#if !defined(NO_OVERLAY)
+#include "app_overlay.h"
+#endif
 #endif
 
 #if defined(__HW_FIR_DSD_PROCESS__)
@@ -3290,6 +3293,7 @@ static int usb_audio_open_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STRE
             stream_cfg.bits = sample_size_to_enum_capture(sample_size_cap);
             stream_cfg.sample_rate = sample_rate_cap;
             stream_cfg.channel_num = chan_num_to_enum(CHAN_NUM_CAPTURE);
+            stream_cfg.channel_map= AUD_CHANNEL_MAP_CH0;
 #ifdef ANC_PROD_TEST
             stream_cfg.channel_map=anc_fb_mic_ch_l|anc_ff_mic_ch_l;
 #endif
@@ -3361,7 +3365,8 @@ POSSIBLY_UNUSED static int usb_audio_open_eq(void)
 #if defined(__SW_IIR_EQ_PROCESS__) || defined(__HW_FIR_EQ_PROCESS__) || defined(__HW_IIR_EQ_PROCESS__) || defined(__HW_DAC_IIR_EQ_PROCESS__)
     enum AUD_BITS_T sample_bits = sample_size_to_enum_playback(sample_size_play);
     enum AUD_CHANNEL_NUM_T chan_num = chan_num_to_enum(CHAN_NUM_PLAYBACK);
-    ret = audio_process_open(sample_rate_play, sample_bits, chan_num, chan_num, playback_eq_size/chan_num/2, playback_eq_buf, playback_eq_size);
+    syspool_init();
+    ret = audio_process_open(sample_rate_play, sample_bits, chan_num, chan_num, playback_size/chan_num/2, playback_eq_buf, playback_eq_size);
 
     //TRACE(1,"audio_process_open: %d", ret);
 
@@ -3444,8 +3449,9 @@ static int usb_audio_start_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STR
 #endif
 
 #ifdef USB_AUDIO_SPEECH
-//            app_overlay_select(APP_OVERLAY_HFP);
-
+#if !defined(NO_OVERLAY)
+           app_overlay_select(APP_OVERLAY_HFP);
+#endif
             speech_process_init(sample_rate_cap, CHAN_NUM_CAPTURE, sample_size_to_enum_playback(sample_size_cap),
                                 sample_rate_play, CHAN_NUM_PLAYBACK, sample_size_to_enum_playback(sample_size_play),
                                 16, 16);
@@ -3523,9 +3529,12 @@ static int usb_audio_stop_codec_stream(enum AUD_STREAM_T stream, enum AUDIO_STRE
             damic_deinit();
 #endif
 
+
 #ifdef USB_AUDIO_SPEECH
             speech_process_deinit();
-//            app_overlay_unloadall();
+#if !defined(NO_OVERLAY)
+           app_overlay_unloadall();
+#endif
 #endif
         }
     }
@@ -5209,12 +5218,12 @@ static void usb_audio_term_streams(enum AUDIO_STREAM_REQ_USER_T user)
     usb_audio_close_codec_stream(AUD_STREAM_PLAYBACK, user);
 }
 
-#if defined(ANDROID_ACCESSORY_SPEC) || defined(CFG_MIC_KEY)
+// #if defined(ANDROID_ACCESSORY_SPEC) || defined(CFG_MIC_KEY)
 static void hid_data_send_handler(enum USB_AUDIO_HID_EVENT_T event, int error)
 {
     ANC_USB_TRACE(2,"HID SENT: event=0x%04x error=%d", event, error);
 }
-#endif
+// #endif
 
 static void usb_audio_itf_callback(enum USB_AUDIO_ITF_ID_T id, enum USB_AUDIO_ITF_CMD_T cmd)
 {
@@ -6604,7 +6613,7 @@ void usb_audio_app(bool on)
         .hid_send_callback = hid_data_send_handler,
 #else
         // HID events will be cleared automatically once they are sent
-        .hid_send_callback = NULL,
+        .hid_send_callback = hid_data_send_handler,
 #endif
 #ifdef _VENDOR_MSG_SUPPT_
         .vendor_msg_callback = usb_vendor_callback,
@@ -7272,9 +7281,14 @@ static void app_key_trace(uint32_t line, enum HAL_KEY_CODE_T code,
         line, code, event, usb_audio_get_hid_event_name(uevt), state);
 #endif
 }
-
+ extern void ota_enter_usb_dld_mode(void);
 int usb_audio_app_key(enum HAL_KEY_CODE_T code, enum HAL_KEY_EVENT_T event)
 {
+    if(event == HAL_KEY_EVENT_CLICK){
+        ANC_USB_TRACE(0,"ota_enter_usb_dld_mode!");
+        // ota_enter_usb_dld_mode();
+    }
+
     int i;
     enum USB_AUDIO_HID_EVENT_T uevt;
     int state;
@@ -7296,7 +7310,7 @@ int usb_audio_app_key(enum HAL_KEY_CODE_T code, enum HAL_KEY_EVENT_T event)
     if (code == HAL_KEY_CODE_PWR) {
         uevt = hal_cmu_simu_get_val();
         if (uevt == 0) {
-            uevt = USB_AUDIO_HID_VOL_UP;
+            uevt = USB_AUDIO_HID_PLAY_PAUSE;
         }
 #if defined(ANDROID_ACCESSORY_SPEC) || defined(CFG_MIC_KEY)
         if (event == HAL_KEY_EVENT_DOWN || event == HAL_KEY_EVENT_UP) {
@@ -7307,11 +7321,17 @@ int usb_audio_app_key(enum HAL_KEY_CODE_T code, enum HAL_KEY_EVENT_T event)
         // The key event has been processed
         return 0;
 #else
-        if (event == HAL_KEY_EVENT_CLICK) {
-            state = 1;
+        // if (event == HAL_KEY_EVENT_CLICK) {
+        //     state = 1;
+        //     app_key_trace(__LINE__, code, event, uevt, state);
+        //     usb_audio_hid_set_event(uevt, state);
+        //     return 0;
+        // }
+
+        if (event == HAL_KEY_EVENT_DOWN || event == HAL_KEY_EVENT_UP) {
+            state = (event != HAL_KEY_EVENT_UP);
             app_key_trace(__LINE__, code, event, uevt, state);
             usb_audio_hid_set_event(uevt, state);
-            return 0;
         }
         // Let other applications check the key event
         return 1;

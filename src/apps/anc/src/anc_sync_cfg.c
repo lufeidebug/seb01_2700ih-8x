@@ -148,7 +148,7 @@ static bool _check_tws_connected(void)
 
 static uint32_t _get_tws_role(void)
 {
-    return bts_tws_if_get_local_tws_role();
+    return bts_tws_if_get_tws_link_bt_role();
 }
 
 static int32_t _send_sync_info(anc_assist_sync_info_t *info)

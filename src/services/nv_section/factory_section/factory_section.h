@@ -74,7 +74,7 @@ int factory_section_open(void);
 void factory_section_tota_se_user_info_switch_on_off(unsigned int op);
 uint32_t factory_section_tota_se_user_info_switch_status_get(void);
 void factory_section_original_btaddr_get(uint8_t *btAddr);
-void factory_section_original_bleaddr_get(uint8_t *btAddr);
+void factory_section_original_bleaddr_get(uint8_t *btAddr); //Add by lzw@sndp 202601
 int factory_section_set_bt_name(const char *name,int len);
 int factory_section_xtal_fcap_get(unsigned int *xtal_fcap);
 int factory_section_xtal_fcap_set(unsigned int xtal_fcap);

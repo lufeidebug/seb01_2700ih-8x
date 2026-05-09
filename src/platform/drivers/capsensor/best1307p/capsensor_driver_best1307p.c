@@ -103,46 +103,22 @@ void capsensor_sar_baseline_init(void)
 
 uint8_t capsensor_ch_num_get(void)
 {
-    uint8_t cap_number = 0;
-
-    if (capsensor_channel_number_get_cb != NULL) {
-        cap_number = capsensor_channel_number_get_cb();
-    }
-
-    return cap_number;
+    return CAP_CHNUM;
 }
 
 uint8_t capsensor_conversion_num_get(void)
 {
-    uint8_t cap_repnumber = 0;
-
-    if (capsensor_conversion_number_get_cb != NULL) {
-        cap_repnumber = capsensor_conversion_number_get_cb();
-    }
-
-    return cap_repnumber;
+    return CAP_REPNUM;
 }
 
 uint16_t capsensor_samp_fs_get(void)
 {
-    uint16_t cap_samp_fs = 0;
-
-    if (capsensor_samp_fs_get_cb != NULL) {
-        cap_samp_fs = capsensor_samp_fs_get_cb();
-    }
-
-    return cap_samp_fs;
+    return CAP_SAMP_FS;
 }
 
 uint8_t capsensor_ch_map_get(void)
 {
-    uint8_t cap_use_channel = 0;
-
-    if (capsensor_channel_map_get_cb != NULL) {
-        cap_use_channel = capsensor_channel_map_get_cb();
-    }
-
-    return cap_use_channel;
+    return (CAP_CH0 | CAP_CH1 | CAP_CH2 | CAP_CH3 | CAP_CH4);
 }
 
 void capsensor_gpio_init(void)

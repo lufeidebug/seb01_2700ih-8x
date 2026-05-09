@@ -523,8 +523,6 @@ bt_status_t l2cap_accept_le_conn_parameters(uint16_t connhdl, uint8_t trans_id, 
 bt_status_t l2cap_update_le_conn_parameters(uint16_t connhdl, const struct l2cap_conn_upd_param_prefer *params);
 #endif
 
-void l2cap_pts_send_disconnect_channel(void);
-void l2cap_pts_send_l2cap_data(void);
 uint32 l2cap_save_ctx(uint32 l2cap_handle, uint8_t *buf, uint32_t buf_len);
 uint32 l2cap_restore_ctx(struct l2cap_ctx_input *input, struct l2cap_ctx_output *output, void (*close_old_channel_cb)(uint8_t));
 

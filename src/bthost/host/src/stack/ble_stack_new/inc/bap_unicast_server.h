@@ -132,7 +132,8 @@ typedef void (*bap_uc_srv_cb_ase_state_ind)(uint8_t con_lid, uint8_t ase_id, uin
 
 typedef void (*bap_uc_srv_cb_ase_op_local_cmp)(uint8_t con_lid, uint8_t ase_id, uint8_t op_code, uint16_t status);
 
-typedef void (*bap_uc_srv_cb_cis_status_ind)(enum bap_uc_srv_cis_evt cis_evt, uint8_t con_lid, uint16_t err_code, const bap_uc_srv_cis_info_t *p_cis_info);
+typedef void (*bap_uc_srv_cb_cis_status_ind)(enum bap_uc_srv_cis_evt cis_evt, uint8_t con_lid, uint16_t err_code,
+                                             const bap_uc_srv_cis_info_t *p_cis_info);
 
 typedef void (*bap_uc_srv_cb_iso_dp_status_ind)(bool is_setup, uint8_t con_lid, uint8_t ase_id, uint8_t err_code);
 
@@ -231,6 +232,18 @@ int bap_uc_srv_configure_codec_ase_local(uint8_t con_lid, uint8_t ase_id, const 
 int bap_uc_srv_disable_ase_local(uint8_t con_lid, uint8_t ase_id);
 
 /**
+ * @brief BAP unicast client update ASE metadata local
+ *
+ * @param  con_lid     Connection local index
+ * @param  ase_id      ASE ID (>=1)
+ * @param  p_metadata  Metadata
+ *
+ * @return int         status
+ */
+int bap_uc_srv_udpate_ase_metadata_local(uint8_t con_lid, uint8_t ase_id,
+                                         const gen_aud_metadata_t *metadata);
+
+/**
  * @brief BAP unicast client release ASE local
  *
  * @param  con_lid     Connection local index
@@ -239,6 +252,16 @@ int bap_uc_srv_disable_ase_local(uint8_t con_lid, uint8_t ase_id);
  * @return int         status
  */
 int bap_uc_srv_release_ase_local(uint8_t con_lid, uint8_t ase_id);
+
+/**
+ * @brief BAP unicast client notify ASE idle just after conn estblished
+ *
+ * @param  con_lid     Connection local index
+ * @param  ase_id      ASE ID (>=1)
+ *
+ * @return int         status
+ */
+int bap_uc_srv_notify_ase_idle(uint8_t con_lid, uint8_t ase_id);
 
 /**
  * @brief BAP unicast client confirm codec cfg request

@@ -589,6 +589,26 @@ int bta_avrcp_send_volume_down(const bt_bdaddr_t *addr);
 
 /**
  ****************************************************************************************
+ * @brief       Send media fast forward command.
+ * @param[in]   address: Pointer to the Bluetooth address of peer device.
+ * @param[in]   press:   true to send a "press" (key down) event, false to send a "release" (key up) event.
+ * @return      0 if successful, non-zero otherwise.
+ ****************************************************************************************
+ */
+int bta_avrcp_send_fast_forward(const bt_bdaddr_t *addr, bool press);
+
+/**
+ ****************************************************************************************
+ * @brief       Send media rewind command.
+ * @param[in]   address: Pointer to the Bluetooth address of peer device.
+ * @param[in]   press:   true to send a "press" (key down) event, false to send a "release" (key up) event.
+ * @return      0 if successful, non-zero otherwise.
+ ****************************************************************************************
+ */
+int bta_avrcp_send_rewind(const bt_bdaddr_t *addr, bool press);
+
+/**
+ ****************************************************************************************
  * @brief       CT send set absolute volume command
  * @param[in]   address: Pointer to the Bluetooth address of peer device.
  * @param[in]   volume:

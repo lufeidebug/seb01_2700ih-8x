@@ -12,23 +12,32 @@ obj-y += cmsis-nn/
 endif
 
 ifeq ($(ETHOSU_ARCH), u55)
-obj-y += core-driver/
-ifneq ($(TFLITE_IF_TEST),1)
-obj-y += core-platform/
-endif
+obj-y += ethosu-driver/
 subdir-ccflags-y += -DETHOSU -DETHOSU55 -DETHOSU_ARCH=$(ETHOSU_ARCH)
 
-ifneq ($(ETHOSU_DRIVER_TEST),1)
-ifneq ($(TFLITE_IF_TEST),1)
-obj-y += core-software/
-endif
-export TFLITE_MICRO_ENABLE ?= 1
+ifeq ($(ETHOSU_DRIVER_TEST),1)
+# TODO: Move test code to ethosu-driver folder
+obj-y += ethosu-platform/
+
+else ifeq ($(TFLITE_IF_TEST),1)
+export TFLITE_MICRO_ENABLE := 1
+
+else ifeq ($(EXECUTORCH_IF_TEST),1)
+export EXECUTORCH_ENABLE := 1
+
+else
+export TFLITE_MICRO_ENABLE := 1
+obj-y += ethosu-platform/
+obj-y += ethosu-software/
 endif
 endif
 
 ifeq ($(TFLITE_MICRO_ENABLE),1)
 obj-y += tflite-micro/
-subdir-ccflags-y += -Wno-double-promotion -Wno-unused-variable -Wno-unused-function -Wno-shadow -Wno-float-conversion
+endif
+
+ifeq ($(EXECUTORCH_ENABLE),1)
+obj-y += executorch/
 endif
 
 ifneq ($(ETHOSU_LOG_ENABLE),)

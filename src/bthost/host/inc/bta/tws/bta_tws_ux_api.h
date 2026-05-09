@@ -126,6 +126,8 @@ typedef struct
     void (*pairing_mode_changed)(bool enabled);
     // Notifies the latest case state of the peer earbud
     void (*peer_box_state_changed)(bta_tws_box_state_t box_state);
+    // Notifies the latest case state of the local earbud
+    void (*local_box_state_changed)(bta_tws_box_state_t box_state);
     // Notifies changes in UI-Role
     void (*ui_role_switch_state_changed)(bt_ui_role_t role);
 } bta_tws_ui_state_changed_t;
@@ -220,6 +222,7 @@ void bta_tws_init(const bt_am_attributes_t *am_attributes, const bta_tws_attribu
  ****************************************************************************************
  * @brief       Attempts to role-switch to UI-Slave and then disconnect the TWS link.
  *              If no TWS connection exists, all local links are disconnected immediately.
+ *              Upon disconnection of all links, app_shutdown is subsequently invoked to restart the system.
  * @return      None
  ****************************************************************************************
  */

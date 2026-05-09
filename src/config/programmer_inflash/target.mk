@@ -80,7 +80,7 @@ $(info  ************************************************************************
 endif
 endif
 
-export FLASH_SIZE ?= 0x800000
+export FLASH_SIZE ?= 0x400000
 
 export USE_MULTI_FLASH ?= 0
 ifeq ($(USE_MULTI_FLASH),1)
@@ -155,15 +155,3 @@ export DOLBY_AUDIO_ENABLE ?= 0
 ifeq ($(DOLBY_AUDIO_ENABLE),1)
 KBUILD_CPPFLAGS += -DDOLBY_AUDIO_ENABLE
 endif
-
-
-export SINGLE_WIRE_MCU_UART := 1
-
-ifeq ($(SINGLE_WIRE_MCU_UART),1)
-    KBUILD_CPPFLAGS += -D__SINGLE_WIRE_MCU_UART__
-    
-    export SINGLE_UART_IOMUX_INDEX          :=20
-    KBUILD_CPPFLAGS += -DSINGLE_UART_IOMUX_INDEX=$(SINGLE_UART_IOMUX_INDEX)
-    
-endif
-

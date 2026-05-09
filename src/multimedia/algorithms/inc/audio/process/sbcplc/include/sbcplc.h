@@ -5,12 +5,12 @@ File: sbcplc.h
 #ifndef SBCPLC_H
 #define SBCPLC_H
 
-//LHIST_MAX > 2FS+2OLAL+SBCRT+N
 #define LHIST_MAX  3500  //SBC 1203   AAC 3431
+#define OLAL_MAX   120
 /* PLC State Information */
 struct PLC_State
 {
-	float hist[LHIST_MAX];
+	float *hist;
 	short bestlag;
 	int nbf;
 
@@ -22,6 +22,13 @@ struct PLC_State
 	short OLAL;		/* OverLap-Add Length (samples) */
 
 	//SBCRT + OLAL must be <=FS
+	unsigned int g_bad_cnt;
+	unsigned int good_cnt;
+
+	float sf_old;
+
+	float tmp_gain;
+	int theta_cnt;
 };
 
 enum A2DP_PLC_CODEC_TYPE{
@@ -47,6 +54,15 @@ void a2dp_plc_good_frame_smooth(struct PLC_State *plc_state, short *in, short *o
 
 void a2dp_plc_bad_frame_24bit(struct PLC_State *plc_state, int *ZIRbuf, int *out, float *cos_buf, int len, int stride, int index);
 void a2dp_plc_good_frame_24bit(struct PLC_State *plc_state, int *in, int *out, float *cos_buf, int len, int stride, int index);
+
+void a2dp_plc_init_v2(struct PLC_State *plc_state, int size, unsigned int type, float* history, float* rcos);
+void a2dp_plc_bad_frame_v2(struct PLC_State *plc_state, short *ZIRbuf, short *out, float *cos_buf, int len, float *rcos, int stride, int index);
+void a2dp_plc_bad_frame_smooth_v2(struct PLC_State *plc_state, short *ZIRbuf, short *out, float *rcos, int stride, int index);
+void a2dp_plc_bad_frame_24bit_v2(struct PLC_State *plc_state, int *ZIRbuf, int *out, float *cos_buf, int len, float *rcos, int stride, int index);
+
+void a2dp_plc_good_frame_v2(struct PLC_State *plc_state, short *in, short *out, float *cos_buf, int len, float *rcos, int stride, int index);
+void a2dp_plc_good_frame_smooth_v2(struct PLC_State *plc_state, short *in, short *out, float *rcos, int stride, int index);
+void a2dp_plc_good_frame_24bit_v2(struct PLC_State *plc_state, int *in, int *out, float *cos_buf, int len, float *rcos, int stride, int index);
 
 void cos_generate(float *cos_buf, short len, short packet_len);
 

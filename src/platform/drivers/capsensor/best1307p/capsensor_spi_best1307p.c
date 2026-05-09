@@ -26,6 +26,7 @@
 #include "hal_sleep.h"
 #include "analog.h"
 #include "tgt_hardware_capsensor.h"
+#include "cmsis_os.h"
 
 // Capsensor Trace
 #define CAP_DRV_DEBUG                           1
@@ -697,20 +698,20 @@ int capsensor_get_raw_data(struct capsensor_sample_data *sample, int num)
     } else {
         do {
             capsensor_write_pointer_position(&write_addr);
-            if (write_addr < num) {
-                hal_sys_timer_delay(MS_TO_TICKS(1));
+            if (write_addr <= num) {
+                osDelay(1);
             }
-        } while(write_addr < num && ++count < 15);
+        } while(write_addr <= num && ++count < 15);
 
         capsensor_write_pointer_position(&write_addr);
-        if(write_addr < num) {
+        if(write_addr <= num) {
             capsensor_set_cur_status(CAPSENSOR_READ_DATA_NOT_ENOUGH);
             CAP_INFO_TRACE(0, "%s , capsensor samp num not enough !!!", __func__);
             return capsensor_get_cur_status();
         }
 
         capsensor_write_pointer_position(&write_addr);
-        if(write_addr >= num) {
+        if(write_addr > num) {
             capsensor_read_capture_data(sample, num);
             capsensor_set_cur_status(CAPSENSOR_READ_DATA_READY);
         } else {

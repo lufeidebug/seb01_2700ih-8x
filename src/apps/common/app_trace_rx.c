@@ -38,7 +38,7 @@
 #if (defined(A2DP_SOURCE_TEST) || defined(HFP_AG_TEST))
 #define APP_TRACE_RX_ROLE_NUM    30
 #else
-#define APP_TRACE_RX_ROLE_NUM    7
+#define APP_TRACE_RX_ROLE_NUM    8
 #endif
 
 #define APP_TRACE_RX_BUF_SIZE    1024

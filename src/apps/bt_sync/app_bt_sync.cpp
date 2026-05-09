@@ -571,7 +571,7 @@ static bool app_bt_sync_process(uint32_t opCode, uint8_t extra_len, uint8_t *p_e
         * Step3: Calculate trigger time and get available channel
         *
         */
-        btRole = bts_tws_if_get_local_tws_role();
+        btRole = bts_tws_if_get_tws_link_bt_role();
 
         chnl = app_bt_sync_get_available_trigger_channel(opCode, policy);
         if (chnl < APP_BT_SYNC_CHANNEL_TOTAL) {
@@ -827,7 +827,7 @@ void app_bt_sync_tws_cmd_handler(uint8_t *p_buff, uint16_t length)
         bt_sync_share_info_report_func(p_shareInfo->trigger_info.opCode, p_shareInfo->extra_info, length - len_tri_info);
     }
 
-    btRole = bts_tws_if_get_local_tws_role();
+    btRole = bts_tws_if_get_tws_link_bt_role();
     BT_SYNC_TRACE(4, "bt_sync_tws_cmd_handler, opCode:%d role:%d tick:%u, chl:%d", p_shareInfo->trigger_info.opCode,
         btRole, p_shareInfo->trigger_info.triTick, p_shareInfo->trigger_info.triChl);
 

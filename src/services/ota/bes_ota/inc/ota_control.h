@@ -598,6 +598,15 @@ typedef struct
 
 typedef struct
 {
+    uint8_t errOtaCode;
+    uint8_t currentUser;
+    uint8_t blockid;
+    uint32_t i_log;
+    uint32_t alreadyReceivedDataSizeOfImage;
+} FLASH_OTA_UPGRADE_LOG_INFO_T;
+
+typedef struct
+{
     uint8_t     randomCode[32];
     uint32_t    totalImageSize;
     uint32_t    crc32OfImage;
@@ -665,7 +674,8 @@ uint32_t ota_get_current_length_to_check(void);
 void ota_restore_offset(void);
 void ota_control_send_get_random_response(uint32_t ota_rv);
 void ota_update_flash_offset_after_segment_crc(bool flag);
-
+void ota_get_upgrade_info(FLASH_OTA_UPGRADE_LOG_INFO_T* info);
+void ota_update_flash_offset_after_segment_crc_by_slave(bool flag, FLASH_OTA_UPGRADE_LOG_INFO_T* info);
 #ifdef IBRT
 void ota_tws_send_handle(uint8_t typeCode, uint8_t *buff, uint16_t length, uint32_t cmd_dode);
 #endif

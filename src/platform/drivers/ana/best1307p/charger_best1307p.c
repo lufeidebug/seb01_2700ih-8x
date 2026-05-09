@@ -606,12 +606,12 @@ static void charger_load_efuse_calib(void)
 
     // vref_cc
     val_calib = GET_BITFIELD(val_efuse4, PMU_EFUSE_REG_TRIM_VREF_CC_CALIB);
-    if (val_calib) {
+    // if (val_calib) {
         chg_read(CHG_REG_TRIM_VREF_CFG, &val);
         val = SET_BITFIELD(val, REG_TRIM_VREF_CC, val_calib);
         chg_write(CHG_REG_TRIM_VREF_CFG, val);
         DRIVERS_TRACE(1, "cc_cal:0x%x", val_calib);
-    }
+    // }
 
     // Resume charger en
     val_chg_en |= REG_CHARGER_CHARGE_EN;
@@ -794,3 +794,46 @@ void charger_pattern_enable(bool enable)
         chg_write(reg, val);
     }
 }
+
+#ifdef BESUI_TWS_EN
+void charger_param_set_onoff(bool open_close_flag, uint8_t battery_current)
+{
+    struct CHARGER_CHARGE_MODULE_CFG_T charge_cfg;
+
+    charger_charge_module_cfg_get(&charge_cfg);
+
+    DRIVERS_TRACE(8,"[UICHARGE]%s %d %d %d %d  %d %d %d",__func__,
+    charge_cfg.prechg_current,charge_cfg.cc_current,charge_cfg.stop_current,
+    charge_cfg.cv_volt,charge_cfg.rechg_volt,
+    charge_cfg.rechg_en,charge_cfg.chg_en);
+
+    charge_cfg.prechg_current = CHARGER_CHARGE_PRECHARGE_CURRENT_10MA;
+    DRIVERS_TRACE(1,"[UICHARGE]%s battery_current %d", __func__, battery_current);
+    charge_cfg.cc_current = battery_current;
+    charge_cfg.stop_current = CHARGER_CHARGE_STOP_CURRENT_6MA;
+
+    charge_cfg.cv_volt = CHARGER_CHARGE_CONSTANT_VOLTAGE_4200MV;
+    charge_cfg.rechg_volt = CHARGER_CHARGE_RECHARGE_VOLTAGE_200MV;
+    charge_cfg.rechg_en = 0;
+
+    if(open_close_flag)
+    {
+        charge_cfg.chg_en = 1;
+    }
+    else
+    {
+        charge_cfg.chg_en = 0;
+    }
+    //DRIVERS_TRACE(1,"[UICHARGE]%s chg_en %d", __func__, charge_cfg.chg_en);
+    charger_charge_module_cfg_set(&charge_cfg);
+
+    charger_charge_module_cfg_get(&charge_cfg);
+
+    DRIVERS_TRACE(8,"[UICHARGE]get %s %d %d %d  %d %d %d %d",__func__,
+    charge_cfg.prechg_current,charge_cfg.cc_current,charge_cfg.stop_current,
+    charge_cfg.cv_volt,charge_cfg.rechg_volt,
+    charge_cfg.rechg_en,charge_cfg.chg_en);
+
+    //charger_charge_enable();
+}
+#endif

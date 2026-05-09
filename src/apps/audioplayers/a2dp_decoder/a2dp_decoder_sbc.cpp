@@ -35,7 +35,11 @@
 #include "sbcplc.h"
 static float *cos_buf = NULL;
 #define SBC_SMOOTH_LENGTH   128
+static float *history0 = NULL;
+static float *rcos0 = NULL;
 static struct PLC_State * sbc_plc_state0;
+static float *history1 = NULL;
+static float *rcos1 = NULL;
 static struct PLC_State * sbc_plc_state1;
 extern int a2dp_audio_sysfreq_boost_start(uint32_t boost_cnt);
 #endif
@@ -75,7 +79,7 @@ static A2DP_AUDIO_DECODER_LASTFRAME_INFO_T a2dp_audio_sbc_lastframe_info;
 static uint16_t sbc_mtu_limiter = SBC_MTU_LIMITER;
 
 static bool sbc_chnl_mode_mono = false;
-#if !defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH)
+#if !defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH) || defined(A2DP_SBC_PLC_ENABLED)
 static btif_media_header_t sbc_decoder_last_valid_frame = {0,};
 static bool sbc_decoder_last_valid_frame_ready = false;
 static int a2dp_audio_sbc_header_parser_init(void);
@@ -414,10 +418,10 @@ static int a2dp_cp_sbc_cp_decode(void)
 #if defined(A2DP_SBC_PLC_ENABLED)
                         if (pcm_data->valid_size > decoded_offset) {
                             if(chnl_sel == 0) {
-                                a2dp_plc_good_frame(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, 2, 0);
-                                a2dp_plc_good_frame(sbc_plc_state1, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, 2, 1);
+                                a2dp_plc_good_frame_v2(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos0, 2, 0);
+                                a2dp_plc_good_frame_v2(sbc_plc_state1, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos1, 2, 1);
                             } else {
-                                a2dp_plc_good_frame(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, ch_num, chnl_sel - 2);
+                                a2dp_plc_good_frame_v2(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos0, ch_num, chnl_sel - 2);
                             }
                             // AUDIOPLAYERS_TRACE(0,"[%s] PLC good frame len %d %d", __func__, pcm_data->valid_size, decoded_offset);
                         }
@@ -441,10 +445,10 @@ static int a2dp_cp_sbc_cp_decode(void)
                 bad_start_ticks = hal_fast_sys_timer_get();
             #endif
             if(chnl_sel == 0) {
-                a2dp_plc_bad_frame(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, 2, 0);
-                a2dp_plc_bad_frame(sbc_plc_state1, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, 2, 1);
+                a2dp_plc_bad_frame_v2(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos0, 2, 0);
+                a2dp_plc_bad_frame_v2(sbc_plc_state1, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos1, 2, 1);
             } else {
-                a2dp_plc_bad_frame(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, ch_num, chnl_sel - 2);
+                a2dp_plc_bad_frame_v2(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos0, ch_num, chnl_sel - 2);
             }
             #if defined(A2DP_SBC_PLC_CALC_MIPS)
                 bad_end_ticks = hal_fast_sys_timer_get();
@@ -522,10 +526,10 @@ static int a2dp_cp_sbc_cp_decode(void)
 #if defined(A2DP_SBC_PLC_ENABLED)
                 if (pcm_data->valid_size > decoded_offset) {
                     if(chnl_sel == 0) {
-                        a2dp_plc_good_frame(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, 2, 0);
-                        a2dp_plc_good_frame(sbc_plc_state1, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, 2, 1);
+                        a2dp_plc_good_frame_v2(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos0, 2, 0);
+                        a2dp_plc_good_frame_v2(sbc_plc_state1, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos1, 2, 1);
                     } else {
-                        a2dp_plc_good_frame(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, ch_num, chnl_sel - 2);
+                        a2dp_plc_good_frame_v2(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos0, ch_num, chnl_sel - 2);
                     }
                     // AUDIOPLAYERS_TRACE(0,"[%s] PLC good frame len %d %d", __func__, pcm_data->valid_size, decoded_offset);
                 }
@@ -549,10 +553,10 @@ static int a2dp_cp_sbc_cp_decode(void)
             bad_start_ticks = hal_fast_sys_timer_get();
 #endif
             if(chnl_sel == 0) {
-                a2dp_plc_bad_frame(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, 2, 0);
-                a2dp_plc_bad_frame(sbc_plc_state1, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, 2, 1);
+                a2dp_plc_bad_frame_v2(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos0, 2, 0);
+                a2dp_plc_bad_frame_v2(sbc_plc_state1, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos1, 2, 1);
             } else {
-                a2dp_plc_bad_frame(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, ch_num, chnl_sel - 2);
+                a2dp_plc_bad_frame_v2(sbc_plc_state0, decoded_buf, decoded_buf, cos_buf, SBC_SMOOTH_LENGTH, rcos0, ch_num, chnl_sel - 2);
             }
 #if defined(A2DP_SBC_PLC_CALC_MIPS)
             bad_end_ticks = hal_fast_sys_timer_get();
@@ -628,7 +632,7 @@ int a2dp_audio_sbc_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
     AUDIOPLAYERS_TRACE(0,"[SBC][INIT]");
 
     a2dp_audio_context_p = (A2DP_AUDIO_CONTEXT_T *)context;
-#if !defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH)
+#if !defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH) || defined(A2DP_SBC_PLC_ENABLED)
     a2dp_audio_sbc_header_parser_init();
 #endif
     memset(&a2dp_audio_sbc_lastframe_info, 0, sizeof(A2DP_AUDIO_DECODER_LASTFRAME_INFO_T));
@@ -652,7 +656,7 @@ int a2dp_audio_sbc_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
 #ifdef A2DP_CP_ACCEL
     int ret;
     cp_codec_reset = true;
-    ret = a2dp_cp_init(a2dp_cp_sbc_cp_decode, CP_PROC_DELAY_1_FRAME);
+    ret = a2dp_cp_init(a2dp_cp_sbc_cp_decode, CP_PROC_DELAY_2_FRAMES);
     ASSERT_A2DP_DECODER(ret == 0, "%s: a2dp_cp_init() failed: ret=%d", __func__, ret);
     uint32_t cp_buffer_frames_max = 0;
     uint32_t out_frame_len;
@@ -691,11 +695,15 @@ int a2dp_audio_sbc_init(A2DP_AUDIO_OUTPUT_CONFIG_T *config, void *context)
 #if defined(A2DP_SBC_PLC_ENABLED)
     cos_buf = (float *)a2dp_audio_heap_malloc((SBC_SMOOTH_LENGTH*4)*sizeof(float));
     cos_generate(cos_buf, SBC_SMOOTH_LENGTH*4, SBC_SMOOTH_LENGTH);
+    history0 = (float *)a2dp_audio_heap_malloc(sizeof(float)*LHIST_MAX);
+    rcos0 = (float *)a2dp_audio_heap_malloc(sizeof(float)*OLAL_MAX);
     sbc_plc_state0 = (struct PLC_State*)a2dp_audio_heap_malloc(sizeof(struct PLC_State));
-    a2dp_plc_init(sbc_plc_state0, A2DP_PLC_CODEC_TYPE_SBC);
+    a2dp_plc_init_v2(sbc_plc_state0, 128, A2DP_PLC_CODEC_TYPE_SBC, history0, rcos0);
     if(a2dp_audio_context_p->chnl_sel == 0) {
+        history1 = (float *)a2dp_audio_heap_malloc(sizeof(float)*LHIST_MAX);
+        rcos1 = (float *)a2dp_audio_heap_malloc(sizeof(float)*OLAL_MAX);
         sbc_plc_state1 = (struct PLC_State*)a2dp_audio_heap_malloc(sizeof(struct PLC_State));
-        a2dp_plc_init(sbc_plc_state1, A2DP_PLC_CODEC_TYPE_SBC);
+        a2dp_plc_init_v2(sbc_plc_state1, 128, A2DP_PLC_CODEC_TYPE_SBC, history1, rcos1);
     }
 #endif
 
@@ -720,8 +728,12 @@ int a2dp_audio_sbc_deinit(void)
 #if defined(A2DP_SBC_PLC_ENABLED)
     a2dp_audio_heap_free(cos_buf);
     a2dp_audio_heap_free(sbc_plc_state0);
+    a2dp_audio_heap_free(history0);
+    a2dp_audio_heap_free(rcos0);
     if(a2dp_audio_context_p->chnl_sel == 0) {
         a2dp_audio_heap_free(sbc_plc_state1);
+        a2dp_audio_heap_free(history1);
+        a2dp_audio_heap_free(rcos1);
     }
 #endif
     AUDIOPLAYERS_TRACE(0,"[SBC][DEINIT]");
@@ -912,7 +924,7 @@ int a2dp_audio_sbc_preparse_packet(btif_media_header_t * header, uint8_t *buffer
     return A2DP_DECODER_NO_ERROR;
 }
 
-#if !defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH)
+#if !defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH) || defined(A2DP_SBC_PLC_ENABLED)
 static int a2dp_audio_sbc_header_parser_init(void)
 {
     sbc_decoder_last_valid_frame_ready = false;
@@ -937,8 +949,8 @@ static int a2dp_audio_sbc_packet_recover_find_missing(btif_media_header_t *sbc_d
         return need_recover_pkt;
     }
 
-    diff_seq = a2dp_audio_get_passed(sbc_decoder_frame->header.sequenceNumber, sbc_decoder_last_valid_frame.sequenceNumber, UINT16_MAX);
-    diff_timestamp = a2dp_audio_get_passed(sbc_decoder_frame->header.timestamp, sbc_decoder_last_valid_frame.timestamp, UINT32_MAX);
+    diff_seq = a2dp_audio_get_passed(sbc_decoder_frame->sequenceNumber, sbc_decoder_last_valid_frame.sequenceNumber, UINT16_MAX);
+    diff_timestamp = a2dp_audio_get_passed(sbc_decoder_frame->timestamp, sbc_decoder_last_valid_frame.timestamp, UINT32_MAX);
     if (diff_seq > 1){
         if (diff_timestamp%SBC_LIST_SAMPLES == 0){
             need_recover_pkt = diff_timestamp/SBC_LIST_SAMPLES;
@@ -952,8 +964,8 @@ static int a2dp_audio_sbc_packet_recover_find_missing(btif_media_header_t *sbc_d
 #if defined(A2DP_SBC_PLC_ENABLED)
         a2dp_audio_sysfreq_boost_start(diff_seq*3);
 #endif
-        AUDIOPLAYERS_TRACE(0,"[SBC][INPUT][PLC] seq:%d/%d stmp:%d/%d", sbc_decoder_frame->header.sequenceNumber, sbc_decoder_last_valid_frame.sequenceNumber,
-                                                                                  sbc_decoder_frame->header.timestamp, sbc_decoder_last_valid_frame.timestamp);
+        AUDIOPLAYERS_TRACE(0,"[SBC][INPUT][PLC] seq:%d/%d stmp:%d/%d", sbc_decoder_frame->sequenceNumber, sbc_decoder_last_valid_frame.sequenceNumber,
+                                                                                  sbc_decoder_frame->timestamp, sbc_decoder_last_valid_frame.timestamp);
         AUDIOPLAYERS_TRACE(0,"[SBC][INPUT][PLC] diff_seq:%d diff_stmp:%d missing:%d", diff_seq, diff_timestamp, need_recover_pkt);
     }
 
@@ -987,8 +999,9 @@ static int a2dp_audio_sbc_packet_recover_proc(btif_media_header_t *sbc_decoder_f
 exit:
     return nRet;
 }
+#endif
 
-#else
+#if defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH)
 int a2dp_audio_sbc_packet_adjust(a2dp_audio_sbc_decoder_frame_t *sbc_decoder_frame, uint32_t frame_num, uint32_t buffer_bytes)
 {
     int nRet = A2DP_DECODER_NO_ERROR;
@@ -1142,7 +1155,7 @@ static int a2dp_audio_sbc_store_packet(btif_media_header_t * header, uint8_t *bu
             }
             nRet = A2DP_DECODER_DECODE_ERROR;
         }else{
-#if !defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH)
+#if !defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH) || defined(A2DP_SBC_PLC_ENABLED)
             a2dp_audio_sbc_packet_recover_proc(header, frame_list[0], frame_num);
             a2dp_audio_sbc_packet_recover_save_last(header);
 #endif
@@ -1211,7 +1224,7 @@ static int a2dp_audio_sbc_store_packet(btif_media_header_t * header, uint8_t *bu
                 frame_p->header.totalSubSequenceNumber = frame_num;
                 memcpy(frame_p->header.ptrData, (parser_p+i), bytes_parsed);
                 frame_p->header.dataLen = bytes_parsed;
-#if !defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH)
+#if !defined(BT_DONT_PLAY_MUTE_WHEN_A2DP_STUCK_PATCH) || defined(A2DP_SBC_PLC_ENABLED)
                 a2dp_audio_sbc_packet_recover_proc(header, frame_list[0], frame_num);
                 a2dp_audio_sbc_packet_recover_save_last(header);
 #endif

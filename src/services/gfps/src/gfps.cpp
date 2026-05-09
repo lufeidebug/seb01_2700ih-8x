@@ -53,6 +53,9 @@
 #include "bta_tws_ux_api.h"
 #endif
 
+#ifdef BESUI_TWS_EN
+#include "besui_define.h"
+#endif
 
 #include "gfps.h"
 #include "gfps_ble.h"
@@ -86,7 +89,13 @@
 #include "bta_normal_ux_api.h"
 #include "bta_normal_audio_api.h"
 #endif
+#include "hal_trace.h"
+#include "app_trace_rx.h"
+#include "nvrecord_fp_account_key.h"
 
+#ifndef TRACE
+#define TRACE(attr, str, ...)               TR_INFO(attr, str, ##__VA_ARGS__)
+#endif
 
 
 /************************private macro defination***************************/
@@ -119,6 +128,8 @@ void gfps_link_connect_process(uint8_t devId, const bt_bdaddr_t *addr);
 #if BLE_AUDIO_ENABLED
 void gfps_lea_event_handler(const bt_lea_evt_packet_t *evt_pkt);
 #endif
+
+static void gfps_cmd_init();
 
 /**
  ****************************************************************************************
@@ -772,7 +783,6 @@ const uint8_t* gfps_get_private_key(void) {
 
 void gfps_enter_pairing_mode_handler(void)
 {
-    gfps_bta_enable_pairing_mode(true);
 #ifdef __INTERCONNECTION__
     clear_discoverable_adv_timeout_flag();
     app_interceonnection_start_discoverable_adv(INTERCONNECTION_BLE_FAST_ADVERTISING_INTERVAL,
@@ -1818,9 +1828,10 @@ void app_tws_send_fastpair_info_to_slave(void)
 
 void app_ibrt_share_fastpair_info_received_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
 {
-#if SASS_ENABLED && defined(BT_SVC_MODULE_IBRT_ENABLED)
+
     NV_FP_ACCOUNT_KEY_RECORD_T *pFpData = ( NV_FP_ACCOUNT_KEY_RECORD_T * )p_buff;
     nv_record_update_fp_data_structure(pFpData);
+#if SASS_ENABLED && defined(BT_SVC_MODULE_IBRT_ENABLED)
     if (length > sizeof(NV_FP_ACCOUNT_KEY_RECORD_T))
     {
         gfps_sass_set_sync_info(p_buff + sizeof(NV_FP_ACCOUNT_KEY_RECORD_T), length - sizeof(NV_FP_ACCOUNT_KEY_RECORD_T));
@@ -2502,6 +2513,8 @@ void gfps_init(void)
 
     gfps_thread_init();
 
+    gfps_cmd_init();
+
 #if defined(SASS_ENABLED)
     gfps_register_bt_profiles_cb();
 #endif
@@ -2656,5 +2669,64 @@ void gfps_lea_event_handler(const bt_lea_evt_packet_t *evt_pkt)
 
 }
 #endif
+
+typedef struct
+{
+    const char* string;
+    void (*cmd_function)(const char* p, uint32_t p_len);
+} gfps_cmd_table_item_t;
+
+static void cmd_google_find_reset(const char* p, uint32_t p_len)
+{
+    GFPS_TRACE(1,"%s", __func__);
+    nv_record_fp_account_key_delete();
+#ifdef SPOT_ENABLED
+    nv_record_fp_reset_spot_adv_data();
+    nv_record_fp_reset_spot_adv_enable_value();
+#endif
+}
+
+static const gfps_cmd_table_item_t gfps_cmd_table[] =
+{
+    { "google_find_reset", cmd_google_find_reset },
+};
+
+static unsigned int gfps_cmd_callback(unsigned char *buf, unsigned int len)
+{
+    TRACE(0, "gg_findmy: %s", buf);
+
+    constexpr uint8_t ITEM_NUM = sizeof(gfps_cmd_table) / sizeof(gfps_cmd_table_item_t);
+    int index = 0;
+
+    for (; index < ITEM_NUM; ++index)
+    {
+        if ((strncmp((char*)buf, gfps_cmd_table[index].string, strlen(gfps_cmd_table[index].string)) == 0) ||
+             strstr(gfps_cmd_table[index].string, (char*)buf))
+        {
+            unsigned int p_len = 0;
+            char *p = strstr((char*)buf, "|");
+            if(p != NULL)
+            {
+                ++p;
+                p_len = len - (p - (char *)buf);
+            }
+
+            gfps_cmd_table[index].cmd_function(p, p_len);
+            break;
+        }
+    }
+
+    if (ITEM_NUM == index)
+    {
+        TRACE(0, "gg_findmy: %s not found", __func__);
+    }
+
+    return 0;
+}
+
+static void gfps_cmd_init()
+{
+    app_trace_rx_register("gg_findmy", gfps_cmd_callback);
+}
 
 #endif

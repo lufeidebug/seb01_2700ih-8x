@@ -398,6 +398,8 @@ bool gfps_is_battery_enabled(void);
 
 uint8_t gfps_send(uint8_t devId, uint8_t *ptrData, uint32_t length);
 
+uint8_t app_prompt_gfps_get_volume(void);
+
 void gfps_send_msg_ack(uint8_t devId, uint8_t msgGroup, uint8_t msgCode);
 
 void gfps_send_msg_nak(uint8_t devId, uint8_t reason, uint8_t msgGroup, uint8_t msgCode);

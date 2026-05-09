@@ -31,8 +31,6 @@ typedef struct
     uint8_t vendor_codec_en:1;
     uint8_t force_use_cvsd:1;
     uint8_t support_enre_mode:1;
-    uint8_t source_get_all_cap_flag:1;
-    uint8_t source_unknown_cmd_flag:1;
     uint8_t disc_acl_after_auth_key_missing:1;
     uint8_t use_page_scan_repetition_mode_r1:1;
     uint8_t normal_test_mode_switch:1;
@@ -69,9 +67,7 @@ typedef struct
     uint8_t hf_dont_support_3way_call:1;
     uint8_t hfp_support_lc3_swb_en:1;
     uint8_t hf_support_hf_ind_feature:1;
-    uint8_t hfp_ag_pts_enable:1;
     uint8_t hfp_ag_pts_ecs_01:1;
-    uint8_t hfp_ag_pts_ecs_02:1;
     uint8_t hfp_ag_pts_ecc:1;
     uint8_t hfp_hf_pts_acs_bv_09_i:1;
     // HSP

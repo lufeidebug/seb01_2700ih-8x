@@ -17,6 +17,7 @@
 #ifdef IBRT
 #include "bts_core_if.h"
 #include "bts_tws_api.h"
+#include "app_ibrt_ota_cmd.h"
 #endif
 
 #ifdef UUID_TOTA_USE_OTA_EN
@@ -124,10 +125,9 @@ static void app_ota_event_handler_thread(void const *argument)
             // OTA_TRACE(0, "[%s]datalen = %d data:", __func__, otaParam.param.receive_data.dataLen);
             // OTA_DUMP8("%x ",otaParam.param.receive_data.data, otaParam.param.receive_data.dataLen);
         }
-
+        osMutexRelease(app_ota_buf_lock);
         app_ota_data_handle(&otaParam, rx_event->flag);
         app_ota_event_mailbox_free(rx_event);
-        osMutexRelease(app_ota_buf_lock);
     }
 }
 
@@ -246,7 +246,9 @@ void app_ota_disconnected(BES_OTA_PATH_TYPE_E connType)
 {
     OTA_TRACE(0,"Ota is disconnected connType %d", connType);
     app_ota_env_init();
-
+#ifdef IBRT
+    app_ibrt_ota_cache_slave_reset_info();
+#endif
     Bes_exit_ota_state();
 #if defined(BT_SVC_MODULE_TWS_ENABLED) && !defined(FREEMAN_OTA_ENABLED)
     if (DATA_PATH_BLE == connType) {

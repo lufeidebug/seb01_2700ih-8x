@@ -90,7 +90,6 @@ LDS_FILE	:= best1000.lds
 endif
 
 ifneq ($(SPA_AUDIO_SEC)-$(OTA_TZ_ENABLE),0-0)
-core-y += utils/heap/
 core-y += utils/crc/
 ifeq ($(SPA_AUDIO_SEC),1)
 core-y += thirdparty/userapi/spa_dummy_app/sec/

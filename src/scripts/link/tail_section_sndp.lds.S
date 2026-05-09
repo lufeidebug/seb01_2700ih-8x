@@ -39,6 +39,7 @@
 #define PROMPT_SECTION_LOC					0
 #define AUD_SECTION_LOC						0
 #define FACTORY_SECTION_LOC					0
+#define USERDATA_SECTION_LOC				0
 #ifdef USE_MULTI_FLASH
 #if defined(__SNDP_PROJ__)
 #define SNDP_PARAM_SECTION_LOC				1
@@ -56,9 +57,9 @@
 #define CRASH_DUMP_SECTION_LOC				1
 #define CUSTOM_PARAMETER_SECTION_LOC		1
 #define LHDC_LICENSE_SECTION_LOC			1
-#define USERDATA_SECTION_LOC				1
 #define RESERVED_SECTION_LOC				1
 #define FINDMY_INFO_SECTION_LOC             1
+#define OTA_APP_BOOT_INFO_SECTION_LOC       1
 #else
 #if defined(__SNDP_PROJ__)
 #define SNDP_PARAM_SECTION_LOC				0
@@ -76,9 +77,12 @@
 #define CRASH_DUMP_SECTION_LOC				0
 #define CUSTOM_PARAMETER_SECTION_LOC		0
 #define LHDC_LICENSE_SECTION_LOC			0
-#define USERDATA_SECTION_LOC				0
 #define RESERVED_SECTION_LOC				0
 #define FINDMY_INFO_SECTION_LOC             0
+#define OTA_APP_BOOT_INFO_SECTION_LOC       0
+#endif
+#ifdef USE_MULTI_FLASH
+#define FLASH1_CALIB_SECTION_LOC			1
 #endif
 
 #ifdef USE_MULTI_FLASH
@@ -148,7 +152,8 @@
 							SECTION_SIZE_LOC(1, COMBO) -
 							SECTION_SIZE_LOC(1, AUD) -
 							SECTION_SIZE_LOC(1, OTA_APP_BOOT_INFO) -
-							SECTION_SIZE_LOC(0, FINDMY_INFO) -
+							SECTION_SIZE_LOC(1, FINDMY_INFO) -
+							SECTION_SIZE_LOC(1, FLASH1_CALIB) -
 #if defined(__SNDP_PROJ__)
 							SECTION_SIZE_LOC(1, SNDP_PARAM) -
 #if defined(SNDP_TX_AI_ENABLE)
@@ -183,6 +188,16 @@
 	} > FLASH_LOC(SNDP_KEY)
 #endif
 #endif
+
+#ifdef FLASH1_CALIB_SECTION_SIZE
+	.flash1_calib (NOLOAD):
+	{
+		__flash1_calib_start = .;
+		. = SECTION_SIZE(FLASH1_CALIB);
+		__flash1_calib_end = .;
+	} > FLASH_LOC(FLASH1_CALIB)
+#endif
+
 	.combo (NOLOAD):
 	{
 		__combo_start = .;

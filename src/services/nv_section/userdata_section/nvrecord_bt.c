@@ -496,9 +496,6 @@ static bt_status_t POSSIBLY_UNUSED nv_record_ddbrec_add(const btif_device_record
     else
     {
         // exist
-
-        bool isRecordChanged = false;
-
         // check whether the record is changed, if so, do flush immediately
         if (memcmp((uint8_t *)&(pBtDevInfo->pairedBtDevInfo[indexOfEntry].record),
                        (uint8_t *)param_rec, sizeof(btif_device_record_t)))
@@ -507,8 +504,6 @@ static bt_status_t POSSIBLY_UNUSED nv_record_ddbrec_add(const btif_device_record
             NV_SECTION_TRACE(0, "%s used to be paired, link changed", __FUNCTION__);
 
             nv_record_bt_distribute_new_dev_paired_event(pBtDevInfo->pairedBtDevInfo[indexOfEntry].record.bdAddr.address);
-
-            isRecordChanged = true;
         }
 
         // check whether it's already at the head
@@ -550,11 +545,6 @@ static bt_status_t POSSIBLY_UNUSED nv_record_ddbrec_add(const btif_device_record
                 // need to flush the nv record
                 isUpdateNv = true;
             }
-        }
-
-        if (isRecordChanged)
-        {
-            nv_record_pairing_info_reset(&(pBtDevInfo->pairedBtDevInfo[0]));
         }
     }
 

@@ -1265,7 +1265,7 @@ static void aob_tws_capture_stream_trigger_time_request_handler(uint16_t req_seq
     int32_t usSinceLatestAnchorPoint = GAF_STREAM_INVALID_US_SINCE_LAST_ANCHOR_POINT;
     uint32_t responsed_trigger_time_us = 0;
 
-    btif_connection_role_t connection_role = bts_tws_if_get_local_tws_role();
+    btif_connection_role_t connection_role = bts_tws_if_get_tws_link_bt_role();
 
     // if stream is already triggred, share the local start trigger time to peer device
     if (GAF_CAPTURE_STREAM_STREAMING_TRIGGERED ==
@@ -1416,7 +1416,7 @@ void gaf_stream_common_tws_sync_capture_trigger_rsp_handler(uint16_t rsp_seq, ui
         return;
     }
 
-    if (bts_tws_if_get_local_tws_role() == BTIF_BCR_SLAVE)
+    if (bts_tws_if_get_tws_link_bt_role() == BTIF_BCR_SLAVE)
     {
         trigger_time_us = app_bt_sync_get_slave_time_from_master_time(
             ptrPeerStreamStatus->master_clk_cnt,
@@ -1477,7 +1477,7 @@ void gaf_stream_common_sync_us_since_latest_anchor_point(GAF_AUDIO_STREAM_ENV_T*
 #if defined(IBRT)
     if (bts_tws_if_is_tws_link_connected())
     {
-        if (bts_tws_if_get_local_tws_role() != BTIF_BCR_SLAVE)
+        if (bts_tws_if_get_tws_link_bt_role() != BTIF_BCR_SLAVE)
         {
             AOB_TWS_SYNC_US_SINCE_LATEST_ANCHOR_POINT_T info;
             info.streamContext = pStreamEnv->stream_info.contextType;
@@ -1515,7 +1515,7 @@ void gaf_stream_common_start_sync_capture(GAF_AUDIO_STREAM_ENV_T* pStreamEnv)
         uint32_t triggertimeUs = trigger_bt_time+
             ((200000/pStreamEnv->stream_info.captureInfo.isoIntervalUs)*
             pStreamEnv->stream_info.captureInfo.isoIntervalUs);
-        if (bts_tws_if_get_local_tws_role() == BTIF_BCR_SLAVE)
+        if (bts_tws_if_get_tws_link_bt_role() == BTIF_BCR_SLAVE)
         {
             gaf_stream_common_trigger_sync_capture(
                 pStreamEnv->stream_info.contextType, 0, 0,

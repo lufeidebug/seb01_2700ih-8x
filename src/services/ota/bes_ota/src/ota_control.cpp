@@ -1762,6 +1762,56 @@ void ota_get_start_message(void)
           __func__, ota_control_env.totalImageSize, ota_control_env.crc32OfImage);
 }
 
+void ota_get_upgrade_info(FLASH_OTA_UPGRADE_LOG_INFO_T* info)
+{
+    info->errOtaCode = true;
+    info->currentUser = ota_control_env.currentUser;
+    #if defined(ARM_CMNS) && defined(OTA_TZ_ENABLE)
+    info->blockid = ota_control_env.blockid;
+    #endif
+    info->i_log = ota_control_env.i_log;
+    info->alreadyReceivedDataSizeOfImage = ota_control_env.alreadyReceivedDataSizeOfImage;
+}
+
+void ota_upgradeSize_log_by_slave(FLASH_OTA_UPGRADE_LOG_INFO_T* info)
+{
+    #if defined(ARM_CMNS) && defined(OTA_TZ_ENABLE)
+    if(BES_OTA_USER_COMBOFIRMWARE == info->currentUser &&
+        nv_record_combo_bin_get_fw_id( info->blockid) == COMBO_TZ_SB)
+    {
+        return;
+    }
+    #endif
+    NORFLASH_API_MODULE_ID_T mod = NORFLASH_API_MODULE_ID_UPGRADE_LOG;
+
+    if(info->i_log >= sizeof(otaUpgradeLog.upgradeSize)/(sizeof(uint32_t)/sizeof(uint8_t)))
+    {
+         info->i_log = 0;
+
+        app_flash_read(mod,
+                       0,
+                       ota_control_env.dataBufferForBurning,
+                       OTAUPLOG_HEADSIZE);
+        app_flash_sector_erase(mod,
+                             0);
+        app_flash_program(mod,
+                          0,
+                          ota_control_env.dataBufferForBurning,
+                          OTAUPLOG_HEADSIZE,
+                          false);
+    }
+
+    app_flash_program(mod,
+                      OFFSETOF(FLASH_OTA_UPGRADE_LOG_FLASH_T, upgradeSize) + (sizeof(uint32_t) * (info->i_log)),
+                      (uint8_t *)&info->alreadyReceivedDataSizeOfImage,
+                      sizeof(info->alreadyReceivedDataSizeOfImage),
+                      false);
+    app_flash_flush_pending_op(mod, NORFLASH_API_ALL);  //!< force flush the flash op
+
+    OTA_TRACE(3,"{i_log: %d, RecSize: 0x%x, FlashWrSize: 0x%x}",
+          info->i_log, info->alreadyReceivedDataSizeOfImage,
+          otaUpgradeLog.upgradeSize[info->i_log]);
+}
 
 uint32_t ota_common_get_boot_info_flash_offset(void)
 {
@@ -1957,6 +2007,19 @@ void ota_update_flash_offset_after_segment_crc(bool flag)
         // restore the offset
         ota_control_env.offsetInFlashToProgram = ota_control_env.offsetInFlashOfCurrentSegment;
         ota_control_env.alreadyReceivedDataSizeOfImage = ota_control_env.offsetOfImageOfCurrentSegment;
+    }
+}
+
+void ota_update_flash_offset_after_segment_crc_by_slave(bool flag, FLASH_OTA_UPGRADE_LOG_INFO_T* info)
+{
+    if(!isInBesOtaState)
+    {
+        ota_upgradeSize_log_by_slave(info);
+        return;
+    }
+    else
+    {
+        ota_update_flash_offset_after_segment_crc(flag);
     }
 }
 
@@ -2364,12 +2427,14 @@ static void _handle_received_data(uint8_t *otaBuf, bool isViaBle,uint16_t dataLe
         {
             if (!ota_is_in_progress()
 #if defined(BT_SVC_MODULE_IBRT_ENABLED) && !defined(FREEMAN_OTA_ENABLED)
-                || (OTA_BASIC_TWS_MASTER == ota_basic_get_tws_role() &&
+                || ( _tws_is_master() &&
                  !bts_tws_if_is_tws_link_connected())
 #endif
                  )
             {
+                OTA_TRACE(0,"[%s]OTA is not in progress or tws disconnect, ignore this packet,exit ota.", __func__);
                 ota_control_send_result_response(false);
+                Bes_exit_ota_state();
                 return;
             }
 
@@ -2479,6 +2544,14 @@ static void _handle_received_data(uint8_t *otaBuf, bool isViaBle,uint16_t dataLe
         }
         case OTA_COMMAND_SEGMENT_VERIFY:
         {
+#if defined(BT_SVC_MODULE_IBRT_ENABLED) && !defined(FREEMAN_OTA_ENABLED)
+            if (_tws_is_master() &&!bts_tws_if_is_tws_link_connected())
+            {
+                OTA_TRACE(0,"[%s]tws disconnect,exit ota.", __func__);
+                Bes_exit_ota_state();
+                return;
+            }
+#endif
             if(!app_get_bes_ota_state())
             {
                 break;

@@ -372,6 +372,21 @@ void app_bt_stream_trigger_start(uint8_t device_id, uint8_t offset)
         tg_trigger_time += 100000;
         AUDIOPLAYERS_TRACE(0, "%s add 100ms", __func__);
     }
+
+#ifdef A2DP_RETRIGGER_ADD_TRIGGER_TIME_IN_CACHE_UNDERFLOW
+    if (a2dp_audio_is_cache_underflow())
+    {
+        if (codec_type == BT_A2DP_CODEC_TYPE_SBC)
+        {
+            if (tg_trigger_time < A2DP_PLAYER_PLAYBACK_MAX_WATERLINE_SBC_MTU * A2DP_PLAYER_PLAYBACK_DELAY_SBC_BASE)
+            {
+                tg_trigger_time = A2DP_PLAYER_PLAYBACK_MAX_WATERLINE_SBC_MTU * A2DP_PLAYER_PLAYBACK_DELAY_SBC_BASE;
+                AUDIOPLAYERS_TRACE(0, "%s sbc cache underflow retrigger set %d ms",
+                    __func__, (uint32_t)(A2DP_PLAYER_PLAYBACK_MAX_WATERLINE_SBC_MTU * A2DP_PLAYER_PLAYBACK_DELAY_SBC_BASE / 1000));
+            }
+        }
+    }
+#endif
     app_bt_stream_set_trigger_time((uint32_t)tg_trigger_time);
 }
 

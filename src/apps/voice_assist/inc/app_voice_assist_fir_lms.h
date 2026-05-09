@@ -62,6 +62,7 @@ int voice_assist_fir_lms_close(void);
 int voice_assist_fir_lms_set_cfg(uint32_t ctrl, uint8_t *tgt_cfg, uint32_t ptr_len);
 
 void app_voice_assist_fir_lms_set_fir_HW_work_mode(int mode);
+int32_t app_voice_assist_fir_lms_update_adc_gain(void);
 
 void fir_tool_fir_anc_open(int32_t current_mode);
 void fir_tool_fir_anc_close(void);

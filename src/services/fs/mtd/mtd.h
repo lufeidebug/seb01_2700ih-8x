@@ -126,6 +126,16 @@ struct mtd_factor_conf {
     uint32_t cache_size_factor ;      /* CONFIG_FS_LITTLEFS_CACHE_SIZE_FACTOR */
 };
 
+struct mtd_dev_conf {
+    uint8_t  priv_io_enable;          /* mtd dev can use blocksize/erasize from priv to do io*/
+    uint32_t block_erase_size;
+    uint32_t block_sector_size;
+    struct mtd_factor_conf factor;
+    uint8_t  partition_enable;       /* partition*/
+    uint8_t  partition_num;
+    uint32_t partition_conf[MAX_NORFLASH_PART_NUM]; /* partition conf*/
+};
+
 /* This structure describes a range of sectors to be protected or
  * unprotected.
  */
@@ -809,7 +819,7 @@ int bes_nand_slotinitialize_partition_dhara(int minor, int flashid, int partidx)
  *   size - partition size, such as 0x100000
  *
  ****************************************************************************/
-int bes_norflash_slotinitialize(int minor, uint8_t *start, uint32_t size);
+int bes_norflash_slotinitialize(int minor, uint8_t *start, uint32_t size, struct mtd_dev_conf *devconf);
 
 /****************************************************************************
  * Name: fs_nand_drivers_initialize
@@ -827,7 +837,7 @@ void bes_nand_drivers_register(void);
  *   Initialize norflash drivers for fs
  *
  ****************************************************************************/
-void bes_norflash_drivers_register(int minor, uint8_t *start, uint32_t size);
+void bes_norflash_drivers_register(int minor, uint8_t *start, uint32_t size, struct mtd_dev_conf *devconf);
 
 /****************************************************************************
  * Name: bes_nand_slotinitialize_yaffs

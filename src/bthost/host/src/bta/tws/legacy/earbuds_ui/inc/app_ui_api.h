@@ -84,6 +84,7 @@ typedef struct {
     void (*ibrt_mgr_pairing_mode_timeout_post_hook)();
     void (*ibrt_mgr_tws_role_switch_comp_hook)(bt_ui_role_t current_role, uint8_t errCode);
     void (*peer_box_state_update_hook)(bud_box_state box_state);
+    void (*local_box_state_update_hook)(bud_box_state box_state);
     void (*pre_handle_box_event_hook)(app_ui_evt_t box_evt);
 } ibrt_mgr_status_changed_cb_t;
 

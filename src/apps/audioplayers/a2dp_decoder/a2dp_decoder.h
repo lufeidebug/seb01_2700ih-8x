@@ -297,6 +297,7 @@ void app_ibrt_custom_play_speed_tuning_req_process(uint16_t rsp_seq, uint8_t *pt
 #endif
 
 void a2dp_audio_register_cmd_table(void);
+bool a2dp_audio_is_cache_underflow(void);
 
 #ifdef __cplusplus
 }

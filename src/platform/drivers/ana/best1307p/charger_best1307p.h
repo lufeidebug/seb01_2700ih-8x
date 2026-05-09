@@ -234,10 +234,13 @@ void charger_charge_half_icc_current_enable(void);
 
 void charger_charge_half_icc_current_disable(void);
 
-
 void charger_reg_val_print(void);
 
 void charger_pattern_enable(bool enable);
+
+#ifdef BESUI_TWS_EN
+void charger_param_set_onoff(bool open_close_flag, uint8_t battery_current);
+#endif
 
 #ifdef __cplusplus
 }

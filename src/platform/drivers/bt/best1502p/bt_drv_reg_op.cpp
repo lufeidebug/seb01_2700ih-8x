@@ -2149,6 +2149,11 @@ void bt_drv_reg_op_afh_assess_en(bool en)
     if(en)
     {
         hci_afh_assess_init_config.enable = 1;
+        enum HAL_CHIP_METAL_ID_T metal_id = hal_get_chip_metal_id();
+        if (metal_id >= HAL_CHIP_METAL_ID_2)
+        {
+            hci_afh_assess_init_config.afh_good_chl_thr = CHAS_POLICY_GOOD;
+        }
     }
 
     btdrv_send_hci_cmd_bystack(HCI_DBG_AFH_ASSESS_CMD_OPCODE, (uint8_t *)&hci_afh_assess_init_config, sizeof(struct hci_dbg_set_afh_assess_params));

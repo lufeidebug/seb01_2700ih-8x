@@ -80,9 +80,7 @@
 #include "btapp.h"
 #include "app_hfp.h"
 #include "app_bt.h"
-#ifdef BT_SERVICE_ENABLE
 #include "audio_policy.h"
-#endif
 #include "audio_process.h"
 #include "voice_dev.h"
 #include "app_a2dp.h"
@@ -122,6 +120,7 @@
 #include "app_tws_ibrt_audio_analysis.h"
 #include "app_tws_ibrt_audio_sync.h"
 #include "bts_module_if.h"
+#include "audio_trigger_ibrt.h"
 #undef MUSIC_DELAY_CONTROL
 #endif
 
@@ -184,9 +183,6 @@ int sidetone_opened=0;
 
 #include "audio_trigger_a2dp.h"
 #include "audio_trigger_checker.h"
-#if defined(BT_SVC_MODULE_IBRT_ENABLED)
-#include "audio_trigger_ibrt.h"
-#endif
 
 #ifdef __BIXBY
 #include "app_bixby_thirdparty_if.h"
@@ -8188,6 +8184,15 @@ int app_bt_stream_restart(APP_AUDIO_STATUS* status)
 extern uint8_t bt_media_current_music_get(void);
 extern uint8_t bt_media_current_sco_get(void);
 
+bool app_bt_stream_is_ibrt_slave(void)
+{
+#if defined(BT_SVC_MODULE_IBRT_ENABLED)
+    return bts_ui_role_is_slave();
+#else
+    return false;
+#endif
+}
+
 static uint8_t app_bt_stream_volumeup_generic(bool isToUpdateLocalVolumeLevel)
 {
 #if defined(BT_BUILD_WITH_CUSTOMER_HOST) || defined(BLE_ONLY_ENABLED)
@@ -8266,7 +8271,7 @@ static uint8_t app_bt_stream_volumeup_generic(bool isToUpdateLocalVolumeLevel)
         app_bt_stream_volumeset(hfp_local_vol);
 
         volume_changed_device_id = curr_device->device_id;
-        if (!bts_ui_role_is_slave())
+        if (!app_bt_stream_is_ibrt_slave())
         {
             if (prompt_id != AUD_ID_INVALID) {
                 AUDIO_BT_TRACE(1, "AUD_ID=%d", prompt_id);
@@ -8344,7 +8349,7 @@ static uint8_t app_bt_stream_volumeup_generic(bool isToUpdateLocalVolumeLevel)
         app_bt_stream_volumeset(a2dp_local_vol);
 
         volume_changed_device_id = curr_device->device_id;
-        if (!bts_ui_role_is_slave())
+        if (!app_bt_stream_is_ibrt_slave())
         {
             if (prompt_id != AUD_ID_INVALID) {
                 AUDIO_BT_TRACE(1, "AUD_ID=%d", prompt_id);
@@ -8436,7 +8441,7 @@ void app_bt_set_volume(uint16_t type,uint8_t level)
         if (btdevice_volume_p->hfp_vol == TGT_VOLUME_LEVEL_MUTE)
         {
 #ifdef MEDIA_PLAYER_SUPPORT
-            if (!bts_ui_role_is_slave())
+            if (!app_bt_stream_is_ibrt_slave())
             {
 #ifdef BESUI_STEREO_EN
                 app_ui_mute_vol_warning();
@@ -8462,7 +8467,7 @@ void app_bt_set_volume(uint16_t type,uint8_t level)
         if (btdevice_volume_p->a2dp_vol == TGT_VOLUME_LEVEL_MUTE)
         {
 #ifdef MEDIA_PLAYER_SUPPORT
-            if (!bts_ui_role_is_slave())
+            if (!app_bt_stream_is_ibrt_slave())
             {
 #ifdef BESUI_STEREO_EN
                 app_ui_mute_vol_warning();
@@ -8561,7 +8566,7 @@ static uint8_t app_bt_stream_volumedown_generic(bool isToUpdateLocalVolumeLevel)
         app_bt_stream_volumeset(hfp_local_vol);
 
         volume_changed_device_id = curr_device->device_id;
-        if (!bts_ui_role_is_slave())
+        if (!app_bt_stream_is_ibrt_slave())
         {
             if (prompt_id != AUD_ID_INVALID) {
                 AUDIO_BT_TRACE(1, "AUD_ID=%d", prompt_id);
@@ -8638,7 +8643,7 @@ static uint8_t app_bt_stream_volumedown_generic(bool isToUpdateLocalVolumeLevel)
         app_bt_stream_volumeset(a2dp_local_vol);
 
         volume_changed_device_id = curr_device->device_id;
-        if (!bts_ui_role_is_slave())
+        if (!app_bt_stream_is_ibrt_slave())
         {
             if (prompt_id != AUD_ID_INVALID) {
                 AUDIO_BT_TRACE(1, "AUD_ID=%d", prompt_id);
@@ -8713,7 +8718,7 @@ void app_bt_stream_volumeset_handler(int8_t vol)
 void app_bt_stream_volume_edge_check(void)
 {
 #ifndef BLE_ONLY_ENABLED
-    if (bts_ui_role_is_slave())
+    if (app_bt_stream_is_ibrt_slave())
     {
         return;
     }

@@ -2104,6 +2104,7 @@ enum HAL_NORFLASH_RET_T hal_norflash_init(enum HAL_FLASH_ID_T id)
 {
     enum HAL_NORFLASH_RET_T ret;
     const struct HAL_NORFLASH_CONFIG_T *cfg;
+    POSSIBLY_UNUSED struct HAL_NORFLASH_CONFIG_T nor_cfg;
 
     cfg = hal_norflash_get_init_config();
 
@@ -2117,7 +2118,19 @@ enum HAL_NORFLASH_RET_T hal_norflash_init(enum HAL_FLASH_ID_T id)
     // Avoid flash access from here
     hal_norflash_prefetch_idle(id);
 
-    ret = hal_norflash_open(id, cfg);
+#if defined(CHIP_BEST1502P) && defined(USE_MULTI_FLASH)
+    if(id == HAL_FLASH_ID_1)
+    {
+        memcpy(&nor_cfg, cfg, sizeof(nor_cfg));
+        nor_cfg.speed = 6*1000*1000;
+        nor_cfg.source_clk = 24*1000*1000;
+        nor_cfg.opt &= ~(HAL_NORFLASH_OPT_CALIB_MAGIC_WORD | HAL_NORFLASH_OPT_CALIB_SEQ_PATTERN);
+        ret = hal_norflash_open(id, &nor_cfg);
+    } else
+#endif
+    {
+        ret = hal_norflash_open(id, cfg);
+    }
     return ret;
 }
 

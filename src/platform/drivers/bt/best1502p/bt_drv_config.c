@@ -640,22 +640,22 @@ const uint8_t ble_rf_timing[] =
     0x0C,  //coded PHY at 500kbps txpwrdn3
     0x2A,  //coded PHY at 500kbps txpwrup3
 
-    0x00,  //LE 1M rfrxtmda0
-    0x07,  //LE 1M rxpathdly0
-    0x09,  //LE 1M txpathdly0
+    0x0b,  //LE 1M rfrxtmda0
+    0x0b,  //LE 1M rxpathdly0
+    0x05,  //LE 1M txpathdly0
 
-    0x00,  //LE 2M rfrxtmda1
-    0x02,  //LE 2M rxpathdly1
-    0x08,  //LE 2M txpathdly1
+    0x06,  //LE 2M rfrxtmda1
+    0x06,  //LE 2M rxpathdly1
+    0x04,  //LE 2M txpathdly1
 
-    0x15,  //coded PHY at 125kbps rxflushpathdly2
-    0xa0,  //coded PHY at 125kbps rfrxtmda2
-    0x14,  //coded PHY at 125kbps rxpathdly2
-    0x09,  //coded PHY at 125kbps txpathdly2
+    0x1a,  //coded PHY at 125kbps rxflushpathdly2
+    0xb6,  //coded PHY at 125kbps rfrxtmda2
+    0x31,  //coded PHY at 125kbps rxpathdly2
+    0x04,  //coded PHY at 125kbps txpathdly2
 
-    0x17,  //coded PHY at 500kbps rxflushpathdly3
-    0x00,  //coded PHY at 500kbps rfrxtmda3
-    0x09,  //coded PHY at 500kbps txpathdly3
+    0x1a,  //coded PHY at 500kbps rxflushpathdly3
+    0x50,  //coded PHY at 500kbps rfrxtmda3
+    0x04,  //coded PHY at 500kbps txpathdly3
 
     /*   AoA/AoD Registers */
     0x08,  //rxsampstinst01us

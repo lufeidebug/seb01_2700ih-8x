@@ -276,6 +276,10 @@ ifeq ($(CHIP_HAS_USBPHY),1)
 CFLAGS_apps.o += -DCHIP_HAS_USBPHY
 endif
 
+ifeq ($(ARM_CMNS),1)
+ccflags-y += -Iplatform/main/cmse
+endif
+
 ifeq ($(DOLBY_AUDIO_ENABLE),1)
 ccflags-y += \
         -Iplatform/main/cmse \

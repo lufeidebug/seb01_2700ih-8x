@@ -64,7 +64,8 @@ subdir-ccflags-y += \
     -Iutils/hwtimer_list \
     -Iservices/nv_section/customparam_section \
     -I$(BLE_APP_DIR_PATH)/inc  \
-    -Iutils/hsm
+    -Iutils/hsm \
+    -Iapps/common
 
 ifeq ($(BESUI_TWS_EN),1)
 subdir-ccflags-y += -Iapps/besui

@@ -152,6 +152,8 @@ extern "C" int32_t bt_sco_chain_enc_onoff(uint32_t sel_ch)
 extern "C" int32_t bt_sco_chain_bypass_tx_algo(uint32_t sel_ch)
 {
     AUDIOPLAYERS_TRACE(2, "[%s] sel_ch: %d", __func__, sel_ch);
+	
+#if defined(__SNDP_PROJ__)
 
     if (sel_ch < SPEECH_CODEC_CAPTURE_CHANNEL_NUM || sel_ch == 0xFF) {
         g_bypass_tx_algo_sel_ch = sel_ch;
@@ -160,6 +162,18 @@ extern "C" int32_t bt_sco_chain_bypass_tx_algo(uint32_t sel_ch)
         AUDIOPLAYERS_TRACE(2, "[%s] WARNING: Failed to set sel_ch: %d ", __func__, sel_ch);
         return -1;
     }
+	
+#else
+
+    if (sel_ch < SPEECH_CODEC_CAPTURE_CHANNEL_NUM) {
+        g_bypass_tx_algo_sel_ch = sel_ch;
+        return 0;
+    } else {
+        AUDIOPLAYERS_TRACE(2, "[%s] WARNING: Failed to set sel_ch: %d ", __func__, SPEECH_CODEC_CAPTURE_CHANNEL_NUM);
+        return -1;
+    }
+	
+#endif	
 }
 
 extern "C" int32_t speech_bone_sensor_resample_process(void *pcm_buf, int pcm_len)

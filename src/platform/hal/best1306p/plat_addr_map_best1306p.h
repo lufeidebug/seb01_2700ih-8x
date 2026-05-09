@@ -182,7 +182,7 @@ extern "C" {
 /*MPC: SRAM block size: 0x8000, FLASH block size 0x40000*/
 #ifdef LARGE_SE_RAM
 #define RAM_S_SIZE                              0x00037000
-#define RAM_NSC_SIZE                            0x08000
+#define RAM_NSC_SIZE                            0x01000
 #else
 #define RAM_S_SIZE                              0x00027000
 #define RAM_NSC_SIZE                            0x01000

@@ -790,6 +790,7 @@ static anc_status_t app_anc_switch_mode_impl(anc_status_t status, app_anc_mode_t
 #if defined(VOICE_ASSIST_FF_FIR_LMS)
         if (g_enable_assist) {
             app_voice_assist_fir_lms_set_anc_mode(mode);
+            app_voice_assist_fir_lms_update_adc_gain();
             if (custom_mode_new == ANC_CUSTOM_MODE_FIR_ANC) {
                 app_voice_assist_fir_lms_set_fir_status(true);
                 if ((custom_mode_old != ANC_CUSTOM_MODE_FIR_ANC)&&( custom_mode_old !=  APP_ANC_MODE_OFF)) {
@@ -802,6 +803,7 @@ static anc_status_t app_anc_switch_mode_impl(anc_status_t status, app_anc_mode_t
 #elif defined(VOICE_ASSIST_FF_IIR_LMS)
         if (g_enable_assist) {
             app_voice_assist_iir_lms_set_anc_mode(mode);
+            app_voice_assist_iir_lms_update_adc_gain();
             if (custom_mode_new == ANC_CUSTOM_MODE_FIR_ANC) {
                 app_voice_assist_iir_lms_set_iir_status(true);
                 if ((custom_mode_old != ANC_CUSTOM_MODE_FIR_ANC)) {

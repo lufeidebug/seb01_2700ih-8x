@@ -169,6 +169,8 @@ bool bts_ibrt_if_is_ibrt_link_connected(const bt_bdaddr_t *p_dev_addr);
 
 bool bts_ibrt_if_is_ibrt_idle(const bt_bdaddr_t *addr);
 
+bool bts_bt_ibrt_if_get_ibrt_connection_state(const bt_bdaddr_t *addr);
+
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -462,7 +464,7 @@ void bts_tws_if_send_user_action(uint8_t *p_buff, uint16_t length);
  * </table>
  ****************************************************************************************
  */
-btif_connection_role_t bts_tws_if_get_local_tws_role(void);
+btif_connection_role_t bts_tws_if_get_tws_link_bt_role(void);
 
 
 /**

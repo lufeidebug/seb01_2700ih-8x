@@ -419,6 +419,17 @@ int app_bap_uc_srv_stream_disable(uint8_t ase_lid);
 
 /**
  ****************************************************************************************
+ * @brief Update a CIS Stream metadata.
+ *
+ * @param[in] ase_lid          ASE local index
+ * @param[in] md               Metadata
+ *
+ ****************************************************************************************
+ */
+int app_bap_uc_srv_stream_update_md(uint8_t ase_lid, const app_gaf_bap_cfg_metadata_t *md);
+
+/**
+ ****************************************************************************************
  * @brief HAP HAC message discover command
  *
  *

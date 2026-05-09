@@ -61,6 +61,11 @@ void app_ibrt_view_update_list(void)
     OTA_TRACE(0,"view_update_list end: =====================");
 }
 
+void app_ibrt_ota_cache_slave_reset_info(void)
+{
+    memset((uint8_t*)&receivedResultAlreadyProcessedBySlave, 0, sizeof(OTA_IBRT_TWS_CMD_EXECUTED_RESULT_FROM_SLAVE_T));
+}
+
 void app_ibrt_view_update_sector(void)
 {
     OTA_TRACE(0,"view_update_sector start: =====================");

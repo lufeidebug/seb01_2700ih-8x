@@ -166,6 +166,14 @@ ifeq ($(A2DP_SBC_PLC_ENABLED),1)
 CFLAGS_a2dp_decoder_sbc.o += -DA2DP_SBC_PLC_ENABLED
 endif
 
+ifeq ($(A2DP_LDAC_PLC_ENABLED),1)
+CFLAGS_a2dp_decoder_ldac.o += -DA2DP_LDAC_PLC_ENABLED
+endif
+
+ifeq ($(A2DP_AAC_PLC_ENABLED),1)
+CFLAGS_a2dp_decoder_aac_lc.o += -DA2DP_AAC_PLC_ENABLED
+endif
+
 ifeq ($(AUDIO_REVERB),1)
 ccflags-y += -D__AUDIO_REVERB__
 endif
@@ -184,3 +192,6 @@ ifeq ($(AUDIO_BASS_ENHANCER),1)
 ccflags-y += -D__AUDIO_BASS_ENHANCER__
 endif
 
+ifeq ($(A2DP_CP_REFILL_MAX_WATERLINE_AFTER_NO_CACHE),1)
+ccflags-y += -DA2DP_CP_REFILL_MAX_WATERLINE_AFTER_NO_CACHE
+endif

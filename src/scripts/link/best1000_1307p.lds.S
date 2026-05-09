@@ -387,6 +387,8 @@ SECTIONS
 		/* memcpy.o/memcpy_move-kp.o or libc_nano.a(lib_a-memcpy.o/lib_a-memcpy-stub.o) */
 		*:memcpy*.o(.text*)
 		*:lib_a-memcpy*.o(.text*)
+		*:memmove*.o(.text*)
+		*:lib_a-memmove.o(.text*)
 #ifndef MTEST_IN_FLASH
 		*:libc_rom.o(.text*)
 #endif

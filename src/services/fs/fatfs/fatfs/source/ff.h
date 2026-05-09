@@ -142,9 +142,6 @@ extern const char* VolumeStr[FF_VOLUMES];	/* User defied volume ID */
 /* Filesystem object structure (FATFS) */
 
 typedef struct {
-	/*win need to be aligned when use psram*/
-	BYTE	win[FF_MAX_SS];	/* Disk access window for Directory, FAT (and file data at tiny cfg) */
-
 	BYTE	fs_type;		/* Filesystem type (0:not mounted) */
 	BYTE	pdrv;			/* Associated physical drive */
 	BYTE	n_fats;			/* Number of FATs (1 or 2) */
@@ -187,7 +184,8 @@ typedef struct {
 	LBA_t	bitbase;		/* Allocation bitmap base sector */
 #endif
 	LBA_t	winsect;		/* Current sector appearing in the win[] */
-} FATFS;
+	BYTE	win[FF_MAX_SS];	/* Disk access window for Directory, FAT (and file data at tiny cfg) */
+} __attribute__((aligned(32))) FATFS;
 
 
 
@@ -233,7 +231,7 @@ typedef struct {
 #if !FF_FS_TINY
 	BYTE	buf[FF_MAX_SS];	/* File private data read/write window */
 #endif
-} FIL;
+} __attribute__((aligned(32))) FIL;
 
 
 

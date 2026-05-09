@@ -2360,7 +2360,7 @@ int hal_trace_address_readable(uint32_t addr)
         return 1;
     }
 #endif
-#if defined(FLASH2_CTRL_BASE) && defined(USE_MULTI_FLASH)
+#if defined(FLASH2_CTRL_BASE) && defined(USE_MULTI_FLASH) && (FLASH2_SIZE > 0)
     if (FLASH2_BASE < addr && addr < FLASH2_BASE + FLASH2_SIZE) {
         return 1;
     }
@@ -3225,9 +3225,7 @@ void hal_trace_fault_dump(const uint32_t *regs, const uint32_t *extra, uint32_t 
     }
     hal_trace_output((unsigned char *)title, sizeof(title) - 1);
 
-#ifndef ARM_CMSE
     hal_trace_print_fault_info(&info);
-#endif
     hal_trace_flush_buffer();
 
 #ifdef NO_MPU_DEFAULT_MAP

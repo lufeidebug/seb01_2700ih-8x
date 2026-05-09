@@ -432,3 +432,14 @@ endif
 ifeq ($(or $(BESUI_TWS_EN), $(BESUI_STEREO_EN)), 1)
 include $(srctree)/config/besui.mk
 endif
+
+export USE_MULTI_FLASH ?= 0
+ifeq ($(USE_MULTI_FLASH),1)
+export FLASH1_SIZE ?= 0x40000
+KBUILD_CPPFLAGS += \
+        -DUSE_MULTI_FLASH \
+        -DFLASH1_SIZE=$(FLASH1_SIZE)
+LDS_CPPFLAGS += \
+        -DUSE_MULTI_FLASH \
+        -DFLASH1_SIZE=$(FLASH1_SIZE)
+endif

@@ -1390,7 +1390,7 @@ void app_bta_earbuds_deprecated_init()
 
     bta_tws_ui_policy_callbacks_t ui_policy =
     {
-        .accept_connection_request_callback = accept_connection_request_handler, 
+        .accept_connection_request_callback = accept_connection_request_handler,
         .set_page_scan_param_callback = set_page_scan_param_handler,
     };
     bta_tws_set_ui_policy_callbacks(&ui_policy);
@@ -1413,7 +1413,7 @@ void app_bta_earbuds_deprecated_init()
     };
     bta_register_ui_state_changed_hook(BTA_UX_USER_DEPRECATED, &ui_state_changed);
 
-    bta_set_accept_connection_callback(accept_connection_request_handler);
+    bta_set_accept_connection_request_callback(accept_connection_request_handler);
 
 #endif // BT_SVC_FW_PRODUCT_EARBUDS
 

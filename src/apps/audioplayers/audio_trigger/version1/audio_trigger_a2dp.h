@@ -2,7 +2,7 @@
 #define __AUDIO_TRIGGER_A2DP_H__
 
 
-#define A2DP_PLAYER_PLAYBACK_WATER_LINE ((uint32_t)(3.f * a2dp_audio_latency_factor_get() + 0.5f))
+#define A2DP_PLAYER_PLAYBACK_WATER_LINE ((uint32_t)(3.f * a2dp_audio_latency_factor_get() + 0.5f + 2))
 #define A2DP_PLAYER_PLAYBACK_WATER_LINE_UPPER (25)
 
 /********************************

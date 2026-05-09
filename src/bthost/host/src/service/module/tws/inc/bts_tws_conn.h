@@ -208,7 +208,7 @@ void bts_tws_conn_event_notify(ibrt_conn_evt_header* evt);
 
 bool bts_tws_conn_get_tws_disconnect_update_ui_master_cfg(void);
 
-btif_connection_role_t bts_tws_conn_get_local_tws_role(void);
+btif_connection_role_t bts_tws_conn_get_tws_acl_bt_role(void);
 
 void bts_tws_conn_request_modify_tws_bandwidth(TWS_TIMING_CONTROL_USER_E user, bool enable);
 

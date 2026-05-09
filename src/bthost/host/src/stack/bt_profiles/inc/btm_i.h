@@ -544,8 +544,7 @@ typedef uint8  connection_role;
 
 #define BCR_MASTER   0x00
 #define BCR_SLAVE    0x01
-#define BCR_ANY      0x02
-#define BCR_UNKNOWN  0x03
+#define BCR_UNKNOWN  0xFF
 
 #define BTM_MAX_xSCO_NUMS BT_ACL_MAX_LINK_NUMS
 
@@ -654,8 +653,6 @@ struct btm_conn_item_t
     bool marked_as_source;
     bool is_tws_link;
     uint8 sco_req_type;
-    bool conn_perferred_as_slave;
-    bool conn_perferred_as_master;
     bool ibrt_both_side_save_credit_before_danger;
     bool ibrt_master_wait_remote_new_master_ready;
 
@@ -682,6 +679,7 @@ struct btm_conn_item_t
     uint8 encry_need_flag;/*tell if the entryption is need*/
     uint8 encry_pending;
     connection_role btm_bt_role;
+    connection_role preferred_btm_bt_role;
     uint8 state;
     uint8 mode;
     uint8 authState;
@@ -1027,13 +1025,6 @@ struct btm_conn_item_t *btm_conn_search_by_device_id(uint8 device_id);
 struct btm_conn_item_t *btm_conn_search_linkup (const bt_bdaddr_t *bdaddr );
 struct btm_sco_conn_item_t *btm_conn_sco_find_or_add( struct btm_conn_item_t *conn);
 struct btm_conn_item_t *btm_conn_acl_search_by_handle( uint16 conn_handle);
-int btm_get_bt_role_by_device_id(uint8 device_id);
-void btm_set_conn_preferred_as_slave_role(uint8 device_id);
-void btm_set_conn_preferred_as_master_role(uint8 device_id);
-bool btm_current_bt_role_is_master(uint8 device_id);
-bool btm_current_bt_role_is_slave(uint8 device_id);
-bool btm_is_conn_preferred_as_slave(uint8 device_id);
-bool btm_is_conn_preferred_as_master(uint8 device_id);
 bool btm_is_remote_feature_support(struct btm_conn_item_t* conn, uint8 page, uint8 i, uint8 mask);
 void btm_conn_disconnect_process(uint16 handle, uint8 status, uint8 reason);
 int8 btlib_hcicmd_read_remote_name(struct bdaddr_t *bdaddr, uint8 page_scan_repetition_mode, uint16 clk_off);

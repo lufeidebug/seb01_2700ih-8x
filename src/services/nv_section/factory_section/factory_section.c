@@ -564,6 +564,7 @@ void factory_section_original_btaddr_get(uint8_t *btAddr)
     }
 }
 
+//Add by lzw@sndp 202601 start
 void factory_section_original_bleaddr_get(uint8_t *btAddr)
 {
     if(factory_section_p){
@@ -581,5 +582,5 @@ void factory_section_original_bleaddr_get(uint8_t *btAddr)
         memcpy(btAddr, ble_global_addr, 6);
     }
 }
-
+//Add by lzw@sndp 202601 end
 

@@ -23,7 +23,7 @@ extern "C" {
 /*****************************header include********************************/
 
 /******************************macro defination*****************************/
-#define AOB_MAX_CORE_EVT_CB         (5)
+#define AOB_MAX_CORE_EVT_CB         (8)
 /******************************type defination******************************/
 
 typedef enum gatt_cache_restore_state

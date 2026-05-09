@@ -360,9 +360,114 @@ exit:
 }
 
 
+const static uint16_t vco_ictrl_calib_config[][2] =
+{
+    {0x0019, 0x6140},
+    {0x0082, 0x18AB},
+    {0x009D, 0x2604},
+};
+
+static bool bt_drv_vco_ictrl_check(uint32_t chl)
+{
+    uint16_t dbg_reg0_val = 0;
+    uint16_t dbg_reg1_val = 0;
+    bool calib_flag = false;
+
+    // rx on 2480
+    BTDIGITAL_REG_WR(BT_BES_TESTMODE_ADDR, 0x0);
+    BTDIGITAL_REG_WR(BT_BES_TESTMODE_ADDR, (0x000A0080 + chl));
+    // rst
+    btdrv_write_rf_reg(0x44A, 0x5E32);
+    hal_sys_timer_delay(US_TO_TICKS(100));
+    btdrv_write_rf_reg(0x44A, 0xDE32);
+
+    BTRF_REG_GET_FIELD(0x53, 0x1, 14, dbg_reg0_val);
+    BTRF_REG_GET_FIELD(0x54, 0x1, 15, dbg_reg1_val);
+
+    if (!dbg_reg0_val && dbg_reg1_val)
+        calib_flag = true;
+    else
+        calib_flag = false;
+
+    return calib_flag;
+}
+
+static void bt_drv_vco_calib(void)
+{
+    uint32_t rf_store_tbl_size = ARRAY_SIZE(vco_ictrl_calib_config);
+    uint16_t vco_ictrl_rf_local[rf_store_tbl_size];
+
+    const uint16_t(*vco_ictrl_rf_set_p)[2];
+    vco_ictrl_rf_set_p = &vco_ictrl_calib_config[0];
+    uint32_t vco_ictrl_set_tbl_size = ARRAY_SIZE(vco_ictrl_calib_config);
+
+    uint16_t value = 0;
+    uint16_t i_ctrl = 0;
+    bool calib_flag_2402 = false;
+    bool calib_flag_2480 = false;
+
+    // rf reg store common
+    for (uint32_t i = 0; i < rf_store_tbl_size; i++) {
+        btdrv_read_rf_reg(vco_ictrl_calib_config[i][0], &value);
+        vco_ictrl_rf_local[i] = value;
+        // DRIVERS_TRACE(2, "rf reg = %x,v = %x", vco_ictrl_calib_config[i][0], value);
+    }
+
+    // rf reg set common
+    for (uint32_t i = 0; i < vco_ictrl_set_tbl_size; i++) {
+        btdrv_write_rf_reg(vco_ictrl_rf_set_p[i][0], vco_ictrl_rf_set_p[i][1]);
+        // DRIVERS_TRACE(2, "rf reg = %x,v = %x", vco_ictrl_rf_set_p[i][0], vco_ictrl_rf_set_p[i][1]);
+    }
+
+    // dr vco_vres
+    BTRF_REG_SET_FIELD(0x9D, 0x1, 12, 0x1);
+    BTRF_REG_SET_FIELD(0x9D, 0xF, 8, 0xC);
+
+    // calib vco i_ctrl
+    for (uint16_t i = 0; i <= 0x3F; i++) {
+        if ((i >= 0x13) && (i < 0x20)){
+            continue;
+        }
+
+        BTRF_REG_SET_FIELD(0x19, 0x3F, 10, (i_ctrl + i));
+
+        calib_flag_2402 = bt_drv_vco_ictrl_check(0x0);
+        calib_flag_2480 = bt_drv_vco_ictrl_check(0x4E);
+
+        if (calib_flag_2402 && calib_flag_2480) {
+            // calib value + 5
+            i_ctrl = i_ctrl + i + 5;
+
+            if (i_ctrl > 0x3F) {
+                i_ctrl = 0x3F;
+            }
+
+            BTRF_REG_SET_FIELD(0x29, 0x3F, 7, i_ctrl);
+            // close rx vco ictrl auto calib
+            BTRF_REG_SET_FIELD(0x18, 0xF, 6, 0x1);
+            DRIVERS_TRACE(0, "%s, vco_ictrl:0x%x", __func__, i_ctrl);
+            break;
+        }
+    }
+
+    BTDIGITAL_REG_WR(BT_BES_TESTMODE_ADDR, 0x0);
+    // vco ictrl dr 0
+    BTRF_REG_SET_FIELD(0x1B, 0x1, 14, 0x0);
+    // vco vres dr 0
+    BTRF_REG_SET_FIELD(0x9d, 0x1, 12, 0x0);
+
+    // rf reg restore common
+    for (uint32_t i = 0; i < rf_store_tbl_size; i++) {
+        btdrv_write_rf_reg(vco_ictrl_calib_config[i][0], vco_ictrl_rf_local[i]);
+        // DRIVERS_TRACE(2, "rf reg = %x,v = %x", vco_ictrl_calib_config[i][0], vco_ictrl_rf_local[i]);
+    }
+}
+
 void bt_drv_calibration_init(void)
 {
+    btdrv_vco_drive_calib();
     btdrv_txpower_calib();
+    bt_drv_vco_calib();
 #ifdef TX_IQ_CAL
     btdrv_tx_iq_manual_cal();
 #endif
@@ -497,6 +602,20 @@ static void btdrv_tx_power_temperature_compensate(int temperature)
     }
 }
 
+static void btdrv_vco_ictrl_temperature_compensate(int temperature)
+{
+    static bool vco_ictrl_comp_flag = false;
+
+    if (((temperature <= 0) || (temperature >= 55)) && !vco_ictrl_comp_flag) {
+        BTRF_REG_SET_FIELD(0x1B, 0x1, 14, 0x1);     // vco_ictrl dr = 1
+        BTRF_REG_SET_FIELD(0x19, 0x3F, 10, 0x30);   // vco_ictrl = 0x30
+        vco_ictrl_comp_flag = true;
+    } else if ((temperature >= 5) && (temperature <= 50) && vco_ictrl_comp_flag) {
+        BTRF_REG_SET_FIELD(0x1B, 0x1, 14, 0x0);     // vco_ictrl dr = 0
+        vco_ictrl_comp_flag = false;
+    }
+}
+
 static void bt_temperature_comp_handler(void const *param)
 {
     int ret;
@@ -506,6 +625,8 @@ static void bt_temperature_comp_handler(void const *param)
 
     if (!ret) {
         btdrv_tx_power_temperature_compensate(ctx.temperature);
+
+        btdrv_vco_ictrl_temperature_compensate(ctx.temperature);
         DRIVERS_TRACE(0,"%s, temperature: %dC", __func__, ctx.temperature);
     } else {
         DRIVERS_TRACE(0,"%s, ###Warnning! Invalid ntc monitor.", __func__);

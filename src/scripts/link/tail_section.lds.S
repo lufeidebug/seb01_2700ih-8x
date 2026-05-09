@@ -39,6 +39,7 @@
 #define PROMPT_SECTION_LOC					0
 #define AUD_SECTION_LOC						0
 #define FACTORY_SECTION_LOC					0
+#define USERDATA_SECTION_LOC				0
 #ifdef USE_MULTI_FLASH
 #define COMBO_SECTION_LOC					1
 #define HOTWORD_SECTION_LOC					1
@@ -50,9 +51,9 @@
 #define CRASH_DUMP_SECTION_LOC				1
 #define CUSTOM_PARAMETER_SECTION_LOC		1
 #define LHDC_LICENSE_SECTION_LOC			1
-#define USERDATA_SECTION_LOC				1
 #define RESERVED_SECTION_LOC				1
 #define FINDMY_INFO_SECTION_LOC             1
+#define OTA_APP_BOOT_INFO_SECTION_LOC       1
 #else
 #define COMBO_SECTION_LOC					0
 #define HOTWORD_SECTION_LOC					0
@@ -64,9 +65,12 @@
 #define CRASH_DUMP_SECTION_LOC				0
 #define CUSTOM_PARAMETER_SECTION_LOC		0
 #define LHDC_LICENSE_SECTION_LOC			0
-#define USERDATA_SECTION_LOC				0
 #define RESERVED_SECTION_LOC				0
 #define FINDMY_INFO_SECTION_LOC             0
+#define OTA_APP_BOOT_INFO_SECTION_LOC       0
+#endif
+#ifdef USE_MULTI_FLASH
+#define FLASH1_CALIB_SECTION_LOC			1
 #endif
 
 #ifdef USE_MULTI_FLASH
@@ -130,7 +134,8 @@
 							SECTION_SIZE_LOC(1, COMBO) -
 							SECTION_SIZE_LOC(1, AUD) -
 							SECTION_SIZE_LOC(1, OTA_APP_BOOT_INFO) -
-							SECTION_SIZE_LOC(0, FINDMY_INFO) -
+							SECTION_SIZE_LOC(1, FINDMY_INFO) -
+							SECTION_SIZE_LOC(1, FLASH1_CALIB) -
 							0;
 
 
@@ -141,6 +146,15 @@
 		__dummy_flash1_tail_end = .;
 	} > FLASH1_NC
 	ASSERT(__flash1_tail_sec_start == __dummy_flash1_tail_end, "Bad dummy_flash1_tail")
+#endif
+
+#ifdef FLASH1_CALIB_SECTION_SIZE
+	.flash1_calib (NOLOAD):
+	{
+		__flash1_calib_start = .;
+		. = SECTION_SIZE(FLASH1_CALIB);
+		__flash1_calib_end = .;
+	} > FLASH_LOC(FLASH1_CALIB)
 #endif
 
 	.combo (NOLOAD):

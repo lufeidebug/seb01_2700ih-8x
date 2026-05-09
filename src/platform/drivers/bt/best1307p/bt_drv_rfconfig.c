@@ -28,6 +28,7 @@
 #include "bt_drv_1307p_internal.h"
 #include "bt_drv_1307p_config.h"
 #include CHIP_SPECIFIC_HDR(bt_drv_modem_reg_map)
+#define XTAL_FCAP_MAX_STEP                      (0x40)
 #define XTAL_FCAP_NORMAL_SHIFT                  0
 #define XTAL_FCAP_NORMAL_MASK                   (0x1FF << XTAL_FCAP_NORMAL_SHIFT)
 #define XTAL_FCAP_NORMAL(n)                     BITFIELD_VAL(XTAL_FCAP_NORMAL, n)
@@ -135,7 +136,7 @@ const uint16_t rf_init_tbl_1[][3] =
     {0x0098, 0x0000, 0},    // duty 1m
     {0x0099, 0x301B, 0},
     {0x009A, 0X8088, 0},    //rfvco_vres_txbuf
-    {0x009B, 0x170C, 0},    // vcorxbuf dr=0 bit15=0
+    {0x009B, 0x370C, 0},    // vcorxbuf dr=0 bit15=0
     {0x009D, 0x2604, 0},
     {0x009E, 0x3F68, 0},    //iofst
     {0x009F, 0xE911, 0},    //dac tst
@@ -446,10 +447,24 @@ void bt_drv_rf_set_afh_monitor_gain(void)
 #endif
 }
 
+static void  bt_drv_rf_set_xtal_fcap_real(int current_val)
+{
+    uint16_t val;
+
+    btdrv_read_rf_reg(RF_REG_XTAL_FCAP, &val);
+    val = (val & ~XTAL_FCAP_NORMAL_MASK) |
+          ((current_val << XTAL_FCAP_NORMAL_SHIFT) & XTAL_FCAP_NORMAL_MASK);
+    btdrv_write_rf_reg(RF_REG_XTAL_FCAP, val);
+}
+
 void btdrv_rf_init_xtal_fcap(uint32_t fcap)
 {
-    xtal_fcap = SET_BITFIELD(xtal_fcap, XTAL_FCAP_NORMAL, fcap);
-    btdrv_write_rf_reg(RF_REG_XTAL_FCAP, xtal_fcap);
+    uint16_t val = 0;
+
+    btdrv_read_rf_reg(RF_REG_XTAL_FCAP, &val);
+    val &= XTAL_FCAP_NORMAL_MASK;
+    bt_drv_rf_set_xtal_fcap(val, fcap, XTAL_FCAP_MAX_STEP, bt_drv_rf_set_xtal_fcap_real);
+    xtal_fcap = fcap;
     init_xtal_fcap = xtal_fcap;
 }
 
@@ -763,9 +778,6 @@ void bt_drv_tx_pwr_init(void)
 void bt_drv_rf_init_xtal_fcap(void)
 {
     unsigned int xtal_fcap_temp = DEFAULT_XTAL_FCAP;
-    uint16_t xtal_val = 0;
-
-    POSSIBLY_UNUSED uint16_t freq_offset;
 
     if(btdrv_rf_customer_config.config_xtal_en == true)
     {
@@ -789,13 +801,7 @@ void bt_drv_rf_init_xtal_fcap(void)
 
     DRIVERS_TRACE(1,"%s val: 0x%x", __func__, xtal_fcap_temp);
 
-    for (uint32_t i = 0; i<9; i++){
-        if ((xtal_fcap_temp) >> (i) & 1) {
-            xtal_val |= 1 << i;
-            btdrv_rf_init_xtal_fcap(xtal_val);
-        }
-        btdrv_delay(1);
-    }
+    btdrv_rf_init_xtal_fcap(xtal_fcap_temp);
 }
 
 void bt_drv_ble_adv_txpwr_via_advhdl(uint8_t adv_hdl, uint8_t idx, int8_t txpwr_dbm)
@@ -908,6 +914,27 @@ void bt_drv_rf_set_bt_sync_agc_enable(bool enable)
     btdrv_write_rf_reg(RF_REG_SYNC_AGC, val);
 }
 #endif
+
+void btdrv_vco_drive_calib(void)
+{
+    uint16_t read_val = 0;
+    uint16_t calib_flag = 0;
+
+    pmu_get_efuse(PMU_EFUSE_PAGE_BATTER_HV, &read_val);
+    calib_flag = getbit(read_val, 15);
+
+    if (calib_flag) {
+        BTRF_REG_SET_FIELD(0x9D, 0xF, 8, 0x7);      //reg_bt_rfvco_vres_div2_tx
+        BTRF_REG_SET_FIELD(0xC1, 0x7, 8, 0x4);      //reg_bt_rfvco_ldo_vres_tx
+        BTRF_REG_SET_FIELD(0x9B, 0x7, 12, 0x2);     //reg_bt_rfvco_ldo_vres_rx
+        BTRF_REG_SET_FIELD(0x18C, 0x3, 5, 0x1);     //reg_bt_tmx_pictrl
+
+        BTRF_REG_SET_FIELD(0x39, 0x7, 2, 0x4);     //reg_bt_lan_ldo_res swagc
+#ifdef __HW_AGC__
+        BTRF_REG_SET_FIELD(0x21E, 0x7, 2, 0x4);     //reg_bt_lan_ldo_res swagc
+#endif
+    }
+}
 
 static void btdrv_tx_power_rf_comp(const uint16_t rf_tx_gain)
 {

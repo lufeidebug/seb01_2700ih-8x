@@ -44,6 +44,19 @@ typedef enum
     BTA_TWS_NV_MERGE_MIX_PEER_FIRST,
 } bta_tws_nv_merge_scheme_t;
 
+typedef enum
+{
+    BTA_TWS_NV_MERGE_SCOPE_MINIMAL, // Merge only NV records of devices involved in active or pending reconnections.
+    BTA_TWS_NV_MERGE_SCOPE_FULL,    // Merge the full NV records from both earbuds.
+} bta_tws_nv_merge_scope_t;
+
+typedef enum
+{
+    BTA_TWS_AFH_ASSESS_POLICY_ALWAYS_ON,         // Keep afh assessment always enabled (ui master only).
+    BTA_TWS_AFH_ASSESS_POLICY_ON_LINK,           // Enable when any link exists (ui master only).
+    BTA_TWS_AFH_ASSESS_POLICY_ON_STREAMING,      // Enable only during streaming (ui master only).
+} bta_tws_afh_assess_policy_t;
+
 typedef struct
 {
     uint32_t rx_seq_error_timeout;
@@ -180,4 +193,7 @@ typedef struct
     bool  connected_max_device_num_allow_new_connect;
     bool lea_connected_allow_new_connect;
     bool dev_idle_allow_nonsupport_stay_connected;
+
+    bta_tws_nv_merge_scope_t nv_merge_scope;
+    bta_tws_afh_assess_policy_t afh_assess_policy;
 } bta_tws_attributes_t;

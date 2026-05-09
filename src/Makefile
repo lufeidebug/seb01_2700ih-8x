@@ -600,7 +600,7 @@ endif
 REVISION_INFO := $(subst $(space),-,$(strip $(REVISION_INFO)))
 SOFTWARE_VERSION := $(subst $(space),-,$(strip $(SOFTWARE_VERSION)))
 
-# Add by lzw 20260319 start
+# Add by lzw@sndp 20260319 start
 SW_VERSION := $(subst .,$(space),$(SOFTWARE_VERSION))
 KBUILD_CPPFLAGS += -DSW_VERSION1=$(word 1,$(SW_VERSION))
 KBUILD_CPPFLAGS += -DSW_VERSION2=$(word 2,$(SW_VERSION))
@@ -616,14 +616,17 @@ KBUILD_CPPFLAGS += -DHW_VERSION1=$(word 1,$(HW_VERSION))
 KBUILD_CPPFLAGS += -DHW_VERSION2=$(word 2,$(HW_VERSION))
 HW_VER_STR := -D__HW_VER_$(word 1,$(HW_VERSION))_$(word 2,$(HW_VERSION))__
 KBUILD_CPPFLAGS += $(HW_VER_STR)
-# Add by lzw 20260319 end
+# Add by lzw@sndp 20260319 end
 
 $(info -------------------------------)
 $(info REVISION_INFO: $(REVISION_INFO))
+
+# Add by lzw@sndp 20260319 start
 $(info SOFTWARE_VERSION: $(SOFTWARE_VERSION))
 $(info HARDWARE_VERSION: $(HARDWARE_VERSION))
-$(info -------------------------------)
+# Add by lzw@sndp 20260319 end
 
+$(info -------------------------------)
 
 # Build host and user info
 ifeq ($(WIN_PLAT),y)

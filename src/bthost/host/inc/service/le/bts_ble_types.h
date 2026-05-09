@@ -565,16 +565,6 @@ typedef struct
 
 typedef struct
 {
-    bool (*get_spot_get_mode)(void);
-    void (*start_find_ringtone)(void);
-    void (*stop_find_ringtone)(void);
-    uint8_t *(*get_eid)(void);
-    uint32_t (*sha256_hash)(const void *in_data, int len, void *out_data);
-    void (*beacon_encrpt_data)(uint8_t *accKey, uint8_t *inputData, uint32_t inputDataLen, uint8_t *output);
-} bts_ble_dult_cb_t;
-
-typedef struct
-{
     bool is_contain_pa;
     uint16_t pa_interval_1_25ms; // unit 1.25ms
     uint32_t ea_max_interval_ms; // unit ms

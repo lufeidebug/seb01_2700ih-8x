@@ -61,6 +61,10 @@ void app_ibrt_ota_cache_slave_info(uint8_t typeCode, uint16_t rsp_seq, uint8_t *
     memcpy(&receivedResultAlreadyProcessedBySlave.length, &length, sizeof(length));
     memcpy(receivedResultAlreadyProcessedBySlave.p_buff, p_buff, length);
 }
+void app_ibrt_ota_cache_slave_reset_info(void)
+{
+    memset((uint8_t*)&receivedResultAlreadyProcessedBySlave, 0, sizeof(OTA_IBRT_TWS_CMD_EXECUTED_RESULT_FROM_SLAVE_T));
+}
 
 void app_ibrt_ota_get_version_cmd_send(uint8_t *p_buff, uint16_t length)
 {
@@ -357,7 +361,9 @@ void app_ibrt_ota_segment_crc_cmd_send_handler(uint16_t rsp_seq, uint8_t *p_buff
         if(*p_buff == 1 && errOtaCode == 1)
         {
             ota_update_flash_offset_after_segment_crc(true);
-            tws_ctrl_send_rsp(APP_TWS_CMD_OTA_SEGMENT_CRC_CMD, rsp_seq, p_buff, length);
+            FLASH_OTA_UPGRADE_LOG_INFO_T info;
+            ota_get_upgrade_info(&info);
+            tws_ctrl_send_rsp(APP_TWS_CMD_OTA_SEGMENT_CRC_CMD, rsp_seq, (uint8_t*)&info, sizeof(FLASH_OTA_UPGRADE_LOG_INFO_T));
         }
         else if(*p_buff == OTA_RESULT_ERR_SEG_VERIFY || errOtaCode == OTA_RESULT_ERR_SEG_VERIFY)
         {
@@ -392,7 +398,7 @@ void app_ibrt_ota_segment_crc_cmd_send_rsp_handler(uint16_t rsp_seq, uint8_t *p_
     segment_crc_resend_num = RESEND_TIME;
     if(*p_buff == 1)
     {
-        ota_update_flash_offset_after_segment_crc(true);
+        ota_update_flash_offset_after_segment_crc_by_slave(true, (FLASH_OTA_UPGRADE_LOG_INFO_T*)p_buff);
         ibrt_ota_send_segment_verification_response(true);
     }
     else if(*p_buff == OTA_ONE_BUD_MESSAGE_ERR)
@@ -416,17 +422,17 @@ void app_ibrt_ota_segment_crc_cmd_send_rsp_handler(uint16_t rsp_seq, uint8_t *p_
 
 void app_ibrt_ota_segment_crc_cmd_send_rsp_timeout_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
 {
-    if(segment_crc_resend_num > 0)
-    {
-        tws_ctrl_send_cmd(APP_TWS_CMD_OTA_SEGMENT_CRC_CMD, p_buff, length);
-        segment_crc_resend_num--;
-    }
-    else
-    {
-        ota_upgradeLog_destroy();
-        ibrt_ota_send_result_response(OTA_RESULT_ERR_SEG_VERIFY);
-        segment_crc_resend_num = RESEND_TIME;
-    }
+    // if(segment_crc_resend_num > 0)
+    // {
+    //     tws_ctrl_send_cmd(APP_TWS_CMD_OTA_SEGMENT_CRC_CMD, p_buff, length);
+    //     segment_crc_resend_num--;
+    // }
+    // else
+    // {
+    //     ota_upgradeLog_destroy();
+    //     ibrt_ota_send_result_response(OTA_RESULT_ERR_SEG_VERIFY);
+    //     segment_crc_resend_num = RESEND_TIME;
+    // }
     OTA_TRACE(0,"%s, %d", __func__, segment_crc_resend_num);
 }
 

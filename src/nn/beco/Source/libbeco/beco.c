@@ -24,7 +24,7 @@ int beco_init(void)
 
     lock = int_lock();
 #if defined(CHIP_BEST1306P) || defined(CHIP_BEST1502P) || defined(CHIP_BEST1503) || defined(CHIP_BEST1503P) || defined(CHIP_BEST1307P) \
-    || defined(CHIP_BEST2007HS)
+    || defined(CHIP_BEST2007HS) || defined(CHIP_BEST1307PH)
     if (get_cpu_id() == 1) {
         hal_cmu_cp_beco_enable();
     } else {
@@ -45,7 +45,7 @@ int beco_exit(void)
 
     lock = int_lock();
     set_beco_coprocessor(0);
-#if defined(CHIP_BEST1306P) || defined(CHIP_BEST1502P) || defined(CHIP_BEST1503) || defined(CHIP_BEST1503P) || defined(CHIP_BEST1307P)
+#if defined(CHIP_BEST1306P) || defined(CHIP_BEST1502P) || defined(CHIP_BEST1503) || defined(CHIP_BEST1503P) || defined(CHIP_BEST1307P) || defined(CHIP_BEST1307PH)
     if (get_cpu_id() == 1) {
         hal_cmu_cp_beco_disable();
     } else {

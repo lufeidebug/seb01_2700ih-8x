@@ -103,6 +103,16 @@ void lea_adv_api_enter_conenctable(bool enter, uint16_t adv_interval_ms);
  */
 void lea_adv_api_bonded_update(const bt_bdaddr_t *dev_list, uint8_t count);
 
+/**
+ * @brief Enter or exit LEA only mode.
+ *
+ * This API switches the lea advertising into LEA only mode or dual mode.
+ *
+ * @param enter_lea_only
+ *        Enter or exit lea only mode.
+ */
+void lea_adv_api_enter_lea_only(bool enter_lea_only);
+
 #ifdef __cplusplus
 }
 #endif

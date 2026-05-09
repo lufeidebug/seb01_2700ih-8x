@@ -153,8 +153,6 @@ bt_status_t bts_bt_sink_conn_set_role(const bt_bdaddr_t *p_bd_addr, bt_ibrt_role
 
 bt_ibrt_role_t bts_bt_sink_conn_get_ibrt_role(const bt_bdaddr_t *p_bd_addr);
 
-btif_connection_role_t bts_bt_sink_conn_get_local_mobile_role(const bt_bdaddr_t *p_mobile_addr);
-
 ibrt_status_t bts_bt_conn_dev_connect_all_profiles(const bt_bdaddr_t *addr);
 
 bool app_ibrt_basic_profiles_established(ibrt_mobile_info_t *p_mobile_info);

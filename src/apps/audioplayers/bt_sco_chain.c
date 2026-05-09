@@ -612,8 +612,9 @@ int _speech_tx_init_pre(int sample_rate, int frame_len)
 #if defined(SPEECH_TX_1MIC_NS)
 #if defined(CHIP_BEST1307S) && !defined(SPEECH_ROM_PATCH_1307S)
     model_data = speech_1mic_ns_get_model_data_94l();
-#endif
-#if defined(CHIP_BEST1307P) || defined(SPEECH_ROM_PATCH_1307S)
+#elif defined(CHIP_BEST1307P) || defined(SPEECH_ROM_PATCH_1307S)
+    model_data = speech_1mic_ns_get_model_data_96l();
+#else
     model_data = speech_1mic_ns_get_model_data_96l();
 #endif
     speech_tx_1mic_ns_st = speech_1mic_ns_create(model_data, &speech_cfg->tx_1mic_ns, default_allocator());

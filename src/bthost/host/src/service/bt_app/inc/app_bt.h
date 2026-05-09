@@ -370,6 +370,8 @@ btif_remote_device_t *app_bt_get_remote_dev_by_address(const bt_bdaddr_t *remote
 
 btif_remote_device_t *app_bt_get_remote_dev_by_device_id(uint8_t device_id);
 
+uint8_t app_bt_get_link_bt_role(const bt_bdaddr_t *bdaddr);
+
 uint8_t app_bt_get_remote_sync_id_by_bdaddr(bt_bdaddr_t *bdaddr);
 
 bool app_is_disconnecting_all_bt_connections(void);
