@@ -1970,7 +1970,8 @@ void app_earbud_mode_init()
 #ifdef IBRT
     bes_ble_gap_force_switch_adv(BLE_SWITCH_USER_IBRT, true);
 #endif // #ifdef IBRT
-#if !(BLE_AUDIO_ENABLED)
+#if 0//!(BLE_AUDIO_ENABLED)
+    //bes-默认ble广播，会和custom ble广播冲突，导致不显示ble名称
     bes_ble_gap_stub_user_init();
 #endif
 #endif //__IAG_BLE_INCLUDE__
