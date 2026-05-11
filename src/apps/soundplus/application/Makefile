@@ -84,8 +84,8 @@ ccflags-y +=  \
 	-Iutils/hsm \
 	-Iutils/cqueue \
 	-Iservices/audio_dump/include \
-	-Ibthost/apps/bta_apps/earbuds/inc
-
+	-Ibthost/apps/bta_apps/earbuds/inc\
+    -Iapps/main
 
 
 
