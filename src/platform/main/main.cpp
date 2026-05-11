@@ -40,7 +40,7 @@
 #include "watchdog/watchdog.h"
 #include "hal_evr.h"
 #include "factory_section.h"
-
+#include "sndp_if_device.h"
 #ifdef RTOS
 #include "cmsis_os.h"
 #include "app_factory.h"
@@ -701,6 +701,12 @@ int main(void)
     app_deinit(ret);
 #endif
     system_power_off_callback(sys_case);
+#if defined(__SNDP_UI__)
+    if(sndp_dev_cover_get_status(false) == 1)
+    {
+        sys_case = 2;
+    }
+#endif
     TR_INFO(TR_MOD(MAIN), "byebye~~~ %d\n", sys_case);
     if ((sys_case == 1)||(sys_case == 0)){
         TR_INFO(TR_MOD(MAIN), "shutdown\n");
