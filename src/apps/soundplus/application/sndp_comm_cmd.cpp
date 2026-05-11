@@ -15,6 +15,7 @@
 #include "app_anc.h"
 #include "iir_process.h"
 #include "app_tws_ibrt.h"
+#include "apps.h"
 
 #include "sndp_if_common.h"
 #include "sndp_if_device.h"
@@ -3097,6 +3098,12 @@ void sndp_sleep_app_report_gesture(uint32_t gesture)
 
 void sndp_sleep_app_report_tap(void)
 {
+//避免在stack not ready时调用ble connected判断接口，导致死机
+    if(!app_is_stack_ready())
+    {
+        COMM_CMD_TRACE(0,"stack not ready,ble api no use......");
+        return;
+    }     
     if(!sndp_comm_ble_is_connected())
     {
         COMM_CMD_TRACE(0,"ble not connected,tap no send......");
