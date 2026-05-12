@@ -303,6 +303,39 @@ int process_downlink_bt_voice_frames(uint8_t *in_buf, uint32_t in_len, uint8_t *
 
 static inline void split_uplink_data(TX_PCM_T *pcm_buf, TX_PCM_T *echo_buf, uint32_t pcm_len)
 {
+#ifdef __SNDP_USE_BES_ALGO__
+    TX_PCM_T *pcm_buf_j = pcm_buf;
+    TX_PCM_T *pcm_buf_i = pcm_buf;
+    uint32_t count = pcm_len / (SNDP_BES_ALGO_CHANNEL_NUM + 1);
+    while (count-- > 0) {
+#if SNDP_BES_ALGO_CHANNEL_NUM == 1
+        *pcm_buf_j++ = *pcm_buf_i++;
+#elif SNDP_BES_ALGO_CHANNEL_NUM == 2
+        *pcm_buf_j++ = *pcm_buf_i++;
+        *pcm_buf_j++ = *pcm_buf_i++;
+#elif SNDP_BES_ALGO_CHANNEL_NUM == 3
+        *pcm_buf_j++ = *pcm_buf_i++;
+        *pcm_buf_j++ = *pcm_buf_i++;
+        *pcm_buf_j++ = *pcm_buf_i++;
+#elif SNDP_BES_ALGO_CHANNEL_NUM == 4
+        *pcm_buf_j++ = *pcm_buf_i++;
+        *pcm_buf_j++ = *pcm_buf_i++;
+        *pcm_buf_j++ = *pcm_buf_i++;
+        *pcm_buf_j++ = *pcm_buf_i++;
+#elif SNDP_BES_ALGO_CHANNEL_NUM == 5
+        *pcm_buf_j++ = *pcm_buf_i++;
+        *pcm_buf_j++ = *pcm_buf_i++;
+        *pcm_buf_j++ = *pcm_buf_i++;
+        *pcm_buf_j++ = *pcm_buf_i++;
+        *pcm_buf_j++ = *pcm_buf_i++;
+#else
+#error "Invalid SNDP_BES_ALGO_CHANNEL_NUM!!!"
+#endif
+#if defined(SPEECH_TX_REF) || defined(SPEECH_TX_THIRDPARTY) || defined(SPEECH_TX_XIAOMI_AEC)
+        *echo_buf++ = *pcm_buf_i++;
+#endif
+    }
+#else //__SNDP_USE_BES_ALGO__
     TX_PCM_T *pcm_buf_j = pcm_buf;
     TX_PCM_T *pcm_buf_i = pcm_buf;
     uint32_t count = pcm_len / (SPEECH_CODEC_CAPTURE_CHANNEL_NUM + 1);
@@ -334,6 +367,7 @@ static inline void split_uplink_data(TX_PCM_T *pcm_buf, TX_PCM_T *echo_buf, uint
         *echo_buf++ = *pcm_buf_i++;
 #endif
     }
+#endif
 }
 
 /*
@@ -388,33 +422,34 @@ int process_uplink_bt_voice_frames(uint8_t *in_buf, uint32_t in_len, uint8_t *re
     }
 
 #if defined(SPEECH_TX_AEC_CODEC_REF)
+#ifdef __SNDP_USE_BES_ALGO__
+    ASSERT(pcm_len % (SNDP_BES_ALGO_CHANNEL_NUM + 1) == 0, "[%s] pcm_len(%d) should be divided by %d", __FUNCTION__, pcm_len, SNDP_BES_ALGO_CHANNEL_NUM + 1);
+    split_uplink_data(pcm_buf, aec_echo_buf, pcm_len);
+    pcm_len = pcm_len / (SNDP_BES_ALGO_CHANNEL_NUM + 1) * SPEECH_CODEC_CAPTURE_CHANNEL_NUM;
+#else
     ASSERT(pcm_len % (SPEECH_CODEC_CAPTURE_CHANNEL_NUM + 1) == 0, "[%s] pcm_len(%d) should be divided by %d", __FUNCTION__, pcm_len, SPEECH_CODEC_CAPTURE_CHANNEL_NUM + 1);
     split_uplink_data(pcm_buf, aec_echo_buf, pcm_len);
     pcm_len = pcm_len / (SPEECH_CODEC_CAPTURE_CHANNEL_NUM + 1) * SPEECH_CODEC_CAPTURE_CHANNEL_NUM;
+#endif
 #endif
 
 #ifdef __SNDP_USE_BES_ALGO__
 #ifdef SNDP_TX_DUMP_ENABLE
     audio_dump_clear_up();
     for(uint32_t j=0; j<SNDP_BES_ALGO_CHANNEL_NUM; j++){
-        audio_dump_add_channel_data_from_multi_channels_32bit_to_16bit(j, pcm_buf, pcm_len/SNDP_BES_ALGO_CHANNEL_NUM, SNDP_BES_ALGO_CHANNEL_NUM, j, 8);
+        audio_dump_add_channel_data_from_multi_channels_32bit_to_16bit(j, pcm_buf, pcm_len, SNDP_BES_ALGO_CHANNEL_NUM, j, 8);
     }
-    audio_dump_add_channel_data_from_multi_channels_32bit_to_16bit(SNDP_BES_ALGO_CHANNEL_NUM, aec_echo_buf, pcm_len/SNDP_BES_ALGO_CHANNEL_NUM, 1, 0, 8);
+    audio_dump_add_channel_data_from_multi_channels_32bit_to_16bit(SNDP_BES_ALGO_CHANNEL_NUM, aec_echo_buf, pcm_len, 1, 0, 8);
 #endif
-    TX_PCM_T sndp_1mic_pcm_buf[SPEECH_SCO_FRAME_MS * 16000 / 1000 * SNDP_BES_ALGO_CHANNEL_NUM];
-    int sndp_1mic_pcm_len = pcm_len / SNDP_BES_ALGO_CHANNEL_NUM;
 #endif
 
     if (g_bypass_tx_algo_sel_ch == 0xFF) {
 #ifdef __SNDP_USE_BES_ALGO__
-            for(uint32_t i = 0; i < sizeof(sndp_1mic_pcm_buf)/sizeof(TX_PCM_T); i++) {
-                sndp_1mic_pcm_buf[i] = pcm_buf[SNDP_BES_ALGO_CHANNEL_NUM*i + 1];
+            for(int i = 0; i < pcm_len; i++) {
+                pcm_buf[i] = pcm_buf[SNDP_BES_ALGO_CHANNEL_NUM*i + 1];
             }
-            speech_tx_process(sndp_1mic_pcm_buf, aec_echo_buf, &sndp_1mic_pcm_len);
-#else
-            speech_tx_process(pcm_buf, aec_echo_buf, &pcm_len);
 #endif 
-        
+            speech_tx_process(pcm_buf, aec_echo_buf, &pcm_len);
     } else {
     	/* This function supports 1-4 channels of audio dump
     	*  Please use this function when "audio channel > 1", see:
@@ -424,13 +459,17 @@ int process_uplink_bt_voice_frames(uint8_t *in_buf, uint32_t in_len, uint8_t *re
         speech_tx_process_audio_dump(pcm_buf, &pcm_len, SPEECH_CODEC_CAPTURE_CHANNEL_NUM);
         #endif
         for(int32_t i=0; i<pcm_len / SPEECH_CODEC_CAPTURE_CHANNEL_NUM; i++) {
+#ifdef __SNDP_USE_BES_ALGO__
+            pcm_buf[i] = pcm_buf[SNDP_BES_ALGO_CHANNEL_NUM * i + g_bypass_tx_algo_sel_ch];
+#else
             pcm_buf[i] = pcm_buf[SPEECH_CODEC_CAPTURE_CHANNEL_NUM * i + g_bypass_tx_algo_sel_ch];
+#endif
         }
         pcm_len = pcm_len / SPEECH_CODEC_CAPTURE_CHANNEL_NUM;
     }
 #ifdef __SNDP_USE_BES_ALGO__    
 #ifdef SNDP_TX_DUMP_ENABLE
-        audio_dump_add_channel_data_from_multi_channels_32bit_to_16bit(SNDP_BES_ALGO_CHANNEL_NUM+1, pcm_buf, sndp_1mic_pcm_len, 1, 0, 8);
+        audio_dump_add_channel_data_from_multi_channels_32bit_to_16bit(SNDP_BES_ALGO_CHANNEL_NUM+1, pcm_buf, pcm_len, 1, 0, 8);
         audio_dump_run();
 #endif
 #endif
@@ -505,6 +544,7 @@ int voicebtpcm_pcm_audio_init(int _sco_sample_rate,
         tx_vqe_sample_rate, rx_vqe_sample_rate, tx_vqe_frame_length, rx_vqe_frame_length);
     AUDIOPLAYERS_TRACE(3, "[%s] CODEC: sample rate = [%d, %d], frame len = [%d, %d]", __func__,
         tx_codec_sample_rate, rx_codec_sample_rate, tx_codec_frame_length, rx_codec_frame_length);
+    AUDIOPLAYERS_TRACE(1, "[%s] capture channel num = %d", __func__, _capture_channel_num);
 
     if ((sco_sample_rate > tx_codec_sample_rate) || (sco_sample_rate > rx_codec_sample_rate)) {
         AUDIOPLAYERS_TRACE(1, "[%s] SCO <-- Resample --> VQE", __func__);
