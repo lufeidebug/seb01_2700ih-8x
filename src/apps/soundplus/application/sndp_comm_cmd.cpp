@@ -2305,8 +2305,11 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
         {
             sndp_anc_mode_set_locally((sndp_anc_mode_e)anc_mode);
         }
-        sndp_dev_sleep_app_anc_mode_set(false, (sndp_anc_mode_e)anc_mode, false);
-        sndp_comm_cmd_send_lr_sync_anc_mode(anc_mode, 1);
+        if(anc_mode < SNDP_ANC_MODE_QTY)
+        {
+            sndp_dev_sleep_app_anc_mode_set(false, (sndp_anc_mode_e)anc_mode, false);
+            sndp_comm_cmd_send_lr_sync_anc_mode(anc_mode, 1);
+        }   
         /******************anc map*******************/
 
         /******************voice prompt map*******************/
