@@ -486,7 +486,7 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
     
 	/* update the ibrt status machine */
 	if(SNDP_DEV_WEAR_ON == wear_status) {
-        sndp_dev_acc_enter_detection_mode();
+        sndp_dev_acc_start_single_tap_interrupt();
     
 		bta_tws_box_event_entry(BTA_TWS_WEAR_UP);
 		//bta_tws_box_event_entry(APP_UI_EV_MOBILE_RECONNECT);	
@@ -494,7 +494,7 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 		sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_play_tone, 0, 0, 0);
 
 	} else {
-        sndp_dev_acc_enter_standby_mode();
+        sndp_dev_acc_stop_single_tap_interrupt();
         sndp_ui_ctx.gesture_en = false;
         
 		/* update the ibrt status machine */

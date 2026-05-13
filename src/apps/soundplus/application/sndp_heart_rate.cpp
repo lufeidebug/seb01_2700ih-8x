@@ -405,6 +405,11 @@ uint8_t sndp_hr_running_state(void)
     return hr_ctx.hr_running;
 }
 
+int32_t sndp_get_acc_notification(void)
+{
+    return hr_ctx.acc_notification;
+}
+
 void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
@@ -608,6 +613,7 @@ void sndp_acc_notification_start(void)
     // sleep_step_2:开始读取ACC数据。
 #if defined(__SNDP_GSENSOR_SUPPORT__)
     sndp_hal_acc_start_reading_raw_data();
+    sndp_hal_acc_stop_single_tap_interrupt();
 #endif 
 
     hr_ctx.hr_running = false;
@@ -629,6 +635,7 @@ void sndp_acc_notification_stop(void)
     // hr_setp_4: 停止读取ACC数据
 #if defined(__SNDP_GSENSOR_SUPPORT__)
     sndp_hal_acc_stop_reading_raw_data();
+    sndp_hal_acc_start_single_tap_interrupt();
 #endif
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);

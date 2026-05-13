@@ -18,7 +18,7 @@
 #include "sndp_if_platform.h"
 #include "sndp_if_data_access.h"
 #include "sndp_hal_common.h"
-
+#include "sndp_heart_rate.h"
 
 #if defined(__SNDP_BATTERY_MGR__)
 #include "sndp_hal_battery.h"
@@ -1664,6 +1664,10 @@ void sndp_dev_acc_enter_standby_mode(void)
 	SNDP_IF_TRACE_ENTER();
 	
 #if defined(__SNDP_GSENSOR_SUPPORT__)	
+	if(sndp_get_acc_notification()){
+		SNDP_IF_TRACE(0, "acc notification is on, not start single tap interrupt");
+		return;
+	}
 	sndp_hal_acc_enter_standby_mode();
 #endif
 }
@@ -1673,7 +1677,31 @@ void sndp_dev_acc_enter_detection_mode(void)
 	SNDP_IF_TRACE_ENTER();
 	
 #if defined(__SNDP_GSENSOR_SUPPORT__)	
+	if(sndp_get_acc_notification()){
+		SNDP_IF_TRACE(0, "acc notification is on, not start single tap interrupt");
+		return;
+	}
 	sndp_hal_acc_enter_detection_mode();
+#endif
+}
+
+void sndp_dev_acc_start_single_tap_interrupt(void)
+{
+	SNDP_IF_TRACE_ENTER();
+#if defined(__SNDP_GSENSOR_SUPPORT__)	
+	if(sndp_get_acc_notification()){
+		SNDP_IF_TRACE(0, "acc notification is on, not start single tap interrupt");
+		return;
+	}
+	sndp_hal_acc_start_single_tap_interrupt();
+#endif
+}
+
+void sndp_dev_acc_stop_single_tap_interrupt(void)
+{
+	SNDP_IF_TRACE_ENTER();
+#if defined(__SNDP_GSENSOR_SUPPORT__)	
+	sndp_hal_acc_stop_single_tap_interrupt();
 #endif
 }
 

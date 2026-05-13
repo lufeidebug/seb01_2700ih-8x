@@ -134,6 +134,9 @@ void sndp_dbbeats_put_sleep_sensor_data(void);
 void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
                                 uint8_t screen_status[],
                                 int8_t sound_state);
+
+int32_t sndp_get_acc_notification(void);
+
 #ifdef __cplusplus
 	}
 #endif

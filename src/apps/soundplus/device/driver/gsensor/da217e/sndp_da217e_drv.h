@@ -40,6 +40,7 @@ int32_t da217e_open_double_tap_interrupt(uint8_t th);
 int32_t da217e_close_double_tap_interrupt(void);
 int32_t da217e_open_single_tap_interrupt(uint8_t th);
 int32_t da217e_close_single_tap_interrupt(void);
+int32_t da217e_open_single_with_default_threshold(void);
 
 int32_t da217e_open_fifo(void);
 int32_t da217e_read_fifo(da217e_drv_acc_data_s *data);

@@ -52,6 +52,17 @@ typedef struct {
     int32_t (* stop_reading_raw_data)(void);
 
 	/** 
+     * callback: This pointer will be called when the lid switch stutas changes.
+     * return: 0 no error.
+     */
+    int32_t (* start_single_tap_interrupt)(void);
+
+
+	/** 
+     * return: 0 no error.
+     */
+    int32_t (* stop_single_tap_interrupt)(void);
+	/** 
      * return: 0 no error.
      */
     int32_t (* set_calibration_rsp_func)(sndp_hal_acc_calibration_rsp_func rsp_func);
@@ -83,6 +94,8 @@ typedef struct {
 int32_t sndp_hal_acc_init(void);
 int32_t sndp_hal_acc_enter_standby_mode(void);
 int32_t sndp_hal_acc_enter_detection_mode(void);
+int32_t sndp_hal_acc_start_single_tap_interrupt(void);
+int32_t sndp_hal_acc_stop_single_tap_interrupt(void);
 int32_t sndp_hal_acc_set_reading_raw_data_callback(sndp_hal_acc_read_raw_data_callback callback);
 int32_t sndp_hal_acc_start_reading_raw_data(void);
 int32_t sndp_hal_acc_stop_reading_raw_data(void);

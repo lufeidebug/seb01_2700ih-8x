@@ -70,8 +70,9 @@
 
 #define DA217E_I2C_SLAVE_ADDR				0x26
 #define DA217E_CHIP_ID				        0x13
-         
-
+    
+#define DA217E_TAP_THRESHOLD_DEFAULT        0x05
+#define DA217E_TAP_THRESHOLD_BOOST        0x07
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -208,6 +209,7 @@ int32_t da217e_close_double_tap_interrupt(void)
 }
 
 //open single tap interrupt 0x05-0x1f
+static bool da217e_single_tap_int_enabled = false;
 int32_t da217e_open_single_tap_interrupt(uint8_t th)
 {
 	int32_t ret = 0;
@@ -221,11 +223,28 @@ int32_t da217e_open_single_tap_interrupt(uint8_t th)
 	return ret;
 }
 
+int32_t da217e_open_single_with_default_threshold(void)
+{
+    if(!da217e_single_tap_int_enabled){
+        da217e_single_tap_int_enabled = true;
+        return da217e_open_single_tap_interrupt(DA217E_TAP_THRESHOLD_DEFAULT);
+    } else {
+        DA217E_TRACE(0, "single tap int already enabled");
+        return 0;
+    }
+}
+
 //close double tap interrupt
 int32_t da217e_close_single_tap_interrupt(void)
 {
 	int32_t ret = 0;
 
+    if(da217e_single_tap_int_enabled){
+        da217e_single_tap_int_enabled = false;
+    } else {
+        DA217E_TRACE(0, "single tap int already disabled");
+        return 0;
+    }
 	ret |= da217e_reg_mask_write(DA217E_REG_INT_SET1, 0x20, 0x00);
 	ret |= da217e_reg_mask_write(DA217E_REG_INT_MAP1, 0x20, 0x00);
 
@@ -351,7 +370,7 @@ int32_t da217e_close_fifo_int(void)
 
 static void da217_tap_timer_handler(void const *param)
 {
-    da217e_reg_write(DA217E_REG_TAP_THS, 0x05);
+    da217e_reg_write(DA217E_REG_TAP_THS, DA217E_TAP_THRESHOLD_DEFAULT);
 	if(da217e_drv_if.tap_event_cb) {
         da217e_drv_if.tap_event_cb(da217e_tap_cnt);
     }
@@ -364,12 +383,12 @@ void da217e_drv_deal_tap_interruption(void)
 {
     uint8_t motion_flag = 0;
     uint8_t tap_staus = 0;
-
+    uint8_t fifo_status = 0;
 
     da217e_reg_read(DA217E_REG_MOTION_FLAG, &motion_flag);
     da217e_reg_read(DA217E_REG_TAP_ACTIVE_STATUS, &tap_staus);
-
-    DA217E_TRACE(1, "motion_flag=%02X, tap_staus=%02X", motion_flag, tap_staus);
+    da217e_reg_read(DA217E_REG_FIFO_STATUS, &fifo_status);
+    DA217E_TRACE(1, "mflag=%02X, tstaus=%02X, fstatus=%02X", motion_flag, tap_staus, fifo_status);
 
     if(motion_flag&0x20) { //S_tap_int
 #if 0
@@ -381,7 +400,7 @@ void da217e_drv_deal_tap_interruption(void)
 #else
         da217e_tap_cnt++;
         if(1 == da217e_tap_cnt) {
-            da217e_reg_write(DA217E_REG_TAP_THS, 0x07);
+            da217e_reg_write(DA217E_REG_TAP_THS, DA217E_TAP_THRESHOLD_BOOST);
         }
         osTimerStop(da217_tap_timer);
         osTimerStart(da217_tap_timer, 600);
@@ -461,7 +480,7 @@ int32_t da217e_drv_init(da217e_drv_if_s * drv_if)
 
 #endif
 
-	ret |= da217e_open_single_tap_interrupt(0x05); //enalbe single tap and set tap threshold 0x05 - 0x1f   
+	ret |= da217e_open_single_with_default_threshold(); //enalbe single tap and set tap threshold 0x05 - 0x1f   
 	return ret;
 }
 

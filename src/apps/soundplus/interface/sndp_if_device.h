@@ -401,6 +401,8 @@ void sndp_dev_hr_init(void);
 /************************************************** acc Start **************************************************/
 void sndp_dev_acc_enter_standby_mode(void);
 void sndp_dev_acc_enter_detection_mode(void);
+void sndp_dev_acc_start_single_tap_interrupt(void);
+void sndp_dev_acc_stop_single_tap_interrupt(void);
 int32_t sndp_dev_acc_write_reg(uint8_t reg_addr, uint8_t reg_val);
 int32_t sndp_dev_acc_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
 void sndp_dev_acc_init(void);

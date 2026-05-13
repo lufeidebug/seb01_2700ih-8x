@@ -92,6 +92,20 @@ int32_t sndp_hal_acc_stop_reading_raw_data(void)
 	return SNDP_HAL_RET_FAIL;
 }
 
+int32_t sndp_hal_acc_start_single_tap_interrupt(void)
+{
+		if((p_hal_acc != NULL) && (p_hal_acc->start_single_tap_interrupt != NULL))
+				return p_hal_acc->start_single_tap_interrupt();
+		return SNDP_HAL_RET_FAIL;
+}
+
+int32_t sndp_hal_acc_stop_single_tap_interrupt(void)
+{
+		if((p_hal_acc != NULL) && (p_hal_acc->stop_single_tap_interrupt != NULL))
+				return p_hal_acc->stop_single_tap_interrupt();
+		return SNDP_HAL_RET_FAIL;
+}
+
 int32_t sndp_hal_acc_set_calibration_rsp_func(sndp_hal_acc_calibration_rsp_func rsp_func)
 {
 	if((p_hal_acc != NULL) && (p_hal_acc->set_calibration_rsp_func != NULL))
