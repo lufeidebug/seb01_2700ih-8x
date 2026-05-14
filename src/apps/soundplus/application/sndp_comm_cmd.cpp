@@ -3031,7 +3031,9 @@ void sndp_sleep_app_report_battery(void)
     }
     
     SndpGetBattryMap_t reply_battery;
+    sndp_dev_bat_info_s cradle_bt_info;
     memset(&reply_battery, 0, sizeof(SndpGetBattryMap_t));
+    memset(&cradle_bt_info, 0, sizeof(sndp_dev_bat_info_s));
     
     if(sndp_dev_is_left_earphone())
     {
@@ -3045,9 +3047,6 @@ void sndp_sleep_app_report_battery(void)
             reply_battery.bits.right_charging_statu = 1;
             reply_battery.bits.right_battery_level = 0x7f;
         }
-
-        reply_battery.bits.cradle_charging_status = 1;
-        reply_battery.bits.cradle_battery_level = 0x7f;
     }
 
     if(sndp_dev_is_right_earphone())
@@ -3062,10 +3061,11 @@ void sndp_sleep_app_report_battery(void)
             reply_battery.bits.left_charging_statu = 1;
             reply_battery.bits.left_battery_level = 0x7f;
         }
-
-        reply_battery.bits.cradle_charging_status = 1;
-        reply_battery.bits.cradle_battery_level = 0x7f;        
+       
     }
+    sndp_dev_get_box_bat_info(&cradle_bt_info);
+    reply_battery.bits.cradle_charging_status = 0;
+    reply_battery.bits.cradle_battery_level = cradle_bt_info.bat_per;
     // COMM_CMD_TRACE(0,"char:%d,lbat:%02x char:%d,rbat:%02x", (uint8_t)sndp_dev_charger_is_charging(false), sndp_dev_get_bat_percentage(false),
                                             //    (uint8_t)sndp_dev_charger_is_charging(true),sndp_dev_get_bat_percentage(true));
     // DUMP8("%02x",&reply_battery,sizeof(reply_battery));                                           
