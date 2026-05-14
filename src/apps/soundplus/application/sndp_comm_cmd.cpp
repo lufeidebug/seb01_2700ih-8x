@@ -330,6 +330,12 @@ static uint32_t sndp_comm_cmd_recv_eb_report_box_info(sndp_comm_cmd_info_s *cmd_
 	}
 
     sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
+
+    // set shutdown reset flag            
+    if(sndp_get_is_shutting_down() && sndp_get_shutdown_reason_is_charging_full()) {
+        sndp_set_shutdown_reset_flag(1);
+        COMM_CMD_TRACE(0, "set shutdown reset flag 1"); 
+    }   
 	return 0;
 }
 

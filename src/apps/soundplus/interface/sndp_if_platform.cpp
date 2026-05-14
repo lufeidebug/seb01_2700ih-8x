@@ -88,6 +88,9 @@ static uint8_t sndp_call_in_out = 0; // 0:none, 1:incoming, 2:outgoing
 static sndp_pairing_type_e sndp_pairing_type = SNDP_PAIRING_NONE; // 0:未配对，1：对耳配对，2：单耳配对。
 static sndp_pairing_state_e sndp_pairing_status = SNDP_PAIR_STA_NONE; //0:未配对，1：配对中，2：配对成功，3：配对超时。
 uint8_t sndp_is_shutting_down = 0; // 0:正常，1：正在关机流程中
+uint8_t sndp_shutdown_full_receive_08cmd_enter_reset=0;
+uint8_t sndp_shutdown_reason_is_charging_full = 0;
+
 uint8_t sndp_user_eq_record = 0xff;
 uint8_t sndp_user_anc_record = 0xff;
 /**************************************************************************************************
@@ -175,10 +178,29 @@ uint8_t sndp_get_is_shutting_down(void)
 		return sndp_is_shutting_down;
 }
 
+uint8_t sndp_get_shutdown_reason_is_charging_full(void)
+{
+    return sndp_shutdown_reason_is_charging_full;
+}
+
+uint8_t sndp_get_shutdown_reset_flag(void)
+{
+    return sndp_shutdown_full_receive_08cmd_enter_reset;
+}
+
+void sndp_set_shutdown_reset_flag(uint8_t flag)
+{
+    sndp_shutdown_full_receive_08cmd_enter_reset = flag;
+}
+
 void sndp_app_shutdown(SNDP_shutdown_reason_e reason)
 {
     SNDP_TRACE_IMM(1, "%s, %d", __func__, reason);
     sndp_is_shutting_down = 1;
+	if (reason == SNDP_SHUTDOWN_REASON_CHARGING_FULL)
+	{
+		sndp_shutdown_reason_is_charging_full = 1;
+	}
     sndp_save_data_before_shutdown();
     bta_tws_shutdown();
     osDelay(100);

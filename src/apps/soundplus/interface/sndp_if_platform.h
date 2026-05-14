@@ -99,7 +99,7 @@ typedef enum {
 		SNDP_EQ_MODE_ROCK,
 		SNDP_EQ_MODE_CLASSIC,
 		SNDP_EQ_MODE_RELAXED,
-		SNDP_EQ_MODE_CUSTOM_MODE = 0x09, //”√ªß◊‘∂®“Âƒ£ Ω
+		SNDP_EQ_MODE_CUSTOM_MODE = 0x09, //Áî®Êà∑Ëá™ÂÆö‰πâÊ®°Âºè
 		SNDP_EQ_MAX,
 } sndp_eq_mode_e;
 #endif
@@ -242,6 +242,10 @@ uint8_t *sndp_get_nvrecord_bt_peer_address(void);
 int sndp_language_switch_handler(int new_lan);
 void sndp_bt_switch(bool onoff, bool sync);
 uint8_t sndp_get_is_shutting_down(void);
+uint8_t sndp_get_shutdown_reason_is_charging_full(void);
+uint8_t sndp_get_shutdown_reset_flag(void);
+void sndp_set_shutdown_reset_flag(uint8_t flag);
+
 #if defined(__SNDP_SLEEP_APP__)
 void sndp_load_eq_param(void);
 void sndp_set_crc(uint32_t *crc, uint8_t *data_ptr, uint32_t data_len);

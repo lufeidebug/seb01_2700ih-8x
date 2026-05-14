@@ -74,6 +74,9 @@ extern "C" {
 #include "twsui_comm.h"
 #include "besui_common.h"
 #endif
+#if defined(__SNDP_UI__)
+#include "sndp_if_platform.h"
+#endif
 
 extern "C" void log_dump_init(void);
 extern "C" void crash_dump_init(void);
@@ -702,7 +705,7 @@ int main(void)
 #endif
     system_power_off_callback(sys_case);
 #if defined(__SNDP_UI__)
-    if(sndp_dev_cover_get_status(false) == 1)
+    if(sndp_dev_cover_get_status(false) == 1 || sndp_get_shutdown_reset_flag() == 1)
     {
         sys_case = 2;
     }
