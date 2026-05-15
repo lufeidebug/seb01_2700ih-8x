@@ -30,6 +30,10 @@ typedef enum {
 		
 } sndp_comm_ble_conn_status_e;
 
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+void sndp_ble_receive_master_public_addr(uint8_t *addr, uint16_t length);
+void sndp_master_send_ble_public_addr(void);
+#endif
 
 sndp_comm_ble_conn_status_e sndp_comm_ble_get_conn_status(void);
 bool sndp_comm_ble_is_connected(void);

@@ -55,7 +55,8 @@ subdir-ccflags-y += \
     -Iapps/earbuds/conn/ \
     $(BTA_LEGACY_INCLUDES) \
     -Ibthost/apps/bta_apps/deprecated/inc \
-    -Ibthost/host/src/bta/tws/legacy/earbuds_ui/inc
+    -Ibthost/host/src/bta/tws/legacy/earbuds_ui/inc\
+    -Iapps/soundplus/application
 
 ifeq ($(BLE_AUDIO_ENABLED),1)
 subdir-ccflags-y += \

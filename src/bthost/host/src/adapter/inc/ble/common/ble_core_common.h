@@ -200,6 +200,9 @@ typedef enum
     USER_BLE_CUSTOMER_3,
     USER_BLE_DEMO0,
     USER_BLE_DEMO1,
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+    USER_SNDP_BLE = 18,
+#endif
     BLE_ADV_USER_NUM,
 } BLE_ADV_USER_E;
 

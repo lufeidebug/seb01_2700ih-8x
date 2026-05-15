@@ -271,6 +271,7 @@ endif
 
 ifeq ($(SNDP_COMM_BLE),1)
     KBUILD_CPPFLAGS += -D__SNDP_COMM_BLE__
+    KBUILD_CPPFLAGS += -D__SNDP_COMM_BLE_ADV_SET__
 endif
 
 ifeq ($(SNDP_COMM_SPP),1)
