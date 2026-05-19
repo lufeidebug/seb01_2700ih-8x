@@ -35,6 +35,7 @@ int32_t da217e_reg_read(uint8_t reg, uint8_t *data);
 int32_t da217e_reg_read_data(uint8_t reg, uint8_t *data, uint8_t len);
 
 int32_t da217e_set_enable(uint8_t enable);
+int32_t da217e_read_acc_data(int16_t *x, int16_t *y, int16_t *z);
 
 int32_t da217e_open_double_tap_interrupt(uint8_t th);
 int32_t da217e_close_double_tap_interrupt(void);
@@ -56,6 +57,7 @@ int32_t da217e_close_fifo_int(void);
 void da217e_drv_deal_tap_interruption(void);
 void da217e_drv_deal_fifo_interruption(void);
 
+int32_t da217e_read_chipid(uint8_t *chip_id);
 int32_t da217e_drv_init(da217e_drv_if_s * drv_if);
 
 

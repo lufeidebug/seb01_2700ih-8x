@@ -556,6 +556,22 @@ int32_t ssh401a_switch_operation_mode(sndp_hal_hr_operation_mode_e op_mode)
     return SNDP_HAL_RET_OK;
 }
 
+int32_t ssh401a_read_chip_id(uint8_t *chipid)
+{
+    int ret = 0;
+    unsigned char chip_id = 0;
+
+    ret = ss_ppg_read_chip_id(&chip_id);
+    SSH401A_TRACE(0, "ret=%d, chip_id=%d", ret, chip_id);
+    
+    if (ret == SS_SUCCESS) {
+        *chipid = chip_id;
+        return SNDP_HAL_RET_OK;
+    }
+
+    return SNDP_HAL_RET_FAIL;
+}
+
 
 extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .init                           = ssh401a_init,
@@ -575,6 +591,7 @@ extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .set_ppg_test_mode_callback     = ssh401a_set_ppg_test_mode_callback,
     .switch_ppg_test_mode           = ssh401a_switch_ppg_test_mode,
     .switch_operation_mode          = ssh401a_switch_operation_mode,
+    .read_chip_id                   = ssh401a_read_chip_id,
 };
 
 

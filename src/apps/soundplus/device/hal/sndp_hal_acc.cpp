@@ -141,6 +141,21 @@ int32_t sndp_hal_acc_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_
 	return SNDP_HAL_RET_FAIL;
 }
 
+int32_t sndp_hal_acc_read_chip_id(uint8_t *chipid)
+{
+	if((p_hal_acc != NULL) && (p_hal_acc->read_chip_id != NULL))
+		return p_hal_acc->read_chip_id(chipid);
+	return SNDP_HAL_RET_FAIL;
+}
+
+int32_t sndp_hal_acc_read_raw_data(sndp_hal_acc_data_s *acc_data)
+{
+	if((p_hal_acc != NULL) && (p_hal_acc->read_raw_data != NULL))
+		return p_hal_acc->read_raw_data(acc_data);
+	return SNDP_HAL_RET_FAIL;
+}
+
+
 
 #endif	/* __SNDP_GSENSOR_SUPPORT__ */
 

@@ -116,7 +116,12 @@ typedef struct {
      * return: 0 no error.
      */
     int32_t (* switch_operation_mode)(sndp_hal_hr_operation_mode_e op_mode);
-    
+
+    /** 
+     * chipid: 
+     * return: 0 no error.
+     */
+    int32_t (* read_chip_id)(uint8_t *chipid);
 
 } sndp_hal_hr_s;
 
@@ -143,6 +148,7 @@ int32_t sndp_hal_hr_set_ppg_test_mode_callback(sndp_hal_hr_ppg_test_mode_callbac
 int32_t sndp_hal_hr_switch_ppg_test_mode(uint8_t en);
 int32_t sndp_hal_hr_switch_operation_mode(sndp_hal_hr_operation_mode_e op_mode);
 
+int32_t sndp_hal_hr_read_chip_id(uint8_t *chipid);
 
 #ifdef __cplusplus
 }

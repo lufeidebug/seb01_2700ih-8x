@@ -88,6 +88,7 @@ typedef enum {
 	SNDP_COMM_ERROR_SAVE_FAIL               = 0x16,
 	SNDP_COMM_ERROR_READ_FAIL               = 0x17,
 	SNDP_COMM_ERROR_NULL_POINTER            = 0x18,
+	SNDP_COMM_ERROR_EXEC_FAIL               = 0x19,
 
 	SNDP_COMM_ERROR_PARAM_LEN_INVALID       = 0x20,
 	SNDP_COMM_ERROR_PARAM_OUT_RANG          = 0x21,

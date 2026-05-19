@@ -89,6 +89,14 @@ typedef struct {
      */
     int32_t (* read_reg)(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
 
+    /** 
+     * chipid: 
+     * return: 0 no error.
+     */
+    int32_t (* read_chip_id)(uint8_t *chipid);
+
+    int32_t (* read_raw_data)(sndp_hal_acc_data_s *acc_data);
+
 } sndp_hal_acc_s;
 
 int32_t sndp_hal_acc_init(void);
@@ -105,6 +113,9 @@ int32_t sndp_hal_acc_exec_calibration_self_calib(void);
 
 int32_t sndp_hal_acc_write_reg(uint8_t reg_addr, uint8_t reg_val);
 int32_t sndp_hal_acc_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
+int32_t sndp_hal_acc_read_chip_id(uint8_t *chipid);
+int32_t sndp_hal_acc_read_raw_data(sndp_hal_acc_data_s *acc_data);
+
 
 #ifdef __cplusplus
 }

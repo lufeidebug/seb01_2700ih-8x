@@ -165,6 +165,13 @@ int32_t sndp_hal_hr_switch_operation_mode(sndp_hal_hr_operation_mode_e op_mode)
 	return SNDP_HAL_RET_FAIL;
 }
 
+int32_t sndp_hal_hr_read_chip_id(uint8_t *chipid)
+{
+	if((p_hal_hr != NULL) && (p_hal_hr->read_chip_id != NULL))
+		return p_hal_hr->read_chip_id(chipid);
+	return SNDP_HAL_RET_FAIL;
+}
+
 
 #endif	/* __SNDP_HRSENSOR_SUPPORT__ */
 
