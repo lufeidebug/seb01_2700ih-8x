@@ -532,7 +532,7 @@ int32_t ssh401a_set_ppg_test_mode_callback(sndp_hal_hr_ppg_test_mode_callback ca
 	return SNDP_HAL_RET_OK;
 }
 
-int32_t ssh401a_ppg_test_mode_switch(uint8_t en)
+int32_t ssh401a_switch_ppg_test_mode(uint8_t en)
 {
     SSH401A_TRACE(0, "en=%d", en);
     
@@ -565,7 +565,7 @@ extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .write_reg                      = ssh401a_write_reg,
     .read_reg                       = ssh401a_read_reg,
     .set_ppg_test_mode_callback     = ssh401a_set_ppg_test_mode_callback,
-    .ppg_test_mode_switch           = ssh401a_ppg_test_mode_switch,
+    .switch_ppg_test_mode           = ssh401a_switch_ppg_test_mode,
 };
 
 

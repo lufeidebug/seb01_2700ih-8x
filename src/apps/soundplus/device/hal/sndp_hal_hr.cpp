@@ -151,10 +151,10 @@ int32_t sndp_hal_hr_set_ppg_test_mode_callback(sndp_hal_hr_ppg_test_mode_callbac
     return SNDP_HAL_RET_FAIL;
 }
 
-int32_t sndp_hal_hr_ppg_test_mode_switch(uint8_t en)
+int32_t sndp_hal_hr_switch_ppg_test_mode(uint8_t en)
 {
-	if((p_hal_hr != NULL) && (p_hal_hr->ppg_test_mode_switch != NULL))
-		return p_hal_hr->ppg_test_mode_switch(en);
+	if((p_hal_hr != NULL) && (p_hal_hr->switch_ppg_test_mode != NULL))
+		return p_hal_hr->switch_ppg_test_mode(en);
 	return SNDP_HAL_RET_FAIL;
 }
 

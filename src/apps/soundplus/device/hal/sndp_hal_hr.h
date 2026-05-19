@@ -97,7 +97,7 @@ typedef struct {
      * en 0:disable, 1:enable
      * return: 0 no error.
      */
-    int32_t (* ppg_test_mode_switch)(uint8_t en);
+    int32_t (* switch_ppg_test_mode)(uint8_t en);
 
 } sndp_hal_hr_s;
 
@@ -121,7 +121,7 @@ int32_t sndp_hal_hr_write_reg(uint8_t reg_addr, uint8_t reg_val);
 int32_t sndp_hal_hr_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
 
 int32_t sndp_hal_hr_set_ppg_test_mode_callback(sndp_hal_hr_ppg_test_mode_callback callback);
-int32_t sndp_hal_hr_ppg_test_mode_switch(uint8_t en);
+int32_t sndp_hal_hr_switch_ppg_test_mode(uint8_t en);
 
 #ifdef __cplusplus
 }
