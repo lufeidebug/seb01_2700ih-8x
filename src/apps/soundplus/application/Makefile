@@ -85,7 +85,13 @@ ccflags-y +=  \
 	-Iutils/cqueue \
 	-Iservices/audio_dump/include \
 	-Ibthost/apps/bta_apps/earbuds/inc\
-    -Iapps/main
+    -Iapps/main\
+    -Ibthost/host/src/service/ble_app_new/inc \
+    -Ibthost/host/src/adapter/inc/ble/common \
+    -Ibthost/host/src/stack/ble_if/inc \
+    -Ibthost/host/src/adapter/inc/ble/gap\
+    -Iapps/earbuds/conn\
+    -Ibthost/host/src/service/module/common/if
 
 
 

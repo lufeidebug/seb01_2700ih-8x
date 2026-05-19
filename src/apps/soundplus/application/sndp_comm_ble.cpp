@@ -13,8 +13,13 @@
 #include "nvrecord_env.h"
 #include "ble_core_common.h"
 #include "app_custom.h"
+#include "gap_service.h"
+#include "bes_gap_api.h"
+#include "app_ibrt_customif_cmd.h"
+#include "bts_core_if.h"
+#include "app_ble_adv.h"
 
-
+#include "sndp_if_device.h"
 #include "sndp_if_common.h"
 #include "sndp_if_platform.h"
 
@@ -68,6 +73,13 @@ static uint8_t sndp_comm_ble_send_pop_buf[SNDP_COMM_BLE_SEND_BUF_SIZE];
 osTimerDef(BLE_SEND_TIMEOUT_TIMER, sndp_comm_ble_send_timeout_timer_handler);
 static osTimerId ble_send_timeout_timer = NULL;
 
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+typedef struct {
+    uint8_t public_addr[6];  // 广播地址
+    bool    synced;          // 是否已同步
+} sndp_ble_addr_ctx_t;
+static sndp_ble_addr_ctx_t g_ble_addr_ctx = {0};
+#endif
 
 /**************************************************************************************************
 * Function
@@ -227,8 +239,111 @@ bool sndp_comm_ble_is_connected(void)
 	return (sndp_comm_ble_ctx.conn_status == SNDP_COMM_BLE_CONNECTED) ? (true) : (false);
 }
 
-void sndp_comm_ble_set_adv_data(void)
+
+
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+
+/* 获取地址 */
+sndp_ble_addr_ctx_t* sndp_ble_addr_get_ctx(void)
 {
+    return &g_ble_addr_ctx;
+}
+
+bool sndp_comm_ble_activity_prepare(ble_adv_activity_t *adv);
+
+/* 初始化 */
+void sndp_ble_advertising_init(void)
+{   
+    COMM_BLE_TRACE(0, ".");
+    ble_bdaddr_t addr = {{0}};
+    addr = bes_ble_gap_get_current_ble_addr(); //
+
+    memcpy(g_ble_addr_ctx.public_addr, addr.addr, 6);
+    g_ble_addr_ctx.synced = false;
+
+    ble_adv_activity_t *ble_create_adv;
+    ble_create_adv=app_ble_register_advertising(BLE_BASIC_ADV_HANDLE, BLE_ADV_USAGE_DEFAULT, sndp_comm_ble_activity_prepare);
+    if (ble_create_adv == NULL) {
+        COMM_BLE_TRACE(0, "SNDP ADV Register FAIL!!!");
+    }    
+
+}
+
+/* 获取当前广播地址 */
+uint8_t* sndp_ble_get_public_addr(void)
+{
+    return g_ble_addr_ctx.public_addr;
+}
+/* 主耳：发送public地址 */
+void sndp_master_send_ble_public_addr(void)
+{
+    if (sndp_is_tws_link_connected() && sndp_is_tws_slave_mode())
+    {
+        COMM_BLE_TRACE(0, "[TWS] slave mode, dont send public addr");
+        return;
+    }
+    COMM_BLE_TRACE(0, "done.");
+
+    g_ble_addr_ctx.synced = true;
+	tws_ctrl_send_cmd(APP_TWS_CMD_SNDP_BLE_PUBLIC_ADDR_SYNC, g_ble_addr_ctx.public_addr, 6);
+}
+
+/* 从耳：接收public地址 */
+void sndp_ble_receive_master_public_addr(uint8_t *addr, uint16_t length)
+{
+    COMM_BLE_TRACE(0, "done.");
+    if(addr == NULL || length != 6) {
+        COMM_BLE_TRACE(0, "addr == null or length != 6, return");
+        return;
+    }
+
+    memcpy(g_ble_addr_ctx.public_addr, addr, 6);
+    g_ble_addr_ctx.synced = true;
+}
+
+void sndp_ble_set_public_addr(void)
+{
+    COMM_BLE_TRACE(0, ".");
+    uint8_t *addr = sndp_ble_get_public_addr();
+    COMM_BLE_TRACE(0, "public_addr=%s", addr);
+    bes_ble_gap_set_public_address((const bt_bdaddr_t *)addr);//api-set public addr!!!
+}
+
+
+bool sndp_comm_ble_activity_prepare(ble_adv_activity_t *adv)
+{
+
+    sndp_ble_set_public_addr();//ble addr set
+
+    if (sndp_is_tws_link_connected() && sndp_is_tws_slave_mode())
+    {
+        COMM_BLE_TRACE(0, "[TWS] slave mode, disable advertising");
+        return false;
+    }
+
+
+    gap_adv_param_t *adv_param = &adv->adv_param;
+
+    adv->adv_handle = BLE_BASIC_ADV_HANDLE;
+    adv->user = USER_SNDP_BLE;
+    adv_param->connectable = true;
+    adv_param->scannable = true;
+    adv_param->use_legacy_pdu = false;
+    adv_param->include_tx_power_data = true;
+
+    app_ble_set_adv_tx_power_level(adv, BLE_ADV_TX_POWER_LEVEL_0);
+
+    app_ble_dt_set_flags(adv_param, false);
+
+    uint8_t* ble_name = factory_section_get_ble_name();
+    int ble_name_len = strlen((char *)ble_name);
+    //app_ble_dt_set_local_name(adv_param, (char *)ble_name);
+#if 0
+    BLE_ADV_ACTIVITY_USER_E actv_user = app_ble_param_get_actv_user_from_adv_user(adv->user);
+    COMM_BLE_TRACE(1, "adv->user=%d", (adv->user));
+    COMM_BLE_TRACE(1, "BLE_ADV_ACTIVITY_USER_E=%d", actv_user);
+#endif
+
     struct nvrecord_env_t *nvrecord_env;
     uint8_t local_ble_addr[6] = {0};
     uint8_t local_bt_addr[6] = {0};
@@ -284,8 +399,8 @@ void sndp_comm_ble_set_adv_data(void)
 
 
     //BT name Type Data
-    uint8_t* ble_name = factory_section_get_ble_name();
-    int ble_name_len = strlen((char *)ble_name);
+    //uint8_t* ble_name = factory_section_get_ble_name();
+    //int ble_name_len = strlen((char *)ble_name);
     if(ble_name_len > adv_data_max - adv_data_size) {
         ble_name_len = adv_data_max - adv_data_size;
     } 
@@ -321,22 +436,14 @@ void sndp_comm_ble_set_adv_data(void)
             }
         }
     }
-    
-    app_ble_custom_adv_write_data(BLE_ADV_ACTIVITY_USER_0,
-                    true,
-                    BLE_ADV_PUBLIC_STATIC,
-                    (const uint8_t *)local_bt_addr,
-                    (const ble_bdaddr_t *)&peer_bt_addr,
-                    160,
-                    ADV_TYPE_UNDIRECT,
-                    ADV_MODE_EXTENDED,
-                    12,
-                    (const uint8_t *)adv_data, adv_data_size,
-                    (const uint8_t *)scan_rsp_data, scan_rsp_data_size);
+    gap_dt_add_raw_data(&adv_param->adv_data, adv_data, sizeof(adv_data));
 
-    app_ble_custom_adv_start(BLE_ADV_ACTIVITY_USER_0);
- 
-}
+    gap_dt_add_raw_data(&adv_param->scan_rsp_data, scan_rsp_data, sizeof(scan_rsp_data));
+
+    COMM_BLE_TRACE(0, "SUCCESS!!!");
+    return true;
+ }
+#endif
 
 int32_t sndp_comm_ble_init(void)
 {
@@ -367,7 +474,12 @@ int32_t sndp_comm_ble_init(void)
     sndp_comm_ble_ctx.conidx = 0;
 	COMM_BLE_TRACE(0, "done.");
 
-    sndp_comm_ble_set_adv_data();
+    
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+    sndp_ble_advertising_init();
+    app_ble_refresh_adv_state_generic();
+    COMM_BLE_TRACE(0, "SNDP ADV INIT SUCC!!!");
+#endif
     
 	return 0;
 }

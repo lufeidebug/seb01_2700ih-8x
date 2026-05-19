@@ -60,6 +60,9 @@
 #if defined(__SNDP_COMM_MS__)    
 #include "sndp_comm_ms.h"
 #endif 
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+#include "sndp_comm_ble.h"
+#endif
 
 #if defined(IBRT)
 
@@ -596,6 +599,23 @@ static void app_ibrt_customif_sndp_ms_sync_recv_handler(uint16_t rsp_seq, uint8_
 }
 #endif  
 
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+
+static void app_ibrt_customif_sndp_ble_public_addr_sync_send_handler(uint8_t *p_buff, uint16_t length)
+{
+    SNDP_TRACE(0, "%s, %d", __func__, length);
+
+	bts_tws_if_send_cmd_without_rsp(APP_TWS_CMD_SNDP_BLE_PUBLIC_ADDR_SYNC, p_buff, length);
+}
+
+static void app_ibrt_customif_sndp_ble_public_addr_sync_recv_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length)
+{
+    SNDP_TRACE(0, "%s, %d", __func__, length);
+    sndp_ble_receive_master_public_addr(p_buff, length);
+}
+
+#endif /* __SNDP_COMM_BLE_ADV_SET__ */
+
 #if defined(CUSTOM_BITRATE) && !defined(FREEMAN_ENABLED_STERO)
 static void app_ibrt_codec_user_info_sync(uint8_t *p_buff, uint16_t length);
 static void app_ibrt_codec_user_info_sync_handler(uint16_t rsp_seq, uint8_t *p_buff, uint16_t length);
@@ -767,7 +787,14 @@ static const bt_tws_cmd_instance_t g_ibrt_custom_cmd_handler_table[]=
         app_ibrt_custom_cmd_rsp_timeout_handler_null,			app_ibrt_cmd_rsp_handler_null
     },
 #endif 
-
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+	{
+        APP_TWS_CMD_SNDP_BLE_PUBLIC_ADDR_SYNC,                               "TWS_CMD_SNDP_BLE_PUBLIC_ADDR_SYNC",
+        app_ibrt_customif_sndp_ble_public_addr_sync_send_handler,
+        app_ibrt_customif_sndp_ble_public_addr_sync_recv_handler,	        0,
+        app_ibrt_custom_cmd_rsp_timeout_handler_null,			app_ibrt_cmd_rsp_handler_null
+    },
+#endif 
 };
 
 /****************************function defination****************************/
