@@ -1646,6 +1646,17 @@ int32_t sndp_dev_hr_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_l
 #endif
 }
 
+int32_t sndp_dev_hr_switch_operation_mode(sndp_dev_hr_operation_mode_e op_mode)
+{
+	SNDP_IF_TRACE(0, "op_mode=%d", op_mode);	
+    
+#if defined(__SNDP_HEART_RATE_MGR__)	
+	return sndp_hal_hr_switch_operation_mode((sndp_hal_hr_operation_mode_e)op_mode);
+#else
+    return -1;
+#endif
+}
+
 void sndp_dev_hr_init(void)
 {
 	SNDP_IF_TRACE_ENTER();

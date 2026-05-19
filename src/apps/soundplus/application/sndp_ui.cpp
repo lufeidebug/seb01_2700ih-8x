@@ -533,7 +533,8 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
     SPUI_TRACE(1, "BOX_%s", (SNDP_DEV_COVER_COLSED == cover_status) ? "CLOSED" : "OPENED");
 
     if(SNDP_DEV_COVER_COLSED == cover_status) {
-        sndp_dev_wear_disable_detection();
+        sndp_dev_hr_enter_standby_mode();
+        
         bta_tws_box_event_entry(BTA_TWS_CLOSE);
         sndp_bt_set_access_mode(SNDP_BT_NOT_ACCESSIBEL);
         bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_BOX, false);
@@ -544,7 +545,8 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 #endif
 
     } else {
-        //sndp_dev_wear_enable_detection();
+        sndp_dev_hr_switch_operation_mode(SNDP_DEV_HR_PROX);
+        
 #if defined(__BTIF_EARPHONE__)
         app_stop_10_second_timer(APP_PAIR_TIMER_ID);
 #endif
@@ -598,7 +600,9 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
     sndp_delay_exec_stop((uint32_t)sndp_ui_outbox_role_switch);
     
     if(inout_status == SNDP_DEV_IOBOX_IN) {
-        sndp_dev_wear_disable_detection();
+        sndp_dev_hr_switch_operation_mode(SNDP_DEV_HR_PROX);
+        sndp_dev_hr_enter_standby_mode();
+    
         sndp_dev_wear_set_status(false, SNDP_DEV_WEAR_UNKNOWN);
         
         bta_tws_box_event_entry(BTA_TWS_DOCK);
@@ -615,8 +619,7 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         sndp_dev_io_pmu_check_cover();
         
         bta_tws_box_event_entry(BTA_TWS_UNDOCK);
-        sndp_dev_wear_enable_detection();
-        //spif_wear_detection_exec_calibration_self_calib();
+        sndp_dev_hr_enter_detection_mode();
 
         sndp_delay_exec_start(300, (uint32_t)sndp_ui_outbox_role_switch, 0, 0, 0);
     }

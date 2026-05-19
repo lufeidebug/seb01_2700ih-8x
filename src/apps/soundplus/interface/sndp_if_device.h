@@ -95,6 +95,19 @@ typedef enum {
 } sndp_dev_volume_type_e;
 
 
+typedef enum {
+    SNDP_DEV_HR_PPG_0      = 0, /**< SEQ0=PPG0                        */
+    SNDP_DEV_HR_PPG_1      = 1, /**< SEQ0=PPG0, SEQ1=PPG1             */
+    SNDP_DEV_HR_PPG_2      = 2, /**< SEQ0=PPG0, SEQ1=PPG1,  SEQ2=PPG2 */
+    SNDP_DEV_HR_PPG_3      = 3, /**<            SEQ1=PPG1             */
+    SNDP_DEV_HR_PPG_4      = 4, /**<            SEQ1=PPG1,  SEQ2=PPG2 */
+    SNDP_DEV_HR_PROX       = 5, /**< SEQ0=Prox */
+    SNDP_DEV_HR_PROX_PPG_0 = 6, /**< SEQ0=Prox, SEQ1=PPG1             */
+    SNDP_DEV_HR_PROX_PPG_1 = 7, /**< SEQ0=Prox, SEQ1=PPG1,  SEQ2=PPG2 */
+} sndp_dev_hr_operation_mode_e;
+
+
+
 typedef struct {
     bool valid;
 	uint16_t bat_volt;
@@ -130,10 +143,11 @@ typedef enum {
     SNDP_FUNC_B = 1,
     SNDP_FUNC_C = 2,
     SNDP_FUNC_D = 3,
-		SNDP_FUNC_E = 4,
-		SNDP_FUNC_F = 5,
+	SNDP_FUNC_E = 4,
+	SNDP_FUNC_F = 5,
     SNDP_FUNC_MAX
 } sndp_dev_function_type_t;
+    
 typedef enum {
     SNDP_DEV_GESTURE_CLICK = 0,
     SNDP_DEV_GESTURE_DOUBLE_CLICK = 1,
@@ -394,6 +408,7 @@ void sndp_dev_hr_enter_detection_mode(void);
 void sndp_dev_hr_read_proximity_value(unsigned short *proximity_value);
 int32_t sndp_dev_hr_write_reg(uint8_t reg_addr, uint8_t reg_val);
 int32_t sndp_dev_hr_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
+int32_t sndp_dev_hr_switch_operation_mode(sndp_dev_hr_operation_mode_e op_mode);
 void sndp_dev_hr_init(void);
 /**************************************************  Heart rate Start **************************************************/
 

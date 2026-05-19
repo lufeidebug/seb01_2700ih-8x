@@ -384,10 +384,24 @@ int32_t ssh401a_init(void)
     
     ss_os_api_config(&ssh401a_os_api_config);
 
-    if (ss_ppg_example_main(EXAM_PROX_GREEN) != SS_SUCCESS) {
-        SSH401A_TRACE(0, "ppg init failed");
+    if(ss_ppg_verify() != SS_SUCCESS) {
+        os_api_print_log("chip id not match.");
         return SNDP_HAL_RET_FAIL;
     }
+    
+    if (ss_ppg_init(SENSOR_SSH401, SPS_64, 32) != SS_SUCCESS) {
+        os_api_print_log("ss_ppg_init failed");
+        return SNDP_HAL_RET_FAIL;
+    }
+
+#if 0    
+    ssh401a_proximity_calib_data_s proximity_calib_data;
+    if(ssh401a_proximity_read_calib_data(&proximity_calib_data) == 0) {
+        if (ss_ppg_proximity_threshold(proximity_calib_data.high_threshold, proximity_calib_data.low_threshold) != SS_SUCCESS) {
+            return SNDP_HAL_RET_FAIL;
+        }
+    }
+#endif
 
     ssh401a_irq_init();
 
@@ -405,6 +419,7 @@ int32_t ssh401a_init(void)
 int32_t ssh401a_enter_standby_mode(void)
 {
     SSH401A_TRACE(0, ".");
+    ss_ppg_interrupt_setting(PROX_INT_EN, 0);
     ss_ppg_stop_measurement();
     return SNDP_HAL_RET_FAIL;
 }
@@ -416,6 +431,7 @@ int32_t ssh401a_enter_detection_mode(void)
     ssh401a_inited = false;
     ssh401a_init();
 #else    
+    ss_ppg_interrupt_setting(PROX_INT_EN, 1);
     ss_ppg_start_measurement();
 #endif
     return SNDP_HAL_RET_FAIL;
@@ -428,21 +444,12 @@ int32_t ssh401a_set_reading_ppg_callback(sndp_hal_hr_read_ppg_callback callback)
     return SNDP_HAL_RET_OK;
 }
 
-
-
-
 int32_t ssh401a_start_reading_ppg(void)
 {
     SSH401A_TRACE(0, "...");
     
-#if 0
-    if (ss_ppg_start_measurement() != SS_SUCCESS) {
-        SSH401A_TRACE(0, "start_measurement failed");
-        return SNDP_HAL_RET_FAIL;
-    }
-#else
+    ss_ppg_operation_mode(PROX_PPG_0);
     ss_ppg_open_fifo();
-#endif
 
     return SNDP_HAL_RET_OK;
 }
@@ -451,15 +458,8 @@ int32_t ssh401a_stop_reading_ppg(void)
 {
     SSH401A_TRACE(0, "...");
     
-
-#if 0
-    if (ss_ppg_stop_measurement() != SS_SUCCESS) {
-        SSH401A_TRACE(0, "stop_measurement failed");
-        return SNDP_HAL_RET_FAIL;
-    }
-#else
     ss_ppg_close_fifo();
-#endif    
+    ss_ppg_operation_mode(PROX);
 
     return SNDP_HAL_RET_OK;
 }
@@ -547,6 +547,14 @@ int32_t ssh401a_switch_ppg_test_mode(uint8_t en)
     return SNDP_HAL_RET_OK;
 }
 
+int32_t ssh401a_switch_operation_mode(sndp_hal_hr_operation_mode_e op_mode)
+{
+    SSH401A_TRACE(0, "op_mode=%d", op_mode);
+    
+    ss_ppg_operation_mode((OperationMode)op_mode);
+    
+    return SNDP_HAL_RET_OK;
+}
 
 
 extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
@@ -566,6 +574,7 @@ extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .read_reg                       = ssh401a_read_reg,
     .set_ppg_test_mode_callback     = ssh401a_set_ppg_test_mode_callback,
     .switch_ppg_test_mode           = ssh401a_switch_ppg_test_mode,
+    .switch_operation_mode          = ssh401a_switch_operation_mode,
 };
 
 
