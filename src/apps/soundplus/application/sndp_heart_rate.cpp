@@ -410,6 +410,88 @@ int32_t sndp_get_acc_notification(void)
     return hr_ctx.acc_notification;
 }
 
+
+#if defined(__SNDP_HEART_RATE_MGR__)
+static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
+{
+    HR_TRACE(0, "cnt=%d", cnt);
+    if(hr_ctx.hr_running || hr_ctx.sleep_running) {
+        SNDP_DUMP32("%08X ", data,  cnt > 16?16:cnt);
+        ppg_raw_data_queue_push_data(data, cnt);
+
+        //HR_TRACE(0, "queue_len=%d, %d", ppg_raw_data_queue_get_len(), HR_PPG_SECOND_ALLCH_SAMPLES);
+        if(ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES) {
+            //HR_TRACE(0, "wakeup thread");
+            osSemaphoreRelease(hr_process_wait_semaphore_id);
+        }
+    }
+
+    if(hr_ctx.dump_state) {
+        if(cnt > 0) {
+            // HR_TRACE(0, "ppg notification, cnt=%d", cnt);
+            // DUMP32("%08X ", data, cnt);
+            
+            //report PPG data
+            sndp_comm_cmd_sleepapp_report_ppg_ntf(data, cnt);
+            
+        }
+    }
+}
+
+static void sndp_ppg_test_mode_callback(uint8_t *data, uint16_t cnt)
+{
+    sndp_comm_cmd_sleepapp_report_ppg_test_data(data, cnt);
+}
+
+#endif 
+
+
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16_t cnt)
+{
+    //HR_TRACE(0, "cnt=%d", cnt);
+    //SNDP_DUMP32("%04X ", data,  cnt > 16?16:cnt);
+    
+    if(hr_ctx.hr_running || hr_ctx.sleep_running) {
+        acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
+    }
+
+    if(hr_ctx.dump_state) {
+        if(cnt > 0) {
+            //report ACC data
+            sndp_comm_cmd_sleepapp_report_acc_ntf((int16_t *)data, cnt * 3);
+        }
+    }
+}
+#endif 
+
+void sndp_hr_switch_reading_ppg(bool onoff)
+{
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
+    if(onoff) {
+        sndp_hal_hr_set_reading_ppg_callback(sndp_hr_read_ppg_callback);
+        sndp_hal_hr_start_reading_ppg();
+    } else {
+        sndp_hal_hr_stop_reading_ppg();
+    }
+#endif     
+}
+
+void sndp_hr_switch_reading_acc_raw_data(bool onoff)
+{
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+    if(onoff) {
+        sndp_hal_acc_stop_single_tap_interrupt();
+        sndp_hal_acc_set_reading_raw_data_callback(sndp_hr_acc_read_raw_data_callback);
+        sndp_hal_acc_start_reading_raw_data();
+    } else {
+        sndp_hal_acc_stop_reading_raw_data();
+        sndp_hal_acc_start_single_tap_interrupt();
+    }
+#endif     
+}
+
+
 void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
@@ -432,14 +514,10 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 #endif
 
     // hr_setp_2: 打开读取加速度数据
-#if defined(__SNDP_GSENSOR_SUPPORT__)
-    sndp_hal_acc_start_reading_raw_data();
-#endif
+    sndp_hr_switch_reading_acc_raw_data(true);
 
     // hr_setp_3: 打开读取PPG数据
-#if defined(__SNDP_HRSENSOR_SUPPORT__)
-    sndp_hal_hr_start_reading_ppg();
-#endif 
+    sndp_hr_switch_reading_ppg(true);
 
     hr_measure_time = 0;
     hr_ctx.sleep_running = false;
@@ -455,14 +533,10 @@ void sndp_hr_mearsuring_stop(void)
     hr_ctx.sleep_running = false;
 
     // hr_setp_11: 停止读取ppg数据
-#if defined(__SNDP_HRSENSOR_SUPPORT__)
-    sndp_hal_hr_stop_reading_ppg();
-#endif
+    sndp_hr_switch_reading_ppg(false);
 
     // hr_setp_12: 停止读取加速度数据
-#if defined(__SNDP_GSENSOR_SUPPORT__)
-    sndp_hal_acc_stop_reading_raw_data();
-#endif
+    sndp_hr_switch_reading_acc_raw_data(false);
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
@@ -519,14 +593,10 @@ void sndp_sleep_analysis_start(int32_t sleep_control)
 #endif
 
     // sleep_step_2:打开读取加速度数据。
-#if defined(__SNDP_GSENSOR_SUPPORT__)
-    sndp_hal_acc_start_reading_raw_data();
-#endif    
+    sndp_hr_switch_reading_acc_raw_data(true);   
 
     // sleep_step_3:打开读取PPG数据。
-#if defined(__SNDP_HRSENSOR_SUPPORT__)
-    sndp_hal_hr_start_reading_ppg();
-#endif
+    sndp_hr_switch_reading_ppg(true);
 
     sleep_analysis_time = 0;
     hr_ctx.hr_running = true;
@@ -543,14 +613,10 @@ void sndp_sleep_analysis_stop(void)
     hr_ctx.sleep_running = false;
     
     // hr_setp_18: 停止读取ppg数据
-#if defined(__SNDP_HRSENSOR_SUPPORT__)
-    sndp_hal_hr_stop_reading_ppg();
-#endif
+    sndp_hr_switch_reading_ppg(false);
 
     // hr_setp_19: 停止读取加速度数据
-#if defined(__SNDP_GSENSOR_SUPPORT__)
-    sndp_hal_acc_stop_reading_raw_data();
-#endif
+    sndp_hr_switch_reading_acc_raw_data(false);
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
@@ -564,14 +630,10 @@ void sndp_ppg_notification_start(void)
     ppg_raw_data_queue_reset();
 
     // sleep_step_1:停止读取ACC数据。
-#if defined(__SNDP_GSENSOR_SUPPORT__)
-    sndp_hal_acc_stop_reading_raw_data();
-#endif
+    sndp_hr_switch_reading_acc_raw_data(false);
 
     // sleep_step_2:打开读取PPG数据。
-#if defined(__SNDP_HRSENSOR_SUPPORT__)
-    sndp_hal_hr_start_reading_ppg();
-#endif
+    sndp_hr_switch_reading_ppg(true);
 
     hr_ctx.hr_running = false;
     hr_ctx.sleep_running = false;
@@ -590,9 +652,7 @@ void sndp_ppg_notification_stop(void)
     hr_ctx.ppg_notification = false;
     
     // hr_setp_4: 停止读取ppg数据
-#if defined(__SNDP_HRSENSOR_SUPPORT__)
-    sndp_hal_hr_stop_reading_ppg();
-#endif
+    sndp_hr_switch_reading_ppg(false);
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
@@ -606,15 +666,10 @@ void sndp_acc_notification_start(void)
     ppg_raw_data_queue_reset();
 
     // sleep_step_1:停止读取PPG数据。
-#if defined(__SNDP_HRSENSOR_SUPPORT__)
-    sndp_hal_hr_stop_reading_ppg();
-#endif
+    sndp_hr_switch_reading_ppg(false);
 
     // sleep_step_2:开始读取ACC数据。
-#if defined(__SNDP_GSENSOR_SUPPORT__)
-    sndp_hal_acc_start_reading_raw_data();
-    sndp_hal_acc_stop_single_tap_interrupt();
-#endif 
+    sndp_hr_switch_reading_acc_raw_data(true);
 
     hr_ctx.hr_running = false;
     hr_ctx.sleep_running = false;
@@ -633,10 +688,7 @@ void sndp_acc_notification_stop(void)
     hr_ctx.acc_notification = false;
     
     // hr_setp_4: 停止读取ACC数据
-#if defined(__SNDP_GSENSOR_SUPPORT__)
-    sndp_hal_acc_stop_reading_raw_data();
-    sndp_hal_acc_start_single_tap_interrupt();
-#endif
+    sndp_hr_switch_reading_acc_raw_data(false);
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
@@ -650,6 +702,7 @@ void sndp_ppg_test_mode_switch(uint8_t en)
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
         
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
+        sndp_hal_hr_set_ppg_test_mode_callback(sndp_ppg_test_mode_callback);
         sndp_hal_hr_switch_ppg_test_mode(true);
 #endif
     } else {
@@ -661,61 +714,6 @@ void sndp_ppg_test_mode_switch(uint8_t en)
 
 }
 
-
-
-#if defined(__SNDP_HEART_RATE_MGR__)
-static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
-{
-    //HR_TRACE(0, "cnt=%d", cnt);
-    if(hr_ctx.hr_running || hr_ctx.sleep_running) {
-        //SNDP_DUMP32("%08X ", data,  cnt > 16?16:cnt);
-        ppg_raw_data_queue_push_data(data, cnt);
-
-        //HR_TRACE(0, "queue_len=%d, %d", ppg_raw_data_queue_get_len(), HR_PPG_SECOND_ALLCH_SAMPLES);
-        if(ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES) {
-            //HR_TRACE(0, "wakeup thread");
-            osSemaphoreRelease(hr_process_wait_semaphore_id);
-        }
-    }
-
-    if(hr_ctx.dump_state) {
-        if(cnt > 0) {
-            // HR_TRACE(0, "ppg notification, cnt=%d", cnt);
-            // DUMP32("%08X ", data, cnt);
-            
-            //report PPG data
-            sndp_comm_cmd_sleepapp_report_ppg_ntf(data, cnt);
-            
-        }
-    }
-}
-
-static void sndp_ppg_test_mode_callback(uint8_t *data, uint16_t cnt)
-{
-    sndp_comm_cmd_sleepapp_report_ppg_test_data(data, cnt);
-}
-
-#endif 
-
-
-#if defined(__SNDP_GSENSOR_SUPPORT__)
-static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16_t cnt)
-{
-    //HR_TRACE(0, "cnt=%d", cnt);
-    //SNDP_DUMP32("%04X ", data,  cnt > 16?16:cnt);
-    
-    if(hr_ctx.hr_running || hr_ctx.sleep_running) {
-        acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
-    }
-
-    if(hr_ctx.dump_state) {
-        if(cnt > 0) {
-            //report ACC data
-            sndp_comm_cmd_sleepapp_report_acc_ntf((int16_t *)data, cnt * 3);
-        }
-    }
-}
-#endif 
 
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
 void sndp_hr_print_log(const char *msg)
@@ -759,18 +757,6 @@ void sndp_hr_app_init(void)
     SNDP_TRACE(0, "lib_ver:%s", lib_engine_version());
     dbbeats_print_log_cfg(sndp_hr_print_log);
 #endif
-    
-
-    // 4. 设置读取心率IC数据回调。
-#if defined(__SNDP_HEART_RATE_MGR__)
-    sndp_hal_hr_set_reading_ppg_callback(sndp_hr_read_ppg_callback);
-    sndp_hal_hr_set_ppg_test_mode_callback(sndp_ppg_test_mode_callback);
-#endif   
-
-    // 5. 设置读取加速度IC数据回调。
-#if defined(__SNDP_GSENSOR_SUPPORT__)
-    sndp_hal_acc_set_reading_raw_data_callback(sndp_hr_acc_read_raw_data_callback);
-#endif 
 
 	HR_TRACE(0, "done");
 
