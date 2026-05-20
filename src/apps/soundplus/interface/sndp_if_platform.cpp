@@ -204,7 +204,7 @@ void sndp_app_shutdown(SNDP_shutdown_reason_e reason)
     SNDP_TRACE_IMM(1, "%s, %d", __func__, reason);
     sndp_shutdown_reason = reason;
     sndp_is_shutting_down = 1;
-	if (reason == SNDP_SHUTDOWN_REASON_CHARGING_FULL)
+	if (reason == SNDP_SHUTDOWN_REASON_CHARGING_FULL || reason == SNDP_SHUTDOWN_REASON_CHARGING_TIMEOUT) // 充电完成或超时
 	{
 		sndp_shutdown_reason_is_charging_full = 1;
 	}

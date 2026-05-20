@@ -705,7 +705,9 @@ int main(void)
 #endif
     system_power_off_callback(sys_case);
 #if defined(__SNDP_UI__)
-    if(sndp_dev_cover_get_status(false) == 1 || sndp_get_shutdown_reset_flag() == 1)
+    if (sndp_get_shutdown_reason_is_charging_full() &&
+       (sndp_dev_cover_get_status(false) ||
+        sndp_get_shutdown_reset_flag()))
     {
         if(sndp_get_shutdown_reason() != SNDP_SHUTDOWN_REASON_LOWPWR)
         {
