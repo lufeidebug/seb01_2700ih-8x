@@ -245,6 +245,7 @@ uint8_t sndp_get_is_shutting_down(void);
 uint8_t sndp_get_shutdown_reason_is_charging_full(void);
 uint8_t sndp_get_shutdown_reset_flag(void);
 void sndp_set_shutdown_reset_flag(uint8_t flag);
+uint8_t sndp_get_shutdown_reason(void);
 
 #if defined(__SNDP_SLEEP_APP__)
 void sndp_load_eq_param(void);
