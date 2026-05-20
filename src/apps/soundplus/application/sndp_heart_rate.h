@@ -137,6 +137,13 @@ void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
 
 int32_t sndp_get_acc_notification(void);
 
+bool sndp_hr_is_reading_ppg_enabled(void);
+void sndp_hr_switch_reading_ppg(bool onoff);
+bool sndp_hr_is_reading_acc_enabled(void);
+void sndp_hr_switch_reading_acc_raw_data(bool onoff);
+
+
+
 #ifdef __cplusplus
 	}
 #endif

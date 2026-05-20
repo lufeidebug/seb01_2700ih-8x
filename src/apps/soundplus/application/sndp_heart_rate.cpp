@@ -84,6 +84,10 @@ typedef struct {
     uint8_t sampling_rate;
     uint8_t dump_state;
     int32_t sleep_control;
+
+    bool ppg_reading_en;
+    bool acc_reading_en;
+    
 } sndp_hr_ctx_s;
 
 
@@ -465,8 +469,15 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
 }
 #endif 
 
+bool sndp_hr_is_reading_ppg_enabled(void)
+{
+    return hr_ctx.ppg_reading_en;   
+}
+
 void sndp_hr_switch_reading_ppg(bool onoff)
 {
+    hr_ctx.ppg_reading_en = onoff;
+    
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
     if(onoff) {
         sndp_hal_hr_set_reading_ppg_callback(sndp_hr_read_ppg_callback);
@@ -477,8 +488,15 @@ void sndp_hr_switch_reading_ppg(bool onoff)
 #endif     
 }
 
+bool sndp_hr_is_reading_acc_enabled(void)
+{
+    return hr_ctx.acc_reading_en;   
+}
+
 void sndp_hr_switch_reading_acc_raw_data(bool onoff)
 {
+    hr_ctx.acc_reading_en = onoff;
+    
 #if defined(__SNDP_GSENSOR_SUPPORT__)
     if(onoff) {
         sndp_hal_acc_stop_single_tap_interrupt();
