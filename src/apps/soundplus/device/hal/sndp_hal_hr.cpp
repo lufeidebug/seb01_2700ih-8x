@@ -173,5 +173,6 @@ int32_t sndp_hal_hr_read_chip_id(uint8_t *chipid)
 }
 
 
+
 #endif	/* __SNDP_HRSENSOR_SUPPORT__ */
 

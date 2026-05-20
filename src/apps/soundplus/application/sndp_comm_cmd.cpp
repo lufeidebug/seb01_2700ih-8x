@@ -1188,10 +1188,39 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_gsensor(sndp_comm_cmd
 }
 
 
-uint32_t sndp_comm_cmd_send_pt_test_gsensor_report(uint8_t *data, uint16_t data_len)
-{   
-    return 0;
+void sndp_comm_cmd_read_ppg_callback(int32_t *ppg_data, uint16_t cnt)
+{
+    uint8_t data[40];
+    uint32_t data_len;
+
+    COMM_CMD_TRACE(2, "cnt=%d", cnt);
+
+    sndp_hal_hr_set_reading_ppg_callback(NULL);
+    sndp_hal_hr_stop_reading_ppg();
+    sndp_hal_hr_switch_operation_mode(SNDP_HAL_HR_PROX);
+
+    if(cnt > 10) {
+        cnt = 10;
+    }
+
+    data_len = 0;
+    data[data_len++] = SNDP_COMM_ERROR_NONE;
+    data[data_len++] = 0x02;
+    data[data_len++] = cnt;
+    for(uint16_t i = 0; i < cnt; i++) {
+        data[data_len++] = (uint8_t)((ppg_data[i]>>16)&0xff);
+        data[data_len++] = (uint8_t)((ppg_data[i]>>8)&0xff);
+        data[data_len++] = (uint8_t)(ppg_data[i]&0xff);
+    }
+
+    sndp_comm_main_send_cmd_by_id(COMM_CMDID_PT_TEST_HRSENSOR_REPORT, 
+            sndp_comm_get_local_device(), 
+            dev_test_from, 
+            dev_test_path, 
+            data, 
+            data_len);
 }
+
 
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_hrsensor(sndp_comm_cmd_info_s *cmd_info)
 {
@@ -1199,10 +1228,13 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_hrsensor(sndp_comm_cm
     uint8_t err_code = SNDP_COMM_ERROR_NONE;
     uint8_t op_code;
     uint8_t chip_id;
-    uint8_t send_data[10];
+    uint8_t send_data[64];
     uint8_t send_len = 0;
 
     if(cmd_info->data_len > 0) {
+        dev_test_from = COMM_GET_FROM(cmd_info->fromto);
+        dev_test_path = cmd_info->path;
+    
         op_code = cmd_info->data[0];
         if(op_code == 0x01) {   //read chip id
             if(sndp_hal_hr_read_chip_id(&chip_id) == 0) {
@@ -1212,6 +1244,11 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_hrsensor(sndp_comm_cm
             } else {
                 op_code = SNDP_COMM_ERROR_READ_FAIL;
             }
+        } else if(op_code == 0x02) {   //read ppg data
+            sndp_hal_hr_switch_operation_mode(SNDP_HAL_HR_PROX_PPG_0);
+            sndp_hal_hr_set_reading_ppg_callback(sndp_comm_cmd_read_ppg_callback);
+            sndp_hal_hr_start_reading_ppg();
+
         } else {
             err_code = SNDP_COMM_ERROR_NOT_SUPPORT;
         }
