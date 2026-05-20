@@ -614,7 +614,6 @@ void ss_ppg_interrupt_handler(void)
             os_api_callback_ppg_data(ppg_buf, data_count);
         }
     }
-    //
 
     os_api_free(fifo_data);
 }

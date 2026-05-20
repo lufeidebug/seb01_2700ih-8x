@@ -402,14 +402,33 @@ int32_t da217e_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len)
     return da217e_reg_read_data(reg_addr, read_buf, read_len);
 }
 
+int32_t da217e_read_chip_id(uint8_t *chipid)
+{
+    if (da217e_read_chipid(chipid) == 0) {
+        return SNDP_HAL_RET_OK;
+    }
+
+    return SNDP_HAL_RET_FAIL;
+}
+
+int32_t da217e_read_raw_data(sndp_hal_acc_data_s *acc_data)
+{
+    if (da217e_read_acc_data(&acc_data->x, &acc_data->y, &acc_data->z) == 0) {
+        return SNDP_HAL_RET_OK;
+    }
+
+    return SNDP_HAL_RET_FAIL;
+}
+
+
 
 extern "C" const sndp_hal_acc_s sndp_acc_da217e = {
     .init                           = da217e_init,
     .enter_standby_mode             = da217e_enter_standby_mode,
     .enter_detection_mode           = da217e_enter_detection_mode,
-    .set_reading_raw_data_callback     = da217e_set_reading_raw_data_callback,
-    .start_reading_raw_data            = da217e_start_reading_raw_data,
-    .stop_reading_raw_data             = da217e_stop_reading_raw_data,
+    .set_reading_raw_data_callback  = da217e_set_reading_raw_data_callback,
+    .start_reading_raw_data         = da217e_start_reading_raw_data,
+    .stop_reading_raw_data          = da217e_stop_reading_raw_data,
     .start_single_tap_interrupt     = da217e_open_single_with_default_threshold,
     .stop_single_tap_interrupt      = da217e_close_single_tap_interrupt,
     .set_calibration_rsp_func       = da217e_set_calibration_rsp_func,
@@ -417,6 +436,8 @@ extern "C" const sndp_hal_acc_s sndp_acc_da217e = {
     .exec_calibration_self_calib    = da217e_exec_calibration_self_calib,
     .write_reg                      = da217e_write_reg,
     .read_reg                       = da217e_read_reg,
+    .read_chip_id                   = da217e_read_chip_id,
+    .read_raw_data                  = da217e_read_raw_data,
 };
 
 #endif

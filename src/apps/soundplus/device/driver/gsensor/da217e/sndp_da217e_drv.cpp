@@ -160,7 +160,7 @@ int32_t da217e_set_enable(uint8_t enable)
 }
 
 //Read three axis data, 1024 LSB = 1 g
-static int32_t da217e_read_acc_data(int16_t *x, int16_t *y, int16_t *z)
+int32_t da217e_read_acc_data(int16_t *x, int16_t *y, int16_t *z)
 {
     int32_t ret = 0;
     uint8_t tmp_data[6] = {0};
@@ -422,6 +422,10 @@ void da217e_drv_deal_fifo_interruption(void)
     }
 }
 
+int32_t da217e_read_chipid(uint8_t *chip_id)
+{
+    return da217e_reg_read(DA217E_REG_CHIP_ID, chip_id);
+}
 
 int32_t da217e_drv_init(da217e_drv_if_s * drv_if)
 {

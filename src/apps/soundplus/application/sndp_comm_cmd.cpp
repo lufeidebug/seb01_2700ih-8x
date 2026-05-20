@@ -59,6 +59,10 @@
 #if defined(__SNDP_HEART_RATE_MGR__)
 #include "sndp_hal_hr.h"
 #endif
+#if defined(__SNDP_GSENSOR_SUPPORT__)  
+#include "sndp_hal_acc.h"
+#endif
+
 
 /**************************************************************************************************
 * Constant
@@ -1123,23 +1127,114 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_speaker(sndp_comm_cmd
 
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_gsensor(sndp_comm_cmd_info_s *cmd_info)
 {
-    
-	sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NOT_SUPPORT);
-	return 0;
+#if defined(__SNDP_GSENSOR_SUPPORT__)    
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+    uint8_t op_code;
+    uint8_t chip_id;
+    sndp_hal_acc_data_s acc_data = {0};
+    uint8_t send_data[10];
+    uint8_t send_len = 0;
+
+    if(cmd_info->data_len > 0) {
+        op_code = cmd_info->data[0];
+        if(op_code == 0x01) {   //read chip id
+            if(sndp_hal_acc_read_chip_id(&chip_id) == 0) {
+                send_len = 0;
+                send_data[send_len++] = op_code;
+                send_data[send_len++] = chip_id;
+            } else {
+                op_code = SNDP_COMM_ERROR_READ_FAIL;
+            }
+            
+        } else if(op_code == 0x02) {   //read raw data
+            if(sndp_hal_acc_read_raw_data(&acc_data) == 0) {            
+                send_len = 0;
+                send_data[send_len++] = op_code;
+                send_data[send_len++] = (uint8_t)((acc_data.x>>8)&0xff);
+                send_data[send_len++] = (uint8_t)(acc_data.x&0xff);
+                send_data[send_len++] = (uint8_t)((acc_data.y>>8)&0xff);
+                send_data[send_len++] = (uint8_t)(acc_data.y&0xff);
+                send_data[send_len++] = (uint8_t)((acc_data.z>>8)&0xff);
+                send_data[send_len++] = (uint8_t)(acc_data.z&0xff);
+            } else {
+                op_code = SNDP_COMM_ERROR_READ_FAIL;
+            }
+            
+        } else if(op_code == 0x03) { // calib 
+            if(sndp_hal_acc_exec_calibration_self_calib() != 0) {
+                op_code = SNDP_COMM_ERROR_EXEC_FAIL;
+            }
+           
+        } else {
+            err_code = SNDP_COMM_ERROR_NOT_SUPPORT;
+        }
+        
+    } else {
+        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+    }
+
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = err_code;
+    for(uint16_t i = 0; i < send_len; i++) {
+        cmd_info->data[cmd_info->data_len++] = send_data[i];
+    }
+   
+    sndp_comm_main_rsp_cmd(cmd_info);
+#else
+    sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NOT_SUPPORT);
+#endif
+   
+    return 0;
 }
+
 
 uint32_t sndp_comm_cmd_send_pt_test_gsensor_report(uint8_t *data, uint16_t data_len)
 {   
     return 0;
 }
 
-
-
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_hrsensor(sndp_comm_cmd_info_s *cmd_info)
 {
-	sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NOT_SUPPORT);
-	return 0;
+#if defined(__SNDP_HRSENSOR_SUPPORT__)    
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+    uint8_t op_code;
+    uint8_t chip_id;
+    uint8_t send_data[10];
+    uint8_t send_len = 0;
+
+    if(cmd_info->data_len > 0) {
+        op_code = cmd_info->data[0];
+        if(op_code == 0x01) {   //read chip id
+            if(sndp_hal_hr_read_chip_id(&chip_id) == 0) {
+                send_len = 0;
+                send_data[send_len++] = op_code;
+                send_data[send_len++] = chip_id;
+            } else {
+                op_code = SNDP_COMM_ERROR_READ_FAIL;
+            }
+        } else {
+            err_code = SNDP_COMM_ERROR_NOT_SUPPORT;
+        }
+        
+    } else {
+        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+    }
+
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = err_code;
+    for(uint16_t i = 0; i < send_len; i++) {
+        cmd_info->data[cmd_info->data_len++] = send_data[i];
+    }
+   
+    sndp_comm_main_rsp_cmd(cmd_info);
+    
+#else
+    sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NOT_SUPPORT);
+#endif
+
+    return 0;
 }
+
 
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_query_dev_status(sndp_comm_cmd_info_s *cmd_info)
 {
@@ -1272,9 +1367,11 @@ static uint32_t sndp_comm_cmd_recv_pt_read_hall_status(sndp_comm_cmd_info_s *cmd
 
 static uint32_t sndp_comm_cmd_recv_pt_test_ir(sndp_comm_cmd_info_s *cmd_info)
 {
+#if defined(__SNDP_HRSENSOR_SUPPORT__)    
     uint8_t err_code = SNDP_COMM_ERROR_NONE;
     uint8_t op_code;
-    uint16_t value = 0;
+    uint8_t chip_id;
+    uint16_t ps_value = 0;
     uint16_t high_threshold;
     uint16_t low_threshold;
     uint8_t send_data[10];
@@ -1282,43 +1379,58 @@ static uint32_t sndp_comm_cmd_recv_pt_test_ir(sndp_comm_cmd_info_s *cmd_info)
 
     if(cmd_info->data_len > 0) {
         op_code = cmd_info->data[0];
-        if(op_code == 0x01) {   //read proximity value
-            sndp_dev_hr_read_proximity_value(&value);
+        if(op_code == 0x01) {   //read chip id
+            if(sndp_hal_hr_read_chip_id(&chip_id) == 0) {
+                send_len = 0;
+                send_data[send_len++] = op_code;
+                send_data[send_len++] = chip_id;
+            } else {
+                op_code = SNDP_COMM_ERROR_READ_FAIL;
+            }
             
-            send_len = 0;
-            send_data[send_len++] = op_code;
-            send_data[send_len++] = (uint8_t)((value>>8)&0xff);
-            send_data[send_len++] = (uint8_t)(value&0xff);
+        } else if(op_code == 0x02) {   //read proximity value
+            if(sndp_hal_hr_read_proximity_value(&ps_value) == 0) {            
+                send_len = 0;
+                send_data[send_len++] = op_code;
+                send_data[send_len++] = (uint8_t)((ps_value>>8)&0xff);
+                send_data[send_len++] = (uint8_t)(ps_value&0xff);
+            } else {
+                op_code = SNDP_COMM_ERROR_READ_FAIL;
+            }
             
-        } else if(op_code == 0x02) { // read proximity threshold
+        } else if(op_code == 0x03) { // read proximity threshold
             high_threshold = 0;
             low_threshold = 0;
-            sndp_hal_hr_read_proximity_threshold(&high_threshold, &low_threshold);
-
-            send_len = 0;
-            send_data[send_len++] = op_code;
-            send_data[send_len++] = (uint8_t)((high_threshold>>8)&0xff);
-            send_data[send_len++] = (uint8_t)(high_threshold&0xff);
-            send_data[send_len++] = (uint8_t)((low_threshold>>8)&0xff);
-            send_data[send_len++] = (uint8_t)(low_threshold&0xff);
-            
-        } else if(op_code == 0x03) { // write proximity threshold
-            if(cmd_info->data_len == 5) {
-                high_threshold = (cmd_info->data[1]<<8) | cmd_info->data[2];
-                low_threshold = (cmd_info->data[3]<<8) | cmd_info->data[4];
-                COMM_CMD_TRACE(1, "h=%d, l=%d", high_threshold, low_threshold);
-
-                sndp_hal_hr_write_proximity_threshold(high_threshold, low_threshold);
-
-                high_threshold = 0;
-                low_threshold = 0;
-                sndp_hal_hr_read_proximity_threshold(&high_threshold, &low_threshold);
+            if(sndp_hal_hr_read_proximity_threshold(&high_threshold, &low_threshold) == 0) {
                 send_len = 0;
                 send_data[send_len++] = op_code;
                 send_data[send_len++] = (uint8_t)((high_threshold>>8)&0xff);
                 send_data[send_len++] = (uint8_t)(high_threshold&0xff);
                 send_data[send_len++] = (uint8_t)((low_threshold>>8)&0xff);
                 send_data[send_len++] = (uint8_t)(low_threshold&0xff);
+            } else {
+                op_code = SNDP_COMM_ERROR_READ_FAIL;
+            }
+            
+        } else if(op_code == 0x04) { // write proximity threshold
+            if(cmd_info->data_len == 5) {
+                high_threshold = (cmd_info->data[1]<<8) | cmd_info->data[2];
+                low_threshold = (cmd_info->data[3]<<8) | cmd_info->data[4];
+                COMM_CMD_TRACE(1, "h=%d, l=%d", high_threshold, low_threshold);
+
+                if(sndp_hal_hr_write_proximity_threshold(high_threshold, low_threshold) == 0) {
+                    high_threshold = 0;
+                    low_threshold = 0;
+                    sndp_hal_hr_read_proximity_threshold(&high_threshold, &low_threshold);
+                    send_len = 0;
+                    send_data[send_len++] = op_code;
+                    send_data[send_len++] = (uint8_t)((high_threshold>>8)&0xff);
+                    send_data[send_len++] = (uint8_t)(high_threshold&0xff);
+                    send_data[send_len++] = (uint8_t)((low_threshold>>8)&0xff);
+                    send_data[send_len++] = (uint8_t)(low_threshold&0xff);
+                } else {
+                    op_code = SNDP_COMM_ERROR_SAVE_FAIL;
+                }
             } else {
                 err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
             }
@@ -1337,7 +1449,11 @@ static uint32_t sndp_comm_cmd_recv_pt_test_ir(sndp_comm_cmd_info_s *cmd_info)
     }
    
 	sndp_comm_main_rsp_cmd(cmd_info);
-   
+    
+#else
+    sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NOT_SUPPORT);
+#endif
+
     return 0;
 }
 

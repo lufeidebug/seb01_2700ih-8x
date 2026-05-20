@@ -650,11 +650,11 @@ void sndp_ppg_test_mode_switch(uint8_t en)
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
         
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
-        sndp_hal_hr_ppg_test_mode_switch(true);
+        sndp_hal_hr_switch_ppg_test_mode(true);
 #endif
     } else {
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
-        sndp_hal_hr_ppg_test_mode_switch(false);
+        sndp_hal_hr_switch_ppg_test_mode(false);
 #endif
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
     }

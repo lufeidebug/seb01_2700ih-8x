@@ -9,6 +9,18 @@ extern "C" {
 #endif
 
 
+typedef enum {
+    SNDP_HAL_HR_PPG_0      = 0, /**< SEQ0=PPG0                        */
+    SNDP_HAL_HR_PPG_1      = 1, /**< SEQ0=PPG0, SEQ1=PPG1             */
+    SNDP_HAL_HR_PPG_2      = 2, /**< SEQ0=PPG0, SEQ1=PPG1,  SEQ2=PPG2 */
+    SNDP_HAL_HR_PPG_3      = 3, /**<            SEQ1=PPG1             */
+    SNDP_HAL_HR_PPG_4      = 4, /**<            SEQ1=PPG1,  SEQ2=PPG2 */
+    SNDP_HAL_HR_PROX       = 5, /**< SEQ0=Prox */
+    SNDP_HAL_HR_PROX_PPG_0 = 6, /**< SEQ0=Prox, SEQ1=PPG1             */
+    SNDP_HAL_HR_PROX_PPG_1 = 7, /**< SEQ0=Prox, SEQ1=PPG1,  SEQ2=PPG2 */
+} sndp_hal_hr_operation_mode_e;
+
+
 typedef void (*sndp_hal_hr_read_ppg_callback)(int32_t *data, uint16_t cnt);
 typedef void (*sndp_hal_hr_calib_callback)(uint8_t *data, uint16_t data_len);
 typedef void (*sndp_hal_hr_ppg_test_mode_callback)(uint8_t *data, uint16_t data_len);
@@ -97,7 +109,19 @@ typedef struct {
      * en 0:disable, 1:enable
      * return: 0 no error.
      */
-    int32_t (* ppg_test_mode_switch)(uint8_t en);
+    int32_t (* switch_ppg_test_mode)(uint8_t en);
+
+    /** 
+     * op_mode: sndp_hal_hr_operation_mode_e
+     * return: 0 no error.
+     */
+    int32_t (* switch_operation_mode)(sndp_hal_hr_operation_mode_e op_mode);
+
+    /** 
+     * chipid: 
+     * return: 0 no error.
+     */
+    int32_t (* read_chip_id)(uint8_t *chipid);
 
 } sndp_hal_hr_s;
 
@@ -121,7 +145,10 @@ int32_t sndp_hal_hr_write_reg(uint8_t reg_addr, uint8_t reg_val);
 int32_t sndp_hal_hr_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
 
 int32_t sndp_hal_hr_set_ppg_test_mode_callback(sndp_hal_hr_ppg_test_mode_callback callback);
-int32_t sndp_hal_hr_ppg_test_mode_switch(uint8_t en);
+int32_t sndp_hal_hr_switch_ppg_test_mode(uint8_t en);
+int32_t sndp_hal_hr_switch_operation_mode(sndp_hal_hr_operation_mode_e op_mode);
+
+int32_t sndp_hal_hr_read_chip_id(uint8_t *chipid);
 
 #ifdef __cplusplus
 }

@@ -33,6 +33,9 @@ uint8_t sndp_pt_read_hall_status(void);
 void sndp_pt_switch_click_test(uint8_t onoff);
 bool sndp_pt_click_test_is_opened(void);
 
+bool sndp_pt_ir_test(uint8_t op_code, uint8_t *recv_data, uint8_t recv_len, uint8_t *rsp_data, uint8_t rsp_len);
+
+
 #ifdef __cplusplus
 }
 #endif
