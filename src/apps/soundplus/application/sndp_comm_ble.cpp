@@ -353,14 +353,7 @@ bool sndp_comm_ble_activity_prepare(ble_adv_activity_t *adv)
     } else {
         memset(local_ble_addr, 0, 6);
     }
-/*
-    nv_record_env_get(&nvrecord_env);
-    if(nvrecord_env->ibrt_mode.mode != 0xFF) {
-        memcpy(&peer_bt_addr, &nvrecord_env->ibrt_mode.record.bdAddr, sizeof(bt_bdaddr_t));
-    } else {
-        memset(&peer_bt_addr, 0, sizeof(bt_bdaddr_t));
-    }
-*/
+
     /* ---------------- Flags ---------------- */
     adv_data[adv_data_size++] = 0x02; // length
     adv_data[adv_data_size++] = 0x01; // AD Type: Flags
@@ -370,7 +363,7 @@ bool sndp_comm_ble_activity_prepare(ble_adv_activity_t *adv)
     adv_data[adv_data_size++] = 0x07; // length
     adv_data[adv_data_size++] = 0x1B; // AD Type
     for (int i = 0; i < 6; i++) {
-        adv_data[adv_data_size++] = local_bt_addr[i];
+        adv_data[adv_data_size++] = local_bt_addr[5 - i];
     }
 
     /* ---------------- Local Name ---------------- */

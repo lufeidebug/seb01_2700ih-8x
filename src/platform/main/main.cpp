@@ -709,10 +709,7 @@ int main(void)
        (sndp_dev_cover_get_status(false) ||
         sndp_get_shutdown_reset_flag()))
     {
-        if(sndp_get_shutdown_reason() != SNDP_SHUTDOWN_REASON_LOWPWR)
-        {
             sys_case = 2;
-        }
     }
 #endif
     TR_INFO(TR_MOD(MAIN), "byebye~~~ %d\n", sys_case);
