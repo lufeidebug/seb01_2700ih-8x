@@ -39,8 +39,8 @@ const unsigned char g_ss_ppg_init_register_ssh202[][2] = {
     {REG_H_INT_GAIN, 0x44},      // INT Gain=100Kohm/8pF
 };
 
-#define SS_PPG_INIT_PARAM_20260424
-//#define SS_PPG_INIT_PARAM_20260511
+// #define SS_PPG_INIT_PARAM_20260424
+#define SS_PPG_INIT_PARAM_20260511
 
 /**
  * @brief SSH401 initial register settings
@@ -113,7 +113,7 @@ const unsigned char g_ss_ppg_init_register_ssh401[][2] = {
     {REG_SEQ1_H_INT_GAIN, 0x45}, // INT Gain=100Kohm/16pF
 
     //[7] Interrupt Settings
-    {REG_INTREEUPT_CONF, 0x80},  // interrupt enable(A_FIFO_FULL)
+    {REG_INTREEUPT_CONF, 0x00},  // interrupt enable(A_FIFO_FULL)
 
     //* Note)PPG stops when earbuds are removed from the ear during PPG measurement
     //{REG_INTREEUPT_CONF, 0x82},  // interrupt enable(A_FIFO_FULL& Proximity)
@@ -188,7 +188,7 @@ const unsigned char g_ss_ppg_init_register_ssh401[][2] = {
     {REG_H_AFE_TIME, 0xE0},      // AFE Rest time control
 
     // Interrupt settings
-    {REG_INTREEUPT_CONF, 0x82},  // A_FIFO_FULL and PROX_INT_EN interrupt enable
+    {REG_INTREEUPT_CONF, 0x00},  // A_FIFO_FULL and PROX_INT_EN interrupt enable
     {REG_PROX_STATE_MODE, 0x01}, // interrupt mode : threshold mode , Persistence : 2
     {REG_INT_MODE, 0x01},        // Interrupt clear mode , Bitp[4]=0 : Interrupt reoccurs only on a new event after clear
 
@@ -196,6 +196,10 @@ const unsigned char g_ss_ppg_init_register_ssh401[][2] = {
     {REG_PROX_DIGITAL_GAIN, 0x0A}, // Proximity Gain = x2 
     {REG_PROX_FILTER_SET, 0x00},   // Moving average filter : Disable
 
+    {REG_PROX_THRES_HIGH_H, 0x9C},  // Threshold : 40000
+    {REG_PROX_THRES_HIGH_L, 0x40},  // 
+    {REG_PROX_THRES_LOW_H, 0x75},   ///Threshold : 30000
+    {REG_PROX_THRES_LOW_L, 0x30},   //
     //[10]Sensor sequence mode configuration
     //{REG_MEASUREMENT, 0x60},     // MODE setting = SEQ0:Proximity mode , SEQ1: PPG mode
     //Enable Proximity Mode (SEQ0) only start : Write 0x08 to REG_MEASUREMENT
