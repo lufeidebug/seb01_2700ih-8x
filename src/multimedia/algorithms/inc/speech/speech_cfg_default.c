@@ -376,24 +376,24 @@ const SpeechConfig WEAK speech_cfg_default = {
 ****************************************************************************************************/
     .tx_1mic_ns = {
         .bypass             = 0,
-        .nn_gain_db         = 15,
+        .nn_gain_db         = 16,
         .pf_enabled         = true,
 #if defined(SPEECH_NS10L)
         .pf_denoise_db      = -10,
 #else
-        .pf_denoise_db      = -8,
+        .pf_denoise_db      = -6,
 #endif
         .echo_supp_enabled  = true,
         .af_enabled         = true,
-        .hfsupp_enabled     = false,
+        .hfsupp_enabled     = true,
         .nlp_enabled        = true,
         .ref_delay          = 0,
-        .gamma              = 0.8,
+        .gamma              = 0.9,
         .echo_band_start    = 1000,
-        .echo_band_end      = 5000,
+        .echo_band_end      = 6000,
         .min_ovrd           = 2,
         .target_supp        = -20,
-        .highfre_band_start = 4000,
+        .highfre_band_start = 2600,
         .highfre_supp       = 8.f,
         .ref_thd            = 1000.f,
         .reset_ec_thd       = 1.03,
@@ -1362,6 +1362,7 @@ const SpeechConfig WEAK speech_cfg_default = {
 #endif
 
 #if defined(SPEECH_TX_EQ)
+
 /****************************************************************************************************
  * Describtion:
  *     Equalizer, implementation with 2 order iir filters
@@ -1379,11 +1380,12 @@ const SpeechConfig WEAK speech_cfg_default = {
 ****************************************************************************************************/
     .tx_eq = {
         .bypass     = 0,
-        .gain       = 0.f,
-        .num        = 1,
+        .gain       = 6.0f,
+        .num        = 3,
         .params = {
-			{IIR_BIQUARD_HIGHSHELF, {{4000, 0, 0.707}}},
-			//{IIR_BIQUARD_PEAKINGEQ, {{3100, 8, 5}}},
+			{IIR_BIQUARD_HIGHSHELF, {{3500, -5, 0.707}}},
+			{IIR_BIQUARD_PEAKINGEQ, {{2600, 1, 15}}},
+			{IIR_BIQUARD_PEAKINGEQ, {{920, -6, 7}}},
         },
     },
 #endif

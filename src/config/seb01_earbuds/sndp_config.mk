@@ -292,7 +292,7 @@ ifeq ($(SNDP_ALGO_MGR),1)
     KBUILD_CPPFLAGS += -D__SNDP_ALGO_MGR__
 
     export SNDP_ALGO_ENC                        := 0
-    export SNDP_USE_BES_ALGO                    := 0
+    export SNDP_USE_BES_ALGO                    := 1
 endif
 
 ifeq ($(SNDP_USE_BES_ALGO), 1)

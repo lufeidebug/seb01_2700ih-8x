@@ -94,7 +94,7 @@ static IirResampleState *resample_echo_st = NULL;
 static IirResampleState *uplink_resample_vpu2vqe_st = NULL;
 
 static bool speech_inited = false;
-static uint32_t g_bypass_tx_algo_sel_ch = 0x01;//0xFF;
+static uint32_t g_bypass_tx_algo_sel_ch = 0xFF;//0xFF;
 
 
 #ifdef AUDIO_RMS_MONITOR_ENABLE
