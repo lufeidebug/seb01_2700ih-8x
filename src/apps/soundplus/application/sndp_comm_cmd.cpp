@@ -2972,9 +2972,24 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t a
         COMM_CMD_TRACE(0, "dump state is off, not report accelerometer");
         return 0;
     }
-
+    uint8_t sendvalue[1 + 6*25] = {0}; // 1字节LR_flag + 最多25个数据点，每个数据点包含X/Y/Z三个轴，每轴2字节
     // COMM_CMD_TRACE(1, "report accelerometer to app, len=%d", acc_raw_len);
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION, acc_raw_len*sizeof(int16_t), (uint8_t *)acc_raw_data);
+        // 1. 打包LR_flag 1字节
+    if(sndp_dev_is_left_earphone())
+        sendvalue[0] = 0x01;
+    else
+        sendvalue[0] = 0x02;
+
+    // 2. 打包acc_raw_len个数据点，每个数据点包含X/Y/Z三个轴，每轴2字节，最多150字节
+        for (int i = 0; i < acc_raw_len && i < 25; i++) {
+            sendvalue[1 + 6*i] = (uint8_t)(acc_raw_data[3*i] & 0xFF);         // X轴最低字节
+            sendvalue[1 + 6*i + 1] = (uint8_t)((acc_raw_data[3*i] >> 8) & 0xFF);  // X轴最高字节
+            sendvalue[1 + 6*i + 2] = (uint8_t)(acc_raw_data[3*i + 1] & 0xFF);     // Y轴最低字节
+            sendvalue[1 + 6*i + 3] = (uint8_t)((acc_raw_data[3*i + 1] >> 8) & 0xFF); // Y轴最高字节
+            sendvalue[1 + 6*i + 4] = (uint8_t)(acc_raw_data[3*i + 2] & 0xFF);     // Z轴最低字节
+            sendvalue[1 + 6*i + 5] = (uint8_t)((acc_raw_data[3*i + 2] >> 8) & 0xFF); // Z轴最高字节
+        }
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION, acc_raw_len*sizeof(int16_t) + 1, (uint8_t *)sendvalue);
 
     return 0;
 }
