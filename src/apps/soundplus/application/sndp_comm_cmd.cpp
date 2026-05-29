@@ -42,6 +42,7 @@
 
 #if defined(__SNDP_PRODUCT_TEST__)
 #include "sndp_product_test.h"
+#define COMM_CMDID_IS_PT_CMD(id)  ((id) >= COMM_CMDID_PT_SWITCH_TEST_MODE && (id) <= COMM_CMDID_PT_CLICK_TEST_REPORT)
 #endif
 
 #if defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)
@@ -798,6 +799,11 @@ static uint32_t sndp_comm_cmd_recv_pt_switch_test_mode(sndp_comm_cmd_info_s *cmd
 
     if(cmd_info->data_len == 1) {
         sndp_pt_set_test_mode(cmd_info->data[0]);
+        if(cmd_info->data[0] == 0) {
+            sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
+            sndp_call_func_in_app_thread((uint32_t)sndp_app_reboot, 0, 0, 0);
+            return 0;
+        }
     } else {
         err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
     }
@@ -1923,6 +1929,18 @@ int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd)
     }
 
     memcpy(&sndp_comm_exec_cmd, cmd, sizeof(sndp_comm_cmd_info_s));
+
+#if defined(__SNDP_PRODUCT_TEST__)
+    if(COMM_CMDID_IS_PT_CMD(sndp_comm_exec_cmd.cmd_id)
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_SWITCH_TEST_MODE
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_QUERY_TEST_MODE) {
+        if(!sndp_pt_is_in_test_mode()) {
+            COMM_CMD_TRACE(1, "cmd(0x%02X) rejected, not in test mode", sndp_comm_exec_cmd.cmd_id);
+            sndp_comm_cmd_rsp_with_errcode(&sndp_comm_exec_cmd, SNDP_COMM_ERROR_NOT_IN_TEST_MODE);
+            return 0;
+        }
+    }
+#endif
     
     for(uint32_t i = 0; i < sndp_comm_cmd_hdlr_cnt; i++) {
         cmd_hdlr = (sndp_comm_cmd_handle_s *)&sndp_comm_cmd_hdlr_list[i];
