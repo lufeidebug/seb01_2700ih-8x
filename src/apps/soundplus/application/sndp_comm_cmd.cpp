@@ -855,8 +855,13 @@ static uint32_t sndp_comm_cmd_recv_pt_restore_factory_mode(sndp_comm_cmd_info_s 
 static uint32_t sndp_comm_cmd_recv_pt_single_pairing(sndp_comm_cmd_info_s *cmd_info)
 {
 	sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NONE);
-
-	sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
+	if(sndp_is_tws_link_connected()) {
+		if(sndp_is_tws_master_mode()) {
+			sndp_call_func_in_app_thread((uint32_t)sndp_tws_enter_mobile_pairing_after_mobile_disconnect, 0, 0, 0);
+		}
+	} else {
+		sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
+	}
 	return 0;
 }
 

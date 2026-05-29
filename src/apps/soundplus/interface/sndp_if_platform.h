@@ -173,6 +173,7 @@ void sndp_enter_mobile_reconnect(void);
 void sndp_mobile_pairing_timeout(void);
 void sndp_mobile_pairing_sccessful(void);
 void sndp_enter_mobile_pairing_after_tws_connected(void);
+void sndp_tws_enter_mobile_pairing_after_mobile_disconnect(void);
 void sndp_enter_mobile_pairing_directly(void);
 void sndp_tws_pairing_config(uint8_t *addr, uint8_t len);
 void sndp_ibrt_reconfig_save_to_nvrecord(void *config);

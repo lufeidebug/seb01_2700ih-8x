@@ -411,6 +411,26 @@ void sndp_enter_mobile_pairing_after_tws_connected(void)
 
 }
 
+
+void sndp_tws_enter_mobile_pairing_after_mobile_disconnect(void)
+{
+    SNDP_IF_TRACE(0, "enter");
+
+	sndp_disconnect_all_mobile_link();
+	
+    sndp_pairing_type = SNDP_PAIRING_TWS;
+    sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
+        
+    bta_tws_box_event_entry(BTA_TWS_OPEN);
+    bta_tws_enable_pairing_mode(true);
+
+#if defined(__BTIF_AUTOPOWEROFF__)
+    app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+    app_start_10_second_timer(APP_PAIR_TIMER_ID);   //5minute pairing
+#endif
+
+}
+
 void sndp_tws_pairing_config(uint8_t *addr, uint8_t len)
 {
     ibrt_config_t ibrt_config;
