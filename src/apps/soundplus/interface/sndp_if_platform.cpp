@@ -239,7 +239,7 @@ void sndp_enter_single_dld_mode(void)
 
 void sndp_enter_shipmode(void)
 {
-#if 0    
+#if 1    
 	SNDP_TRACE_IMM(1, "%s", __func__);
 	osDelay(100);
 	hal_gpio_pin_set((enum HAL_GPIO_PIN_T)app_shipmode_cnt_pin_cfg.pin);
@@ -304,7 +304,7 @@ void sndp_start_freeman_pairing(void)
     
     //sndp_clear_mobile_pairing_list();
     
-#if 0//defined(__SNDP_REBOOT_FORCE_PAIRING__)
+#if defined(__SNDP_REBOOT_FORCE_PAIRING__)
 	osDelay(100);
 	sndp_pmu_reboot(HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT);
 #else

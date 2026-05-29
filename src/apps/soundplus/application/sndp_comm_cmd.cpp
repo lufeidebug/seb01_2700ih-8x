@@ -1598,6 +1598,11 @@ static uint32_t sndp_comm_cmd_recv_pt_write_test_flag(sndp_comm_cmd_info_s *cmd_
             memset(&field_test_flag, 0, sizeof(field_test_flag));
             sndp_da_read_field(SNDP_DA_FIELD_TEST_FLAG, &field_test_flag, sizeof(sndp_da_field_test_flag_s), true);
 
+            if(field_test_flag.key != SNDP_DA_PARAM_FIELD_VALID) {
+                field_test_flag.test_flag = 0;
+                COMM_CMD_TRACE(1, "test_flag not initialized, set to 0");
+            }
+
             COMM_CMD_TRACE(1, "0 test_flag=%08X", field_test_flag.test_flag);
             
             field_test_flag.test_flag |= (1<<(test_item_idx-1));
@@ -1635,7 +1640,7 @@ static uint32_t sndp_comm_cmd_recv_pt_write_dev_color(sndp_comm_cmd_info_s *cmd_
         memset(&field_dev_color, 0, sizeof(field_dev_color));
         field_dev_color.dev_color = cmd_info->data[0];
         COMM_CMD_TRACE(1, "key=%08X, color=%08X", field_dev_color.key, field_dev_color.dev_color);
-        if(sndp_da_write_field(SNDP_DA_FIELD_TEST_FLAG, &field_dev_color, sizeof(sndp_da_field_dev_color_s), true) != 0) {
+        if(sndp_da_write_field(SNDP_DA_FIELD_DEV_COLOR, &field_dev_color, sizeof(sndp_da_field_dev_color_s), true) != 0) {
             err_code = SNDP_COMM_ERROR_SAVE_FAIL;
         }
             
@@ -1653,7 +1658,7 @@ static uint32_t sndp_comm_cmd_recv_pt_read_dev_color(sndp_comm_cmd_info_s *cmd_i
     sndp_da_field_dev_color_s field_dev_color;
 
     memset(&field_dev_color, 0, sizeof(field_dev_color));
-    if(sndp_da_read_field(SNDP_DA_FIELD_TEST_FLAG, &field_dev_color, sizeof(sndp_da_field_dev_color_s), true) == 0) {
+    if(sndp_da_read_field(SNDP_DA_FIELD_DEV_COLOR, &field_dev_color, sizeof(sndp_da_field_dev_color_s), true) == 0) {
         COMM_CMD_TRACE(1, "key=%08X, color=%08X", field_dev_color.key, field_dev_color.dev_color);
         
         if(field_dev_color.key != SNDP_DA_PARAM_FIELD_VALID ) {

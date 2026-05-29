@@ -68,7 +68,7 @@ static osTimerId bt_error_check_timer_id = NULL;
 uint8_t test_mode_type=0;
 
 #if defined(BESUI_TWS_EN) || defined(BESUI_STEREO_EN)
-#define POWEROFF_TIMEOUT        (60*15)
+#define POWEROFF_TIMEOUT        (60*30)
 
 static uint32_t dut_poweroff_cnt = 0;
 uint8_t bt_test_mode_dut_get(void)
