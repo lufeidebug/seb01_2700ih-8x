@@ -303,8 +303,9 @@ void sndp_start_freeman_pairing(void)
     sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
     
     //sndp_clear_mobile_pairing_list();
+	sndp_disconnect_all_mobile_link();
     
-#if defined(__SNDP_REBOOT_FORCE_PAIRING__)
+#if 0//defined(__SNDP_REBOOT_FORCE_PAIRING__)
 	osDelay(100);
 	sndp_pmu_reboot(HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT);
 #else
