@@ -265,6 +265,7 @@ static int32_t sndp_comm_main_execute_cmd(sndp_comm_cmd_info_s *cmd)
         if((to == SNDP_COMM_DEVICE_RIGHT)
             || (from == SNDP_COMM_DEVICE_BOX && to == SNDP_COMM_DEVICE_LEFT)
             || (from == SNDP_COMM_DEVICE_LEFT && to == SNDP_COMM_DEVICE_BOX)
+            || (from == SNDP_COMM_DEVICE_ATE && to == SNDP_COMM_DEVICE_LEFT)
             || (path == SNDP_COMM_PATH_TRACE_UART)
             || (path == SNDP_COMM_PATH_POGOPIN)
             || (path == SNDP_COMM_PATH_MS)
@@ -289,6 +290,7 @@ static int32_t sndp_comm_main_execute_cmd(sndp_comm_cmd_info_s *cmd)
         if((to == SNDP_COMM_DEVICE_LEFT)
             || (from == SNDP_COMM_DEVICE_BOX && to == SNDP_COMM_DEVICE_RIGHT)
             || (from == SNDP_COMM_DEVICE_RIGHT && to == SNDP_COMM_DEVICE_BOX)
+            || (from == SNDP_COMM_DEVICE_ATE && to == SNDP_COMM_DEVICE_RIGHT)
             || (path == SNDP_COMM_PATH_TRACE_UART)
             || (path == SNDP_COMM_PATH_POGOPIN)
             || (path == SNDP_COMM_PATH_MS)
@@ -562,8 +564,9 @@ int32_t sndp_comm_main_send_cmd(sndp_comm_cmd_info_s *cmd)
             }
             
         } else if(SNDP_COMM_PATH_SPP == path) {
-            if(false) {
-                
+            if(sndp_is_tws_link_connected() && sndp_is_tws_slave_mode()) {
+                send_path = SNDP_COMM_PATH_MS;
+            
 #if defined(__SNDP_COMM_SPP__)                
             } else if(sndp_comm_spp_is_connected()) {
                 send_path = SNDP_COMM_PATH_SPP;
