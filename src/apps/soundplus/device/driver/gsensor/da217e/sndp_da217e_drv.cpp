@@ -165,7 +165,7 @@ int32_t da217e_read_acc_data(int16_t *x, int16_t *y, int16_t *z)
     int32_t ret = 0;
     uint8_t tmp_data[6] = {0};
 
-#if 0
+#if 1
     ret |= da217e_reg_read_data(DA217E_REG_ACC_X_LSB, tmp_data,6);
 #else
 	ret |= da217e_reg_read(DA217E_REG_ACC_X_LSB, &tmp_data[0]);
@@ -321,6 +321,28 @@ int32_t da217e_open_fifo_watermark_int(uint8_t num)
 	return ret;
 }
 
+int32_t da217e_fifo_polling_data(da217e_drv_acc_data_s *data)
+{
+    uint8_t tmp_data = 0;
+    da217e_reg_read(DA217E_REG_FIFO_STATUS, &tmp_data);
+    // if(tmp_data&0x40) {
+    //         tmp_data = 32;
+    // } else {
+    //         tmp_data &= 0x3f;
+    // }
+    // DA217E_TRACE(0, "fifo_polling, fifo_status=%02X", tmp_data);
+    tmp_data &= 0x3f;
+    if(tmp_data >= 25) {
+        for(int i = 0; i < 25; i++){
+            da217e_read_acc_data(&data[i].ax, &data[i].ay, &data[i].az);	
+        }       
+        return 25;
+    }
+
+    return 0;
+    
+}
+
 int32_t da217e_read_water_int_fifo(da217e_drv_acc_data_s *data)
 {
    uint8_t i = 0, num = 0, tmp_data = 0;  
@@ -364,6 +386,16 @@ int32_t da217e_close_fifo_int(void)
 	ret = da217e_reg_write(DA217E_REG_FIFO_CTRL, 0x00);
 	ret = da217e_reg_write(DA217E_REG_INT_SET0, 0x00);
 	ret = da217e_reg_write(DA217E_REG_INT_MAP2, 0x00);
+
+	return ret;
+}
+
+
+int32_t da217e_close_fifo(void)
+{
+	int32_t ret = 0;
+
+	ret = da217e_reg_write(DA217E_REG_FIFO_CTRL, 0x00);
 
 	return ret;
 }
@@ -415,6 +447,19 @@ void da217e_drv_deal_fifo_interruption(void)
     int32_t num;
     
     num = da217e_read_water_int_fifo(data);
+    if(num > 0) {
+        if(da217e_drv_if.read_fifo_cb) {
+            da217e_drv_if.read_fifo_cb(data, num);
+        }
+    }
+}
+
+void da217e_drv_deal_fifo_polling(void)
+{
+    da217e_drv_acc_data_s data[32];
+    int32_t num;
+    
+    num = da217e_fifo_polling_data(data);
     if(num > 0) {
         if(da217e_drv_if.read_fifo_cb) {
             da217e_drv_if.read_fifo_cb(data, num);

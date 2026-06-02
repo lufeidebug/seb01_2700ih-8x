@@ -16,7 +16,7 @@ typedef enum {
 } sndp_i2c_type_e;
 
 
-uint32_t sndp_i2c_open(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id);
+uint32_t sndp_i2c_open(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id, uint32_t speed);
 uint32_t sndp_i2c_close(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id);
 uint32_t sndp_i2c_write(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id, uint16_t dev_addr, uint8_t *write_data, uint16_t write_len);
 uint32_t sndp_i2c_read(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id, uint16_t dev_addr, uint8_t *write_data, uint16_t write_len, uint8_t *read_buf, uint16_t read_len);

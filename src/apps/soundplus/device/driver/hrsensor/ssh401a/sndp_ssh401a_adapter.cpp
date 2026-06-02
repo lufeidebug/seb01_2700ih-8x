@@ -35,6 +35,7 @@
     
 #define SSH401A_I2C_TYPE                          (SNDP_I2C_HW_TASK)
 #define SSH401A_I2C_ID                            (HAL_I2C_ID_3)
+#define SSH401A_I2C_SPEED                         (400000)
 
 //#define __SSH401A_TEST_READ_PROXIMITY_VALUE__
 
@@ -168,7 +169,7 @@ int32_t ssh401a_ppg_write_calib_data(ssh401a_ppg_calib_data_s *ppg_calib_data)
 
 static bool ssh401a_i2c_init(void)
 {   
-    sndp_i2c_open(SSH401A_I2C_TYPE, SSH401A_I2C_ID);
+    sndp_i2c_open(SSH401A_I2C_TYPE, SSH401A_I2C_ID, SSH401A_I2C_SPEED);
     return true;
 }
 

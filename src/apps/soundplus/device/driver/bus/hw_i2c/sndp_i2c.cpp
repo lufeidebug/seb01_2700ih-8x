@@ -71,7 +71,7 @@ void sndp_i2c_mutex_release(enum HAL_I2C_ID_T i2c_id)
 }
 
 
-uint32_t sndp_i2c_open(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id)
+uint32_t sndp_i2c_open(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id, uint32_t speed)
 {
     ASSERT(type < SNDP_I2C_TYPE_CNT, "%s, type(%d) >= max(%d)", __func__, type, SNDP_I2C_TYPE_CNT);
     ASSERT(i2c_id < SNDP_I2C_CNT, "%s, i2c_id(%d) >= max(%d)", __func__, i2c_id, SNDP_I2C_CNT);
@@ -110,7 +110,7 @@ uint32_t sndp_i2c_open(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id)
         sndp_i2c_cfg[i2c_id].mode = HAL_I2C_API_MODE_SIMPLE;
         sndp_i2c_cfg[i2c_id].use_dma  = 0;
         sndp_i2c_cfg[i2c_id].use_sync = 1;
-        sndp_i2c_cfg[i2c_id].speed = 400000;
+        sndp_i2c_cfg[i2c_id].speed = speed;
         sndp_i2c_cfg[i2c_id].as_master = 1;
 		hal_i2c_open(i2c_id, &sndp_i2c_cfg[i2c_id]);
 		
@@ -147,7 +147,7 @@ uint32_t sndp_i2c_open(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id)
         sndp_i2c_cfg[i2c_id].mode = HAL_I2C_API_MODE_TASK;
         sndp_i2c_cfg[i2c_id].use_dma  = 0;
         sndp_i2c_cfg[i2c_id].use_sync = 1;
-        sndp_i2c_cfg[i2c_id].speed = 400000;
+        sndp_i2c_cfg[i2c_id].speed = speed;
         sndp_i2c_cfg[i2c_id].as_master = 1;
 		hal_i2c_open(i2c_id, &sndp_i2c_cfg[i2c_id]);
 
@@ -203,7 +203,7 @@ uint32_t sndp_i2c_open(sndp_i2c_type_e type, enum HAL_I2C_ID_T i2c_id)
         }
 #endif
 
-        sndp_gpio_i2c_cfg[i2c_id].speed = 100000;
+        sndp_gpio_i2c_cfg[i2c_id].speed = speed;
 		hal_gpio_i2c_open(&sndp_gpio_i2c_cfg[i2c_id]);
 	}
 

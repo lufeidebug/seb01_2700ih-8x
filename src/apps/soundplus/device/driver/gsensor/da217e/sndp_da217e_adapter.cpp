@@ -36,13 +36,13 @@
         
 #define DA217E_I2C_TYPE                          (SNDP_I2C_HW_TASK)
 #define DA217E_I2C_ID                            (HAL_I2C_ID_2)
-
+#define DA217E_I2C_SPEED                         (200000)
 
 //#define __DA217E_READ_RAW_DATA_MODIS__
 
 //#define __DA217E_IRQ_DEBOUNCE__
 
-
+#define FIFO_POLLING_OPEN
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -76,6 +76,11 @@ static osTimerId da217e_int2_debounce_timer = NULL;
 
 #endif
 
+#if defined(FIFO_POLLING_OPEN)
+static void da217e_drv_fifo_polling_handler(void const *param);
+osTimerDef(DA217E_FIFO_POLLING_TIMER, da217e_drv_fifo_polling_handler);
+static osTimerId da217e_drv_fifo_polling_timer = NULL;  
+#endif
 
 /**************************************************************************************************
 * Function
@@ -105,7 +110,7 @@ POSSIBLY_UNUSED static int32_t da217e_nv_write(uint8_t *ptrData, uint16_t num)
 
 static bool da217e_i2c_init(void)
 {   
-    sndp_i2c_open(DA217E_I2C_TYPE, DA217E_I2C_ID);
+    sndp_i2c_open(DA217E_I2C_TYPE, DA217E_I2C_ID, DA217E_I2C_SPEED);
     return true;
 }
 
@@ -176,10 +181,13 @@ static void da217e_deal_int1_data(void)
 #endif
 }
 
+
+#if !defined(FIFO_POLLING_OPEN)
 static void da217e_deal_int2_data(void)
 {
     da217e_drv_deal_fifo_interruption();
 }
+#endif
 
 #if defined(__DA217E_IRQ_DEBOUNCE__) 
 static void da217e_int1_debounce_handler(void const *param)
@@ -208,6 +216,30 @@ static void da217e_int2_debounce(void)
 }
 #endif
 
+#if defined(FIFO_POLLING_OPEN)
+static void da217e_drv_fifo_polling_handler(void const *param)
+{
+    // sndp_call_func_in_dev_thread((uint32_t)da217e_drv_deal_fifo_polling, 0, 0, 0);
+    da217e_drv_deal_fifo_polling();
+}
+
+static void da217e_drv_fifo_polling_start(void)
+{
+    if(da217e_drv_fifo_polling_timer == NULL) {
+        da217e_drv_fifo_polling_timer = osTimerCreate(osTimer(DA217E_FIFO_POLLING_TIMER), osTimerPeriodic, NULL);
+        ASSERT(da217e_drv_fifo_polling_timer != NULL, "%s, %d", __func__, __LINE__);
+    }
+    osTimerStart(da217e_drv_fifo_polling_timer, 200);
+}
+
+static void da217e_drv_fifo_polling_stop(void)
+{
+    if(da217e_drv_fifo_polling_timer) {
+        osTimerStop(da217e_drv_fifo_polling_timer);
+    }
+}
+#endif
+
 static void da217e_int1_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
 #if defined(__DA217E_IRQ_DEBOUNCE__)   
@@ -226,6 +258,7 @@ static void da217e_int1_irq_handler(enum HAL_GPIO_PIN_T pin)
 #endif
 }
 
+#if !defined(FIFO_POLLING_OPEN)
 static void da217e_int2_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
 #if defined(__DA217E_IRQ_DEBOUNCE__)    
@@ -243,6 +276,7 @@ static void da217e_int2_irq_handler(enum HAL_GPIO_PIN_T pin)
     sndp_call_func_in_app_thread((uint32_t)da217e_deal_int2_data, 0, 0, 0);
 #endif
 }
+#endif
 
 static void da217e_irq_init(void)
 {
@@ -269,6 +303,7 @@ static void da217e_irq_init(void)
         hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_gsensor_int1_pin_cfg.pin, &gpiocfg);
     }
 
+#if !defined(FIFO_POLLING_OPEN)
     if(app_gsensor_int2_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
         struct HAL_GPIO_IRQ_CFG_T gpiocfg;
         
@@ -279,6 +314,8 @@ static void da217e_irq_init(void)
         gpiocfg.irq_type = HAL_GPIO_IRQ_TYPE_EDGE_SENSITIVE;
         hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_gsensor_int2_pin_cfg.pin, &gpiocfg);
     }
+#endif
+
 }
 
 
@@ -353,12 +390,18 @@ void da217e_read_raw_data_test(void)
 
 int32_t da217e_start_reading_raw_data(void)
 {
-    DA217E_TRACE(0, "...");
+    DA217E_TRACE(0, "reading_raw_data timer...");
     
 #if defined(__DA217E_READ_RAW_DATA_MODIS__)
     sndp_delay_exec_start(1000, (uint32_t)da217e_read_raw_data_test, 0, 0, 0);
 #else
+#if defined(FIFO_POLLING_OPEN)
+    da217e_open_fifo();
+    // da217e_drv_fifo_polling_start();
+    sndp_call_func_in_dev_thread((uint32_t)da217e_drv_fifo_polling_start, 0, 0, 0);
+#else
     da217e_open_fifo_watermark_int(25);
+#endif
 #endif
 
     return SNDP_HAL_RET_OK;
@@ -371,7 +414,12 @@ int32_t da217e_stop_reading_raw_data(void)
 #if defined(__DA217E_READ_RAW_DATA_MODIS__)
     sndp_delay_exec_stop((uint32_t)da217e_read_raw_data_test);
 #else
+#if defined(FIFO_POLLING_OPEN)
+    da217e_close_fifo();
+    sndp_call_func_in_dev_thread((uint32_t)da217e_drv_fifo_polling_stop, 0, 0, 0);
+#else
     da217e_close_fifo_int();
+#endif
 #endif
 
     return SNDP_HAL_RET_OK;

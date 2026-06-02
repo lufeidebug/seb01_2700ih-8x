@@ -56,6 +56,9 @@ int32_t da217e_close_fifo_int(void);
 
 void da217e_drv_deal_tap_interruption(void);
 void da217e_drv_deal_fifo_interruption(void);
+void da217e_drv_deal_fifo_polling(void);
+int32_t da217e_close_fifo(void);
+int32_t da217e_open_fifo(void);
 
 int32_t da217e_read_chipid(uint8_t *chip_id);
 int32_t da217e_drv_init(da217e_drv_if_s * drv_if);

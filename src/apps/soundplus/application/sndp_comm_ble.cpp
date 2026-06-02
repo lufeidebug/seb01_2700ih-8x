@@ -125,22 +125,28 @@ static void sndp_comm_ble_send_timeout_timer_handler(void const *param)
 static void sndp_comm_ble_send_data_handle(void)
 {
     uint16_t send_len;
+    uint16_t per_frame_len;
     uint16_t queue_len;
 
     queue_len = sndp_comm_ble_send_queue_get_len();
 	if(queue_len == 0) {
 		return;
 	}
-	
+	sndp_comm_ble_send_queue_pop_data((uint8_t *)&per_frame_len, sizeof(uint16_t));
+    if(per_frame_len > SNDP_COMM_BLE_SEND_BUF_SIZE) {
+        COMM_BLE_TRACE(0, "invalid per_frame_len=%d", per_frame_len);
+        return;
+    }
+
 	send_len = sndp_comm_ble_ctx.mtu;
-	if(queue_len < sndp_comm_ble_ctx.mtu) {
-		send_len = queue_len;
+	if(per_frame_len < sndp_comm_ble_ctx.mtu) {
+		send_len = per_frame_len;
 	}
 
     sndp_comm_ble_send_queue_pop_data(sndp_comm_ble_send_pop_buf, send_len);
 
 #if 1
-    COMM_BLE_TRACE(1, "queue_len=%d, send_len=%d", queue_len, send_len);
+    COMM_BLE_TRACE(1, "per_frame_len=%d, send_len=%d", per_frame_len, send_len);
 	DUMP8("%02X ", sndp_comm_ble_send_pop_buf, send_len > 32 ? 32 : send_len);
 #endif
 
@@ -172,7 +178,19 @@ int32_t sndp_comm_ble_send_data(uint8_t *data, uint16_t data_len)
     }
     
     
-    sndp_comm_ble_send_queue_push_data(data, data_len);
+    // sndp_comm_ble_send_queue_push_data(data, data_len);
+    uint16_t per_frame_len = data_len;
+    //per freame len push
+    if(sndp_comm_ble_send_queue_push_data((uint8_t *)&per_frame_len, sizeof(per_frame_len)) != 0) {
+        COMM_BLE_TRACE(0, "push data len to queue failed, return");
+        return -4;
+    }
+    //per freame push
+    if(sndp_comm_ble_send_queue_push_data(data, data_len) != 0) {
+        COMM_BLE_TRACE(0, "push data to queue failed, return");
+        return -4;
+    }
+    
     if(!sndp_comm_ble_ctx.sending) {
 	    sndp_call_func_in_app_thread((uint32_t)sndp_comm_ble_send_data_handle, 0, 0, 0);
     }

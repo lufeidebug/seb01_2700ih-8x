@@ -2991,6 +2991,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_ppg_test_data(uint8_t *ppg_raw_data, uint
 
 uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t acc_raw_len)
 {
+    int16_t *acc_data_ptr = acc_raw_data;
     if(!sndp_comm_ble_is_connected()){
         COMM_CMD_TRACE(0, "ble is not connected, not report accelerometer");
         return 0;
@@ -3010,12 +3011,12 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t a
 
     // 2. 打包acc_raw_len个数据点，每个数据点包含X/Y/Z三个轴，每轴2字节，最多150字节
         for (int i = 0; i < acc_raw_len && i < 25; i++) {
-            sendvalue[1 + 6*i] = (uint8_t)(acc_raw_data[3*i] & 0xFF);         // X轴最低字节
-            sendvalue[1 + 6*i + 1] = (uint8_t)((acc_raw_data[3*i] >> 8) & 0xFF);  // X轴最高字节
-            sendvalue[1 + 6*i + 2] = (uint8_t)(acc_raw_data[3*i + 1] & 0xFF);     // Y轴最低字节
-            sendvalue[1 + 6*i + 3] = (uint8_t)((acc_raw_data[3*i + 1] >> 8) & 0xFF); // Y轴最高字节
-            sendvalue[1 + 6*i + 4] = (uint8_t)(acc_raw_data[3*i + 2] & 0xFF);     // Z轴最低字节
-            sendvalue[1 + 6*i + 5] = (uint8_t)((acc_raw_data[3*i + 2] >> 8) & 0xFF); // Z轴最高字节
+            sendvalue[1 + 6*i] = (uint8_t)(acc_data_ptr[3*i] & 0xFF);         // X轴最低字节
+            sendvalue[1 + 6*i + 1] = (uint8_t)((acc_data_ptr[3*i] >> 8) & 0xFF);  // X轴最高字节
+            sendvalue[1 + 6*i + 2] = (uint8_t)(acc_data_ptr[3*i + 1] & 0xFF);     // Y轴最低字节
+            sendvalue[1 + 6*i + 3] = (uint8_t)((acc_data_ptr[3*i + 1] >> 8) & 0xFF); // Y轴最高字节
+            sendvalue[1 + 6*i + 4] = (uint8_t)(acc_data_ptr[3*i + 2] & 0xFF);     // Z轴最低字节
+            sendvalue[1 + 6*i + 5] = (uint8_t)((acc_data_ptr[3*i + 2] >> 8) & 0xFF); // Z轴最高字节
         }
     sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION, acc_raw_len*sizeof(int16_t) + 1, (uint8_t *)sendvalue);
 
