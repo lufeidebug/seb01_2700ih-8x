@@ -75,12 +75,12 @@ static sndp_hal_wear_status_e ssh401a_wear_status = SNDP_HAL_WEAR_OFF;
 
 
 static multi_heap_handle_t ssh401a_heap;
-static uint8_t ssh401a_heap_buf[64*3*4 + 4];
+static uint8_t ssh401a_heap_buf[64*4 + 3];
 
 static SS_OS_API ssh401a_os_api_config;
 
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
-static int32_t ssh401a_ppg_data[64];
+static int32_t ssh401a_ppg_data[32];
 #endif
 
 
@@ -318,10 +318,10 @@ static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
     
     if(TICKS_TO_MS(passed_ticks) >= SSH401A_IRQ_DEBOUNCE_REPEAT_MS) {
         last_time = hal_sys_timer_get();
-        sndp_call_func_in_app_thread((uint32_t)ssh401a_irq_debounce, 0, 0, 0);
+        sndp_call_func_in_dev_thread((uint32_t)ssh401a_irq_debounce, 0, 0, 0);
     }
 #else
-    sndp_call_func_in_app_thread((uint32_t)ss_ppg_interrupt_handler, 0, 0, 0);
+    sndp_call_func_in_dev_thread((uint32_t)ss_ppg_interrupt_handler, 0, 0, 0);
 #endif
 }
 
@@ -390,7 +390,7 @@ int32_t ssh401a_init(void)
         return SNDP_HAL_RET_FAIL;
     }
     
-    if (ss_ppg_init(SENSOR_SSH401, SPS_64, 32) != SS_SUCCESS) {
+    if (ss_ppg_init(SENSOR_SSH401, SPS_64, 64) != SS_SUCCESS) {
         os_api_print_log("ss_ppg_init failed");
         return SNDP_HAL_RET_FAIL;
     }

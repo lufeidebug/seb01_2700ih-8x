@@ -8,7 +8,7 @@
  * @note This code is used internally by the ss_ppg.c's API, and users do not need to call it directly.
  */
  
-#define DATA_RINGBUFFER_SIZE    (255)
+#define DATA_RINGBUFFER_SIZE    (32*4)
 
 static int nHead;
 static int nTail;
