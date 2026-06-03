@@ -678,8 +678,8 @@ int32_t sleep_app_comm_main_send_cmd(sleep_app_comm_cmd_info_s *cmd)
         return -2;
     }
 
-    DUMP8("%02X ", sndp_comm_send_frame, (send_frame_len > 32) ? (32) : (send_frame_len));
-    SNDP_TRACE(0, "\n");
+    // DUMP8("%02X ", sndp_comm_send_frame, (send_frame_len > 32) ? (32) : (send_frame_len));
+    // SNDP_TRACE(0, "\n");
 
 #if defined(__SNDP_COMM_BLE__)                
     if(sndp_comm_ble_is_connected()) {

@@ -39,7 +39,7 @@ sndp_comm_ble_conn_status_e sndp_comm_ble_get_conn_status(void);
 bool sndp_comm_ble_is_connected(void);
 int32_t sndp_comm_ble_send_data(uint8_t *data, uint16_t data_len);
 int32_t sndp_comm_ble_init(void);
-
+uint32_t sndp_comm_ble_available_of_queue(void);
 
 
 #ifdef __cplusplus

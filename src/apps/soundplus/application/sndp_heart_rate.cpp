@@ -347,7 +347,9 @@ static void sndp_hr_process_thread(void const *argument)
 
         // hr_setp_10: Report results
         if(hr_ctx.hr_running) {
-                sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_report_hr, (uint32_t)hrv_ptr, (uint32_t)&dbbeats_data, 0);
+
+                // sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_report_hr, (uint32_t)hrv_ptr, (uint32_t)&dbbeats_data, 0);
+                sndp_comm_cmd_sleepapp_report_hr(hrv_ptr, (uint8_t*)&dbbeats_data);
         }
         
         if(hr_ctx.sleep_running) {
@@ -418,9 +420,9 @@ int32_t sndp_get_acc_notification(void)
 #if defined(__SNDP_HEART_RATE_MGR__)
 static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 {
-    HR_TRACE(0, "cnt=%d", cnt);
+    // HR_TRACE(0, "cnt=%d", cnt);
     if(hr_ctx.hr_running || hr_ctx.sleep_running) {
-        SNDP_DUMP32("%08X ", data,  cnt > 16?16:cnt);
+        // SNDP_DUMP32("%08X ", data,  cnt > 16?16:cnt);
         ppg_raw_data_queue_push_data(data, cnt);
 
         //HR_TRACE(0, "queue_len=%d, %d", ppg_raw_data_queue_get_len(), HR_PPG_SECOND_ALLCH_SAMPLES);

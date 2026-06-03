@@ -68,7 +68,8 @@ static osMutexId sndp_comm_ble_send_queue_mutex_id = NULL;
 osMutexDef(sndp_comm_ble_send_queue_mutex);
 
 static uint8_t sndp_comm_ble_send_queue_buf[SNDP_COMM_BLE_SEND_BUF_SIZE*3];
-static uint8_t sndp_comm_ble_send_pop_buf[SNDP_COMM_BLE_SEND_BUF_SIZE];
+static uint8_t sndp_comm_ble_send_pop_buf[SNDP_COMM_BLE_SEND_BUF_SIZE+2];
+static uint8_t sndp_comm_ble_send_push_buf[SNDP_COMM_BLE_SEND_BUF_SIZE+2];
 
 osTimerDef(BLE_SEND_TIMEOUT_TIMER, sndp_comm_ble_send_timeout_timer_handler);
 static osTimerId ble_send_timeout_timer = NULL;
@@ -103,6 +104,16 @@ static int32_t sndp_comm_ble_send_queue_pop_data(uint8_t *buf, uint32_t len)
     ret = DeCQueue(&sndp_comm_ble_send_queue, (CQItemType *)buf, len);
     osMutexRelease(sndp_comm_ble_send_queue_mutex_id); 
     return ret;
+}
+
+uint32_t sndp_comm_ble_available_of_queue(void)
+{
+    int32_t available_len = 0;
+    
+    osMutexWait(sndp_comm_ble_send_queue_mutex_id, osWaitForever);
+    available_len = AvailableOfCQueue(&sndp_comm_ble_send_queue);
+    osMutexRelease(sndp_comm_ble_send_queue_mutex_id); 
+    return available_len;
 }
 
 int32_t sndp_comm_ble_send_queue_get_len(void)
@@ -145,7 +156,7 @@ static void sndp_comm_ble_send_data_handle(void)
 
     sndp_comm_ble_send_queue_pop_data(sndp_comm_ble_send_pop_buf, send_len);
 
-#if 1
+#if 0
     COMM_BLE_TRACE(1, "per_frame_len=%d, send_len=%d", per_frame_len, send_len);
 	DUMP8("%02X ", sndp_comm_ble_send_pop_buf, send_len > 32 ? 32 : send_len);
 #endif
@@ -177,18 +188,19 @@ int32_t sndp_comm_ble_send_data(uint8_t *data, uint16_t data_len)
         return -3;
     }
     
-    
-    // sndp_comm_ble_send_queue_push_data(data, data_len);
-    uint16_t per_frame_len = data_len;
-    //per freame len push
-    if(sndp_comm_ble_send_queue_push_data((uint8_t *)&per_frame_len, sizeof(per_frame_len)) != 0) {
-        COMM_BLE_TRACE(0, "push data len to queue failed, return");
+    memset(sndp_comm_ble_send_push_buf, 0, sizeof(sndp_comm_ble_send_push_buf));
+    sndp_comm_ble_send_push_buf[0] = data_len & 0xFF;
+    sndp_comm_ble_send_push_buf[1] = (data_len >> 8) & 0xFF;
+    memcpy(&sndp_comm_ble_send_push_buf[2], data, data_len);
+
+    if(sndp_comm_ble_available_of_queue() < (sizeof(uint16_t) + data_len)) {
+        COMM_BLE_TRACE(0, "no enough space in queue, return");
         return -4;
     }
     //per freame push
-    if(sndp_comm_ble_send_queue_push_data(data, data_len) != 0) {
+    if(sndp_comm_ble_send_queue_push_data(sndp_comm_ble_send_push_buf, sizeof(uint16_t) + data_len) != 0) {
         COMM_BLE_TRACE(0, "push data to queue failed, return");
-        return -4;
+        return -6;
     }
     
     if(!sndp_comm_ble_ctx.sending) {
