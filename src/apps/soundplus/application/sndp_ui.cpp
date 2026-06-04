@@ -79,6 +79,7 @@
 
 #define SPUI_CLOSE_DISCHARGE_MAX				(60*1)		//seconds
 
+#define SPUI_BAT_SWITCH_ROLE_INTERVAL			(3)			//times, callback per ~10s, 3 times = 30s
 
 /**************************************************************************************************
 * Prototype
@@ -955,12 +956,66 @@ static void sndp_ui_bat_lr_sync(void)
         last_sync_percent = curr.bat_per;
     }
 }
+//---------------------------------------- bat role switch --------------------------------------------
+#if defined(__SNDP_BAT_SWITCH_ROLE__)
+static void sndp_ui_bat_role_switch_exec(void)
+{
+    if(!sndp_is_tws_link_connected() || !sndp_is_tws_master_mode()) {
+        return;
+    }
+
+    if(sndp_get_connected_mobile_count() == 0) {
+        return;
+    }
+
+    /* 有一边在盒，就不允许切换 */
+    if(sndp_dev_iobox_is_in_box(false) || sndp_dev_iobox_is_in_box(true)) {
+        return;
+    }
+
+    sndp_dev_bat_info_s local;
+    sndp_dev_bat_info_s peer;
+    sndp_dev_get_bat_info(false, &local);
+    sndp_dev_get_bat_info(true, &peer);
+
+    if(!local.valid || !peer.valid) {
+        return;
+    }
+
+    if(peer.bat_per > local.bat_per && (peer.bat_per - local.bat_per) >= 8) {
+        SPUI_TRACE(0, "bat switch role, local=%d, peer=%d", local.bat_per, peer.bat_per);
+        sndp_ibrt_tws_switch();
+    }
+}
+
+static void sndp_ui_bat_role_switch(void)
+{
+    static uint16_t switch_cnt = 0;
+
+    if(switch_cnt < SPUI_BAT_SWITCH_ROLE_INTERVAL) {
+        switch_cnt++;
+        return;
+    }
+    switch_cnt = 0;
+
+    sndp_dev_bat_info_s local;
+    sndp_dev_bat_info_s peer;
+    sndp_dev_get_bat_info(false, &local);
+    sndp_dev_get_bat_info(true, &peer);
+    SPUI_TRACE(2, "bat check: local=%d, peer=%d", local.bat_per, peer.bat_per);
+
+    sndp_delay_exec_start(300, (uint32_t)sndp_ui_bat_role_switch_exec, 0, 0, 0);
+}
+#endif
 
 void sndp_ui_bat_pwr_measure_callback(sndp_dev_bat_info_s old_bat_info, sndp_dev_bat_info_s new_bat_info)
 {
     SPUI_TRACE(0, "new valid=%d, per=%d", new_bat_info.valid,new_bat_info.bat_per);
     sndp_ui_ctx.lowpwr_check_enable = true;
     sndp_ui_bat_lr_sync();
+#if defined(__SNDP_BAT_SWITCH_ROLE__)
+    sndp_ui_bat_role_switch();
+#endif
     if(old_bat_info.bat_per != new_bat_info.bat_per) {
         sndp_sleep_app_report_battery();
     }
