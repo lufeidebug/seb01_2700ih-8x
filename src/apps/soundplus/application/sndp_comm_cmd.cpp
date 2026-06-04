@@ -2133,11 +2133,13 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sleep_ap
     return 0;
 }
 
+static uint16_t acc_ntf_debug_count = 0;
+static uint16_t ppg_ntf_debug_count = 0;
 POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_comm_cmd_info_s *cmd_info)
 {   
     //if StartHeartrate 0x30 Dump on
     uint8_t onoff = cmd_info->value[0];
-    
+    ppg_ntf_debug_count = 0;
     sndp_hr_mearsuring_set_dump_state(onoff);
     if(onoff){
         sndp_ppg_notification_start();
@@ -2188,7 +2190,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notificati
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_accelerometer_notification(sleep_app_comm_cmd_info_s *cmd_info)
 {
     uint8_t onoff = cmd_info->value[0];
-    
+    acc_ntf_debug_count = 0;
     sndp_hr_mearsuring_set_dump_state(onoff);
     if(onoff){
         sndp_acc_notification_start();
@@ -2712,6 +2714,10 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_ap
 {
     uint8_t sampling_rate = cmd_info->value[0];
     uint8_t dump_data = cmd_info->value[1];
+    if(dump_data == 1){
+        acc_ntf_debug_count = 0;
+        ppg_ntf_debug_count = 0;
+    }
     sndp_hr_mearsuring_set_sampling_rate(sampling_rate);
     sndp_hr_mearsuring_set_dump_state(dump_data);
     sndp_dev_sleep_app_set_heartrate_onoff(false, 0x01);
@@ -2817,21 +2823,19 @@ uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
         return 1;
     }
 
-    uint8_t sendvalue[44];
-    uint8_t sendlen = 0;
-    memset(sendvalue, 0, sizeof(sendvalue));
-    memcpy(sendvalue, sleep_stage, 40);
-    sendlen += 40;
-    sendvalue[sendlen] = (uint8_t)((position_and_control >> 8) & 0xFF);
-    sendlen++;
-    sendvalue[sendlen] = position_and_control & 0xFF;
-    sendlen++;
-    sendvalue[sendlen] = (uint8_t)((result_code >> 8) & 0xFF);
-    sendlen++;
-    sendvalue[sendlen] = (uint8_t)(result_code & 0xFF);
-    sendlen++;
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_SLEEP_TRACKING, sendlen, sendvalue);
-
+    uint8_t data_len = 0;
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
+    memset(cmd->value, 0, sizeof(cmd->value));
+    memcpy(cmd->value, sleep_stage, 40);
+    data_len += 40;
+    cmd->value[data_len++] = (uint8_t)((position_and_control >> 8) & 0xFF);
+    cmd->value[data_len++] = position_and_control & 0xFF;
+    cmd->value[data_len++] = (uint8_t)((result_code >> 8) & 0xFF);
+    cmd->value[data_len++] = (uint8_t)(result_code & 0xFF);
+    cmd->flag = AppFlag;
+    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+    cmd->cmd = SLEEP_APP_CMDID_SLEEP_TRACKING;
+    sleep_app_comm_main_send_cmd(cmd);
     return 0;
 }
 
@@ -2863,56 +2867,85 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data
     
     sndp_hr_dbbeats_data *dbbeats_data_ptr = (sndp_hr_dbbeats_data *)dbbeats_data;
     HrvIndices *sendhr_ptr = (HrvIndices *)sendhr;
-    uint8_t sendvalue[17];
-    uint8_t sendlen = 0;
-    
-    memset(sendvalue, 0, sizeof(sendvalue));
+    uint8_t data_len = 0;
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
 
-    sendvalue[sendlen] = sendhr_ptr->HR & 0xFF;
-    sendlen++;
-    sendvalue[sendlen] = (sendhr_ptr->HR>>8) & 0xFF;
-    sendlen++;
-    sendvalue[sendlen] = sendhr_ptr->SDNN & 0xFF;
-    sendlen++;
-    sendvalue[sendlen] = (sendhr_ptr->SDNN>>8) & 0xFF;
-    sendlen++;
-    sendvalue[sendlen] = sendhr_ptr->coherence & 0xFF;
-    sendlen++;
-    sendvalue[sendlen] = (sendhr_ptr->coherence>>8) & 0xFF;
-    sendlen++;
-    sendvalue[sendlen] = 0;
-    sendlen++;
-    sendvalue[sendlen] = dbbeats_data_ptr->count;
-    sendlen++;
-    sendvalue[sendlen] = dbbeats_data_ptr->result_code & 0xFF;
-    sendlen++;
-    sendvalue[sendlen] = (dbbeats_data_ptr->result_code>>8) & 0xFF;
-    sendlen++;
+    cmd->value[data_len++] = sendhr_ptr->HR & 0xFF;
+    cmd->value[data_len++] = (sendhr_ptr->HR>>8) & 0xFF;
+    cmd->value[data_len++] = sendhr_ptr->SDNN & 0xFF;
+    cmd->value[data_len++] = (sendhr_ptr->SDNN>>8) & 0xFF;
+    cmd->value[data_len++] = sendhr_ptr->coherence & 0xFF;
+    cmd->value[data_len++] = (sendhr_ptr->coherence>>8) & 0xFF;
+    cmd->value[data_len++] = 0;
+    cmd->value[data_len++] = dbbeats_data_ptr->count;
+    cmd->value[data_len++] = dbbeats_data_ptr->result_code & 0xFF;
+    cmd->value[data_len++] = (dbbeats_data_ptr->result_code>>8) & 0xFF;
     if(sndp_hr_mearsuring_get_dump_state())
     {
         if(sndp_dev_is_left_earphone()){
-            sendvalue[sendlen] = 0x01;
+            cmd->value[data_len++] = 0x01;
         }else if(sndp_dev_is_right_earphone()){
-            sendvalue[sendlen] = 0x02;
+            cmd->value[data_len++] = 0x02;
         }
-        sendlen++;
-        sendvalue[sendlen] = dbbeats_data_ptr->is_contact;
-        sendlen++;
-        sendvalue[sendlen] = dbbeats_data_ptr->led_state;
-        sendlen++;
-        sendvalue[sendlen] = dbbeats_data_ptr->pck_interval & 0xFF;
-        sendlen++;
-        sendvalue[sendlen] = (dbbeats_data_ptr->pck_interval>>8) & 0xFF;
-        sendlen++;
-        sendvalue[sendlen] = (dbbeats_data_ptr->pck_interval>>16) & 0xFF;
-        sendlen++;
-        sendvalue[sendlen] = (dbbeats_data_ptr->pck_interval>>24) & 0xFF;
-        sendlen++;
-        sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING_WITH_DUMP, sendlen, sendvalue);
+        cmd->value[data_len++] = dbbeats_data_ptr->is_contact;
+        cmd->value[data_len++] = dbbeats_data_ptr->led_state;
+        cmd->value[data_len++] = dbbeats_data_ptr->pck_interval & 0xFF;
+        cmd->value[data_len++] = (dbbeats_data_ptr->pck_interval>>8) & 0xFF;
+        cmd->value[data_len++] = (dbbeats_data_ptr->pck_interval>>16) & 0xFF;
+        cmd->value[data_len++] = (dbbeats_data_ptr->pck_interval>>24) & 0xFF;
+        cmd->flag = AppFlag;
+        cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+        cmd->cmd = SLEEP_APP_CMDID_HEARTRATE_MEASURING_WITH_DUMP;
+        sleep_app_comm_main_send_cmd(cmd);
     }else{
-        sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_HEARTRATE_MEASURING, sendlen, sendvalue);
+        cmd->flag = AppFlag;
+        cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+        cmd->cmd = SLEEP_APP_CMDID_HEARTRATE_MEASURING;
+        sleep_app_comm_main_send_cmd(cmd);
     }
 	return 0;
+}
+
+uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf_debug(int32_t *ppg_raw_data, uint16_t ppg_raw_len)
+{
+    if(!sndp_comm_ble_is_connected()){
+        COMM_CMD_TRACE(0, "ble is not connected, not report ppg");
+        return 0;
+    }
+
+    if(sndp_hr_mearsuring_get_dump_state() == 0){
+        COMM_CMD_TRACE(0, "dump state is off, not report ppg");
+        return 0;
+    }
+
+    uint8_t data_len = 0;
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
+    ppg_ntf_debug_count++;
+    // 1. 打包LR_flag 1字节
+    if(sndp_dev_is_left_earphone())
+        cmd->value[data_len++] = 0x01;
+    else
+        cmd->value[data_len++] = 0x02;
+
+    cmd->value[data_len++] = (uint8_t)((ppg_ntf_debug_count>>8) & 0xFF); // 高字节
+    cmd->value[data_len++] = (uint8_t)(ppg_ntf_debug_count & 0xFF);        // 低字节
+    // 2. 打包sampleSize（1字节）
+    uint8_t ppg_samples_size = (uint8_t)(ppg_raw_len > 64 ? 64 : ppg_raw_len); // 最多打包64个数据点
+    cmd->value[data_len++] = ppg_samples_size;           // 低字节
+
+    // 3. 打包ppg_samples_size个int32的低3字节 ppg_samples_size*3=96字节
+    for (int i = 0; i < ppg_samples_size; i++) {
+        cmd->value[data_len++] = (uint8_t)(ppg_raw_data[i] & 0xFF);         // 最低字节
+        cmd->value[data_len++] = (uint8_t)((ppg_raw_data[i] >> 8) & 0xFF);  // 中间字节
+        cmd->value[data_len++] = (uint8_t)((ppg_raw_data[i] >> 16) & 0xFF); // 最高字节（低3字节中的）
+    }
+    
+    cmd->flag = AppFlag;
+    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+    cmd->cmd = SLEEP_APP_CMDID_PPG_NOTIFICATION_DEBUG;
+    sleep_app_comm_main_send_cmd(cmd);
+    
+    return 0;
 }
 
 uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len)
@@ -2989,6 +3022,50 @@ uint32_t sndp_comm_cmd_sleepapp_report_ppg_test_data(uint8_t *ppg_raw_data, uint
 }
 
 
+uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf_debug(int16_t *acc_raw_data, uint16_t acc_raw_len)
+{
+    int16_t *acc_data_ptr = acc_raw_data;
+    acc_ntf_debug_count++;
+    if(!sndp_comm_ble_is_connected()){
+        COMM_CMD_TRACE(0, "ble is not connected, not report accelerometer");
+        return 0;
+    }
+
+    if(sndp_hr_mearsuring_get_dump_state() == 0){
+        COMM_CMD_TRACE(0, "dump state is off, not report accelerometer");
+        return 0;
+    }
+    uint8_t data_len = 0;
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd(); // 1字节LR_flag + 2字节count + 最多25个数据点，每个数据点包含X/Y/Z三个轴，每轴2字节
+    // COMM_CMD_TRACE(1, "report accelerometer to app, len=%d", acc_raw_len);
+        // 1. 打包LR_flag 1字节
+    if(sndp_dev_is_left_earphone()){
+        cmd->value[data_len++] = 0x01;
+    }
+    else{
+        cmd->value[data_len++] = 0x02;
+    }
+        
+        cmd->value[data_len++] = (uint8_t)((acc_ntf_debug_count >> 8) & 0xFF);  // count高字节
+        cmd->value[data_len++] = (uint8_t)(acc_ntf_debug_count);
+    // 2. 打包acc_raw_len个数据点，每个数据点包含X/Y/Z三个轴，每轴2字节，最多150字节
+        for (int i = 0; i < acc_raw_len && i < 25; i++) {
+            cmd->value[data_len++] = (uint8_t)(acc_data_ptr[3*i] & 0xFF);         // X轴最低字节
+            cmd->value[data_len++] = (uint8_t)((acc_data_ptr[3*i] >> 8) & 0xFF);  // X轴最高字节
+            cmd->value[data_len++] = (uint8_t)(acc_data_ptr[3*i + 1] & 0xFF);     // Y轴最低字节
+            cmd->value[data_len++] = (uint8_t)((acc_data_ptr[3*i + 1] >> 8) & 0xFF); // Y轴最高字节
+            cmd->value[data_len++] = (uint8_t)(acc_data_ptr[3*i + 2] & 0xFF);     // Z轴最低字节
+            cmd->value[data_len++] = (uint8_t)((acc_data_ptr[3*i + 2] >> 8) & 0xFF); // Z轴最高字节
+        }
+    
+
+    cmd->flag = AppFlag;
+    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+    cmd->cmd = SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION_DEBUG;
+    sleep_app_comm_main_send_cmd(cmd);
+    return 0;
+}
+
 uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t acc_raw_len)
 {
     int16_t *acc_data_ptr = acc_raw_data;
@@ -3001,24 +3078,28 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t a
         COMM_CMD_TRACE(0, "dump state is off, not report accelerometer");
         return 0;
     }
-    uint8_t sendvalue[1 + 6*25] = {0}; // 1字节LR_flag + 最多25个数据点，每个数据点包含X/Y/Z三个轴，每轴2字节
+    uint8_t data_len = 0;
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
     // COMM_CMD_TRACE(1, "report accelerometer to app, len=%d", acc_raw_len);
         // 1. 打包LR_flag 1字节
     if(sndp_dev_is_left_earphone())
-        sendvalue[0] = 0x01;
+        cmd->value[data_len++] = 0x01;
     else
-        sendvalue[0] = 0x02;
+        cmd->value[data_len++] = 0x02;
 
     // 2. 打包acc_raw_len个数据点，每个数据点包含X/Y/Z三个轴，每轴2字节，最多150字节
         for (int i = 0; i < acc_raw_len && i < 25; i++) {
-            sendvalue[1 + 6*i] = (uint8_t)(acc_data_ptr[3*i] & 0xFF);         // X轴最低字节
-            sendvalue[1 + 6*i + 1] = (uint8_t)((acc_data_ptr[3*i] >> 8) & 0xFF);  // X轴最高字节
-            sendvalue[1 + 6*i + 2] = (uint8_t)(acc_data_ptr[3*i + 1] & 0xFF);     // Y轴最低字节
-            sendvalue[1 + 6*i + 3] = (uint8_t)((acc_data_ptr[3*i + 1] >> 8) & 0xFF); // Y轴最高字节
-            sendvalue[1 + 6*i + 4] = (uint8_t)(acc_data_ptr[3*i + 2] & 0xFF);     // Z轴最低字节
-            sendvalue[1 + 6*i + 5] = (uint8_t)((acc_data_ptr[3*i + 2] >> 8) & 0xFF); // Z轴最高字节
+            cmd->value[data_len++] = (uint8_t)(acc_data_ptr[3*i] & 0xFF);         // X轴最低字节
+            cmd->value[data_len++] = (uint8_t)((acc_data_ptr[3*i] >> 8) & 0xFF);  // X轴最高字节
+            cmd->value[data_len++] = (uint8_t)(acc_data_ptr[3*i + 1] & 0xFF);     // Y轴最低字节
+            cmd->value[data_len++] = (uint8_t)((acc_data_ptr[3*i + 1] >> 8) & 0xFF); // Y轴最高字节
+            cmd->value[data_len++] = (uint8_t)(acc_data_ptr[3*i + 2] & 0xFF);     // Z轴最低字节
+            cmd->value[data_len++] = (uint8_t)((acc_data_ptr[3*i + 2] >> 8) & 0xFF); // Z轴最高字节
         }
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION, acc_raw_len*sizeof(int16_t) + 1, (uint8_t *)sendvalue);
+    cmd->flag = AppFlag;
+    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+    cmd->cmd = SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION;
+    sleep_app_comm_main_send_cmd(cmd);
 
     return 0;
 }
@@ -3027,7 +3108,8 @@ static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
 {
     unsigned short proximity_value_local = 0;
     unsigned short proximity_value_peer = 0;
-    uint8_t sendvalue[5] = {0};
+    uint8_t data_len = 0;
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
 
     sndp_dev_hr_read_proximity_value(&proximity_value_local);
     sndp_dev_sleep_app_set_proximity_data(false, proximity_value_local);
@@ -3045,20 +3127,23 @@ static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
         Byte4	Proximity Value (Right)
     */
     if (sndp_dev_is_left_earphone()) {
-        sendvalue[0] = 0x01;
-        sendvalue[1] = (uint8_t)(proximity_value_local & 0xFF);
-        sendvalue[2] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
-        sendvalue[3] = (uint8_t)(proximity_value_peer & 0xFF);
-        sendvalue[4] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
+        cmd->value[data_len++] = 0x01;
+        cmd->value[data_len++] = (uint8_t)(proximity_value_local & 0xFF);
+        cmd->value[data_len++] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
+        cmd->value[data_len++] = (uint8_t)(proximity_value_peer & 0xFF);
+        cmd->value[data_len++] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
     } else {
-        sendvalue[0] = 0x02;
-        sendvalue[1] = (uint8_t)(proximity_value_peer & 0xFF);
-        sendvalue[2] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
-        sendvalue[3] = (uint8_t)(proximity_value_local & 0xFF);
-        sendvalue[4] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
+        cmd->value[data_len++] = 0x02;
+        cmd->value[data_len++] = (uint8_t)(proximity_value_peer & 0xFF);
+        cmd->value[data_len++] = (uint8_t)((proximity_value_peer >> 8) & 0xFF);
+        cmd->value[data_len++] = (uint8_t)(proximity_value_local & 0xFF);
+        cmd->value[data_len++] = (uint8_t)((proximity_value_local >> 8) & 0xFF);
     }
 
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION, sizeof(sendvalue), sendvalue);
+    cmd->flag = AppFlag;
+    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+    cmd->cmd = SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION;
+    sleep_app_comm_main_send_cmd(cmd);
     return 0;
 }
 
@@ -3145,7 +3230,6 @@ uint32_t sndp_comm_cmd_sleepapp_wear_state_update(uint8_t lR_flag, uint8_t wear_
         Byte5  wear off cnt
     */
     uint16_t wear_onoff_cnt[SNDP_DEV_WEAR_CNT_MAX] = {0};
-    uint8_t sendvalue[6] = {0};
 
     if(!sndp_comm_ble_is_connected())
     {
@@ -3158,24 +3242,28 @@ uint32_t sndp_comm_cmd_sleepapp_wear_state_update(uint8_t lR_flag, uint8_t wear_
         COMM_CMD_TRACE(0,"wear_state_update_onoff is 0");
         return 0;        
     }
-    
+    uint8_t data_len = 0;
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();    
     sndp_dev_sleep_app_wear_cnt(lR_flag, wear_state);
     memcpy(wear_onoff_cnt, sndp_dev_sleep_app_get_wear_cnt(), sizeof(wear_onoff_cnt));
     COMM_CMD_TRACE(0,"wear cnt:%d, %d, %d, %d", wear_onoff_cnt[0], wear_onoff_cnt[1],wear_onoff_cnt[2],wear_onoff_cnt[3]);
-    sendvalue[0] = lR_flag;
-    sendvalue[1] = wear_state;
+    cmd->value[data_len++] = lR_flag;
+    cmd->value[data_len++] = wear_state;
     if(lR_flag == SNDP_DEV_EARSIDE_LEFT){
-        sendvalue[2] = wear_onoff_cnt[SNDP_DEV_LEFT_WEAR_CNT] & 0xff;
-        sendvalue[3] = (wear_onoff_cnt[SNDP_DEV_LEFT_WEAR_CNT] >> 8) & 0xff;
-        sendvalue[4] = wear_onoff_cnt[SNDP_DEV_LEFT_UNWEAR_CNT] & 0xff;
-        sendvalue[5] = (wear_onoff_cnt[SNDP_DEV_LEFT_UNWEAR_CNT] >> 8) & 0xff;
+        cmd->value[data_len++] = wear_onoff_cnt[SNDP_DEV_LEFT_WEAR_CNT] & 0xff;
+        cmd->value[data_len++] = (wear_onoff_cnt[SNDP_DEV_LEFT_WEAR_CNT] >> 8) & 0xff;
+        cmd->value[data_len++] = wear_onoff_cnt[SNDP_DEV_LEFT_UNWEAR_CNT] & 0xff;
+        cmd->value[data_len++] = (wear_onoff_cnt[SNDP_DEV_LEFT_UNWEAR_CNT] >> 8) & 0xff;
     }else{
-        sendvalue[2] = wear_onoff_cnt[SNDP_DEV_RIGHT_WEAR_CNT] & 0xff;
-        sendvalue[3] = (wear_onoff_cnt[SNDP_DEV_RIGHT_WEAR_CNT] >> 8) & 0xff;
-        sendvalue[4] = wear_onoff_cnt[SNDP_DEV_RIGHT_UNWEAR_CNT] & 0xff;
-        sendvalue[5] = (wear_onoff_cnt[SNDP_DEV_RIGHT_UNWEAR_CNT] >> 8) & 0xff;
+        cmd->value[data_len++] = wear_onoff_cnt[SNDP_DEV_RIGHT_WEAR_CNT] & 0xff;
+        cmd->value[data_len++] = (wear_onoff_cnt[SNDP_DEV_RIGHT_WEAR_CNT] >> 8) & 0xff;
+        cmd->value[data_len++] = wear_onoff_cnt[SNDP_DEV_RIGHT_UNWEAR_CNT] & 0xff;
+        cmd->value[data_len++] = (wear_onoff_cnt[SNDP_DEV_RIGHT_UNWEAR_CNT] >> 8) & 0xff;
     }
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_WEAR_STATE_UPDATE, sizeof(sendvalue), sendvalue);
+    cmd->flag = AppFlag;
+    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+    cmd->cmd = SLEEP_APP_CMDID_WEAR_STATE_UPDATE;
+    sleep_app_comm_main_send_cmd(cmd);
     return 0;
 }
 
@@ -3330,8 +3418,10 @@ static const sndp_sleep_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
     { SLEEP_APP_CMDID_GET_ANC_MODE,                   "APP_GET_ANC_MODE",                   sleep_comm_cmd_recv_app_get_anc_mode },
     { SLEEP_APP_CMDID_PPG_SETING,                     "APP_SET_PPG_SETTING",                sleep_comm_cmd_recv_app_set_ppg_setting },
     { SLEEP_APP_CMDID_PPG_NOTIFICATION,               "APP_PPG_NOTIFICATION",               sleep_comm_cmd_recv_ppg_notification },
+    { SLEEP_APP_CMDID_PPG_NOTIFICATION_DEBUG,         "APP_PPG_NOTIFICATION_DEBUG",         sleep_comm_cmd_recv_ppg_notification },
     { SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION,     "APP_GET_PROXIMITY_NOTIFICATION",     sleep_comm_cmd_recv_app_get_proximity_notification },
     { SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION, "APP_GET_ACCELEROMETER_NOTIFICATION", sleep_comm_cmd_recv_app_get_accelerometer_notification },
+    { SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION_DEBUG, "APP_GET_ACCELEROMETER_NOTIFICATION_DEBUG", sleep_comm_cmd_recv_app_get_accelerometer_notification },
     { SLEEP_APP_CMDID_GET_BATTERY_STATUS,             "APP_GET_BATTERY_STATUS",             sleep_comm_cmd_recv_app_get_battery_status },
     { SLEEP_APP_CMDID_GET_DEVICE_INFO,                "APP_GET_DEVICE_INFO",                sleep_comm_cmd_recv_app_get_device_info },
     { SLEEP_APP_CMDID_SET_TOUCH_ENABLE,               "APP_SET_TOUCH_ENABLE",               sleep_comm_cmd_recv_app_set_touch_enable },

@@ -348,6 +348,10 @@ typedef enum {
                                                 rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_PPG_TEST_MODE = 0xFD, /* recv: 1 bytes. 
                                                     rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_PPG_NOTIFICATION_DEBUG = 0x50, /* recv: 1 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_GET_ACCELEROMETER_NOTIFICATION_DEBUG = 0x51, /* recv: 1 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
 } sleep_app_cmd_id_e;
 
 typedef enum {
@@ -438,8 +442,10 @@ uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
                                                     uint16_t position_and_control,
                                                     int16_t result_code);
 uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len);
+uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf_debug(int32_t *ppg_raw_data, uint16_t ppg_raw_len);
 uint32_t sndp_comm_cmd_sleepapp_report_ppg_test_data(uint8_t *ppg_raw_data, uint16_t ppg_raw_len);
 uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t acc_raw_len);
+uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf_debug(int16_t *acc_raw_data, uint16_t acc_raw_len);
 uint32_t sndp_comm_cmd_sleepapp_wear_state_update(uint8_t lR_flag, uint8_t wear_state);
 uint8_t sndp_get_findme_vol(void);
 void sndp_sleep_app_report_battery(void);
