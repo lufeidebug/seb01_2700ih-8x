@@ -79,7 +79,7 @@
 
 #define SPUI_CLOSE_DISCHARGE_MAX				(60*1)		//seconds
 
-#define SPUI_BAT_SWITCH_ROLE_INTERVAL			(3)			//times, callback per ~10s, 3 times = 30s
+#define SPUI_BAT_SWITCH_ROLE_INTERVAL			(2)			//times, 2 times*20 = 40s
 
 /**************************************************************************************************
 * Prototype
@@ -982,7 +982,15 @@ static void sndp_ui_bat_role_switch_exec(void)
         return;
     }
 
-    if(peer.bat_per > local.bat_per && (peer.bat_per - local.bat_per) >= 8) {
+    /* 主耳≤7%且对耳更高，低电切换避免关机断连 */
+    if(local.bat_per <= 7 && peer.bat_per > local.bat_per) {
+        SPUI_TRACE(0, "low bat switch, local=%d, peer=%d", local.bat_per, peer.bat_per);
+        sndp_ibrt_tws_switch();
+        return;
+    }
+
+    /* 常规切换：对耳比主耳高至少20% */
+    if(peer.bat_per > local.bat_per && (peer.bat_per - local.bat_per) >= 20) {
         SPUI_TRACE(0, "bat switch role, local=%d, peer=%d", local.bat_per, peer.bat_per);
         sndp_ibrt_tws_switch();
     }
@@ -1331,7 +1339,15 @@ static void sndp_ui_bat_lowpwr_check(void)
 		
 		if(sndp_ui_ctx.lowpwr_shutdown_cnt >= SPUI_LOWPWR_SHUTDOWN_CHECK_CNT) {
             //media_PlayAudio(AUD_ID_POWER_OFF, 0);
-            sndp_app_shutdown(SNDP_SHUTDOWN_REASON_LOWPWR);
+            
+            /* 主耳低电关机前先切换角色，让高电量设备接管手机连接 */
+            if(sndp_is_tws_link_connected() && sndp_is_tws_master_mode()) {
+                SPUI_TRACE(0, "lowpwr, switch role before shutdown");
+                sndp_ibrt_tws_switch();
+                sndp_delay_exec_start(1000, (uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_LOWPWR, 0, 0);
+            } else {
+                sndp_app_shutdown(SNDP_SHUTDOWN_REASON_LOWPWR);
+            }
 		}
 	} else {
 		sndp_ui_ctx.lowpwr_shutdown_cnt = 0;
