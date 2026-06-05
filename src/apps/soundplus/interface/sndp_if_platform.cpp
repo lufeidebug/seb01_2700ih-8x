@@ -1626,6 +1626,10 @@ void sndp_bt_switch(bool onoff, bool sync)
     }
 }
 
+unsigned int sndp_get_current_time(void)
+{
+	return TICKS_TO_MS(hal_sys_timer_get());
+}
 #endif	/* __SNDP_PROJ__ */
 
 

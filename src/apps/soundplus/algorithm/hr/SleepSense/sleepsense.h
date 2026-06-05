@@ -33,8 +33,17 @@ struct Dump {
     int32_t pkt_interval;
 };
 
+#define SNAPSHOT_DATA_MAX_SIZE 256
+#define SNAPSHOT_PAYLOAD_SIZE  209
+
+struct Snapshot {
+    uint16_t size;
+    uint8_t  data[SNAPSHOT_DATA_MAX_SIZE];
+};
+
 typedef void (*dbbeats_print_log_ptr)(const char *msg) ;
 void dbbeats_print_log_cfg(dbbeats_print_log_ptr ptr);
+void dbbeats_print_log(const char *format, ...);
 
 void dbbeats_initialize_heartrate_data(int8_t ppg_sampling_rate,
                                        uint8_t dump_state);
@@ -72,6 +81,9 @@ void dbbeats_get_sleep_data(int8_t *sleep_stage,
                             int8_t *sleep_position,
                             int8_t *sound_control,
                             int16_t *result_code);
+
+void dbbeats_get_snapshot(struct Snapshot *out);
+void dbbeats_set_snapshot(const struct Snapshot *in);
 
 const char* lib_engine_version(void);
 

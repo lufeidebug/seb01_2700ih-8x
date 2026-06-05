@@ -262,6 +262,7 @@ uint8_t sndp_bt_audio_updata_eq_for_anc(void);
 void sndp_clean_user_record(void);
 #endif
 void sndp_play_findme(void);
+unsigned int sndp_get_current_time(void);
 #ifdef __cplusplus
 }
 #endif
