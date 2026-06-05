@@ -24,7 +24,7 @@ sw_ver_str=$(grep "SOFTWARE_VERSION" ${fw_ver_file_path})
 sw_ver=${sw_ver_str##*=} 
 #echo ${sw_ver}
 
-trim_sw=$(echo ${sw_ver} | sed -e 's/^[ ]*//g' | sed -e 's/[ ]*$//g')
+trim_sw=$(echo ${sw_ver} | sed -e 's/^[ \r]*//g' | sed -e 's/[ \r]*$//g')
 
 #trim_sw=$(echo ${trim_sw:0:-1})
 #trim_sw="{trim_sw#"{trim_sw%%[![:space:]]*}"}"   # 去掉前导空格

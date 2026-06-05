@@ -83,6 +83,7 @@ export SNDP_HEART_RATE_MGR                      := 1
 export SNDP_KEY_TEST                            := 1
 export SNDP_APP_WHITE_NOISE                     := 1
 export SNDP_SLEEP_APP                           := 1
+export SNDP_BAT_SWITCH_ROLE                     := 1
 
 ifeq ($(SNDP_UI),1)
     KBUILD_CPPFLAGS += -D__SNDP_UI__
@@ -439,6 +440,10 @@ ifeq ($(SNDP_SLEEP_APP),1)
     KBUILD_CPPFLAGS += -D__SNDP_EQ_PARAM_SETTING__
     KBUILD_CPPFLAGS += -D__SNDP_FINDME__
 #     KBUILD_CPPFLAGS += -D__SNDP_SEND_GESTURE__
+endif
+
+ifeq ($(SNDP_BAT_SWITCH_ROLE),1)
+    KBUILD_CPPFLAGS += -D__SNDP_BAT_SWITCH_ROLE__
 endif
 
 endif 
