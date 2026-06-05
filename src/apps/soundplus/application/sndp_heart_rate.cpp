@@ -118,7 +118,7 @@ osMutexDef(acc_raw_data_queue_mutex);
 
 #define HR_PROCESS_THREAD_STACK_SIZE 				(1024*10)
 static void sndp_hr_process_thread(void const *argument);
-osThreadDef(sndp_hr_process_thread, osPriorityNormal, 1, HR_PROCESS_THREAD_STACK_SIZE, "hr_process_thread");
+osThreadDef(sndp_hr_process_thread, osPriorityAboveNormal, 1, HR_PROCESS_THREAD_STACK_SIZE, "hr_process_thread");
 osThreadId hr_process_thread_tid = NULL;
 
 osSemaphoreId hr_process_wait_semaphore_id = NULL;
@@ -280,7 +280,7 @@ const int32_t testPpgData[] = {
     0x000523AB, 0x000522C5, 0x0005245B, 0x00052357, 0x000523CF, 0x000523EC,
     0x00052337, 0x000523E4    
 };
-// #define __SNDP_USE_ALGO__
+#define __SNDP_USE_ALGO__
 // #define __SNDP_RUN_ALGO_ONLY__
 static void sndp_hr_process_thread(void const *argument)
 {
@@ -528,7 +528,7 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 
     if(hr_ctx.dump_state) {
         if(cnt > 0) {
-            // HR_TRACE(0, "ppg notification, cnt=%d", cnt);
+            HR_TRACE(0, "ppg notification, cnt=%d", cnt);
             // DUMP32("%08X ", data, cnt);
             
             //report PPG data
@@ -560,6 +560,7 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
     if(hr_ctx.dump_state) {
         if(cnt > 0) {
             //report ACC data
+                HR_TRACE(0, "acc notification, cnt=%d", cnt);
             // sndp_comm_cmd_sleepapp_report_acc_ntf((int16_t *)data, cnt * 3);
             sndp_comm_cmd_sleepapp_report_acc_ntf_debug((int16_t *)data, cnt * 3);
         }

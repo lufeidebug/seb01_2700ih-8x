@@ -22,6 +22,7 @@
 #include "sndp_hal_gesture.h"
 #include "sndp_comm_cmd.h"
 #endif
+#include "app_utils.h"
 
 
 /**************************************************************************************************
@@ -43,7 +44,6 @@
 //#define __DA217E_IRQ_DEBOUNCE__
 
 #define FIFO_POLLING_OPEN
-#define FIFO_POLLING_THREAD
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -78,17 +78,15 @@ static osTimerId da217e_int2_debounce_timer = NULL;
 #endif
 
 #if defined(FIFO_POLLING_OPEN)
-#if defined(FIFO_POLLING_THREAD)
 static void da217e_fifo_polling_thread(void const *argument);
 #define DA217E_FIFO_POLLING_INTERVAL_MS          (200) //ms
 #define DA217E_FIFO_POLLING_THREAD_STACK_SIZE    (1024)
 osThreadDef(da217e_fifo_polling_thread, osPriorityAboveNormal, 1, DA217E_FIFO_POLLING_THREAD_STACK_SIZE, "da217e_fifo_polling_thread");
 osThreadId da217e_fifo_polling_thread_id = NULL;
-#else
-static void da217e_drv_fifo_polling_handler(void const *param);
-osTimerDef(DA217E_FIFO_POLLING_TIMER, da217e_drv_fifo_polling_handler);
-static osTimerId da217e_drv_fifo_polling_timer = NULL;  
-#endif
+
+osSemaphoreId da217e_fifo_polling_semaphore_id = NULL;
+osSemaphoreDef(da217e_fifo_polling_semaphore);
+static bool da217e_fifo_polling_thread_run = false;
 #endif
 
 /**************************************************************************************************
@@ -226,54 +224,52 @@ static void da217e_int2_debounce(void)
 #endif
 
 #if defined(FIFO_POLLING_OPEN)
-#if defined(FIFO_POLLING_THREAD)
 static void da217e_fifo_polling_thread(void const *argument)
 {
     while(1) {
-
+        if(da217e_fifo_polling_thread_run) {
+            app_sysfreq_req(APP_SYSFREQ_USER_SNDP_ACC_POLL, APP_SYSFREQ_32K);
+            osSemaphoreWait(da217e_fifo_polling_semaphore_id, 250);
+            app_sysfreq_req(APP_SYSFREQ_USER_SNDP_ACC_POLL, APP_SYSFREQ_104M);
+            da217e_drv_deal_fifo_interruption();
+        }else {
+            osSemaphoreWait(da217e_fifo_polling_semaphore_id, osWaitForever);
+        }    
         // DA217E_TRACE(1, "%d",TICKS_TO_MS(hal_sys_timer_get()));
-        da217e_drv_deal_fifo_polling();
-        osDelay(DA217E_FIFO_POLLING_INTERVAL_MS);
+        // da217e_drv_deal_fifo_polling();
+        // osDelay(DA217E_FIFO_POLLING_INTERVAL_MS);
     }
 }
-#else
-static void da217e_drv_fifo_polling_handler(void const *param)
-{
-    // sndp_call_func_in_dev_thread((uint32_t)da217e_drv_deal_fifo_polling, 0, 0, 0);
-    da217e_drv_deal_fifo_polling();
-}
-#endif
 
 static void da217e_drv_fifo_polling_start(void)
 {
-#if defined(FIFO_POLLING_THREAD)
+    if(da217e_fifo_polling_semaphore_id == NULL) {
+        da217e_fifo_polling_semaphore_id = osSemaphoreCreate(osSemaphore(da217e_fifo_polling_semaphore), 1);
+        ASSERT(da217e_fifo_polling_semaphore_id != NULL, "%s, %d", __func__, __LINE__);
+    }
     //create thread
     if(da217e_fifo_polling_thread_id == NULL) {
         da217e_fifo_polling_thread_id = osThreadCreate(osThread(da217e_fifo_polling_thread), NULL);
         ASSERT(da217e_fifo_polling_thread_id != NULL, "%s, %d", __func__, __LINE__);
     }
-#else
-    if(da217e_drv_fifo_polling_timer == NULL) {
-        da217e_drv_fifo_polling_timer = osTimerCreate(osTimer(DA217E_FIFO_POLLING_TIMER), osTimerPeriodic, NULL);
-        ASSERT(da217e_drv_fifo_polling_timer != NULL, "%s, %d", __func__, __LINE__);
-    }
-    osTimerStart(da217e_drv_fifo_polling_timer, 200);
-#endif
 
+    if(da217e_fifo_polling_thread_id && da217e_fifo_polling_semaphore_id) {
+        DA217E_TRACE(1, "da217e_drv_fifo_polling_start");
+    }else {
+        DA217E_TRACE(1, "da217e_drv_fifo_polling_start fail");
+    }
 }
 
-static void da217e_drv_fifo_polling_stop(void)
+POSSIBLY_UNUSED static void da217e_drv_fifo_polling_stop(void)
 {
-#if defined(FIFO_POLLING_THREAD)
     if(da217e_fifo_polling_thread_id) {
         osThreadTerminate(da217e_fifo_polling_thread_id);
         da217e_fifo_polling_thread_id = NULL;
     }
-#else
-    if(da217e_drv_fifo_polling_timer) {
-        osTimerStop(da217e_drv_fifo_polling_timer);
+    if(da217e_fifo_polling_semaphore_id) {
+        osSemaphoreDelete(da217e_fifo_polling_semaphore_id);
+        da217e_fifo_polling_semaphore_id = NULL;
     }
-#endif
 }
 #endif
 
@@ -313,6 +309,17 @@ static void da217e_int2_irq_handler(enum HAL_GPIO_PIN_T pin)
     sndp_call_func_in_app_thread((uint32_t)da217e_deal_int2_data, 0, 0, 0);
 #endif
 }
+#else
+static int da217e_interrupt_cnt = 0;
+static void da217e_int2_polling_irq_handler(enum HAL_GPIO_PIN_T pin)
+{
+    da217e_interrupt_cnt++;
+    DA217E_TRACE(0, "enter %d cnt %d", TICKS_TO_MS(hal_sys_timer_get()), da217e_interrupt_cnt);
+    osSemaphoreRelease(da217e_fifo_polling_semaphore_id);
+    if(!da217e_fifo_polling_thread_run) {
+        da217e_fifo_polling_thread_run = true;
+    }
+}
 #endif
 
 static void da217e_irq_init(void)
@@ -348,6 +355,17 @@ static void da217e_irq_init(void)
         gpiocfg.irq_debounce = true;
         gpiocfg.irq_polarity = HAL_GPIO_IRQ_POLARITY_HIGH_RISING;
         gpiocfg.irq_handler = da217e_int2_irq_handler;
+        gpiocfg.irq_type = HAL_GPIO_IRQ_TYPE_EDGE_SENSITIVE;
+        hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_gsensor_int2_pin_cfg.pin, &gpiocfg);
+    }
+#else
+    if(app_gsensor_int2_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
+        struct HAL_GPIO_IRQ_CFG_T gpiocfg;
+        
+        gpiocfg.irq_enable = true;
+        gpiocfg.irq_debounce = true;
+        gpiocfg.irq_polarity = HAL_GPIO_IRQ_POLARITY_HIGH_RISING;
+        gpiocfg.irq_handler = da217e_int2_polling_irq_handler;
         gpiocfg.irq_type = HAL_GPIO_IRQ_TYPE_EDGE_SENSITIVE;
         hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_gsensor_int2_pin_cfg.pin, &gpiocfg);
     }
@@ -433,9 +451,9 @@ int32_t da217e_start_reading_raw_data(void)
     sndp_delay_exec_start(1000, (uint32_t)da217e_read_raw_data_test, 0, 0, 0);
 #else
 #if defined(FIFO_POLLING_OPEN)
-    da217e_open_fifo();
-    // da217e_drv_fifo_polling_start();
+    da217e_interrupt_cnt = 0;
     sndp_call_func_in_dev_thread((uint32_t)da217e_drv_fifo_polling_start, 0, 0, 0);
+    da217e_open_fifo_watermark_int(25);
 #else
     da217e_open_fifo_watermark_int(25);
 #endif
@@ -452,8 +470,9 @@ int32_t da217e_stop_reading_raw_data(void)
     sndp_delay_exec_stop((uint32_t)da217e_read_raw_data_test);
 #else
 #if defined(FIFO_POLLING_OPEN)
-    da217e_close_fifo();
-    sndp_call_func_in_dev_thread((uint32_t)da217e_drv_fifo_polling_stop, 0, 0, 0);
+    // sndp_call_func_in_dev_thread((uint32_t)da217e_drv_fifo_polling_stop, 0, 0, 0);
+    da217e_close_fifo_int();
+    da217e_fifo_polling_thread_run = false;
 #else
     da217e_close_fifo_int();
 #endif

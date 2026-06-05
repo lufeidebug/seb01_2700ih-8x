@@ -69,8 +69,9 @@ extern "C" {
 #if defined(__SNDP_AUDIO_TEST__)
 #define APP_SYSFREQ_USER_SNDP_AUDIO_TEST    APP_SYSFREQ_USER_APP_33
 #endif
-
-#endif
+#define APP_SYSFREQ_USER_SNDP_ACC_POLL      APP_SYSFREQ_USER_APP_34
+#define APP_SYSFREQ_USER_SNDP_PPG_POLL      APP_SYSFREQ_USER_APP_35
+#endif
 
 /*
  * Pseudo user, if one of user is belong to qos(quality of service) user,

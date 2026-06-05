@@ -3049,7 +3049,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf_debug(int16_t *acc_raw_data, uint
         cmd->value[data_len++] = (uint8_t)((acc_ntf_debug_count >> 8) & 0xFF);  // count高字节
         cmd->value[data_len++] = (uint8_t)(acc_ntf_debug_count);
     // 2. 打包acc_raw_len个数据点，每个数据点包含X/Y/Z三个轴，每轴2字节，最多150字节
-        for (int i = 0; i < acc_raw_len && i < 25; i++) {
+        for (int i = 0; i < acc_raw_len/3; i++) {
             cmd->value[data_len++] = (uint8_t)(acc_data_ptr[3*i] & 0xFF);         // X轴最低字节
             cmd->value[data_len++] = (uint8_t)((acc_data_ptr[3*i] >> 8) & 0xFF);  // X轴最高字节
             cmd->value[data_len++] = (uint8_t)(acc_data_ptr[3*i + 1] & 0xFF);     // Y轴最低字节
@@ -3088,7 +3088,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t a
         cmd->value[data_len++] = 0x02;
 
     // 2. 打包acc_raw_len个数据点，每个数据点包含X/Y/Z三个轴，每轴2字节，最多150字节
-        for (int i = 0; i < acc_raw_len && i < 25; i++) {
+        for (int i = 0; i < acc_raw_len/3; i++) {
             cmd->value[data_len++] = (uint8_t)(acc_data_ptr[3*i] & 0xFF);         // X轴最低字节
             cmd->value[data_len++] = (uint8_t)((acc_data_ptr[3*i] >> 8) & 0xFF);  // X轴最高字节
             cmd->value[data_len++] = (uint8_t)(acc_data_ptr[3*i + 1] & 0xFF);     // Y轴最低字节

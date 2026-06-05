@@ -330,16 +330,16 @@ int32_t da217e_fifo_polling_data(da217e_drv_acc_data_s *data)
     // } else {
     //         tmp_data &= 0x3f;
     // }
-    // DA217E_TRACE(0, "fifo_polling, fifo_status=%02X", tmp_data);
     tmp_data &= 0x3f;
-    if(tmp_data >= 25) {
-        for(int i = 0; i < 25; i++){
+    DA217E_TRACE(0, "fifo_status=%d", tmp_data &= 0x3f);
+    // if(tmp_data >= 25) {
+        for(int i = 0; i < tmp_data; i++){
             da217e_read_acc_data(&data[i].ax, &data[i].ay, &data[i].az);	
         }       
-        return 25;
-    }
+        return tmp_data;
+    // }
 
-    return 0;
+    // return 0;
     
 }
 
@@ -351,32 +351,13 @@ int32_t da217e_read_water_int_fifo(da217e_drv_acc_data_s *data)
    num &= 0x3f;
    da217e_reg_read(DA217E_REG_FIFO_STATUS, &tmp_data);
    
-   if(tmp_data&0x40) {
-		tmp_data = 32;
-   } else {
-		tmp_data &= 0x3f;
-   }
+    tmp_data &= 0x3f;
 
-#if 0
-   while(tmp_data >= num) {
-	   for(i = 0; i < tmp_data; i++){
-			da217e_read_acc_data(x+i, y+i, z+i);	
-	   }
-
-   	   da217e_reg_read(DA217E_REG_FIFO_STATUS, &tmp_data);
-	   tmp_data &= 0x3f;
-   }
-#else
-    if(tmp_data >= num) {
-	   for(i = 0; i < num; i++){
-			da217e_read_acc_data(&data[i].ax, &data[i].ay, &data[i].az);	
-	   }
-
-       return num;
+    for(i = 0; i < num; i++){
+        da217e_read_acc_data(&data[i].ax, &data[i].ay, &data[i].az);	
     }
-#endif
 
-    return 0;
+    return num;
 }
 
 int32_t da217e_close_fifo_int(void)
@@ -458,8 +439,10 @@ void da217e_drv_deal_fifo_polling(void)
 {
     da217e_drv_acc_data_s data[32];
     int32_t num;
-    
+    DA217E_TRACE(1, "enter %d",TICKS_TO_MS(hal_sys_timer_get()));
     num = da217e_fifo_polling_data(data);
+    DA217E_TRACE(1, "exit%d",TICKS_TO_MS(hal_sys_timer_get()));
+    // num = 30;
     if(num > 0) {
         if(da217e_drv_if.read_fifo_cb) {
             da217e_drv_if.read_fifo_cb(data, num);

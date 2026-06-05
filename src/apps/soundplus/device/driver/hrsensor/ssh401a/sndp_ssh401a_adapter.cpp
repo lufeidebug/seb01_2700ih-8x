@@ -25,7 +25,7 @@
 #include "ss_ppg.h"
 #include "ss_ppg_errno.h"
 #include "ss_ppg_example.h"
-
+#include "app_utils.h"
 
 /**************************************************************************************************
 * Constant
@@ -83,10 +83,74 @@ static SS_OS_API ssh401a_os_api_config;
 static int32_t ssh401a_ppg_data[32];
 #endif
 
+#define PPG_FIFO_POLLING_THREAD
+
+#if defined(PPG_FIFO_POLLING_THREAD)
+static void ss_ppg_fifo_polling_thread(void const *argument);
+#define SS_PPG_FIFO_POLLING_INTERVAL_MS          (500) //ms
+#define SS_PPG_FIFO_POLLING_THREAD_STACK_SIZE      (1024)
+osThreadDef(ss_ppg_fifo_polling_thread, osPriorityAboveNormal, 1, SS_PPG_FIFO_POLLING_THREAD_STACK_SIZE, "ss_ppg_fifo_polling_thread");
+osThreadId ss_ppg_fifo_polling_thread_id = NULL;
+
+osSemaphoreId ss_ppg_fifo_polling_semaphore_id = NULL;
+osSemaphoreDef(ss_ppg_fifo_polling_semaphore);
+
+#endif
 
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
+#if defined(PPG_FIFO_POLLING_THREAD)
+static void ss_ppg_fifo_polling_thread(void const *argument)
+{
+    while(1) {
+        app_sysfreq_req(APP_SYSFREQ_USER_SNDP_PPG_POLL, APP_SYSFREQ_32K);
+        osSemaphoreWait(ss_ppg_fifo_polling_semaphore_id, osWaitForever);
+        app_sysfreq_req(APP_SYSFREQ_USER_SNDP_PPG_POLL, APP_SYSFREQ_104M);
+        
+        ss_ppg_interrupt_handler();
+
+    }
+}
+
+static void ss_ppg_fifo_polling_start(void)
+{
+    //create thread
+    if(ss_ppg_fifo_polling_thread_id == NULL) {
+        ss_ppg_fifo_polling_thread_id = osThreadCreate(osThread(ss_ppg_fifo_polling_thread), NULL);
+        ASSERT(ss_ppg_fifo_polling_thread_id != NULL, "%s, %d", __func__, __LINE__);
+    }
+
+    //create semaphore
+    if(ss_ppg_fifo_polling_semaphore_id == NULL) {
+        ss_ppg_fifo_polling_semaphore_id = osSemaphoreCreate(osSemaphore(ss_ppg_fifo_polling_semaphore), 1);
+        ASSERT(ss_ppg_fifo_polling_semaphore_id != NULL, "%s, %d", __func__, __LINE__);
+    }
+
+    if(ss_ppg_fifo_polling_thread_id && ss_ppg_fifo_polling_semaphore_id) {
+        SSH401A_TRACE(1, "ss_ppg_fifo_polling_start");
+    }else {
+        SSH401A_TRACE(1, "ss_ppg_fifo_polling_start fail");
+    }
+
+}
+
+POSSIBLY_UNUSED static void ss_ppg_fifo_polling_stop(void)
+{
+    //stop semaphore
+    if(ss_ppg_fifo_polling_semaphore_id) {
+        osSemaphoreDelete(ss_ppg_fifo_polling_semaphore_id);
+        ss_ppg_fifo_polling_semaphore_id = NULL;
+    }
+
+    //stop thread
+    if(ss_ppg_fifo_polling_thread_id) {
+        osThreadTerminate(ss_ppg_fifo_polling_thread_id);
+        ss_ppg_fifo_polling_thread_id = NULL;
+    }
+}
+#endif
+
 int32_t ssh401a_proximity_read_calib_data(ssh401a_proximity_calib_data_s *proximity_calib_data)
 {
     sndp_da_field_proximity_calib_data_s field_data;
@@ -306,7 +370,7 @@ void ssh401a_irq_debounce(void)
     
 }
 #endif
-
+static int ssh401_irq_cnt = 0;
 static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
 #if defined(__SSH401A_IRQ_DEBOUNCE__)    
@@ -321,7 +385,14 @@ static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
         sndp_call_func_in_dev_thread((uint32_t)ssh401a_irq_debounce, 0, 0, 0);
     }
 #else
+#if defined(PPG_FIFO_POLLING_THREAD)
+ssh401_irq_cnt++;
+    SSH401A_TRACE(1, "enter %d cnt %d",TICKS_TO_MS(hal_sys_timer_get()), ssh401_irq_cnt);
+    osSemaphoreRelease(ss_ppg_fifo_polling_semaphore_id);
+#else
     sndp_call_func_in_dev_thread((uint32_t)ss_ppg_interrupt_handler, 0, 0, 0);
+#endif
+
 #endif
 }
 
@@ -448,7 +519,10 @@ int32_t ssh401a_set_reading_ppg_callback(sndp_hal_hr_read_ppg_callback callback)
 int32_t ssh401a_start_reading_ppg(void)
 {
     SSH401A_TRACE(0, "...");
-    
+    ssh401_irq_cnt = 0;
+#if defined(PPG_FIFO_POLLING_THREAD)
+    sndp_call_func_in_dev_thread((uint32_t)ss_ppg_fifo_polling_start, 0, 0, 0);
+#endif
     ss_ppg_operation_mode(PROX_PPG_0);
     ss_ppg_open_fifo();
 
@@ -461,7 +535,9 @@ int32_t ssh401a_stop_reading_ppg(void)
     
     ss_ppg_close_fifo();
     ss_ppg_operation_mode(PROX);
-
+#if defined(PPG_FIFO_POLLING_THREAD)
+    // ss_ppg_fifo_polling_stop();
+#endif
     return SNDP_HAL_RET_OK;
 }
 
