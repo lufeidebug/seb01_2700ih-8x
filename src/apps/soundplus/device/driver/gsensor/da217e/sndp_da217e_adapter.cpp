@@ -228,16 +228,14 @@ static void da217e_fifo_polling_thread(void const *argument)
 {
     while(1) {
         if(da217e_fifo_polling_thread_run) {
-            app_sysfreq_req(APP_SYSFREQ_USER_SNDP_ACC_POLL, APP_SYSFREQ_32K);
             osSemaphoreWait(da217e_fifo_polling_semaphore_id, 250);
-            app_sysfreq_req(APP_SYSFREQ_USER_SNDP_ACC_POLL, APP_SYSFREQ_104M);
             da217e_drv_deal_fifo_interruption();
         }else {
+            app_sysfreq_req(APP_SYSFREQ_USER_SNDP_ACC_POLL, APP_SYSFREQ_32K);
             osSemaphoreWait(da217e_fifo_polling_semaphore_id, osWaitForever);
+            app_sysfreq_req(APP_SYSFREQ_USER_SNDP_ACC_POLL, APP_SYSFREQ_104M);
         }    
         // DA217E_TRACE(1, "%d",TICKS_TO_MS(hal_sys_timer_get()));
-        // da217e_drv_deal_fifo_polling();
-        // osDelay(DA217E_FIFO_POLLING_INTERVAL_MS);
     }
 }
 
@@ -251,6 +249,11 @@ static void da217e_drv_fifo_polling_start(void)
     if(da217e_fifo_polling_thread_id == NULL) {
         da217e_fifo_polling_thread_id = osThreadCreate(osThread(da217e_fifo_polling_thread), NULL);
         ASSERT(da217e_fifo_polling_thread_id != NULL, "%s, %d", __func__, __LINE__);
+    }
+    
+    osSemaphoreRelease(da217e_fifo_polling_semaphore_id);
+    if(!da217e_fifo_polling_thread_run) {
+        da217e_fifo_polling_thread_run = true;
     }
 
     if(da217e_fifo_polling_thread_id && da217e_fifo_polling_semaphore_id) {
@@ -316,9 +319,6 @@ static void da217e_int2_polling_irq_handler(enum HAL_GPIO_PIN_T pin)
     da217e_interrupt_cnt++;
     DA217E_TRACE(0, "enter %d cnt %d", TICKS_TO_MS(hal_sys_timer_get()), da217e_interrupt_cnt);
     osSemaphoreRelease(da217e_fifo_polling_semaphore_id);
-    if(!da217e_fifo_polling_thread_run) {
-        da217e_fifo_polling_thread_run = true;
-    }
 }
 #endif
 
@@ -452,7 +452,7 @@ int32_t da217e_start_reading_raw_data(void)
 #else
 #if defined(FIFO_POLLING_OPEN)
     da217e_interrupt_cnt = 0;
-    sndp_call_func_in_dev_thread((uint32_t)da217e_drv_fifo_polling_start, 0, 0, 0);
+    da217e_drv_fifo_polling_start();
     da217e_open_fifo_watermark_int(25);
 #else
     da217e_open_fifo_watermark_int(25);
