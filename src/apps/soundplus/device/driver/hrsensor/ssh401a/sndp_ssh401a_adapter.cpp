@@ -95,6 +95,7 @@ osThreadId ss_ppg_fifo_polling_thread_id = NULL;
 osSemaphoreId ss_ppg_fifo_polling_semaphore_id = NULL;
 osSemaphoreDef(ss_ppg_fifo_polling_semaphore);
 
+static bool ss_ppg_fifo_polling_thread_run = false;
 #endif
 
 /**************************************************************************************************
@@ -385,15 +386,15 @@ static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
         sndp_call_func_in_dev_thread((uint32_t)ssh401a_irq_debounce, 0, 0, 0);
     }
 #else
-#if defined(PPG_FIFO_POLLING_THREAD)
-ssh401_irq_cnt++;
-    SSH401A_TRACE(1, "enter %d cnt %d",TICKS_TO_MS(hal_sys_timer_get()), ssh401_irq_cnt);
-    osSemaphoreRelease(ss_ppg_fifo_polling_semaphore_id);
-#else
-    sndp_call_func_in_dev_thread((uint32_t)ss_ppg_interrupt_handler, 0, 0, 0);
+    if(ss_ppg_fifo_polling_thread_run){
+        ssh401_irq_cnt++;
+        SSH401A_TRACE(1, "enter %d cnt %d",TICKS_TO_MS(hal_sys_timer_get()), ssh401_irq_cnt);
+        osSemaphoreRelease(ss_ppg_fifo_polling_semaphore_id);
+    }else{
+        sndp_call_func_in_dev_thread((uint32_t)ss_ppg_interrupt_handler, 0, 0, 0);
+    }
 #endif
 
-#endif
 }
 
 static void ssh401a_irq_init(void)
@@ -521,7 +522,8 @@ int32_t ssh401a_start_reading_ppg(void)
     SSH401A_TRACE(0, "...");
     ssh401_irq_cnt = 0;
 #if defined(PPG_FIFO_POLLING_THREAD)
-    sndp_call_func_in_dev_thread((uint32_t)ss_ppg_fifo_polling_start, 0, 0, 0);
+    ss_ppg_fifo_polling_start();
+    ss_ppg_fifo_polling_thread_run = true;
 #endif
     ss_ppg_operation_mode(PROX_PPG_0);
     ss_ppg_open_fifo();
@@ -537,6 +539,7 @@ int32_t ssh401a_stop_reading_ppg(void)
     ss_ppg_operation_mode(PROX);
 #if defined(PPG_FIFO_POLLING_THREAD)
     // ss_ppg_fifo_polling_stop();
+    ss_ppg_fifo_polling_thread_run = false;
 #endif
     return SNDP_HAL_RET_OK;
 }
