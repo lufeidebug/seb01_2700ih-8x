@@ -377,6 +377,17 @@ void sndp_enter_mobile_reconnect(void)
 void sndp_mobile_pairing_timeout(void)
 {
     SNDP_IF_TRACE(0, ".");
+    
+    // 兜底检查：如果对端（主耳）已经连上手机，不关机
+    if (sndp_is_tws_link_connected() && sndp_is_tws_slave_mode()
+        && sndp_is_master_mobile_link_connected()) {
+        SNDP_IF_TRACE(0, "peer already connected, skip shutdown");
+        sndp_pairing_status = SNDP_PAIR_STA_SUCCESS;
+        app_stop_10_second_timer(APP_PAIR_TIMER_ID);
+        app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+        return;
+    }
+    
     sndp_pairing_status = SNDP_PAIR_STA_TIMEOUT;
     app_stop_10_second_timer(APP_PAIR_TIMER_ID);
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);

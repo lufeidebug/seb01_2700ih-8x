@@ -120,7 +120,10 @@ typedef enum {
                                                              * rsp : 0 bytes */
     COMM_CMDID_LR_SYNC_STOP_HEARTRATE_MEASUREMENT   = 0x37, /* desc: 左右耳同步停止心率监测。
                                                              * recv: 0 bytes,*/
-#endif                                                                   
+#endif
+    COMM_CMDID_LR_SYNC_MOBILE_CONNECTED             = 0x38, /* desc: 左右耳同步手机已连接状态指令。
+                                                             * recv: 0 bytes,
+                                                             * rsp : 0 bytes */
     COMM_CMDID_LR_SYNC_ALL_DEV_STATUS               = 0x2D, /* desc: 左右耳同步所有设备状态指令。
                                                              * recv: n bytes, 
                                                              * rsp : 0 bytes */ 
@@ -260,6 +263,7 @@ uint32_t sndp_comm_cmd_send_lr_sync_wear_status(uint8_t status);
 uint32_t sndp_comm_cmd_send_lr_sync_gesture(uint8_t gesture);
 uint32_t sndp_comm_cmd_send_lr_sync_language_switch(uint8_t language);
 uint32_t sndp_comm_cmd_send_lr_sync_both_shutdown(void);
+uint32_t sndp_comm_cmd_send_lr_sync_mobile_connected(void);
 uint32_t sndp_comm_cmd_send_lr_sync_music_ctrl(uint8_t event);
 uint32_t sndp_comm_cmd_send_lr_sync_call_ctrl(uint8_t event);
 uint32_t sndp_comm_cmd_send_lr_sync_all_dev_status(uint8_t *data, uint16_t data_len);

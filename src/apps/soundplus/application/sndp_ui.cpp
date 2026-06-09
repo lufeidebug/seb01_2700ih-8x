@@ -1420,6 +1420,11 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 #endif			
 			sndp_mobile_pairing_sccessful();
             sndp_mobile_reconnect_sccessful();
+
+			// 主耳连接手机成功后，通知从耳取消配对定时器
+			if (sndp_is_tws_link_connected() && sndp_is_tws_master_mode()) {
+				sndp_comm_cmd_send_lr_sync_mobile_connected();
+			}
 			break;
 	
 		case SNDP_BT_CONN_STATUS_IBRT_DISCONNECTED:

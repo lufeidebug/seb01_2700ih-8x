@@ -537,9 +537,22 @@ uint32_t sndp_comm_cmd_send_lr_sync_both_shutdown(void)
 	return 0;
 }
 
+uint32_t sndp_comm_cmd_send_lr_sync_mobile_connected(void)
+{
+	sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_MOBILE_CONNECTED, NULL, 0);
+	return 0;
+}
+
 static uint32_t sndp_comm_cmd_recv_lr_sync_both_shutdown(sndp_comm_cmd_info_s *cmd_info)
 {
 	sndp_app_shutdown(SNDP_SHUTDOWN_REASON_BOTH_SHUTDOWN);
+	return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_mobile_connected(sndp_comm_cmd_info_s *cmd_info)
+{
+	sndp_call_func_in_app_thread((uint32_t)sndp_mobile_pairing_sccessful, 0, 0, 0);
+	sndp_call_func_in_app_thread((uint32_t)sndp_mobile_reconnect_sccessful, 0, 0, 0);
 	return 0;
 }
 
@@ -1849,6 +1862,7 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
 	{ COMM_CMDID_LR_SYNC_WEAR_STATUS            , "LR_SYNC_WEAR_STA"	    , sndp_comm_cmd_recv_lr_sync_wear_status            },
 	{ COMM_CMDID_LR_SYNC_GESTURE                , "LR_SYNC_GESTURE"         , sndp_comm_cmd_recv_lr_sync_gesture                },
     { COMM_CMDID_LR_SYNC_BOTH_SHUTDOWN          , "LR_SYNC_BOTH_SHUTDOWN"   , sndp_comm_cmd_recv_lr_sync_both_shutdown          },
+    { COMM_CMDID_LR_SYNC_MOBILE_CONNECTED       , "LR_SYNC_MOBILE_CONNECTED", sndp_comm_cmd_recv_lr_sync_mobile_connected       },
     { COMM_CMDID_LR_SYNC_MUSIC_CTRL             , "LR_SYNC_MUSIC_CTRL"      , sndp_comm_cmd_recv_lr_sync_music_ctrl             },
     { COMM_CMDID_LR_SYNC_CALL_CTRL              , "LR_SYNC_CALL_CTRL"       , sndp_comm_cmd_recv_lr_sync_call_ctrl              },
 #if defined(__SNDP_SLEEP_APP__)
