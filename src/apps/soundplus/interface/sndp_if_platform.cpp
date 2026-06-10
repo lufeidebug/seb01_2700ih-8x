@@ -391,8 +391,16 @@ void sndp_mobile_pairing_timeout(void)
     sndp_pairing_status = SNDP_PAIR_STA_TIMEOUT;
     app_stop_10_second_timer(APP_PAIR_TIMER_ID);
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+    	// 主耳连接设备断开后，超时关机，从耳同步也关机
+	if (sndp_is_tws_link_connected() && sndp_is_tws_master_mode()) {
+		sndp_comm_cmd_send_lr_sync_both_shutdown();
+		sndp_delay_exec_start(200, (uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_PAIR_TIMEOUT, 0, 0);
+	}else
+	{
+		sndp_app_shutdown(SNDP_SHUTDOWN_REASON_PAIR_TIMEOUT);
+	}
     
-    sndp_app_shutdown(SNDP_SHUTDOWN_REASON_PAIR_TIMEOUT);
+
 }
 
 void sndp_mobile_pairing_sccessful(void)
