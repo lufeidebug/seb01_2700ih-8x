@@ -178,6 +178,7 @@ void sndp_enter_mobile_pairing_directly(void);
 void sndp_tws_pairing_config(uint8_t *addr, uint8_t len);
 void sndp_ibrt_reconfig_save_to_nvrecord(void *config);
 void sndp_ibrt_nvrecord_config_load(void *config);
+uint8_t* sndp_get_pair_addr(void);
 int32_t sndp_ibrt_get_tws_pair_addr(uint8_t *addr);
 
 bool sndp_is_freeman_mode(void);

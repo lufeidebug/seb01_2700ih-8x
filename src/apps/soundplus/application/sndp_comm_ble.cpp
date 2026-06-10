@@ -439,12 +439,23 @@ bool sndp_comm_ble_activity_prepare(ble_adv_activity_t *adv)
     uint8_t local_ble_addr[6] = {0};
     uint8_t local_bt_addr[6] = {0};
 
-    uint8_t adv_data[28];
+    uint8_t adv_data[31];
     uint8_t adv_data_size = 0;
-    uint8_t scan_rsp_data[32];
+    uint8_t scan_rsp_data[31];
     uint8_t scan_rsp_data_size = 0;
 
-    bt_bdaddr_t *local_bdaddr = (bt_bdaddr_t *)bt_get_local_address();
+    bt_bdaddr_t *local_bdaddr = NULL;
+#if 0    
+    if(sndp_is_tws_link_connected())
+    {
+        local_bdaddr = (bt_bdaddr_t *)sndp_get_pair_addr();
+    }
+    else
+    {
+        local_bdaddr = (bt_bdaddr_t *)bt_get_local_address();
+    }
+#endif
+    local_bdaddr = (bt_bdaddr_t *)sndp_get_pair_addr();
     bt_bdaddr_t *ble_bdaddr = (bt_bdaddr_t *)bt_get_ble_local_address();
     if (local_bdaddr) {
         memcpy(local_bt_addr, local_bdaddr->address, 6);
@@ -460,60 +471,52 @@ bool sndp_comm_ble_activity_prepare(ble_adv_activity_t *adv)
     adv_data[adv_data_size++] = 0x01; // AD Type: Flags
     adv_data[adv_data_size++] = 0x06; // General Discoverable | BR/EDR Not Supported
 
-    /* ---------------- 0x1B + BT Addr ---------------- */
-    adv_data[adv_data_size++] = 0x07; // length
-    adv_data[adv_data_size++] = 0x1B; // AD Type
-    for (int i = 0; i < 6; i++) {
-        adv_data[adv_data_size++] = local_bt_addr[5 - i];
-    }
-
-    /* ---------------- Local Name ---------------- */
-
-    /* 硬性保护：留给 Length + Type */
-    if (ble_name_len > 31 - adv_data_size - 2) {
-        ble_name_len = 31 - adv_data_size - 2;
-    }
-
-    if (ble_name_len > 0) {
-        adv_data[adv_data_size++] = 1 + ble_name_len; // length
-        adv_data[adv_data_size++] = 0x09;             // Complete Local Name
-        memcpy(&adv_data[adv_data_size], ble_name, ble_name_len);
-        adv_data_size += ble_name_len;
-    }
-
     /* ---------------- Manufacturer Specific Data ---------------- */
-    uint8_t mfr_len = 13; // 后面实际字节数
-    scan_rsp_data[scan_rsp_data_size++] = mfr_len;
-    scan_rsp_data[scan_rsp_data_size++] = 0xFF; // Manufacturer Type
+    adv_data[adv_data_size++] = 0x0E;
+    adv_data[adv_data_size++] = 0xFF; // Manufacturer Type
 
     /* Company ID */
-    scan_rsp_data[scan_rsp_data_size++] = 0x00;
-    scan_rsp_data[scan_rsp_data_size++] = 0x00;
+    adv_data[adv_data_size++] = 0x00;
+    adv_data[adv_data_size++] = 0x00;
 
     /* Product Key */
-    scan_rsp_data[scan_rsp_data_size++] = 0x00;
-    scan_rsp_data[scan_rsp_data_size++] = 0x00;
+    adv_data[adv_data_size++] = 0x00;
+    adv_data[adv_data_size++] = 0x00;
 
     /* BT MAC */
     for (int i = 0; i < 6; i++) {
-        scan_rsp_data[scan_rsp_data_size++] = local_bt_addr[5-i];
+        adv_data[adv_data_size++] = local_bt_addr[5-i];
     }
 
     /* Mobile connect status */
-    scan_rsp_data[scan_rsp_data_size++] =
+    adv_data[adv_data_size++] =
         sndp_is_tws_slave_mode()
             ? sndp_is_master_mobile_link_connected()
             : sndp_is_slave_ibrt_link_connected();
 
     /* TWS connect status */
-    scan_rsp_data[scan_rsp_data_size++] = sndp_is_tws_link_connected();
+    adv_data[adv_data_size++] = sndp_is_tws_link_connected();
 
     /* Reserved */
-    scan_rsp_data[scan_rsp_data_size++] = 0x00;    
+    adv_data[adv_data_size++] = 0x00;
 
     gap_dt_add_raw_data(&adv_param->adv_data,
                         adv_data,
                         adv_data_size);
+
+    /* ==================== Scan Response ==================== */
+
+    /* ---------------- Local Name ---------------- */
+    if (ble_name_len > 31 - 2) {
+        ble_name_len = 31 - 2;
+    }
+
+    if (ble_name_len > 0) {
+        scan_rsp_data[scan_rsp_data_size++] = 1 + ble_name_len; // length
+        scan_rsp_data[scan_rsp_data_size++] = 0x09;             // Complete Local Name
+        memcpy(&scan_rsp_data[scan_rsp_data_size], ble_name, ble_name_len);
+        scan_rsp_data_size += ble_name_len;
+    }
 
     gap_dt_add_raw_data(&adv_param->scan_rsp_data,
                         scan_rsp_data,

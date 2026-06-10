@@ -528,6 +528,8 @@ void sndp_ibrt_reconfig_save_to_nvrecord(void *config)
     nv_record_flash_flush();
 }
 
+static uint8_t s_sndp_pair_addr[6] = {0};
+
 void sndp_ibrt_nvrecord_config_load(void *config)
 {
     struct nvrecord_env_t *nvrecord_env;
@@ -551,7 +553,9 @@ void sndp_ibrt_nvrecord_config_load(void *config)
 	        nvrecord_env->ibrt_mode.record.bdAddr.address[3],
 	        nvrecord_env->ibrt_mode.record.bdAddr.address[4],
 	        nvrecord_env->ibrt_mode.record.bdAddr.address[5]);
-    
+    // 开机保存配对地址，供 platform 后续获取
+    memcpy(s_sndp_pair_addr, nvrecord_env->ibrt_mode.record.bdAddr.address, 6);
+
     if(nvrecord_env->ibrt_mode.mode != IBRT_UNKNOW) {
         ibrt_config->nv_role = nvrecord_env->ibrt_mode.mode;
         memcpy((void *)ibrt_config->local_addr.address, local_addr, 6);
@@ -563,6 +567,11 @@ void sndp_ibrt_nvrecord_config_load(void *config)
     }
 
     bts_core_set_ui_role(ibrt_config->nv_role);
+}
+
+uint8_t* sndp_get_pair_addr(void)
+{
+    return s_sndp_pair_addr;
 }
 
 int32_t sndp_ibrt_get_tws_pair_addr(uint8_t *addr)
