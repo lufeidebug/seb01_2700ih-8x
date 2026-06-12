@@ -1410,6 +1410,10 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 #else
                 sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
 #endif
+
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+                sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+#endif
             }
 			break;
             
@@ -1425,7 +1429,12 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			if (sndp_is_tws_link_connected() && sndp_is_tws_master_mode()) {
 				sndp_comm_cmd_send_lr_sync_mobile_connected();
 			}
-			break;
+
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+                sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+#endif
+
+		break;
 	
 		case SNDP_BT_CONN_STATUS_IBRT_DISCONNECTED:
 #if 0            
@@ -1459,8 +1468,8 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			sndp_dev_clear_device_info(true);
       
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
-	        app_ble_refresh_adv_state_generic();
- #endif
+                sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+#endif
 
 			break;
             
@@ -1469,9 +1478,9 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
             sndp_ui_all_status_sync_send();
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
 			sndp_master_send_ble_public_addr();
-	        app_ble_refresh_adv_state_generic();
- #endif
-           
+            sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+#endif
+          
 			break;
 
 		case SNDP_BT_CONN_STATUS_A2DP_DISCONNECTED:

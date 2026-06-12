@@ -431,8 +431,6 @@ bool sndp_comm_ble_activity_prepare(ble_adv_activity_t *adv)
     adv_param->scannable = true;
     adv_param->use_legacy_pdu = true;
 
-    app_ble_dt_set_flags(adv_param, false);
-
     uint8_t* ble_name = (uint8_t *)bt_get_ble_local_name();
     int ble_name_len = strlen((char *)ble_name);
 
@@ -487,12 +485,9 @@ bool sndp_comm_ble_activity_prepare(ble_adv_activity_t *adv)
     for (int i = 0; i < 6; i++) {
         adv_data[adv_data_size++] = local_bt_addr[5-i];
     }
-
+    COMM_BLE_TRACE(0, "mobileconnected=%d", sndp_is_master_mobile_link_connected());
     /* Mobile connect status */
-    adv_data[adv_data_size++] =
-        sndp_is_tws_slave_mode()
-            ? sndp_is_master_mobile_link_connected()
-            : sndp_is_slave_ibrt_link_connected();
+    adv_data[adv_data_size++] = sndp_is_master_mobile_link_connected();
 
     /* TWS connect status */
     adv_data[adv_data_size++] = sndp_is_tws_link_connected();
@@ -559,7 +554,7 @@ int32_t sndp_comm_ble_init(void)
     
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
     sndp_ble_advertising_init();
-    app_ble_refresh_adv_state_generic();
+    sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
     COMM_BLE_TRACE(0, "SNDP ADV INIT SUCC!!!");
 #endif
     
