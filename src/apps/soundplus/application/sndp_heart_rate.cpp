@@ -532,8 +532,8 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
             // DUMP32("%08X ", data, cnt);
             
             //report PPG data
-            // sndp_comm_cmd_sleepapp_report_ppg_ntf(data, cnt);
-            sndp_comm_cmd_sleepapp_report_ppg_ntf_debug(data, cnt);
+            sndp_comm_cmd_sleepapp_report_ppg_ntf(data, cnt);
+            // sndp_comm_cmd_sleepapp_report_ppg_ntf_debug(data, cnt);
             
         }
     }
@@ -561,8 +561,8 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
         if(cnt > 0) {
             //report ACC data
                 HR_TRACE(0, "acc notification, cnt=%d", cnt);
-            // sndp_comm_cmd_sleepapp_report_acc_ntf((int16_t *)data, cnt * 3);
-            sndp_comm_cmd_sleepapp_report_acc_ntf_debug((int16_t *)data, cnt * 3);
+            sndp_comm_cmd_sleepapp_report_acc_ntf((int16_t *)data, cnt * 3);
+            // sndp_comm_cmd_sleepapp_report_acc_ntf_debug((int16_t *)data, cnt * 3);
         }
     }
 }
