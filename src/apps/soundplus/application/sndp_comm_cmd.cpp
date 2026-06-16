@@ -2102,12 +2102,14 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
     uint8_t anc_mode = cmd_info->value[0];
     
     COMM_CMD_TRACE(1, "anc mode=%d", anc_mode);
-    {
+    if(anc_mode <= 0x05){
         sndp_anc_mode_set_locally((sndp_anc_mode_e)anc_mode);
+        sndp_dev_sleep_app_anc_mode_set(false, (sndp_anc_mode_e)anc_mode, true);
+        sndp_comm_cmd_send_lr_sync_anc_mode(anc_mode, 1);
+        cmd_info->value[0] = 0; // success
+    }else{
+        cmd_info->value[0] = 0x01;
     }
-    sndp_dev_sleep_app_anc_mode_set(false, (sndp_anc_mode_e)anc_mode, true);
-    sndp_comm_cmd_send_lr_sync_anc_mode(anc_mode, 1);
-    cmd_info->value[0] = 0; // success
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
