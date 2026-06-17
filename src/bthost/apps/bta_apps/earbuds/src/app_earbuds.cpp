@@ -91,7 +91,9 @@
 #define  IBRT_UI_RECONNECT_IBRT_WAIT_RESPONSE_TIMEOUT               (300)//ms
 #define  IBRT_UI_NV_SLAVE_RECONNECT_TWS_WAIT_RESPONSE_TIMEOUT       (1000)//ms
 #define  IBRT_UI_NV_MASTER_RECONNECT_TWS_WAIT_RESPONSE_TIMEOUT      (300)//ms
+#ifndef IBRT_UI_DISABLE_BT_SCAN_TIMEOUT
 #define  IBRT_UI_DISABLE_BT_SCAN_TIMEOUT                            (180000)//3min
+#endif
 
 /// IBRT_UI_OPEN_RECONNECT_TWS_MAX_TIMES need max than IBRT_UI_DELAY_RECONN_MOBILE_MAX_TIMES
 #define  IBRT_UI_DELAY_RECONN_MOBILE_MAX_TIMES              (3)
@@ -133,6 +135,21 @@
 
 #ifndef TRACE
 #define TRACE(attr, str, ...)   TR_INFO(attr, str, ##__VA_ARGS__)
+#endif
+
+#if defined(__SNDP_PROJ__)
+//#define DBG_PAIRING_TIMER
+
+#ifdef DBG_PAIRING_TIMER
+static osTimerId_t g_dbg_pairing_timer = NULL;
+
+static void dbg_pairing_timer_handler(void *argument)
+{
+    bt_access_mode_t mode = bta_get_access_mode();
+    bool pairing = bta_tws_is_pairing_mode_enabled();
+    TRACE(0, "[DBG] bt_access_mode=%d, pairing=%d", mode, pairing);
+}
+#endif
 #endif
 
 static void bt_link_state_changed_handler(const bt_bdaddr_t *addr, bta_tws_bt_link_event_t event, bt_ibrt_role_t role, uint8_t reason)
@@ -748,6 +765,13 @@ void app_bta_init(void)
     fill_tws_attributes(&tws_attributes);
 
     app_earbuds_init_hook(&am_attributes, &tws_attributes);
+
+#if defined(__SNDP_PROJ__) && defined(DBG_PAIRING_TIMER)
+    g_dbg_pairing_timer = osTimerNew(dbg_pairing_timer_handler, osTimerPeriodic, NULL, NULL);
+    if (g_dbg_pairing_timer) {
+        osTimerStart(g_dbg_pairing_timer, 1000);
+    }
+#endif
 
     const bta_tws_bt_link_state_changed_t link_state_changed =
     {

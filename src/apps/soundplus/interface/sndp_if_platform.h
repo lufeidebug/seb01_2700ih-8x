@@ -4,6 +4,8 @@
 
 #if defined(__SNDP_PROJ__)
 
+#define SNDP_PAIRING_SCAN_TIMEOUT_MS    						((3 * 60 + 20) * 1000)//3min20s,余留20s，避免定时器或其他原因导致的配对状态耳机搜不到
+#define IBRT_UI_DISABLE_BT_SCAN_TIMEOUT                         SNDP_PAIRING_SCAN_TIMEOUT_MS
 
 
 #ifdef __cplusplus
@@ -175,6 +177,7 @@ void sndp_mobile_pairing_sccessful(void);
 void sndp_enter_mobile_pairing_after_tws_connected(void);
 void sndp_tws_enter_mobile_pairing_after_mobile_disconnect(void);
 void sndp_enter_mobile_pairing_directly(void);
+void sndp_tws_enable_pairing_mode(void);
 void sndp_tws_pairing_config(uint8_t *addr, uint8_t len);
 void sndp_ibrt_reconfig_save_to_nvrecord(void *config);
 void sndp_ibrt_nvrecord_config_load(void *config);

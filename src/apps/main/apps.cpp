@@ -371,6 +371,9 @@ extern "C" {
 #include "sndp_if_common.h"
 #include "sndp_if_data_access.h"
 #include "sndp_if_platform.h"
+#if defined(__SNDP_PRODUCT_TEST__)
+#include "sndp_product_test.h"
+#endif
 #endif
 
 #if defined(__SNDP_UI__)
@@ -595,6 +598,12 @@ void CloseEarphone(void)
         return;
     }
 #endif /* ANC_APP */
+
+#if defined(__SNDP_PRODUCT_TEST__)
+    if(sndp_pt_get_test_mode()) {
+        return;
+    }
+#endif
 
 #ifndef BLE_ONLY_ENABLED
     int activeCons = 0;

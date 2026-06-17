@@ -1598,7 +1598,14 @@ static uint32_t sndp_comm_cmd_recv_pt_read_test_flag(sndp_comm_cmd_info_s *cmd_i
 
     cmd_info->data_len = 0;
     cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+#if 0
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((field_test_flag.test_flag>>24)&0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((field_test_flag.test_flag>>16)&0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((field_test_flag.test_flag>>8)&0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(field_test_flag.test_flag&0xff);
+#else
     cmd_info->data[cmd_info->data_len++] = (uint8_t)(field_test_flag.test_flag & 0xff);
+#endif
 	sndp_comm_main_rsp_cmd(cmd_info);
    
     return 0;
@@ -1625,9 +1632,11 @@ static uint32_t sndp_comm_cmd_recv_pt_write_test_flag(sndp_comm_cmd_info_s *cmd_
             }
 
             COMM_CMD_TRACE(1, "0 test_flag=%08X", field_test_flag.test_flag);
-            
+#if 0
+            field_test_flag.test_flag |= (1<<(test_item_idx-1));
+#else
             field_test_flag.test_flag = test_item_idx;
-
+#endif
             COMM_CMD_TRACE(1, "1 test_flag=%08X", field_test_flag.test_flag);
             
             if(sndp_da_write_field(SNDP_DA_FIELD_TEST_FLAG, &field_test_flag, sizeof(sndp_da_field_test_flag_s), true) != 0) {

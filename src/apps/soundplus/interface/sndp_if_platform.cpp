@@ -61,6 +61,9 @@
 #include "sndp_comm_cmd.h"
 #endif
 
+#if defined(__SNDP_PRODUCT_TEST__)
+#include "sndp_product_test.h"
+#endif
 
 /**************************************************************************************************
 * Constant
@@ -86,6 +89,10 @@ static sndp_bt_conn_status_changed_callback sndp_bt_conn_status_changed_cb_ptr =
 static uint8_t sndp_call_in_out = 0; // 0:none, 1:incoming, 2:outgoing
 
 static sndp_pairing_type_e sndp_pairing_type = SNDP_PAIRING_NONE; // 0:未配对，1：对耳配对，2：单耳配对。
+
+#if defined(__SNDP_PRODUCT_TEST__)
+static uint8_t pt_pair_timeout_cnt = 0;
+#endif
 static sndp_pairing_state_e sndp_pairing_status = SNDP_PAIR_STA_NONE; //0:未配对，1：配对中，2：配对成功，3：配对超时。
 uint8_t sndp_is_shutting_down = 0; // 0:正常，1：正在关机流程中
 uint8_t sndp_shutdown_reason = SNDP_SHUTDOWN_REASON_NONE;
@@ -279,6 +286,13 @@ uint8_t sndp_get_pairing_status(void)
 }
 
 
+void sndp_tws_enable_pairing_mode(void)
+{
+    /* 先退出再进入，确保这个api内部配对超时定时器重新开始计时 */
+    bta_tws_enable_pairing_mode(false);
+    bta_tws_enable_pairing_mode(true);
+}
+
 void sndp_enter_freeman_pairing(void)
 {
     SNDP_IF_TRACE(0, "...");
@@ -373,6 +387,21 @@ void sndp_enter_mobile_reconnect(void)
 #endif
 }
 
+#if defined(__SNDP_PRODUCT_TEST__)
+static void sndp_pt_reenter_pairing(void)
+{
+    SNDP_IF_TRACE(0, ".");
+    if (sndp_is_tws_link_connected()) {
+        /* 双耳模式：只有主耳才重新打开配对 */
+        if (sndp_is_tws_master_mode()) {
+            sndp_tws_enable_pairing_mode();
+        }
+    } else {
+        /* 单耳模式：直接重新打开配对 */
+        sndp_tws_enable_pairing_mode();
+    }
+}
+#endif
 
 void sndp_mobile_pairing_timeout(void)
 {
@@ -387,7 +416,28 @@ void sndp_mobile_pairing_timeout(void)
         app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
         return;
     }
-    
+
+#if defined(__SNDP_PRODUCT_TEST__)
+    /* 产测模式下，配对超时计数10次（10 * 3分钟 = 30分钟）才关机 */
+    if(sndp_pt_get_test_mode()) {
+        /* 双耳从耳：不参与计数，只重启定时器，等待主耳同步关机 */
+        if (sndp_is_tws_link_connected() && sndp_is_tws_slave_mode()) {
+            app_start_10_second_timer(APP_PAIR_TIMER_ID);
+            return;
+        }
+
+        pt_pair_timeout_cnt++;
+        SNDP_IF_TRACE(1, "pt pairing timeout cnt=%d", pt_pair_timeout_cnt);
+        if(pt_pair_timeout_cnt < 10) {
+            /* 先重启APP-3min定时器，再重新打开配对，避免被其他定时器覆盖 */
+            app_start_10_second_timer(APP_PAIR_TIMER_ID);
+			sndp_pt_reenter_pairing();
+            return;
+        }
+        pt_pair_timeout_cnt = 0;
+    }
+#endif
+
     sndp_pairing_status = SNDP_PAIR_STA_TIMEOUT;
     app_stop_10_second_timer(APP_PAIR_TIMER_ID);
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
@@ -407,6 +457,10 @@ void sndp_mobile_pairing_sccessful(void)
 {
     SNDP_IF_TRACE(0, ".");
     sndp_pairing_status = SNDP_PAIR_STA_SUCCESS;
+
+#if defined(__SNDP_PRODUCT_TEST__)
+    pt_pair_timeout_cnt = 0;
+#endif
         
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_PAIR_TIMER_ID);
