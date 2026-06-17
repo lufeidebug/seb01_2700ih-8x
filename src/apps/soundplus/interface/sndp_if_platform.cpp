@@ -301,7 +301,7 @@ void sndp_enter_freeman_pairing(void)
     sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
     bta_tws_box_event_entry(BTA_TWS_OPEN);
 	bta_tws_enable_freeman_mode(true); 
-    bta_tws_enable_pairing_mode(true);
+    sndp_tws_enable_pairing_mode();
     
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
@@ -476,7 +476,7 @@ void sndp_enter_mobile_pairing_after_tws_connected(void)
     sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
         
     bta_tws_box_event_entry(BTA_TWS_OPEN);
-    bta_tws_enable_pairing_mode(true);
+    sndp_tws_enable_pairing_mode();
 
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
@@ -496,7 +496,7 @@ void sndp_tws_enter_mobile_pairing_after_mobile_disconnect(void)
     sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
         
     bta_tws_box_event_entry(BTA_TWS_OPEN);
-    bta_tws_enable_pairing_mode(true);
+    sndp_tws_enable_pairing_mode();
 
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);

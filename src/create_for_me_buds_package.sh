@@ -9,7 +9,7 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
   exit 1
 fi
 
-SOFTWARE_VERSION="$(grep -E '^[[:space:]]*(export[[:space:]]+)?SOFTWARE_VERSION[[:space:]]*\?=' "$CONFIG_FILE" | sed -E 's/^[[:space:]]*(export[[:space:]]+)?SOFTWARE_VERSION[[:space:]]*\?=[[:space:]]*"?(.*?)"?$/\2/' | head -n 1)"
+SOFTWARE_VERSION="$(grep -E '^[[:space:]]*(export[[:space:]]+)?SOFTWARE_VERSION[[:space:]]*\?=' "$CONFIG_FILE" | sed -E 's/^[[:space:]]*(export[[:space:]]+)?SOFTWARE_VERSION[[:space:]]*\?=[[:space:]]*"?(.*?)"?$/\2/' | head -n 1 | tr -d '\r')"
 
 if [ -z "$SOFTWARE_VERSION" ]; then
   echo "ERROR: SOFTWARE_VERSION not found in $CONFIG_FILE" >&2
