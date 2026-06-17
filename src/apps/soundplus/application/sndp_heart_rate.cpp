@@ -79,6 +79,7 @@
 typedef struct {
     bool hr_running;
     bool sleep_running;
+    bool sleep_tracking;
     bool ppg_notification;
     bool acc_notification;
     uint8_t sampling_rate;
@@ -136,7 +137,6 @@ POSSIBLY_UNUSED static uint16_t hr_measure_time = 0;
 POSSIBLY_UNUSED static int16_t sleep_app_accel[90];
 POSSIBLY_UNUSED static uint8_t sleep_screen_status[30];
 POSSIBLY_UNUSED static uint8_t sleep_sound_state;
-POSSIBLY_UNUSED static uint16_t sleep_analysis_time = 0;
 
 
 /**************************************************************************************************
@@ -446,22 +446,16 @@ static void sndp_hr_process_thread(void const *argument)
                 sndp_comm_cmd_sleepapp_report_hr(hrv_ptr, (uint8_t*)&dbbeats_data);
         }
         
-        if(hr_ctx.sleep_running) {
-            sleep_analysis_time++;
+        if(hr_ctx.sleep_running && hr_ctx.sleep_tracking) {
+            hr_ctx.sleep_tracking = false;
+            SNDP_TRACE(0, "sleep analyse...");
+            // sleep_step_13: Input sensor data
+            dbbeats_put_sleep_sensor_data();
 
-            if(sleep_analysis_time >= 30) {
-                sleep_analysis_time = 0;
-                SNDP_TRACE(0, "sleep analyse...");
-                
-                // sleep_step_13: Input sensor data
-                dbbeats_put_sleep_sensor_data();
-
-                dbbeats_put_sleep_app_data(
-                    sleep_app_accel, 
-                    sleep_screen_status, 
-                    sleep_sound_state);
-
-            }
+            dbbeats_put_sleep_app_data(
+                sleep_app_accel, 
+                sleep_screen_status, 
+                sleep_sound_state);
         }
 #endif
 
@@ -638,6 +632,7 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 
     hr_measure_time = 0;
     hr_ctx.sleep_running = false;
+    hr_ctx.sleep_tracking = false;
     hr_ctx.hr_running = true;
 }
 
@@ -648,6 +643,7 @@ void sndp_hr_mearsuring_stop(void)
     // hr_setp_10: 停止处理
     hr_ctx.hr_running = false;
     hr_ctx.sleep_running = false;
+    hr_ctx.sleep_tracking = false;
 
     // hr_setp_11: 停止读取ppg数据
     sndp_hr_switch_reading_ppg(false);
@@ -675,6 +671,8 @@ void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
     memcpy(sleep_app_accel, accel_data_m, sizeof(sleep_app_accel));
     memcpy(sleep_screen_status, screen_status, sizeof(sleep_screen_status));
     sleep_sound_state = sound_state;
+
+    hr_ctx.sleep_tracking = true;
 }
 // Define callback function
 void sndp_sleep_analysis_callback(int8_t *sleep_stage,
@@ -715,9 +713,9 @@ void sndp_sleep_analysis_start(int32_t sleep_control)
     // sleep_step_3:打开读取PPG数据。
     sndp_hr_switch_reading_ppg(true);
 
-    sleep_analysis_time = 0;
     hr_ctx.hr_running = true;
     hr_ctx.sleep_running = true;
+    hr_ctx.sleep_tracking = false;
     
 }
 
@@ -728,7 +726,8 @@ void sndp_sleep_analysis_stop(void)
     // hr_setp_17: 停止处理
     hr_ctx.hr_running = false;
     hr_ctx.sleep_running = false;
-    
+    hr_ctx.sleep_tracking = false;
+
     // hr_setp_18: 停止读取ppg数据
     sndp_hr_switch_reading_ppg(false);
 
@@ -754,6 +753,7 @@ void sndp_ppg_notification_start(void)
 
     hr_ctx.hr_running = false;
     hr_ctx.sleep_running = false;
+    hr_ctx.sleep_tracking = false;
     hr_ctx.ppg_notification = true;
     hr_ctx.acc_notification = false;
 
@@ -790,6 +790,7 @@ void sndp_acc_notification_start(void)
 
     hr_ctx.hr_running = false;
     hr_ctx.sleep_running = false;
+    hr_ctx.sleep_tracking = false;
     hr_ctx.ppg_notification = false;
     hr_ctx.acc_notification = true;
 
