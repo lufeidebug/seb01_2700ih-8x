@@ -267,6 +267,14 @@ void sndp_clean_user_record(void);
 #endif
 void sndp_play_findme(void);
 unsigned int sndp_get_current_time(void);
+int sndp_hal_user_timer0_is_enabled(void);
+void sndp_hal_user_timer0_start(uint32_t load);
+void sndp_hal_user_timer0_stop(void);
+void sndp_hal_user_timer0_setup(int type, void(*handler)(uint32_t elapsed));
+int sndp_hal_user_timer1_is_enabled(void);
+void sndp_hal_user_timer1_start(uint32_t load);
+void sndp_hal_user_timer1_stop(void);
+void sndp_hal_user_timer1_setup(int type, void(*handler)(uint32_t elapsed));
 #ifdef __cplusplus
 }
 #endif

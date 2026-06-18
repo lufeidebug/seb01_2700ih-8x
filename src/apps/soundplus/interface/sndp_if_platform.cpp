@@ -44,7 +44,7 @@
 #include "sndp_if_device.h"
 #include "sndp_if_platform.h"
 #include "sndp_if_data_access.h"
-
+#include "hal_timer_user_irq.h"
 
 #if defined(__SNDP_ALG_APPLICATION__)
 #include "sndp_algo_app.h"
@@ -1711,6 +1711,46 @@ void sndp_bt_switch(bool onoff, bool sync)
 unsigned int sndp_get_current_time(void)
 {
 	return TICKS_TO_MS(hal_sys_timer_get());
+}
+
+int sndp_hal_user_timer0_is_enabled(void)
+{
+    return hal_user_timer0_is_enabled();
+}
+
+void sndp_hal_user_timer0_start(uint32_t load)
+{
+    hal_user_timer0_start(load);
+}
+
+void sndp_hal_user_timer0_stop(void)
+{
+    hal_user_timer0_stop();
+}
+
+void sndp_hal_user_timer0_setup(int type, void(*handler)(uint32_t elapsed))
+{
+    hal_user_timer0_setup((HAL_TIMER_TYPE_T)type, (HAL_TIMER_IRQ_HANDLER_T)handler);
+}
+
+int sndp_hal_user_timer1_is_enabled(void)
+{
+    return hal_user_timer1_is_enabled();
+}
+
+void sndp_hal_user_timer1_start(uint32_t load)
+{
+    hal_user_timer1_start(load);
+}
+
+void sndp_hal_user_timer1_stop(void)
+{
+    hal_user_timer1_stop();
+}
+
+void sndp_hal_user_timer1_setup(int type, void(*handler)(uint32_t elapsed))
+{
+    hal_user_timer1_setup((HAL_TIMER_TYPE_T)type, (HAL_TIMER_IRQ_HANDLER_T)handler);
 }
 #endif	/* __SNDP_PROJ__ */
 

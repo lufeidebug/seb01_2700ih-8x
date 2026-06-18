@@ -24,7 +24,7 @@ typedef enum {
 typedef void (*sndp_hal_hr_read_ppg_callback)(int32_t *data, uint16_t cnt);
 typedef void (*sndp_hal_hr_calib_callback)(uint8_t *data, uint16_t data_len);
 typedef void (*sndp_hal_hr_ppg_test_mode_callback)(uint8_t *data, uint16_t data_len);
-
+typedef void (*sndp_hal_hr_ppg_samples_callback)(uint16_t data);
 
 typedef struct {
     /**
@@ -123,6 +123,14 @@ typedef struct {
      */
     int32_t (* read_chip_id)(uint8_t *chipid);
 
+    int32_t (* samples_measurement_stop)(void);
+    /** 
+    int32_t (* samples_measurement_start)(void);
+     * return: 0 no error.
+     */
+    int32_t (* samples_measurement_start)(int duration_s);
+
+    int32_t (* read_samples_rate)(sndp_hal_hr_ppg_samples_callback callback);
 
 } sndp_hal_hr_s;
 
@@ -150,8 +158,8 @@ int32_t sndp_hal_hr_switch_ppg_test_mode(uint8_t en);
 int32_t sndp_hal_hr_switch_operation_mode(sndp_hal_hr_operation_mode_e op_mode);
 
 int32_t sndp_hal_hr_read_chip_id(uint8_t *chipid);
-
-
+int32_t sndp_hal_hr_samples_measurement_start(int duration_s);
+int32_t sndp_hal_hr_read_samples_rate(sndp_hal_hr_ppg_samples_callback callback);
 #ifdef __cplusplus
 }
 #endif

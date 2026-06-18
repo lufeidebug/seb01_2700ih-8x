@@ -16,6 +16,7 @@ typedef struct {
 
 typedef void (*sndp_hal_acc_read_raw_data_callback)(sndp_hal_acc_data_s *data, uint16_t cnt);
 typedef void (*sndp_hal_acc_calibration_rsp_func)(uint8_t *data, uint16_t data_len);
+typedef void (*sndp_hal_acc_samples_callback)(uint16_t data);
 
 typedef struct {
     /**
@@ -97,6 +98,13 @@ typedef struct {
 
     int32_t (* read_raw_data)(sndp_hal_acc_data_s *acc_data);
 
+    /** 
+        int32_t (* samples_measurement_start)(void);
+     * return: 0 no error.
+     */
+    int32_t (* samples_measurement_start)(int duration_s);
+
+    int32_t (* read_samples_rate)(sndp_hal_acc_samples_callback callback);
 } sndp_hal_acc_s;
 
 int32_t sndp_hal_acc_init(void);
@@ -115,8 +123,8 @@ int32_t sndp_hal_acc_write_reg(uint8_t reg_addr, uint8_t reg_val);
 int32_t sndp_hal_acc_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
 int32_t sndp_hal_acc_read_chip_id(uint8_t *chipid);
 int32_t sndp_hal_acc_read_raw_data(sndp_hal_acc_data_s *acc_data);
-
-
+int32_t sndp_hal_acc_samples_measurement_start(int duration_s);
+int32_t sndp_hal_acc_read_samples_rate(sndp_hal_acc_samples_callback callback);
 #ifdef __cplusplus
 }
 #endif

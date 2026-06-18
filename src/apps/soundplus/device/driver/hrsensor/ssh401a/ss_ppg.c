@@ -33,6 +33,7 @@ static unsigned char g_fifo_onoff = 0;
 static unsigned char g_proximity_sta = 0;
 static SS_PPG ppg_buf[64];
 static unsigned char g_ppg_test_mode = 0; //0:disable, 1:enable
+static unsigned int g_ppg_samples_count = 0;
 
 static const float g_led_range_list[] = {
     CURRENT_RANGE_16_7,
@@ -534,6 +535,16 @@ int ss_ppg_interrupt_setting(SensorInterrupt sensor_int, unsigned char is_enable
     return os_api_i2c_write_byte(REG_INTREEUPT_CONF, val);
 }
 
+unsigned int ss_ppg_get_ppg_samples_count(void)
+{
+    return g_ppg_samples_count;
+}
+
+void ss_ppg_clear_ppg_samples_count(void)
+{
+    g_ppg_samples_count = 0;
+}
+
 void ss_ppg_interrupt_handler(void)
 {
     unsigned char fifo_count = 0;
@@ -590,6 +601,7 @@ void ss_ppg_interrupt_handler(void)
 
     //notify PPG data
     int data_count = ss_ppg_mem_get_fifo_data_count();
+    g_ppg_samples_count += data_count;
     if (data_count > 0)
     {
         ss_ppg_interrupt_clear();

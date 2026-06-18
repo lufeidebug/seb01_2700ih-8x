@@ -523,6 +523,9 @@ int ss_ppg_close_fifo(void);
 
 int ss_ppg_test_mode_switch(unsigned char en);
 
+unsigned int ss_ppg_get_ppg_samples_count(void);
+
+void ss_ppg_clear_ppg_samples_count(void);
 
 #ifdef __cplusplus
 }

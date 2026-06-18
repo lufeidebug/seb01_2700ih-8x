@@ -57,6 +57,8 @@ int32_t da217e_close_fifo_int(void);
 void da217e_drv_deal_tap_interruption(void);
 void da217e_drv_deal_fifo_interruption(void);
 void da217e_drv_deal_fifo_polling(void);
+uint32_t da217e_get_acc_samples_count(void);
+void da217e_clear_acc_samples_count(void);
 int32_t da217e_close_fifo(void);
 int32_t da217e_open_fifo(void);
 

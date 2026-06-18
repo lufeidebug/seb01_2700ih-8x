@@ -141,7 +141,7 @@ bool sndp_hr_is_reading_ppg_enabled(void);
 void sndp_hr_switch_reading_ppg(bool onoff);
 bool sndp_hr_is_reading_acc_enabled(void);
 void sndp_hr_switch_reading_acc_raw_data(bool onoff);
-
+bool sndp_hr_is_ppg_notification_enabled(void);
 
 
 #ifdef __cplusplus

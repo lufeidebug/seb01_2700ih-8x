@@ -2823,6 +2823,87 @@ POSSIBLY_UNUSED uint32_t sleep_comm_cmd_recv_app_ppg_test_mode(sleep_app_comm_cm
     return 0;
 }
 
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_test(sleep_app_comm_cmd_info_s *cmd_info)
+{
+    /*
+        Byte0	Sensor Type
+        0x00: PPG
+        0x01: Accelerometer
+        Byte1	Measurement Duration
+        0x01: 1sec
+        0x02: 2sec
+        0x03: 3sec    
+    */
+    uint8_t sensor_type = cmd_info->value[0];
+    uint8_t measurement_duration = cmd_info->value[1];
+    if(sensor_type == 0x00){
+        if(sndp_hr_is_ppg_notification_enabled()){
+            sndp_hal_hr_read_samples_rate(sndp_comm_cmd_sleepapp_report_ppg_samples);
+            sndp_hal_hr_samples_measurement_start(measurement_duration);
+        }else{
+            cmd_info->value[0] = 0xff; 
+            cmd_info->data_len = 0x02;
+            sndp_sleep_comm_main_rsp_cmd(cmd_info);
+        }
+    }
+    else if(sensor_type == 0x01)
+    {
+        if(sndp_hr_is_reading_acc_enabled()){
+            sndp_hal_acc_read_samples_rate(sndp_comm_cmd_sleepapp_report_acc_samples);
+            sndp_hal_acc_samples_measurement_start(measurement_duration);
+        }else{
+            cmd_info->value[0] = 0xff; 
+            cmd_info->data_len = 0x02;
+            sndp_sleep_comm_main_rsp_cmd(cmd_info);
+        }
+    }
+
+    return 0;
+}
+
+void sndp_comm_cmd_sleepapp_report_ppg_samples(uint16_t sensor_samples)
+{
+    if(!sndp_comm_ble_is_connected())
+    {
+        COMM_CMD_TRACE(0, "BLE is not connected, stop ppg samples reporting");
+        return;
+    }
+    uint8_t data_len = 0;
+    uint16_t ppg_sample_rate = 64;
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
+    memset(cmd->value, 0, sizeof(cmd->value));
+    cmd->value[data_len++] = 0x00;
+    cmd->value[data_len++] = (uint8_t)(ppg_sample_rate >> 8);
+    cmd->value[data_len++] = (uint8_t)(ppg_sample_rate & 0xFF);
+    cmd->value[data_len++] = (uint8_t)((sensor_samples>>8) & 0xFF);
+    cmd->value[data_len++] = (uint8_t)(sensor_samples & 0xFF);
+    cmd->flag = AppFlag;
+    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+    cmd->cmd = SLEEP_APP_CMDID_SENSOR_SAMPLE_RATE_REPORT;
+    sleep_app_comm_main_send_cmd(cmd);  
+}
+
+void sndp_comm_cmd_sleepapp_report_acc_samples(uint16_t sensor_samples)
+{
+    if(!sndp_comm_ble_is_connected())
+    {
+        COMM_CMD_TRACE(0, "BLE is not connected, stop acc samples reporting");
+        return;
+    }
+    uint8_t data_len = 0;
+    uint16_t acc_sample_rate = 125;
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
+    memset(cmd->value, 0, sizeof(cmd->value));
+    cmd->value[data_len++] = 0x01;
+    cmd->value[data_len++] = (uint8_t)((acc_sample_rate >> 8) & 0xFF);
+    cmd->value[data_len++] = (uint8_t)(acc_sample_rate & 0xFF);
+    cmd->value[data_len++] = (uint8_t)((sensor_samples>>8) & 0xFF);
+    cmd->value[data_len++] = (uint8_t)(sensor_samples & 0xFF);
+    cmd->flag = AppFlag;
+    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+    cmd->cmd = SLEEP_APP_CMDID_SENSOR_SAMPLE_RATE_REPORT;
+    sleep_app_comm_main_send_cmd(cmd);  
+}
 
 uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
                                                     uint16_t position_and_control,
@@ -3464,6 +3545,7 @@ static const sndp_sleep_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
     { SLEEP_APP_CMDID_STOP_SLEEP,                     "APP_STOP_SLEEP",                     sleep_comm_cmd_recv_app_stop_sleep },
     { SLEEP_APP_CMDID_WEAR_STATE_UPDATE,              "APP_WEAR_STATE",                     sleep_comm_cmd_recv_app_wear_state },
     { SLEEP_APP_CMDID_PPG_TEST_MODE,                  "APP_PPG_TEST_MODE",                  sleep_comm_cmd_recv_app_ppg_test_mode },
+    { SLEEP_APP_CMDID_SENSOR_TEST,                    "APP_SENSOR_TEST",                    sleep_comm_cmd_recv_app_sensor_test  },
 };
 
 

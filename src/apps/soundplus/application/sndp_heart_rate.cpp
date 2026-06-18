@@ -522,7 +522,7 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 
     if(hr_ctx.dump_state) {
         if(cnt > 0) {
-            HR_TRACE(0, "ppg notification, cnt=%d", cnt);
+            // HR_TRACE(0, "ppg notification, cnt=%d", cnt);
             // DUMP32("%08X ", data, cnt);
             
             //report PPG data
@@ -554,7 +554,7 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
     if(hr_ctx.dump_state) {
         if(cnt > 0) {
             //report ACC data
-                HR_TRACE(0, "acc notification, cnt=%d", cnt);
+                // HR_TRACE(0, "acc notification, cnt=%d", cnt);
             sndp_comm_cmd_sleepapp_report_acc_ntf((int16_t *)data, cnt * 3);
             // sndp_comm_cmd_sleepapp_report_acc_ntf_debug((int16_t *)data, cnt * 3);
         }
@@ -682,7 +682,7 @@ void sndp_sleep_analysis_callback(int8_t *sleep_stage,
 {
     // sleep_step_14: analysis result
     if (result_code == 1) {
-        SNDP_TRACE(0, "Sleep position: %d\n", sleep_position);
+        // SNDP_TRACE(0, "Sleep position: %d\n", sleep_position);
         // sleep_step_15: Use sleep_stage[0~39]
 
         // sleep_step_16: report data to app via ble.
@@ -736,6 +736,11 @@ void sndp_sleep_analysis_stop(void)
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
+}
+
+bool sndp_hr_is_ppg_notification_enabled(void)
+{
+    return hr_ctx.ppg_notification;   
 }
 
 void sndp_ppg_notification_start(void)

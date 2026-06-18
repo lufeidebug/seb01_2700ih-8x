@@ -78,6 +78,7 @@ ccflags-y +=  \
 	-Ibthost/host/src/service/audio_policy/bt_focus/inc \
 	-Ibthost/host/src/service/audio_policy/tws/inc \
 	-Ibthost/host/src/service/module/ibrt/inc \
+    -Iplatform/drivers/ana \
 	-Iutils/hsm
 
 subdir-ccflags-y += \
