@@ -15,6 +15,7 @@
 
 /** @private */
 #include "ss_util_ring_buffer.h"
+#include "hal_timer.h"
 
 /** @private */
 static unsigned char _g_interrupt_clear_mode = 1;
@@ -34,6 +35,12 @@ static unsigned char g_proximity_sta = 0;
 static SS_PPG ppg_buf[64];
 static unsigned char g_ppg_test_mode = 0; //0:disable, 1:enable
 static unsigned int g_ppg_samples_count = 0;
+static unsigned int g_ppg_read_samples_count = 0;
+static float g_ppg_sample_rate = 0;
+static unsigned int g_ppg_start_time = 0;
+static unsigned int g_ppg_end_time = 0;
+static bool g_ppg_samples_measurement_started = false;
+static uint32_t g_ppg_samples_duration = 0;
 
 static const float g_led_range_list[] = {
     CURRENT_RANGE_16_7,
@@ -545,6 +552,24 @@ void ss_ppg_clear_ppg_samples_count(void)
     g_ppg_samples_count = 0;
 }
 
+void ss_ppg__start_acc_samples_measurement(int duration_s)
+{
+    g_ppg_samples_count = 0;
+    g_ppg_read_samples_count = 0;
+    g_ppg_sample_rate = 0;
+    g_ppg_start_time = 0;
+    g_ppg_end_time = 0;
+    g_ppg_samples_measurement_started = true;
+    if(duration_s == 1){
+        g_ppg_samples_duration = 3; 
+    }else if(duration_s == 2){
+        g_ppg_samples_duration = 5;
+    }else if(duration_s == 3){
+        g_ppg_samples_duration = 7;
+    }
+    // os_api_print_log("PPG Samples Measurement Started %d\r\n", duration_s);
+}
+
 void ss_ppg_interrupt_handler(void)
 {
     unsigned char fifo_count = 0;
@@ -601,7 +626,7 @@ void ss_ppg_interrupt_handler(void)
 
     //notify PPG data
     int data_count = ss_ppg_mem_get_fifo_data_count();
-    g_ppg_samples_count += data_count;
+
     if (data_count > 0)
     {
         ss_ppg_interrupt_clear();
@@ -623,6 +648,25 @@ void ss_ppg_interrupt_handler(void)
         }
         else
         {
+            if(g_ppg_samples_measurement_started)
+            {
+                g_ppg_read_samples_count++;
+                g_ppg_samples_count += data_count;
+                if(g_ppg_read_samples_count == 1){
+                    g_ppg_samples_count = 0; // Reset sample count for new interval
+                    g_ppg_start_time = TICKS_TO_MS(hal_sys_timer_get());
+                }else if(g_ppg_read_samples_count == g_ppg_samples_duration){
+                    g_ppg_end_time = TICKS_TO_MS(hal_sys_timer_get());
+                    g_ppg_sample_rate = (float)g_ppg_samples_count / ((float)(g_ppg_end_time - g_ppg_start_time)/1000.0);
+                    os_api_callback_ppg_read_samplerate((uint16_t)(g_ppg_sample_rate*100));
+                    // os_api_print_log("PPG Rate: %d Hz %d sps:%d\r\n", (int)(g_ppg_sample_rate*100),(g_ppg_end_time - g_ppg_start_time), g_ppg_samples_count);
+                    g_ppg_read_samples_count = 0;
+                    g_ppg_samples_count = 0;
+                    g_ppg_samples_measurement_started = false;
+                }
+                
+            }
+
             os_api_callback_ppg_data(ppg_buf, data_count);
         }
     }

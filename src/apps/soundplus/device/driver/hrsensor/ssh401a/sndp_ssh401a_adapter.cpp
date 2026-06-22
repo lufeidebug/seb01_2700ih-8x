@@ -372,29 +372,15 @@ void ssh401a_irq_debounce(void)
     
 }
 #endif
-static int ssh401_duration_s = 0; // Duration in seconds for which the timer is set
 static sndp_hal_hr_ppg_samples_callback ssh401a_hr_ppg_samples_callback = NULL;
-void ssh401_samples_measurement_timer(uint32_t timer_id)
+void ssh401_samples_rate_callback(uint16_t samplerate)
 {
-    float ssh401_freq = 0.0;
-    uint16_t samplesrate = 0;
-    ssh401_freq = 1000.0 / (1000.0 / ((float)ss_ppg_get_ppg_samples_count() / ssh401_duration_s));
-    samplesrate = (uint16_t)(ssh401_freq*100);
-    // SSH401A_TRACE(2, "samples count %d freq:%d", ss_ppg_get_ppg_samples_count(), samplesrate);
-    if(ssh401a_hr_ppg_samples_callback) {
-        sndp_call_func_in_app_thread((uint32_t)ssh401a_hr_ppg_samples_callback, samplesrate, 0, 0);
-    }
+    sndp_call_func_in_app_thread((uint32_t)ssh401a_hr_ppg_samples_callback, samplerate, 0, 0);
 }
 
-int32_t ssh401_samples_measurement_timer_start(int duration_s)
+int32_t ssh401_samples_measurement_start(int duration_s)
 {
-    ssh401_duration_s = duration_s;
-    // SSH401A_TRACE(1, "duration_s=%d", ssh401_duration_s);
-    if(sndp_hal_user_timer0_is_enabled() == false){
-        sndp_hal_user_timer0_setup(HAL_TIMER_TYPE_ONESHOT, ssh401_samples_measurement_timer);
-    }
-    sndp_hal_user_timer0_start(US_TO_FAST_TICKS(ssh401_duration_s * 1000000));
-    ss_ppg_clear_ppg_samples_count();
+    ss_ppg__start_acc_samples_measurement(duration_s);
     return SNDP_HAL_RET_OK;
 }
 
@@ -489,6 +475,7 @@ int32_t ssh401a_init(void)
     ssh401a_os_api_config.callback_proximity_interrupt = ssh401a_callback_proximity_interrupt;
     ssh401a_os_api_config.callback_ppg_data = ssh401a_callback_ppg_data;
     ssh401a_os_api_config.callback_ppg_test_data = ssh401a_callback_ppg_test_data;
+    ssh401a_os_api_config.callback_ppg_read_samplerate = ssh401_samples_rate_callback;
     
     ss_os_api_config(&ssh401a_os_api_config);
 
@@ -707,7 +694,7 @@ extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .switch_ppg_test_mode           = ssh401a_switch_ppg_test_mode,
     .switch_operation_mode          = ssh401a_switch_operation_mode,
     .read_chip_id                   = ssh401a_read_chip_id,
-    .samples_measurement_start      = ssh401_samples_measurement_timer_start,
+    .samples_measurement_start      = ssh401_samples_measurement_start,
     .read_samples_rate              = ssh401a_read_samples_rate,
 };
 

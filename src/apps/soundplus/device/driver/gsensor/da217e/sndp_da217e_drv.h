@@ -26,7 +26,7 @@ typedef struct {
 
     void (* read_fifo_cb)(da217e_drv_acc_data_s *data, uint16_t cnt);
     
-
+    void (* read_samples_rate)(uint16_t data);
 } da217e_drv_if_s;
 
 
@@ -64,7 +64,7 @@ int32_t da217e_open_fifo(void);
 
 int32_t da217e_read_chipid(uint8_t *chip_id);
 int32_t da217e_drv_init(da217e_drv_if_s * drv_if);
-
+void da217e_start_acc_samples_measurement(int duration_s);
 
 
 #ifdef __cplusplus

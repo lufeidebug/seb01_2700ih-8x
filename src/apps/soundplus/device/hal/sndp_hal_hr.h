@@ -122,8 +122,6 @@ typedef struct {
      * return: 0 no error.
      */
     int32_t (* read_chip_id)(uint8_t *chipid);
-
-    int32_t (* samples_measurement_stop)(void);
     /** 
     int32_t (* samples_measurement_start)(void);
      * return: 0 no error.

@@ -314,29 +314,15 @@ static void da217e_int2_irq_handler(enum HAL_GPIO_PIN_T pin)
 #endif
 }
 #else
-static int da217e_duration_s = 0; // Duration in seconds for which the timer is set
 static sndp_hal_acc_samples_callback da217e_acc_samples_callback = NULL;
-void da217e_samples_measurement_timer(uint32_t timer_id)
+void da217e_sample_rate_callback(uint16_t samplerate)
 {
-    float da217e_freq = 0.0;
-    uint16_t samplesrate = 0;
-    da217e_freq = 1000.0 / (1000.0 / ((float)da217e_get_acc_samples_count() / (float)da217e_duration_s));
-    samplesrate = (uint16_t)(da217e_freq*100);
-    // DA217E_TRACE(2, "samples count %d, freq:%d", da217e_get_acc_samples_count(), samplesrate);
-    if(da217e_acc_samples_callback) {
-        sndp_call_func_in_app_thread((uint32_t)da217e_acc_samples_callback, samplesrate, 0, 0);
-    }
+    sndp_call_func_in_app_thread((uint32_t)da217e_acc_samples_callback, samplerate, 0, 0);
 }
 
-int32_t da217e_samples_measurement_timer1_start(int duration_s)
+int32_t da217e_samples_measurement_start(int duration_s)
 {
-    da217e_duration_s = duration_s;
-    // DA217E_TRACE(1, "duration_s=%d", da217e_duration_s);
-    if(sndp_hal_user_timer1_is_enabled() == false){
-        sndp_hal_user_timer1_setup(HAL_TIMER_TYPE_ONESHOT, da217e_samples_measurement_timer);
-    }
-    sndp_hal_user_timer1_start(US_TO_FAST_TICKS(da217e_duration_s * 1000000));
-    da217e_clear_acc_samples_count();
+    da217e_start_acc_samples_measurement(duration_s);
     return SNDP_HAL_RET_OK;
 }
 
@@ -424,7 +410,7 @@ int32_t da217e_init(void)
     drv_if.delay_ms = da217e_delay_ms;
     drv_if.tap_event_cb = da217e_tap_event;
     drv_if.read_fifo_cb = da217e_read_fifo_cb;
-        
+    drv_if.read_samples_rate = da217e_sample_rate_callback;
     if(da217e_drv_init(&drv_if)) {
         DA217E_TRACE(0, "fail.");
         return SNDP_HAL_RET_FAIL;
@@ -577,7 +563,7 @@ extern "C" const sndp_hal_acc_s sndp_acc_da217e = {
     .read_reg                       = da217e_read_reg,
     .read_chip_id                   = da217e_read_chip_id,
     .read_raw_data                  = da217e_read_raw_data,
-    .samples_measurement_start      = da217e_samples_measurement_timer1_start,
+    .samples_measurement_start      = da217e_samples_measurement_start,
     .read_samples_rate              = da217e_read_samples_rate,
 };
 

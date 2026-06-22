@@ -2837,7 +2837,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_test(sleep_app_co
     uint8_t sensor_type = cmd_info->value[0];
     uint8_t measurement_duration = cmd_info->value[1];
     if(sensor_type == 0x00){
-        if(sndp_hr_is_ppg_notification_enabled()){
+        if(sndp_hr_is_ppg_notification_enabled() || sndp_hr_mearsuring_get_dump_state()){
             sndp_hal_hr_read_samples_rate(sndp_comm_cmd_sleepapp_report_ppg_samples);
             sndp_hal_hr_samples_measurement_start(measurement_duration);
         }else{
@@ -2848,7 +2848,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_test(sleep_app_co
     }
     else if(sensor_type == 0x01)
     {
-        if(sndp_hr_is_reading_acc_enabled()){
+        if(sndp_hr_is_reading_acc_enabled() || sndp_hr_mearsuring_get_dump_state()){
             sndp_hal_acc_read_samples_rate(sndp_comm_cmd_sleepapp_report_acc_samples);
             sndp_hal_acc_samples_measurement_start(measurement_duration);
         }else{

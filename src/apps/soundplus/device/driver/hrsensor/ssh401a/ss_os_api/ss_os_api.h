@@ -11,7 +11,7 @@ extern "C" {
 
 
 #include "ss_ppg.h"
-
+#include "stdint.h"
 /** @cond INTERNAL */
 #ifndef size_t
 typedef unsigned int size_t;
@@ -74,6 +74,8 @@ typedef struct
     */
 
     void (*callback_ppg_test_data)(unsigned char* fifo_data, int fifo_cnt);
+
+    void (*callback_ppg_read_samplerate)(uint16_t data);
 } SS_OS_API;
 
 
@@ -159,6 +161,7 @@ void os_api_callback_ppg_data(SS_PPG* ppg_data, int cnt);
 
 void os_api_callback_ppg_test_data(unsigned char* fifo_data, int cnt);
 
+void os_api_callback_ppg_read_samplerate(uint16_t samplerate);
 #ifdef __cplusplus
 }
 #endif

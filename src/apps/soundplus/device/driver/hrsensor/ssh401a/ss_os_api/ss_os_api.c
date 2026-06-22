@@ -235,4 +235,19 @@ void os_api_callback_ppg_test_data(unsigned char* fifo_data, int fifo_cnt)
     }
 }
 
+void os_api_callback_ppg_read_samplerate(uint16_t samplerate)
+{
+    if (g_func_config == (void*)0)
+    {
+        return;
+    }
+    else if (g_func_config->callback_ppg_read_samplerate == (void*)0)
+    {
+        return;
+    }
+    else
+    {
+        g_func_config->callback_ppg_read_samplerate(samplerate);
+    }
+}
 

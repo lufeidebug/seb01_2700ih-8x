@@ -94,7 +94,12 @@ static void da217_tap_timer_handler(void const *param);
 osTimerDef(DA217_TAP_TIMER, da217_tap_timer_handler);
 static osTimerId da217_tap_timer = NULL;
 static uint32_t da217e_acc_samples_count = 0;
-
+static unsigned int da217e_read_samples_count = 0;
+static float da217e_sample_rate = 0;
+static unsigned int da217e_start_time = 0;
+static unsigned int da217e_end_time = 0;
+static bool da217e_acc_samples_measurement_started = false;
+static uint32_t da217e_acc_samples_duration = 0;
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
@@ -433,14 +438,49 @@ void da217e_clear_acc_samples_count(void)
     da217e_acc_samples_count = 0;
 }
 
+void da217e_start_acc_samples_measurement(int duration_s)
+{
+    da217e_read_samples_count = 0;
+    da217e_acc_samples_count = 0;
+    da217e_sample_rate = 0;
+    da217e_end_time = 0;
+    da217e_start_time = 0;
+    da217e_acc_samples_measurement_started = true;
+    if(duration_s == 1){
+        da217e_acc_samples_duration = 6;
+    }else if(duration_s == 2){
+        da217e_acc_samples_duration = 11;
+    }else if(duration_s == 3){
+        da217e_acc_samples_duration = 16;
+    }
+    // DA217E_TRACE(1, "acc samples duration: %d", da217e_acc_samples_duration);
+}
+
 void da217e_drv_deal_fifo_interruption(void)
 {
     da217e_drv_acc_data_s data[32];
     int32_t num;
     
     num = da217e_read_water_int_fifo(data);
-    if(num > 0) {
+    if(da217e_acc_samples_measurement_started)
+    {
+        da217e_read_samples_count++;
         da217e_acc_samples_count += num;
+        if(da217e_read_samples_count == 1){
+            da217e_acc_samples_count = 0; // Reset sample count for new interval
+            da217e_start_time = TICKS_TO_MS(hal_sys_timer_get());
+        }else if(da217e_read_samples_count == da217e_acc_samples_duration){
+            da217e_end_time = TICKS_TO_MS(hal_sys_timer_get());
+            da217e_sample_rate = (float)da217e_acc_samples_count / ((float)(da217e_end_time - da217e_start_time)/1000.0);
+            da217e_drv_if.read_samples_rate((uint16_t)(da217e_sample_rate*100));
+            // DA217E_TRACE(3, "ACC Rate: %d Hz %d sps:%d", (int)(da217e_sample_rate*100),(da217e_end_time - da217e_start_time), da217e_acc_samples_count);
+            da217e_read_samples_count = 0;
+            da217e_acc_samples_count = 0;
+            da217e_acc_samples_measurement_started = false;
+        }    
+    }
+
+    if(num > 0) {
         if(da217e_drv_if.read_fifo_cb) {
             da217e_drv_if.read_fifo_cb(data, num);
         }
