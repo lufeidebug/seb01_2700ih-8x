@@ -79,14 +79,15 @@ static osTimerId da217e_int2_debounce_timer = NULL;
 #endif
 
 #if defined(FIFO_POLLING_OPEN)
+osSemaphoreId da217e_fifo_polling_semaphore_id = NULL;
+osSemaphoreDef(da217e_fifo_polling_semaphore);
+
 static void da217e_fifo_polling_thread(void const *argument);
 #define DA217E_FIFO_POLLING_INTERVAL_MS          (200) //ms
 #define DA217E_FIFO_POLLING_THREAD_STACK_SIZE    (1024)
 osThreadDef(da217e_fifo_polling_thread, osPriorityAboveNormal, 1, DA217E_FIFO_POLLING_THREAD_STACK_SIZE, "da217e_fifo_polling_thread");
 osThreadId da217e_fifo_polling_thread_id = NULL;
 
-osSemaphoreId da217e_fifo_polling_semaphore_id = NULL;
-osSemaphoreDef(da217e_fifo_polling_semaphore);
 static bool da217e_fifo_polling_thread_run = false;
 #endif
 
@@ -227,15 +228,18 @@ static void da217e_int2_debounce(void)
 #if defined(FIFO_POLLING_OPEN)
 static void da217e_fifo_polling_thread(void const *argument)
 {
+    osSemaphoreWait(da217e_fifo_polling_semaphore_id, 10);
     while(1) {
+        // DA217E_TRACE(1, "%d",da217e_fifo_polling_thread_run);
         if(da217e_fifo_polling_thread_run) {
             osSemaphoreWait(da217e_fifo_polling_semaphore_id, 250);
             da217e_drv_deal_fifo_interruption();
         }else {
             app_sysfreq_req(APP_SYSFREQ_USER_SNDP_ACC_POLL, APP_SYSFREQ_32K);
             osSemaphoreWait(da217e_fifo_polling_semaphore_id, osWaitForever);
+            da217e_drv_deal_fifo_interruption();
             app_sysfreq_req(APP_SYSFREQ_USER_SNDP_ACC_POLL, APP_SYSFREQ_104M);
-        }    
+        }
         // DA217E_TRACE(1, "%d",TICKS_TO_MS(hal_sys_timer_get()));
     }
 }
@@ -250,11 +254,6 @@ static void da217e_drv_fifo_polling_start(void)
     if(da217e_fifo_polling_thread_id == NULL) {
         da217e_fifo_polling_thread_id = osThreadCreate(osThread(da217e_fifo_polling_thread), NULL);
         ASSERT(da217e_fifo_polling_thread_id != NULL, "%s, %d", __func__, __LINE__);
-    }
-    
-    osSemaphoreRelease(da217e_fifo_polling_semaphore_id);
-    if(!da217e_fifo_polling_thread_run) {
-        da217e_fifo_polling_thread_run = true;
     }
 
     if(da217e_fifo_polling_thread_id && da217e_fifo_polling_semaphore_id) {
@@ -337,8 +336,12 @@ int32_t da217e_read_samples_rate(sndp_hal_acc_samples_callback callback)
 // static int da217e_interrupt_cnt = 0;
 static void da217e_int2_polling_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
+    if(!da217e_fifo_polling_thread_run) {
+        da217e_fifo_polling_thread_run = true;
+    }
     // da217e_interrupt_cnt++;
     // DA217E_TRACE(0, "enter %d cnt %d", TICKS_TO_MS(hal_sys_timer_get()), da217e_interrupt_cnt);
+    // DA217E_TRACE(0, "enter %d", TICKS_TO_MS(hal_sys_timer_get()));
     osSemaphoreRelease(da217e_fifo_polling_semaphore_id);
 }
 #endif
