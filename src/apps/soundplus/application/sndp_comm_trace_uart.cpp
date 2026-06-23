@@ -9,6 +9,7 @@
 
 #include "sndp_comm_main.h"
 #include "sndp_comm_trace_uart.h"
+#include "sndp_comm_cmd.h"
 #include "sndp_product_test.h"
 
 
@@ -47,6 +48,13 @@ static void sndp_comm_trace_uart_rx_disable_timeout_handler(void const* param)
     }
 #endif
 
+    // 日志关闭时：重启定时器，保持 UART rx 常开
+    if (!sndp_comm_cmd_is_log_output_enabled()) {
+        osTimerStart(sndp_comm_trace_rx_disable_timer, SNDP_COMM_TRACE_RX_OPEN_TIME);
+        return;
+    }
+
+    // 日志开启时：超时关闭 UART rx
 	hal_trace_rx_close();
 	sndp_comm_trace_uart_rx_disable_timer_stop();
 }
@@ -66,7 +74,7 @@ static void sndp_comm_trace_uart_rx_disable_timer_stop(void)
     }
 }
 
-void sndp_comm_trace_uart_rx_disable_timer_start(void)
+static void sndp_comm_trace_uart_rx_disable_timer_start(void)
 {
     if (sndp_comm_trace_rx_disable_timer == NULL) {
         sndp_comm_trace_rx_disable_timer = osTimerCreate(osTimer(SNDP_COMM_TRACE_RX_DISABLE_TIMER), osTimerOnce, NULL);

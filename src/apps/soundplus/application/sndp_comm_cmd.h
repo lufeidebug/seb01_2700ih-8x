@@ -228,6 +228,12 @@ typedef enum {
                                                             rsp: 2 + n bytes, error code(1) + opcode(1) + opdata(n). */
     COMM_CMDID_PT_CLICK_TEST_REPORT                 = 0x6F,	/* recv: 0 bytes, opcode(1). 
                                                             rsp: 2 + n bytes, error code(1) + opcode(1) + opdata(n). */
+    COMM_CMDID_PT_QUERY_INBOX_STATUS                = 0x70,	/* recv: 0 bytes.
+                                                            rsp: 2 bytes, error code(1) + inbox(1). */
+    COMM_CMDID_PT_START_LOOPBACK                    = 0x71,	/* recv: 0 bytes.
+                                                            rsp: 1 byte, error code(1). */
+    COMM_CMDID_PT_STOP_LOOPBACK                     = 0x72,	/* recv: 0 bytes.
+                                                            rsp: 1 byte, error code(1). */
                                                             
     /***** 与APP交互指令 *****/
     COMM_CMDID_APP_QUERY_DEV_INFO                   = 0x81,
@@ -276,6 +282,7 @@ uint32_t sndp_comm_cmd_send_pt_report_wear_status(uint8_t status);
 uint32_t sndp_comm_cmd_send_pt_test_gsensor_report(uint8_t *data, uint16_t data_len);
 uint32_t sndp_comm_cmd_send_pt_click_test_report(uint8_t tap_event);
 
+bool sndp_comm_cmd_is_log_output_enabled(void);
 
 int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd);
 

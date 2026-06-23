@@ -237,7 +237,7 @@ endif
 ifeq ($(SNDP_COMMUNICATION_MGR),1)
     KBUILD_CPPFLAGS += -D__SNDP_COMM_MGR__
 
-    export SNDP_COMM_TRACE_UART                 := 0
+    export SNDP_COMM_TRACE_UART                 := 1
     export SNDP_COMM_POGOPIN                    := 1
     export SNDP_COMM_BLE                        := 1
     export SNDP_COMM_SPP                        := 1
@@ -246,6 +246,12 @@ endif
 
 ifeq ($(SNDP_COMM_TRACE_UART),1)
     KBUILD_CPPFLAGS += -D__SNDP_COMM_TRACE_UART__
+    KBUILD_CPPFLAGS += -D__SNDP_LOG_OUTPUT_SWITCH__
+    # FT (production test) F-MIC -> SPK loopback
+    # 复用 BES 自带 app_factorymode_audioloop（通过 app_audio_sendrequest），
+    # 参数覆盖：io_path=SNDP_FT_MIC_LOOPBACK, channel=1, rate=16k
+    KBUILD_CPPFLAGS += -D__SNDP_FT_MIC_LOOPBACK__
+
 endif
 
 ifeq ($(SNDP_COMM_POGOPIN),1)

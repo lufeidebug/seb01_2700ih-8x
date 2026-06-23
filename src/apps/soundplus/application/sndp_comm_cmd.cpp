@@ -12,6 +12,8 @@
 #include "nvrecord_env.h"
 #include "factory_section.h"
 #include "app_media_player.h"
+#include "app_bt_stream.h"
+#include "app_audio.h"
 #include "app_anc.h"
 #include "iir_process.h"
 #include "app_tws_ibrt.h"
@@ -1338,6 +1340,18 @@ static uint32_t sndp_comm_cmd_recv_pt_read_algo_auth_result(sndp_comm_cmd_info_s
 	return 0;
 }
 
+static void hal_trace_log_output_switch(uint32_t en, uint32_t param1, uint32_t param2)
+{
+    hal_trace_output_enable(en ? true : false);
+}
+
+static bool sndp_comm_cmd_log_output_enabled = true;
+
+bool sndp_comm_cmd_is_log_output_enabled(void)
+{
+    return sndp_comm_cmd_log_output_enabled;
+}
+
 static uint32_t sndp_comm_cmd_recv_pt_log_output_switch(sndp_comm_cmd_info_s *cmd_info)
 {
 #if defined(__SNDP_LOG_OUTPUT_SWITCH__)     
@@ -1354,6 +1368,7 @@ static uint32_t sndp_comm_cmd_recv_pt_log_output_switch(sndp_comm_cmd_info_s *cm
 
     if(err_code == SNDP_COMM_ERROR_NONE) {
         sndp_delay_exec_start(50, (uint32_t) hal_trace_log_output_switch, log_en, 0, 0);
+        sndp_comm_cmd_log_output_enabled = log_en;
     }
     
 #else
@@ -1423,6 +1438,69 @@ static uint32_t sndp_comm_cmd_recv_pt_read_hall_status(sndp_comm_cmd_info_s *cmd
     sndp_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
+
+static uint32_t sndp_comm_cmd_recv_pt_query_inbox_status(sndp_comm_cmd_info_s *cmd_info)
+{
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    cmd_info->data[cmd_info->data_len++] = sndp_dev_iobox_is_in_box(false) ? 1 : 0;
+    sndp_comm_main_rsp_cmd(cmd_info);
+    return 0;
+}
+
+/* ====== F-MIC -> SPK production loopback (Analog MIC, stereo out) ====== */
+#if defined(__SNDP_FT_MIC_LOOPBACK__)
+/* FT_LB: 产测 loopback（复用 BES 自带 app_factorymode_audioloop，SNDP 参数在 app_factory_audio.cpp 里适配） */
+static bool s_ft_lb_is_running = false;
+
+/* 启动产测 loopback（通过 app_audio_sendrequest 走音频线程） */
+static uint32_t sndp_ft_lb_start(void)
+{
+    if (s_ft_lb_is_running)
+        return 0;
+
+    COMM_CMD_TRACE(0, "[FT_LB] start");
+    app_audio_sendrequest(APP_FACTORYMODE_AUDIO_LOOP,
+                          (uint8_t)APP_BT_SETTING_OPEN, 0);
+    s_ft_lb_is_running = true;
+    COMM_CMD_TRACE(0, "[FT_LB] request sent");
+    return 0;
+}
+
+/* 停止产测 loopback */
+static uint32_t sndp_ft_lb_stop(void)
+{
+    if (!s_ft_lb_is_running)
+        return 0;
+
+    COMM_CMD_TRACE(0, "[FT_LB] stop");
+    app_audio_sendrequest(APP_FACTORYMODE_AUDIO_LOOP,
+                          (uint8_t)APP_BT_SETTING_CLOSE, 0);
+    s_ft_lb_is_running = false;
+    COMM_CMD_TRACE(0, "[FT_LB] stop request sent");
+    return 0;
+}
+
+/* UART 0x71 handler：启动产测 loopback */
+static uint32_t sndp_comm_cmd_recv_pt_start_loopback(sndp_comm_cmd_info_s *cmd_info)
+{
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    sndp_ft_lb_start();
+    sndp_comm_main_rsp_cmd(cmd_info);
+    return 0;
+}
+
+/* UART 0x72 handler：停止产测 loopback */
+static uint32_t sndp_comm_cmd_recv_pt_stop_loopback(sndp_comm_cmd_info_s *cmd_info)
+{
+    sndp_ft_lb_stop();
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    sndp_comm_main_rsp_cmd(cmd_info);
+    return 0;
+}
+#endif /* __SNDP_FT_MIC_LOOPBACK__ */
 
 static uint32_t sndp_comm_cmd_recv_pt_test_ir(sndp_comm_cmd_info_s *cmd_info)
 {
@@ -1933,6 +2011,11 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_PT_SWITCH_ANC_MODE             , "PT_S_ANC_MODE"           , sndp_comm_cmd_recv_pt_switch_anc_mode             },
     { COMM_CMDID_PT_QUERY_NTC_INFO              , "PT_Q_NTC_INFO"           , sndp_comm_cmd_recv_pt_query_ntc_info              },
     { COMM_CMDID_PT_SWICH_CLICK_TEST            , "PT_S_CLICK_TEST"         , sndp_comm_cmd_recv_pt_switch_click_test           },
+    { COMM_CMDID_PT_QUERY_INBOX_STATUS          , "PT_Q_INBOX_STA"          , sndp_comm_cmd_recv_pt_query_inbox_status          },
+#if defined(__SNDP_FT_MIC_LOOPBACK__)
+    { COMM_CMDID_PT_START_LOOPBACK              , "PT_S_LOOPBACK"           , sndp_comm_cmd_recv_pt_start_loopback              },
+    { COMM_CMDID_PT_STOP_LOOPBACK               , "PT_E_LOOPBACK"           , sndp_comm_cmd_recv_pt_stop_loopback               },
+#endif
 #endif
     
 
@@ -1958,7 +2041,9 @@ int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd)
 #if defined(__SNDP_PRODUCT_TEST__)
     if(COMM_CMDID_IS_PT_CMD(sndp_comm_exec_cmd.cmd_id)
         && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_SWITCH_TEST_MODE
-        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_QUERY_TEST_MODE) {
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_QUERY_TEST_MODE
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_QUERY_FW_VER
+        && sndp_comm_exec_cmd.path != SNDP_COMM_PATH_TRACE_UART) {
         if(!sndp_pt_is_in_test_mode()) {
             COMM_CMD_TRACE(1, "cmd(0x%02X) rejected, not in test mode", sndp_comm_exec_cmd.cmd_id);
             sndp_comm_cmd_rsp_with_errcode(&sndp_comm_exec_cmd, SNDP_COMM_ERROR_NOT_IN_TEST_MODE);

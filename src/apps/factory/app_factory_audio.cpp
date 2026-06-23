@@ -41,6 +41,14 @@ static uint32_t app_factorymode_data_come(uint8_t *buf, uint32_t len)
     if (a2dp_cache_status == APP_AUDIO_CACHE_QTY){
         a2dp_cache_status = APP_AUDIO_CACHE_OK;
     }
+#if defined(__SNDP_FT_MIC_LOOPBACK__)
+    int16_t s0 = ((int16_t *)buf)[0];
+    int16_t s1 = ((int16_t *)buf)[1];
+    static int cap_cnt = 0;
+    if (++cap_cnt % 50 == 0) {
+        FACTORY_TRACE(1, "[FT_LB cap ] cnt=%d s=%d %d", cap_cnt, s0, s1);
+    }
+#endif
     return len;
 }
 
@@ -49,6 +57,16 @@ static uint32_t app_factorymode_more_data(uint8_t *buf, uint32_t len)
     if (a2dp_cache_status != APP_AUDIO_CACHE_QTY){
         app_audio_pcmbuff_get((uint8_t *)app_audioloop_play_cache, len/2);
         app_bt_stream_copy_track_one_to_two_16bits((int16_t *)buf, app_audioloop_play_cache, len/2/2);
+#if defined(__SNDP_FT_MIC_LOOPBACK__)
+        int16_t s0 = ((int16_t *)buf)[0];
+        int16_t s1 = ((int16_t *)buf)[1];
+        int16_t s2 = ((int16_t *)buf)[2];
+        int16_t s3 = ((int16_t *)buf)[3];
+        static int dbg_cnt = 0;
+        if (++dbg_cnt % 50 == 0) {
+            FACTORY_TRACE(1, "[FT_LB play] cnt=%d s=%d %d %d %d", dbg_cnt, s0, s1, s2, s3);
+        }
+#endif
     }
     return len;
 }
@@ -75,7 +93,13 @@ int app_factorymode_audioloop(bool on, enum APP_SYSFREQ_FREQ_T freq)
         app_audio_mempool_init();
         app_audio_mempool_get_buff(&buff_capture, BT_AUDIO_FACTORMODE_BUFF_SIZE);
         app_audio_mempool_get_buff(&buff_play, BT_AUDIO_FACTORMODE_BUFF_SIZE*2);
-        app_audio_mempool_get_buff((uint8_t **)&app_audioloop_play_cache, BT_AUDIO_FACTORMODE_BUFF_SIZE*2/2/2);
+#if defined(__SNDP_FT_MIC_LOOPBACK__)
+        // SNDP FT mic loopback: capture 为单声道，pcmbuff 装单声道帧；copy_track 把单声道扩成立体声
+        // 此 buffer 需装 1 帧单声道 = BT_AUDIO_FACTORMODE_BUFF_SIZE
+        app_audio_mempool_get_buff((uint8_t **)&app_audioloop_play_cache, BT_AUDIO_FACTORMODE_BUFF_SIZE);
+#else
+        app_audio_mempool_get_buff((uint8_t **)&app_audioloop_play_cache, BT_AUDIO_FACTORMODE_BUFF_SIZE/2);
+#endif
         app_audio_mempool_get_buff(&buff_loop, BT_AUDIO_FACTORMODE_BUFF_SIZE<<2);
         app_audio_pcmbuff_init(buff_loop, BT_AUDIO_FACTORMODE_BUFF_SIZE<<2);
         memset(&stream_cfg, 0, sizeof(stream_cfg));
@@ -98,7 +122,15 @@ int app_factorymode_audioloop(bool on, enum APP_SYSFREQ_FREQ_T freq)
         stream_cfg.device = AUD_STREAM_USE_EXT_CODEC;
 #endif
         stream_cfg.vol = TGT_VOLUME_LEVEL_15;
+#if defined(__SNDP_FT_MIC_LOOPBACK__)
+        // SNDP 产测专用：F-MIC (CH1+VMIC2) 单声道输入，配合 hal_aud.h 的 AUD_INPUT_PATH_SNDP_FT_MIC_LOOPBACK
+        stream_cfg.channel_num = AUD_CHANNEL_NUM_1;
+        stream_cfg.io_path = AUD_INPUT_PATH_SNDP_FT_MIC_LOOPBACK;
+        stream_cfg.sample_rate = AUD_SAMPRATE_16000;
+        stream_cfg.vol = TGT_VOLUME_LEVEL_8;
+#else
         stream_cfg.io_path = AUD_INPUT_PATH_MAINMIC;
+#endif
         stream_cfg.handler = app_factorymode_data_come;
 
         stream_cfg.data_ptr = BT_AUDIO_CACHE_2_UNCACHE(buff_capture);

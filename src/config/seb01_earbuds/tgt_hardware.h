@@ -225,7 +225,13 @@ extern const struct HAL_IOMUX_PIN_FUNCTION_MAP cfg_hw_pinmux_pwl[CFG_HW_PWL_NUM]
 #define SNDP_AUDIO_TEST_INPUT_PATH_NUM      (0)
 #endif   
 
-#define CFG_HW_AUD_INPUT_PATH_NUM           (6 + SNDP_AUDIO_TEST_INPUT_PATH_NUM)
+// FT (production test) F-MIC -> SPK loopback, independent from __SNDP_AUDIO_TEST__
+#if defined(__SNDP_FT_MIC_LOOPBACK__)
+#define SNDP_FT_MIC_LOOPBACK_INPUT_PATH_NUM (1)
+#else
+#define SNDP_FT_MIC_LOOPBACK_INPUT_PATH_NUM (0)
+#endif
+#define CFG_HW_AUD_INPUT_PATH_NUM           (6 + SNDP_AUDIO_TEST_INPUT_PATH_NUM + SNDP_FT_MIC_LOOPBACK_INPUT_PATH_NUM)
 
 
 extern const struct AUD_IO_PATH_CFG_T cfg_audio_input_path_cfg[CFG_HW_AUD_INPUT_PATH_NUM];

@@ -240,7 +240,12 @@ const CODEC_DAC_VOL_T codec_dac_hfp_vol[TGT_VOLUME_LEVEL_QTY] = {
 
 #if defined(__SNDP_AUDIO_TEST__)
 #define CFG_HW_AUD_INPUT_SNDP_AUDIO_TEST    (AUD_CHANNEL_MAP_CH0 | AUD_CHANNEL_MAP_CH1 | AUD_VMIC_MAP_VMIC1 | AUD_VMIC_MAP_VMIC2)
-#endif 
+#endif
+
+// FT (production test) F-MIC -> SPK loopback: FF-MIC only (CH1 in seb01_earbuds hw mapping, VMIC2 bias)
+#if defined(__SNDP_FT_MIC_LOOPBACK__)
+#define CFG_HW_AUD_INPUT_SNDP_FT_MIC_LOOPBACK   (AUD_CHANNEL_MAP_CH1 | AUD_VMIC_MAP_VMIC2)
+#endif
 
 const struct AUD_IO_PATH_CFG_T cfg_audio_input_path_cfg[CFG_HW_AUD_INPUT_PATH_NUM] = {
 #if defined(SPEECH_TX_AEC_CODEC_REF)
@@ -264,7 +269,10 @@ const struct AUD_IO_PATH_CFG_T cfg_audio_input_path_cfg[CFG_HW_AUD_INPUT_PATH_NU
     { AUD_INPUT_PATH_DC_CALIB,  CFG_HW_AUD_INPUT_PATH_DC_CALIB, },
 #if defined(__SNDP_AUDIO_TEST__)
     { AUD_INPUT_PATH_SNDP_AUDIO_TEST,  CFG_HW_AUD_INPUT_SNDP_AUDIO_TEST, },
-#endif        
+#endif
+#if defined(__SNDP_FT_MIC_LOOPBACK__)
+    { AUD_INPUT_PATH_SNDP_FT_MIC_LOOPBACK, CFG_HW_AUD_INPUT_SNDP_FT_MIC_LOOPBACK, },
+#endif
 };
 
 const struct HAL_IOMUX_PIN_FUNCTION_MAP app_battery_ext_charger_enable_cfg = {
