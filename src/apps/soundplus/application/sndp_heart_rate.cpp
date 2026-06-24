@@ -137,8 +137,12 @@ POSSIBLY_UNUSED static uint16_t hr_measure_time = 0;
 POSSIBLY_UNUSED static int16_t sleep_app_accel[90];
 POSSIBLY_UNUSED static uint8_t sleep_screen_status[30];
 POSSIBLY_UNUSED static uint8_t sleep_sound_state;
+POSSIBLY_UNUSED static int8_t sleep_stage[40];
+POSSIBLY_UNUSED static int8_t sleep_position;
+POSSIBLY_UNUSED static int8_t sound_control;
+POSSIBLY_UNUSED static int16_t result_code;
 
-
+static void sndp_sleep_analysis(void);
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
@@ -223,97 +227,9 @@ POSSIBLY_UNUSED static int acc_raw_data_queue_get_len(void)
     return queue_len;
 }
 
-const int16_t testAccData[] = {
-    246, -814, -478, 246, -814, -410, 244, -814, -482, 246,
-    -814, -480, 250, -808, -458, 246, -820, -446, 248, -816,
-    -454, 232, -822, -476, 250, -816, -476, 242, -816, -472,
-    246, -810, -454, 250, -826, -446, 246, -812, -474, 250,
-    -824, -462, 250, -812, -442, 244, -802, -422, 250, -826,
-    -446, 242, -816, -470, 242, -824, -470, 242, -824, -492,
-    248, -820, -470, 240, -820, -470, 252, -814, -462, 246,
-    -808, -484, 248, -810, -472,
-        246, -814, -478, 246, -814, -410, 244, -814, -482, 246,
-    -814, -480, 250, -808, -458, 246, -820, -446, 248, -816,
-    -454, 232, -822, -476, 250, -816, -476, 242, -816, -472,
-    246, -810, -454, 250, -826, -446, 246, -812, -474, 250,
-    -824, -462, 250, -812, -442, 244, -802, -422, 250, -826,
-    -446, 242, -816, -470, 242, -824, -470, 242, -824, -492,
-    248, -820, -470, 240, -820, -470, 252, -814, -462, 246,
-    -808, -484, 248, -810, -472,
-        246, -814, -478, 246, -814, -410, 244, -814, -482, 246,
-    -814, -480, 250, -808, -458, 246, -820, -446, 248, -816,
-    -454, 232, -822, -476, 250, -816, -476, 242, -816, -472,
-    246, -810, -454, 250, -826, -446, 246, -812, -474, 250,
-    -824, -462, 250, -812, -442, 244, -802, -422, 250, -826,
-    -446, 242, -816, -470, 242, -824, -470, 242, -824, -492,
-    248, -820, -470, 240, -820, -470, 252, -814, -462, 246,
-    -808, -484, 248, -810, -472,
-        246, -814, -478, 246, -814, -410, 244, -814, -482, 246,
-    -814, -480, 250, -808, -458, 246, -820, -446, 248, -816,
-    -454, 232, -822, -476, 250, -816, -476, 242, -816, -472,
-    246, -810, -454, 250, -826, -446, 246, -812, -474, 250,
-    -824, -462, 250, -812, -442, 244, -802, -422, 250, -826,
-    -446, 242, -816, -470, 242, -824, -470, 242, -824, -492,
-    248, -820, -470, 240, -820, -470, 252, -814, -462, 246,
-    -808, -484, 248, -810, -472,
-        246, -814, -478, 246, -814, -410, 244, -814, -482, 246,
-    -814, -480, 250, -808, -458, 246, -820, -446, 248, -816,
-    -454, 232, -822, -476, 250, -816, -476, 242, -816, -472,
-    246, -810, -454, 250, -826, -446, 246, -812, -474, 250,
-    -824, -462, 250, -812, -442, 244, -802, -422, 250, -826,
-    -446, 242, -816, -470, 242, -824, -470, 242, -824, -492,
-    248, -820, -470, 240, -820, -470, 252, -814, -462, 246,
-    -808, -484, 248, -810, -472
-};
-
-const int32_t testPpgData[] = {
-    0x0005231B, 0x00052340, 0x0005237C, 0x0005231C, 0x00052349, 0x0005239F,
-    0x000522B2, 0x0005233C, 0x00052339, 0x00052312, 0x000522EC, 0x00052327,
-    0x00052385, 0x000523C0, 0x0005226C, 0x00052333, 0x000523C8, 0x00056256,
-    0x00052273, 0x000523F0, 0x0005236E, 0x0005221F, 0x000522F8, 0x000522A8,
-    0x000522F0, 0x00052330, 0x00051351, 0x00052314, 0x000522EE, 0x0005233F,
-    0x00052346, 0x000522C2,
-    0x0005228F, 0x00052387, 0x00052337, 0x00052381, 0x00052317, 0x00052368,
-    0x000522D6, 0x00052271, 0x0005232B, 0x00052349, 0x0005232F, 0x00052397,
-    0x000523D5, 0x00052309, 0x00052373, 0x00052343, 0x000522DE, 0x000522ED,
-    0x0005231B, 0x000523DE, 0x000522C8, 0x00052351, 0x000522C3, 0x0005235F,
-    0x000523AB, 0x000522C5, 0x0005245B, 0x00052357, 0x000523CF, 0x000523EC,
-    0x00052337, 0x000523E4    
-};
-#define __SNDP_USE_ALGO__
 // #define __SNDP_RUN_ALGO_ONLY__
 static void sndp_hr_process_thread(void const *argument)
 {
-#if defined(__SNDP_RUN_ALGO_ONLY__)
-    POSSIBLY_UNUSED struct HrvIndices hrv;
-    POSSIBLY_UNUSED int8_t led;
-    POSSIBLY_UNUSED sndp_hr_dbbeats_data dbbeats_data;
-    while(1){
-        memcpy(hr_acc_raw_data, testAccData, sizeof(hr_acc_raw_data));
-        memcpy(hr_ppg_raw_data, testPpgData, sizeof(hr_ppg_raw_data));
-        dbbeats_data.is_contact = 1;
-        dbbeats_data.led_state = 50;
-        dbbeats_data.pck_interval = 1000;
-        dbbeats_put_heartrate_data(
-                hr_acc_raw_data, 
-                hr_ppg_raw_data, 
-                hr_dev_state, 
-                dbbeats_data.is_contact, 
-                dbbeats_data.led_state, 
-                HR_ACC_SECOND_ALLCH_SAMPLES, 
-                HR_PPG_SECOND_ALLCH_SAMPLES, 
-                HR_DEV_SECOND_ALLCH_SAMPLES, 
-                dbbeats_data.pck_interval);
-
-        // hr_setp_8: Return results
-        // sleep_step_8: Return results
-		memset(&hrv, 0, sizeof(struct HrvIndices));
-        dbbeats_get_heartrate_data(&hrv, &dbbeats_data.result_code, &dbbeats_data.count, &led, &debug_dump);
-        SNDP_TRACE(0, "HR: %d BPM libv: %s", hrv.HR, lib_engine_version());
-        osDelay(1000);
-    }
-#else
-    // Return results
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)    
     POSSIBLY_UNUSED struct HrvIndices hrv;
     POSSIBLY_UNUSED uint8_t* hrv_ptr = (uint8_t*)&hrv;
@@ -403,7 +319,6 @@ static void sndp_hr_process_thread(void const *argument)
         dbbeats_data.is_contact = 1;
         dbbeats_data.led_state = 50;
         dbbeats_data.pck_interval = 1000;
-#if defined(__SNDP_USE_ALGO__)
         dbbeats_put_heartrate_data(
                 hr_acc_raw_data, 
                 hr_ppg_raw_data, 
@@ -414,18 +329,11 @@ static void sndp_hr_process_thread(void const *argument)
                 HR_PPG_SECOND_ALLCH_SAMPLES, 
                 HR_DEV_SECOND_ALLCH_SAMPLES, 
                 dbbeats_data.pck_interval);
-#endif
         // hr_setp_8: Return results
         // sleep_step_8: Return results
-		 memset(&hrv, 0, sizeof(struct HrvIndices));
-#if defined(__SNDP_USE_ALGO__)
+		memset(&hrv, 0, sizeof(struct HrvIndices));
         dbbeats_get_heartrate_data(&hrv, &dbbeats_data.result_code, &dbbeats_data.count, &led, &debug_dump);
-#else
-        // for test
-        hrv.HR = 75;
-        hrv.SDNN = 50;
-        dbbeats_data.result_code = 1;
-#endif
+
 #if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)    
         end_time = hal_sys_timer_get();
         SNDP_TRACE(0, "HR algo cost: %d us", TICKS_TO_US(end_time - start_time));
@@ -448,20 +356,12 @@ static void sndp_hr_process_thread(void const *argument)
         
         if(hr_ctx.sleep_running && hr_ctx.sleep_tracking) {
             hr_ctx.sleep_tracking = false;
-            SNDP_TRACE(0, "sleep analyse...");
-            // sleep_step_13: Input sensor data
-            dbbeats_put_sleep_sensor_data();
-
-            dbbeats_put_sleep_app_data(
-                sleep_app_accel, 
-                sleep_screen_status, 
-                sleep_sound_state);
+            sndp_sleep_analysis();
         }
 #endif
 
         hr_measure_time++;
     }
-#endif
 }
 
 uint8_t sndp_hr_mearsuring_get_sampling_rate(void)
@@ -655,11 +555,6 @@ void sndp_hr_mearsuring_stop(void)
 
 }
 
-void sndp_dbbeats_put_sleep_sensor_data(void)
-{
-    dbbeats_put_sleep_sensor_data();
-}
-
 void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
                                 uint8_t screen_status[],
                                 int8_t sound_state)
@@ -674,12 +569,12 @@ void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
 
     hr_ctx.sleep_tracking = true;
 }
-// Define callback function
-void sndp_sleep_analysis_callback(int8_t *sleep_stage,
-                   int8_t sleep_position,
-                   int8_t sound_control,
-                   int16_t result_code) 
+// sleep analysis function
+static void sndp_sleep_analysis(void) 
 {
+    SNDP_TRACE(0, "sleep analyse...");
+    dbbeats_sleep_data(sleep_app_accel, sleep_screen_status, sleep_sound_state,\
+        sleep_stage, &sleep_position, &sound_control, &result_code);
     // sleep_step_14: analysis result
     if (result_code == 1) {
         // SNDP_TRACE(0, "Sleep position: %d\n", sleep_position);
@@ -704,7 +599,7 @@ void sndp_sleep_analysis_start(int32_t sleep_control)
     
     // sleep_step_1:算法初始化
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
-    dbbeats_initialize_sleep_data(sleep_control, sndp_sleep_analysis_callback);
+    dbbeats_initialize_sleep_data(sleep_control);
 #endif
 
     // sleep_step_2:打开读取加速度数据。

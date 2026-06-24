@@ -34,7 +34,7 @@ struct Dump {
 };
 
 #define SNAPSHOT_DATA_MAX_SIZE 256
-#define SNAPSHOT_PAYLOAD_SIZE  209
+#define SNAPSHOT_PAYLOAD_SIZE  213
 
 struct Snapshot {
     uint16_t size;
@@ -64,23 +64,15 @@ void dbbeats_get_heartrate_data(struct HrvIndices *hrv_indices,
                                 int8_t *led_control,
                                 struct Dump *debug_dump);
 
-typedef void (*SLEEP_CALLBACK)(int8_t *sleep_stage,
-                               int8_t sleep_position,
-                               int8_t sound_control,
-                               int16_t result_code);
+void dbbeats_initialize_sleep_data(int32_t sleep_control);
 
-void dbbeats_initialize_sleep_data(int32_t sleep_control, SLEEP_CALLBACK callback);
-
-void dbbeats_put_sleep_sensor_data(void);
-
-void dbbeats_put_sleep_app_data(int16_t accel_data_m[],
-                                uint8_t screen_status[],
-                                int8_t sound_state);
-
-void dbbeats_get_sleep_data(int8_t *sleep_stage,
-                            int8_t *sleep_position,
-                            int8_t *sound_control,
-                            int16_t *result_code);
+void dbbeats_sleep_data(int16_t accel_data_m[],
+                        uint8_t screen_status[],
+                        int8_t  sound_state,
+                        int8_t  *sleep_stage,
+                        int8_t  *sleep_position,
+                        int8_t  *sound_control,
+                        int16_t *result_code);
 
 void dbbeats_get_snapshot(struct Snapshot *out);
 void dbbeats_set_snapshot(const struct Snapshot *in);
