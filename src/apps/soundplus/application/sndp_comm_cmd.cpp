@@ -59,6 +59,10 @@
 #endif
 #endif
 
+#if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_HEART_RATE_MGR__)
+#include "sndp_sleep_role_switch.h"
+#endif
+
 #if defined(__SNDP_HEART_RATE_MGR__)
 #include "sndp_hal_hr.h"
 #endif
@@ -620,6 +624,21 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_anc_mode(sndp_comm_cmd_info_s *cmd_in
     return 0;
 }
 
+uint32_t sndp_comm_cmd_send_lr_sync_sleep_mode(uint8_t mode)
+{
+    uint8_t data = mode;
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_SLEEP_MODE, &data, 1);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_sleep_mode(sndp_comm_cmd_info_s *cmd_info)
+{
+    if(cmd_info->data_len == 1) {
+        sndp_dev_set_working_mode((sndp_dev_working_mode_e)cmd_info->data[0]);
+    }
+    return 0;
+}
+
 uint32_t sndp_comm_cmd_send_lr_sync_prompt_onoff(uint8_t onoff)
 {
     uint8_t data = onoff;
@@ -773,6 +792,34 @@ uint32_t sndp_comm_cmd_send_lr_sync_stop_heartrate_measure(void)
 uint32_t sndp_comm_cmd_recv_lr_sync_stop_heartrate_measure(sndp_comm_cmd_info_s *cmd_info)
 {
     sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_stop, 0, 0, 0);
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_lr_sync_sleep_snapshot(uint8_t *data, uint16_t data_len)
+{
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT, data, data_len);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_sleep_snapshot(sndp_comm_cmd_info_s *cmd_info)
+{
+    COMM_CMD_TRACE(0, "recv sleep snapshot, len=%d", cmd_info->data_len);
+    if (cmd_info->data_len > 0) {
+        sndp_sleep_role_switch_recv_snapshot(cmd_info->data, cmd_info->data_len);
+    }
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_lr_sync_sleep_role_switch_request(void)
+{
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_SLEEP_ROLE_SWITCH, NULL, 0);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_sleep_role_switch(sndp_comm_cmd_info_s *cmd_info)
+{
+    COMM_CMD_TRACE(0, "recv sleep role switch request");
+    sndp_sleep_role_switch_on_request();
     return 0;
 }
 #endif
@@ -1952,6 +1999,7 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
 #if defined(__SNDP_SLEEP_APP__)
     { COMM_CMDID_LR_SYNC_EQ_INDEX               , "LR_SYNC_EQ_INDEX"    , sndp_comm_cmd_recv_lr_sync_eq_set           },
     { COMM_CMDID_LR_SYNC_ANC_MODE               , "LR_SYNC_ANC_MODE"    , sndp_comm_cmd_recv_lr_sync_anc_mode           },
+    { COMM_CMDID_LR_SYNC_SLEEP_MODE             , "LR_SYNC_SLEEP_MODE"    , sndp_comm_cmd_recv_lr_sync_sleep_mode           },
     { COMM_CMDID_LR_SYNC_PROMPT_ONOFF           , "LR_SYNC_PROMPT_ONOFF"    , sndp_comm_cmd_recv_lr_sync_prompt_onoff           },
     { COMM_CMDID_LR_SYNC_GESTRUE_ONOFF           , "LR_SYNC_GESTRUE_ONOFF"    , sndp_comm_cmd_recv_lr_sync_gesture_onoff           },
     { COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF          , "LR_SYNC_SPLAYPAUSE_ONOFF"   , sndp_comm_cmd_recv_lr_sync_splaypause_onoff          },
@@ -1962,6 +2010,8 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_LR_SYNC_Proximity_Notification_DATA           , "LR_SYNC_Proximity_Notification_DATA"  , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_DATA         },
     { COMM_CMDID_LR_SYNC_START_HEARTRATE_MEASUREMENT           , "LR_SYNC_START_HR_MEASURE"  , sndp_comm_cmd_recv_lr_sync_start_heartrate_measure         },
     { COMM_CMDID_LR_SYNC_STOP_HEARTRATE_MEASUREMENT            , "LR_SYNC_STOP_HR_MEASURE"  , sndp_comm_cmd_recv_lr_sync_stop_heartrate_measure         },
+    { COMM_CMDID_LR_SYNC_SLEEP_ROLE_SWITCH                     , "LR_SYNC_SLEEP_ROLE_SWITCH" , sndp_comm_cmd_recv_lr_sync_sleep_role_switch     },
+    { COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT                       , "LR_SYNC_SLEEP_SNAPSHOT"   , sndp_comm_cmd_recv_lr_sync_sleep_snapshot          },
 #endif
     { COMM_CMDID_LR_SYNC_ALL_DEV_STATUS         , "LR_SYNC_ALL_DEV_STATUS"  , sndp_comm_cmd_recv_lr_sync_all_dev_status         },
     { COMM_CMDID_LR_SYNC_BT_ONOFF               , "LR_SYNC_BT_ONOFF"        , sndp_comm_cmd_recv_lr_sync_bt_onoff               },
@@ -2850,6 +2900,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_co
     uint32_t sleep_control = cmd_info->value[0]<<24 | cmd_info->value[1]<<16 | cmd_info->value[2]<<8 | cmd_info->value[3];
     DUMP8("0x%02x ", cmd_info->value, 4);
     COMM_CMD_TRACE(1, "sleep control=%d", sleep_control);
+    sndp_ui_working_mode_switch();
     sndp_set_sleep_control((int32_t)sleep_control);
     sndp_dev_sleep_app_set_stage_onoff(false, 0x01);
     sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_start, sleep_control, 0, 0);

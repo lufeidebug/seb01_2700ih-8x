@@ -124,11 +124,22 @@ typedef enum {
     COMM_CMDID_LR_SYNC_MOBILE_CONNECTED             = 0x38, /* desc: 左右耳同步手机已连接状态指令。
                                                              * recv: 0 bytes,
                                                              * rsp : 0 bytes */
+#if defined(__SNDP_SLEEP_APP__)
+    COMM_CMDID_LR_SYNC_SLEEP_ROLE_SWITCH             = 0x39, /* desc: 左右耳同步睡眠角色切换请求。
+                                                             * recv: 0 bytes,
+                                                             * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT               = 0x3A, /* desc: 左右耳同步睡眠算法快照。
+                                                             * recv: n bytes, snapshot data(2 bytes size + n bytes data)
+                                                             * rsp : 0 bytes */
+#endif
     COMM_CMDID_LR_SYNC_ALL_DEV_STATUS               = 0x2D, /* desc: 左右耳同步所有设备状态指令。
                                                              * recv: n bytes, 
                                                              * rsp : 0 bytes */ 
     COMM_CMDID_LR_SYNC_BT_ONOFF                     = 0x2E, /* desc: 左右耳同步BT开关指令。
                                                              * recv: 1 bytes, onoff(1)
+                                                             * rsp : 0 bytes */ 
+    COMM_CMDID_LR_SYNC_SLEEP_MODE                   = 0x2F, /* desc: 左右耳同步睡眠模式指令。
+                                                             * recv: 1 bytes, sleep mode(1)
                                                              * rsp : 0 bytes */ 
     
     /****** 生产测试指令. ******/
@@ -274,6 +285,11 @@ uint32_t sndp_comm_cmd_send_lr_sync_music_ctrl(uint8_t event);
 uint32_t sndp_comm_cmd_send_lr_sync_call_ctrl(uint8_t event);
 uint32_t sndp_comm_cmd_send_lr_sync_all_dev_status(uint8_t *data, uint16_t data_len);
 uint32_t sndp_comm_cmd_send_lr_sync_bt_onoff(uint8_t onoff);
+#if defined(__SNDP_SLEEP_APP__)
+uint32_t sndp_comm_cmd_send_lr_sync_sleep_snapshot(uint8_t *data, uint16_t data_len);
+uint32_t sndp_comm_cmd_send_lr_sync_sleep_role_switch_request(void);
+#endif
+uint32_t sndp_comm_cmd_send_lr_sync_sleep_mode(uint8_t mode);
 
 
 uint32_t sndp_comm_cmd_send_pt_test_touch(uint8_t *data, uint16_t data_len);

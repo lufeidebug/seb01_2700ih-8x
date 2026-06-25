@@ -1583,6 +1583,8 @@ char *sndp_dev_get_dev_model_name(void)
 
 void sndp_dev_set_working_mode(sndp_dev_working_mode_e mode)
 {
+		if(mode > SNDP_DEV_WORKING_MODE_SLEEP)
+        return; // Invalid mode
     sndp_dev_ctx.working_mode = mode;
     SNDP_IF_TRACE(0, "mode=%d, working_mode=%d", mode, sndp_dev_ctx.working_mode);
 }
