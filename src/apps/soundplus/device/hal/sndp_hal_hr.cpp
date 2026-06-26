@@ -144,18 +144,11 @@ int32_t sndp_hal_hr_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_l
 	return SNDP_HAL_RET_FAIL;
 }
 
-int32_t sndp_hal_hr_set_ppg_test_mode_callback(sndp_hal_hr_ppg_test_mode_callback callback)
+int32_t sndp_hal_hr_set_report_ppg_raw_data_callback(sndp_hal_hr_report_ppg_raw_data_callback callback)
 {
-    if((p_hal_hr != NULL) && (p_hal_hr->set_ppg_test_mode_callback != NULL))
-        return p_hal_hr->set_ppg_test_mode_callback(callback);
+    if((p_hal_hr != NULL) && (p_hal_hr->set_report_ppg_raw_data_callback != NULL))
+        return p_hal_hr->set_report_ppg_raw_data_callback(callback);
     return SNDP_HAL_RET_FAIL;
-}
-
-int32_t sndp_hal_hr_switch_ppg_test_mode(uint8_t en)
-{
-	if((p_hal_hr != NULL) && (p_hal_hr->switch_ppg_test_mode != NULL))
-		return p_hal_hr->switch_ppg_test_mode(en);
-	return SNDP_HAL_RET_FAIL;
 }
 
 int32_t sndp_hal_hr_switch_operation_mode(sndp_hal_hr_operation_mode_e op_mode)

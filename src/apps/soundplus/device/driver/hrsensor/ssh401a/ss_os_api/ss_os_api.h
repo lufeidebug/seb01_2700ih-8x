@@ -73,7 +73,7 @@ typedef struct
     /**< Specifies the pointer to which the PPG data read from the sensor's FIFO will be delivered on the Host MCU side.
     */
 
-    void (*callback_ppg_test_data)(unsigned char* fifo_data, int fifo_cnt);
+    void (*callback_report_ppg_raw_data)(unsigned char* fifo_data, int fifo_cnt);
 
     void (*callback_ppg_read_samplerate)(uint16_t data);
 } SS_OS_API;
@@ -159,7 +159,7 @@ void os_api_callback_proximity(unsigned char is_wearing);
  */
 void os_api_callback_ppg_data(SS_PPG* ppg_data, int cnt);
 
-void os_api_callback_ppg_test_data(unsigned char* fifo_data, int cnt);
+void os_api_callback_report_ppg_raw_data(unsigned char* fifo_data, int cnt);
 
 void os_api_callback_ppg_read_samplerate(uint16_t samplerate);
 #ifdef __cplusplus

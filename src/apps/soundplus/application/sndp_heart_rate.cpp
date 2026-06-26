@@ -419,23 +419,17 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
             osSemaphoreRelease(hr_process_wait_semaphore_id);
         }
     }
-
-    if(hr_ctx.dump_state) {
-        if(cnt > 0) {
-            // HR_TRACE(0, "ppg notification, cnt=%d", cnt);
-            // DUMP32("%08X ", data, cnt);
-            
-            //report PPG data
-            sndp_comm_cmd_sleepapp_report_ppg_ntf(data, cnt);
-            // sndp_comm_cmd_sleepapp_report_ppg_ntf_debug(data, cnt);
-            
-        }
-    }
 }
 
-static void sndp_ppg_test_mode_callback(uint8_t *data, uint16_t cnt)
+static void sndp_report_ppg_raw_data_callback(uint8_t *data, uint16_t cnt)
 {
-    sndp_comm_cmd_sleepapp_report_ppg_test_data(data, cnt);
+    if(hr_ctx.dump_state) {
+        if(cnt > 0) {
+            sndp_comm_cmd_sleepapp_report_ppg_raw_data(data, cnt);
+            //report PPG data
+            // sndp_comm_cmd_sleepapp_report_ppg_ntf(data, cnt);
+        }
+    }
 }
 
 #endif 
@@ -474,6 +468,7 @@ void sndp_hr_switch_reading_ppg(bool onoff)
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
     if(onoff) {
         sndp_hal_hr_set_reading_ppg_callback(sndp_hr_read_ppg_callback);
+        sndp_hal_hr_set_report_ppg_raw_data_callback(sndp_report_ppg_raw_data_callback);
         sndp_hal_hr_start_reading_ppg();
     } else {
         sndp_hal_hr_stop_reading_ppg();
@@ -711,27 +706,6 @@ void sndp_acc_notification_stop(void)
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
 }
-
-void sndp_ppg_test_mode_switch(uint8_t en)
-{
-    SNDP_TRACE(0, "en=%d", en);
-    
-    if(en) {
-        app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
-        
-#if defined(__SNDP_HRSENSOR_SUPPORT__)
-        sndp_hal_hr_set_ppg_test_mode_callback(sndp_ppg_test_mode_callback);
-        sndp_hal_hr_switch_ppg_test_mode(true);
-#endif
-    } else {
-#if defined(__SNDP_HRSENSOR_SUPPORT__)
-        sndp_hal_hr_switch_ppg_test_mode(false);
-#endif
-        app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
-    }
-
-}
-
 
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
 void sndp_hr_print_log(const char *msg)

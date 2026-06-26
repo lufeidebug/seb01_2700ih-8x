@@ -33,7 +33,6 @@ static Sensor g_target_sensor;
 static unsigned char g_fifo_onoff = 0;
 static unsigned char g_proximity_sta = 0;
 static SS_PPG ppg_buf[64];
-static unsigned char g_ppg_test_mode = 0; //0:disable, 1:enable
 static unsigned int g_ppg_samples_count = 0;
 static unsigned int g_ppg_read_samples_count = 0;
 static float g_ppg_sample_rate = 0;
@@ -498,7 +497,7 @@ void ss_ppg_fifo_parse(unsigned char* fifo_data, unsigned char fifo_length)
             {
                 g_pre_adc_data[fifo_header] = adc_data;
             }
-
+            // os_api_print_log("len:%d, fifo_header:%d, adc_data:%d\r\n", fifo_length, fifo_header, adc_data);
             if (fifo_header == 0 || fifo_header == 1)
                 ppg_data->seq0 = adc_data;
             else if (fifo_header == 2)
@@ -642,33 +641,26 @@ void ss_ppg_interrupt_handler(void)
         }
 
 
-        if (g_ppg_test_mode)
+        if(g_ppg_samples_measurement_started)
         {
-            os_api_callback_ppg_test_data(fifo_data, read_len);
-        }
-        else
-        {
-            if(g_ppg_samples_measurement_started)
-            {
-                g_ppg_read_samples_count++;
-                g_ppg_samples_count += data_count;
-                if(g_ppg_read_samples_count == 1){
-                    g_ppg_samples_count = 0; // Reset sample count for new interval
-                    g_ppg_start_time = TICKS_TO_MS(hal_sys_timer_get());
-                }else if(g_ppg_read_samples_count == g_ppg_samples_duration){
-                    g_ppg_end_time = TICKS_TO_MS(hal_sys_timer_get());
-                    g_ppg_sample_rate = (float)g_ppg_samples_count / ((float)(g_ppg_end_time - g_ppg_start_time)/1000.0);
-                    os_api_callback_ppg_read_samplerate((uint16_t)(g_ppg_sample_rate*100));
-                    // os_api_print_log("PPG Rate: %d Hz %d sps:%d\r\n", (int)(g_ppg_sample_rate*100),(g_ppg_end_time - g_ppg_start_time), g_ppg_samples_count);
-                    g_ppg_read_samples_count = 0;
-                    g_ppg_samples_count = 0;
-                    g_ppg_samples_measurement_started = false;
-                }
-                
+            g_ppg_read_samples_count++;
+            g_ppg_samples_count += data_count;
+            if(g_ppg_read_samples_count == 1){
+                g_ppg_samples_count = 0; // Reset sample count for new interval
+                g_ppg_start_time = TICKS_TO_MS(hal_sys_timer_get());
+            }else if(g_ppg_read_samples_count == g_ppg_samples_duration){
+                g_ppg_end_time = TICKS_TO_MS(hal_sys_timer_get());
+                g_ppg_sample_rate = (float)g_ppg_samples_count / ((float)(g_ppg_end_time - g_ppg_start_time)/1000.0);
+                os_api_callback_ppg_read_samplerate((uint16_t)(g_ppg_sample_rate*100));
+                // os_api_print_log("PPG Rate: %d Hz %d sps:%d\r\n", (int)(g_ppg_sample_rate*100),(g_ppg_end_time - g_ppg_start_time), g_ppg_samples_count);
+                g_ppg_read_samples_count = 0;
+                g_ppg_samples_count = 0;
+                g_ppg_samples_measurement_started = false;
             }
-
-            os_api_callback_ppg_data(ppg_buf, data_count);
+            
         }
+        os_api_callback_ppg_data(ppg_buf, data_count);
+        os_api_callback_report_ppg_raw_data(fifo_data, read_len);
     }
 
     os_api_free(fifo_data);
@@ -846,11 +838,5 @@ static int clear_fifo(void)
         return ret;
     
     return ss_ppg_clear_fifo();
-}
-
-int ss_ppg_test_mode_switch(unsigned char en)
-{
-    g_ppg_test_mode = en;
-    return 0;
 }
 

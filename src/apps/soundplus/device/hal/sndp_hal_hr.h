@@ -23,7 +23,7 @@ typedef enum {
 
 typedef void (*sndp_hal_hr_read_ppg_callback)(int32_t *data, uint16_t cnt);
 typedef void (*sndp_hal_hr_calib_callback)(uint8_t *data, uint16_t data_len);
-typedef void (*sndp_hal_hr_ppg_test_mode_callback)(uint8_t *data, uint16_t data_len);
+typedef void (*sndp_hal_hr_report_ppg_raw_data_callback)(uint8_t *data, uint16_t data_len);
 typedef void (*sndp_hal_hr_ppg_samples_callback)(uint16_t data);
 
 typedef struct {
@@ -103,13 +103,7 @@ typedef struct {
     /** 
      * return: 0 no error.
      */
-    int32_t (* set_ppg_test_mode_callback)(sndp_hal_hr_ppg_test_mode_callback callback);
-    
-    /** 
-     * en 0:disable, 1:enable
-     * return: 0 no error.
-     */
-    int32_t (* switch_ppg_test_mode)(uint8_t en);
+    int32_t (* set_report_ppg_raw_data_callback)(sndp_hal_hr_report_ppg_raw_data_callback callback);
 
     /** 
      * op_mode: sndp_hal_hr_operation_mode_e
@@ -151,8 +145,7 @@ int32_t sndp_hal_hr_write_proximity_threshold(uint16_t high_threshold, uint16_t 
 int32_t sndp_hal_hr_write_reg(uint8_t reg_addr, uint8_t reg_val);
 int32_t sndp_hal_hr_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len);
 
-int32_t sndp_hal_hr_set_ppg_test_mode_callback(sndp_hal_hr_ppg_test_mode_callback callback);
-int32_t sndp_hal_hr_switch_ppg_test_mode(uint8_t en);
+int32_t sndp_hal_hr_set_report_ppg_raw_data_callback(sndp_hal_hr_report_ppg_raw_data_callback callback);
 int32_t sndp_hal_hr_switch_operation_mode(sndp_hal_hr_operation_mode_e op_mode);
 
 int32_t sndp_hal_hr_read_chip_id(uint8_t *chipid);

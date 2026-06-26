@@ -107,13 +107,6 @@ void sndp_acc_notification_start(void);
  */
 void sndp_acc_notification_stop(void);
 
-/**
- * @brief       PPG Test Mode switch.
- * @param[in]   en 0:disable, 1:enable
- * @return      void
- */
-void sndp_ppg_test_mode_switch(uint8_t en);
-
 
 /**
  * @brief       Heartrate app init.

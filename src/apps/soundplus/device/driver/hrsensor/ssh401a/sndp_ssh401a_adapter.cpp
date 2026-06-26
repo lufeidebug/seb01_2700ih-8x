@@ -67,7 +67,7 @@ static osTimerId ssh401a_irq_debounce_timer = NULL;
 
 static sndp_hal_hr_read_ppg_callback ssh401a_hr_read_ppg_cb_ptr = NULL;
 static sndp_hal_hr_calib_callback ssh401a_hr_calib_cb_ptr = NULL;
-static sndp_hal_hr_ppg_test_mode_callback ssh401a_hr_ppg_test_mode_cb_ptr = NULL;
+static sndp_hal_hr_report_ppg_raw_data_callback ssh401a_hr_report_ppg_raw_data_cb_ptr = NULL;
 
 #if defined(__SNDP_WEAR_DETECT_MGR__)
 static sndp_hal_wear_status_changed_callback ssh401a_wear_status_changed_cb_ptr = NULL;
@@ -317,7 +317,7 @@ static void ssh401a_callback_ppg_data(SS_PPG* ppg_data, int cnt)
     }
 
     for(int i = 0; i < cnt; i++) {
-        ssh401a_ppg_data[i] = ppg_data[i].seq1;
+        ssh401a_ppg_data[i] = ppg_data[i].seq1; //data for dbbeats algo
     }
 
     //SNDP_DUMP32("%04X ", ssh401a_ppg_data, cnt > 16 ? 16: cnt);
@@ -330,13 +330,13 @@ static void ssh401a_callback_ppg_data(SS_PPG* ppg_data, int cnt)
 #endif
 }
 
-static void ssh401a_callback_ppg_test_data(unsigned char* fifo_data, int fifo_cnt)
+static void ssh401a_callback_report_ppg_raw_data(unsigned char* fifo_data, int fifo_cnt)
 {
     SSH401A_TRACE(1, "cnt=%d", fifo_cnt);
 
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
-    if(ssh401a_hr_ppg_test_mode_cb_ptr) {
-        ssh401a_hr_ppg_test_mode_cb_ptr(fifo_data, fifo_cnt);
+    if(ssh401a_hr_report_ppg_raw_data_cb_ptr) {
+        ssh401a_hr_report_ppg_raw_data_cb_ptr(fifo_data, fifo_cnt);
     } else {
         SSH401A_TRACE(1, "NULL");
     }
@@ -474,7 +474,7 @@ int32_t ssh401a_init(void)
     ssh401a_os_api_config.os_free = ssh401a_heap_free;
     ssh401a_os_api_config.callback_proximity_interrupt = ssh401a_callback_proximity_interrupt;
     ssh401a_os_api_config.callback_ppg_data = ssh401a_callback_ppg_data;
-    ssh401a_os_api_config.callback_ppg_test_data = ssh401a_callback_ppg_test_data;
+    ssh401a_os_api_config.callback_report_ppg_raw_data = ssh401a_callback_report_ppg_raw_data;
     ssh401a_os_api_config.callback_ppg_read_samplerate = ssh401_samples_rate_callback;
     
     ss_os_api_config(&ssh401a_os_api_config);
@@ -628,25 +628,10 @@ int32_t ssh401a_read_reg(uint8_t reg_addr, uint8_t *read_buf, uint8_t read_len)
     return os_api_i2c_read_burst(reg_addr, read_buf, read_len);
 }
 
-int32_t ssh401a_set_ppg_test_mode_callback(sndp_hal_hr_ppg_test_mode_callback callback)
+int32_t ssh401a_set_report_ppg_raw_data_callback(sndp_hal_hr_report_ppg_raw_data_callback callback)
 {
-    ssh401a_hr_ppg_test_mode_cb_ptr = callback;
+    ssh401a_hr_report_ppg_raw_data_cb_ptr = callback;
 	return SNDP_HAL_RET_OK;
-}
-
-int32_t ssh401a_switch_ppg_test_mode(uint8_t en)
-{
-    SSH401A_TRACE(0, "en=%d", en);
-    
-    if(en) {
-        ss_ppg_test_mode_switch(1);
-        ss_ppg_open_fifo();
-    } else {
-        ss_ppg_close_fifo();
-        ss_ppg_test_mode_switch(0);
-    }
-    
-    return SNDP_HAL_RET_OK;
 }
 
 int32_t ssh401a_switch_operation_mode(sndp_hal_hr_operation_mode_e op_mode)
@@ -690,8 +675,7 @@ extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .write_proximity_threshold      = ssh401a_ppg_write_proximity_threshold,
     .write_reg                      = ssh401a_write_reg,
     .read_reg                       = ssh401a_read_reg,
-    .set_ppg_test_mode_callback     = ssh401a_set_ppg_test_mode_callback,
-    .switch_ppg_test_mode           = ssh401a_switch_ppg_test_mode,
+    .set_report_ppg_raw_data_callback     = ssh401a_set_report_ppg_raw_data_callback,
     .switch_operation_mode          = ssh401a_switch_operation_mode,
     .read_chip_id                   = ssh401a_read_chip_id,
     .samples_measurement_start      = ssh401_samples_measurement_start,
