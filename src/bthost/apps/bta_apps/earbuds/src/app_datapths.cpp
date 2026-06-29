@@ -465,6 +465,11 @@ void app_datapaths_init(void)
     uint8_t attr_list_len = 0;
     uint8_t idx = 0;
 
+    
+#if 1
+    bt_gatts_cfg_t gatt_cfg = {0};    
+    gatt_cfg.btgatt_add_sdp = true;
+#endif
     if (app_dp_server_env.is_initilized == true)
     {
         return;
@@ -477,8 +482,11 @@ void app_datapaths_init(void)
     }
 
     attr_list = app_datapaths_build_attr_list(&attr_list_len);
-
+#if 1    
+    if (bta_gatts_register_service(attr_list, attr_list_len, app_datapaths_callback, &gatt_cfg) == 0)
+#else
     if (bta_gatts_register_service(attr_list, attr_list_len, app_datapaths_callback, NULL) == 0)
+#endif
     {
         app_dp_server_env.is_initilized = true;
     }
