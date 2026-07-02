@@ -542,6 +542,7 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
  #if defined(__BTIF_EARPHONE__)
         app_stop_10_second_timer(APP_PAIR_TIMER_ID);
         app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+        app_stop_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
 #endif
 
     } else {

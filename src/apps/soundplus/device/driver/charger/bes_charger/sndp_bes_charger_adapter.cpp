@@ -137,7 +137,10 @@ static void sndp_bes_charger_irq_handler(uint32_t status)
         
     } else if(status&CHARGER_IRQ_CAUSE_CHARGE_DONE) {
         mode = SNDP_HAL_CHARGER_MODE_FULL_CHARGING;
-        
+        // BESCHG_TRACE(0, "aaDONE: v=%dmV, state=%d",
+        //     sndp_dev_get_bat_voltage(false),
+        //     charger_charge_status_get());
+
     } else {
         mode = SNDP_HAL_CHARGER_MODE_NOT_CHARGING;
         
@@ -173,6 +176,14 @@ int32_t sndp_bes_charger_init(void)
     charge_cfg.rechg_en = false;
     charge_cfg.chg_en = true;
     charger_charge_module_cfg_set(&charge_cfg);
+
+// 充电状态机：OFF → IDLE → PRECHARGE → FAST(CC) → CV → DONE
+// 充电器在 OFF/DONE 状态下写入新 CV 后不会自动重启充电状态机，
+// 需要强制 disable + enable 触发状态机重启，
+// 使其以新写入的 4400MV 作为 CV 判定阈值重新进入充电流程
+
+    charger_charge_disable();  
+    charger_charge_enable();
 
     BESCHG_TRACE(8,"set: %d %d %d %d %d %d %d",
         charge_cfg.prechg_current,
@@ -231,6 +242,10 @@ int32_t sndp_bes_charger_check_curr_status(void)
     
     status = charger_charge_status_get();
     mode = sndp_bes_charger_convert_status(status);
+    // BESCHG_TRACE(0, "check: v=%dmV, state=%d, mode=%d",
+    //     sndp_dev_get_bat_voltage(false),
+    //     status, mode);
+
     sndp_bes_charger_report_mode(mode);
 	return SNDP_HAL_RET_OK;
 }
