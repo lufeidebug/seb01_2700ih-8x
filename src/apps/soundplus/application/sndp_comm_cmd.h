@@ -115,21 +115,22 @@ typedef enum {
     COMM_CMDID_LR_SYNC_Proximity_Notification_DATA  = 0x35, /* desc: 左右耳同步 proximity 数据。
                                                              * recv: 2 bytes, proximity value(2)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_START_HEARTRATE_MEASUREMENT  = 0x36, /* desc: 左右耳同步开始心率监测。
-                                                             * recv: 2 bytes, sampling rate(1) + dump data(1)
+    COMM_CMDID_LR_SYNC_HEARTRATE_ONOFF              = 0x36, /* desc: 左右耳同步心率开关指令。
+                                                             * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_STOP_HEARTRATE_MEASUREMENT   = 0x37, /* desc: 左右耳同步停止心率监测。
-                                                             * recv: 0 bytes,*/
+    COMM_CMDID_LR_SYNC_STAGE_ONOFF                  = 0x37, /* desc: 左右耳同步阶段开关指令。
+                                                             * recv: 1 bytes, onoff(1)
+                                                             * rsp : 0 bytes */
 #endif
     COMM_CMDID_LR_SYNC_MOBILE_CONNECTED             = 0x38, /* desc: 左右耳同步手机已连接状态指令。
                                                              * recv: 0 bytes,
                                                              * rsp : 0 bytes */
 #if defined(__SNDP_SLEEP_APP__)
-    COMM_CMDID_LR_SYNC_SLEEP_ROLE_SWITCH             = 0x39, /* desc: 左右耳同步睡眠角色切换请求。
-                                                             * recv: 0 bytes,
-                                                             * rsp : 0 bytes */
     COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT               = 0x3A, /* desc: 左右耳同步睡眠算法快照。
                                                              * recv: n bytes, snapshot data(2 bytes size + n bytes data)
+                                                             * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_SLEEP_ROLE_STATUS            = 0x3B, /* desc: 左右耳同步睡眠角色状态。
+                                                             * recv: 1 bytes, role status(1)
                                                              * rsp : 0 bytes */
 #endif
     COMM_CMDID_LR_SYNC_ALL_DEV_STATUS               = 0x2D, /* desc: 左右耳同步所有设备状态指令。
@@ -287,7 +288,6 @@ uint32_t sndp_comm_cmd_send_lr_sync_all_dev_status(uint8_t *data, uint16_t data_
 uint32_t sndp_comm_cmd_send_lr_sync_bt_onoff(uint8_t onoff);
 #if defined(__SNDP_SLEEP_APP__)
 uint32_t sndp_comm_cmd_send_lr_sync_sleep_snapshot(uint8_t *data, uint16_t data_len);
-uint32_t sndp_comm_cmd_send_lr_sync_sleep_role_switch_request(void);
 #endif
 uint32_t sndp_comm_cmd_send_lr_sync_sleep_mode(uint8_t mode);
 
@@ -465,8 +465,10 @@ typedef union
 
 
 uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data);
-uint32_t sndp_comm_cmd_sleepapp_proximity_role_switch_update(void);
 uint32_t sndp_comm_cmd_send_lr_sync_anc_mode(uint8_t ancmode,uint8_t is_save);
+uint32_t sndp_comm_cmd_send_lr_sync_sleep_role_status(uint8_t status);
+uint32_t sndp_comm_cmd_send_lr_sync_heart_rate_onoff(uint8_t onoff);
+uint32_t sndp_comm_cmd_send_lr_sync_stage_onoff(uint8_t onoff);
 uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
                                                     uint16_t position_and_control,
                                                     int16_t result_code);
@@ -479,7 +481,8 @@ uint8_t sndp_get_findme_vol(void);
 void sndp_sleep_app_report_battery(void);
 void sndp_comm_cmd_sleepapp_report_acc_samples(uint16_t sensor_samples);
 void sndp_comm_cmd_sleepapp_report_ppg_samples(uint16_t sensor_samples);
-
+void sndp_sleep_comm_cmd_analysis_stop(void);
+void sndp_sleep_comm_cmd_heartrate_stop(void);
 #ifdef __SNDP_SEND_GESTURE__
 void sndp_sleep_app_report_gesture(uint32_t gesture);
 void sndp_sleep_app_report_tap(void);

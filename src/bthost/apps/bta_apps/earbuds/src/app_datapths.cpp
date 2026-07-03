@@ -435,6 +435,11 @@ static bool app_datapaths_callback(bt_gatt_svc_t *svc, bt_gatts_event_t event, b
             app_datapaths_disconnected(svc->con_idx, svc->connhdl);
             break;
         }
+        case BT_GATTS_EVENT_CONN_OPENED:
+        {
+            app_datapaths_connected(svc->con_idx, svc->connhdl);
+            break;
+        }
         case BT_GATTS_EVENT_DESC_READ:
         {
             bt_gatts_desc_read_t *p = param.desc_read;

@@ -63,9 +63,9 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len);
 void sndp_ui_timing_to_do(void);
 void sndp_ui_init_pre(void);
 void sndp_ui_init(void);
-void sndp_ui_working_mode_switch(void);
-
-
+void sndp_ui_working_mode_sleep_app_set(sndp_dev_working_mode_e mode);
+void sndp_ui_sleep_anc_mode_on(void);
+void sndp_ui_sleep_anc_mode_off(void);
 #ifdef __cplusplus
 	}
 #endif

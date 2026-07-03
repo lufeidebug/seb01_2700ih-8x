@@ -25,7 +25,7 @@
 
 #include "sndp_comm_main.h"
 #include "sndp_comm_ble.h"
-
+#include "sndp_heart_rate.h"
 #ifndef CFG_APP_DATAPATH_SERVER
 #define CFG_APP_DATAPATH_SERVER
 #endif
@@ -299,16 +299,20 @@ POSSIBLY_UNUSED static void sndp_comm_ble_disconnected_done(uint8_t conidx)
 {
 	COMM_BLE_ENTER();
 	sndp_comm_ble_ctx.conn_status = SNDP_COMM_BLE_DISCONNECTED;
+    sndp_hr_ble_disconnected_delay10s_start();
 }
 
 POSSIBLY_UNUSED static void sndp_comm_ble_connected_done(uint8_t conidx)
 {
-	COMM_BLE_ENTER();
+	COMM_BLE_TRACE(0,"conidx:%d",conidx);
 	sndp_comm_ble_ctx.conn_status = SNDP_COMM_BLE_CONNECTED;
     sndp_comm_ble_ctx.conidx = conidx;
+    if(sndp_comm_ble_ctx.conidx == 0x01) {
+        sndp_hr_ble_connected_delay10s_stop();
 #ifdef CFG_APP_DATAPATH_SERVER    
-    app_datapath_server_register_tx_done(sndp_comm_ble_tx_done);
+        app_datapath_server_register_tx_done(sndp_comm_ble_tx_done);
 #endif
+    }
 }
 
 POSSIBLY_UNUSED static void sndp_comm_ble_mtuexchanged_done(uint8_t conidx, uint16_t mtu)

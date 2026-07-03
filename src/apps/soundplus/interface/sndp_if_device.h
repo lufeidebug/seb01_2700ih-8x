@@ -173,6 +173,8 @@ typedef struct
 	uint8_t sleep_prompt_onoff;
 	uint8_t sleep_gesture_onoff;
 	uint8_t sleep_splaypause_onoff;
+	uint8_t sleep_heartrate_onoff;
+	uint8_t sleep_stage_onoff;
 }sndp_sleep_app_flag;
 
 typedef enum {
@@ -182,6 +184,19 @@ typedef enum {
 		SNDP_DEV_RIGHT_UNWEAR_CNT,
 		SNDP_DEV_WEAR_CNT_MAX,
 }wear_cnt_type_e;
+
+typedef enum {
+	SNDP_PROMPT_ONOFF_FLAG,
+	SNDP_EQ_INDEX_FLAG,
+	SNDP_ANC_MODE_FLAG,
+	SNDP_GESTURE_ONOFF_FLAG,
+	SNDP_SPLAYPAUSE_ONOFF_FLAG,
+	SNDP_PROXIMITY_ONOFF_FLAG,
+	SNDP_PROXIMITY_DATA,
+	SNDP_STAGE_ONOFF_FLAG,
+	SNDP_HEARTRATE_ONOFF_FLAG,
+	SNDP_SLEEP_APP_FLAG_NAME_MAX,
+}SNDP_SLEEP_APP_FLAG_NAME;
 #endif
 
 

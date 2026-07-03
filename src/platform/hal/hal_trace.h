@@ -31,12 +31,6 @@ extern "C" {
 #define AUDIO_DEBUG
 #endif
 
-#if defined(__SNDP_HEART_RATE_DUMP__)
-#ifndef AUDIO_DEBUG
-#define AUDIO_DEBUG
-#endif
-#endif
-
 #if defined(__SNDP_AUDIO_TEST_MIC_DUMP__)
 #ifndef AUDIO_DEBUG
 #define AUDIO_DEBUG

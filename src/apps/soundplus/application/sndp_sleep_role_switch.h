@@ -12,13 +12,13 @@ extern "C" {
 
 /**************************************************************************************************
  * 角色状态机定义
- * TWS睡眠监测主备角色切换模块
+ * TWS睡眠监测
  **************************************************************************************************/
 
 typedef enum {
     ROLE_IDLE           = 0,    /* 初始态：尚未确定角色 */
-    ROLE_MASTER_ACTIVE  = 1,    /* 主设备工作中：采集PPG/ACC数据，BLE连接APP，执行算法 */
-    ROLE_SLAVE_STANDBY  = 2,    /* 从设备待命：关闭传感器和算法，极低功耗 */
+    ROLE_ACTIVE         = 1,    /* 设备工作中：采集PPG/ACC数据，BLE连接APP，执行算法 */
+    ROLE_STANDBY        = 2,    /* 设备待命：关闭传感器和算法，极低功耗 */
     ROLE_SWITCHING      = 3,    /* 切换中：关键保护态，禁止重复触发 */
 } Device_Role_t;
 
@@ -38,8 +38,9 @@ typedef struct {
  */
 typedef enum {
     ROLE_SWITCH_REASON_WEAR_OFF     = 0,    /* Master 脱落触发 */
-    ROLE_SWITCH_REASON_LOW_BATTERY  = 1,    /* Master 低电触发 */
-    ROLE_SWITCH_REASON_APP_FORCE    = 2,    /* APP 强制切换指令 */
+    ROLE_SWITCH_REASON_WEAR_ON      = 1,    /* Master 戴上触发 */
+    ROLE_SWITCH_REASON_LOW_BATTERY  = 2,    /* Master 低电触发 */
+    ROLE_SWITCH_REASON_APP_FORCE    = 3,    /* APP 强制切换指令 */
 } Role_Switch_Reason_t;
 
 /**
@@ -52,13 +53,13 @@ Device_Role_t sndp_sleep_role_get_current(void);
  * @brief 判断当前设备是否为 Master
  * @return true=Master, false=非Master
  */
-bool sndp_sleep_role_is_master(void);
+bool sndp_sleep_role_is_active(void);
 
 /**
  * @brief 判断当前设备是否为 Slave
  * @return true=Slave, false=非Slave
  */
-bool sndp_sleep_role_is_slave(void);
+bool sndp_sleep_role_is_standby(void);
 
 /**
  * @brief 检查是否处于切换保护态
@@ -110,17 +111,11 @@ void sndp_sleep_role_switch_on_request(void);
  */
 void sndp_sleep_role_switch_handle_conflict(void);
 
-/**
- * @brief 异常处理：TWS断开时的恢复
- * 切换过程中TWS链路断开，尝试重启并恢复
- */
-void sndp_sleep_role_switch_handle_tws_lost(void);
+void sndp_sleep_role_start(void);
 
-/**
- * @brief 定期检查角色切换状态，避免卡死    
- * 
- */
-void sndp_sleep_role_switch_timeout_check(void);
+void sndp_sleep_role_stop(void);
+
+void sndp_sleep_role_set_peer(Device_Role_t role);
 #ifdef __cplusplus
 }
 #endif

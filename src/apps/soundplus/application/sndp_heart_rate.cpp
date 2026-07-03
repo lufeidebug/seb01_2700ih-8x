@@ -32,6 +32,7 @@
 #include "sndp_hal_hr.h"
 #endif
 #include "sndp_comm_cmd.h"
+#include "sndp_sleep_role_switch.h"
 
 /**************************************************************************************************
 * 1、创建心率处理线程。
@@ -67,12 +68,6 @@
 
 //#define __SNDP_HR_PRINT_ALGO_EXEC_TIME__
 
-#if defined(__SNDP_HEART_RATE_DUMP__)
-#define __SNDP_HR_PPG_DUMP__
-//#define __SNDP_HR_AAC_DUMP__
-
-#endif
-
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -88,6 +83,7 @@ typedef struct {
 
     bool ppg_reading_en;
     bool acc_reading_en;
+    bool delay_10S_start;
     
 } sndp_hr_ctx_s;
 
@@ -275,12 +271,6 @@ static void sndp_hr_process_thread(void const *argument)
         memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
         ppg_raw_data_queue_pop_data(hr_ppg_raw_data, HR_PPG_SECOND_ALLCH_SAMPLES);
 
-#if defined(__SNDP_HR_PPG_DUMP__)
-        audio_dump_clear_up();
-        audio_dump_add_channel_data(0, hr_ppg_raw_data, HR_PPG_SECOND_ALLCH_SAMPLES);  
-        audio_dump_run();
-#endif    
-
 
         // hr_setp_6: Read acc data
         // sleep_step_6: Read acc data
@@ -292,12 +282,6 @@ static void sndp_hr_process_thread(void const *argument)
         }
         memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
         acc_raw_data_queue_pop_data(hr_acc_raw_data, acc_data_len);
-#if defined(__SNDP_HR_AAC_DUMP__)
-        audio_dump_clear_up();
-        audio_dump_add_channel_data(0, hr_acc_raw_data, HR_ACC_SECOND_ALLCH_SAMPLES);  
-        audio_dump_run();  
-#endif
-
         
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
 
@@ -504,14 +488,6 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 
     SNDP_TRACE(0, "...");
 
-#if defined(__SNDP_HR_PPG_DUMP__)
-    audio_dump_init(64, 4, 1);    
-#endif
-
-#if defined(__SNDP_HR_AAC_DUMP__)
-    audio_dump_init(125*3, 2, 1);    
-#endif
-
     ppg_raw_data_queue_reset();
 
     // hr_setp_1: 算法初始化
@@ -529,6 +505,8 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
     hr_ctx.sleep_running = false;
     hr_ctx.sleep_tracking = false;
     hr_ctx.hr_running = true;
+    sndp_hr_mearsuring_set_sampling_rate(ppg_sampling_rate);
+    sndp_hr_mearsuring_set_dump_state(dump_state);
 }
 
 void sndp_hr_mearsuring_stop(void)
@@ -606,7 +584,6 @@ void sndp_sleep_analysis_start(int32_t sleep_control)
     hr_ctx.hr_running = true;
     hr_ctx.sleep_running = true;
     hr_ctx.sleep_tracking = false;
-    
 }
 
 void sndp_sleep_analysis_stop(void)
@@ -633,7 +610,7 @@ bool sndp_hr_is_ppg_notification_enabled(void)
     return hr_ctx.ppg_notification;   
 }
 
-void sndp_ppg_notification_start(void)
+void sndp_ppg_notification_start(uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "...");
@@ -651,7 +628,7 @@ void sndp_ppg_notification_start(void)
     hr_ctx.sleep_tracking = false;
     hr_ctx.ppg_notification = true;
     hr_ctx.acc_notification = false;
-
+    sndp_hr_mearsuring_set_dump_state(dump_state);
     memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
 
 }
@@ -665,12 +642,12 @@ void sndp_ppg_notification_stop(void)
     
     // hr_setp_4: 停止读取ppg数据
     sndp_hr_switch_reading_ppg(false);
-
+    sndp_hr_mearsuring_set_dump_state(0x00);
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
 }
 
-void sndp_acc_notification_start(void)
+void sndp_acc_notification_start(uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "...");
@@ -688,7 +665,7 @@ void sndp_acc_notification_start(void)
     hr_ctx.sleep_tracking = false;
     hr_ctx.ppg_notification = false;
     hr_ctx.acc_notification = true;
-
+    sndp_hr_mearsuring_set_dump_state(dump_state);
     memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
 
 }
@@ -699,12 +676,34 @@ void sndp_acc_notification_stop(void)
     
     // hr_setp_3: 停止处理
     hr_ctx.acc_notification = false;
-    
+    sndp_hr_mearsuring_set_dump_state(0x00);
     // hr_setp_4: 停止读取ACC数据
     sndp_hr_switch_reading_acc_raw_data(false);
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
+}
+
+void sndp_hr_ble_disconnected_delay10s_start(void)
+{   
+    SNDP_TRACE(0, "running: %d cover_closed: %d", hr_ctx.sleep_running, sndp_dev_cover_is_closed(false));
+    if(hr_ctx.sleep_running) {
+        if(sndp_dev_cover_is_closed(false)) {
+            sndp_sleep_comm_cmd_analysis_stop();
+        }else {
+            hr_ctx.delay_10S_start = true;
+            sndp_delay_exec_start(10000, (uint32_t)sndp_sleep_comm_cmd_analysis_stop, 0, 0, 0);
+        }
+    } 
+}
+
+void sndp_hr_ble_connected_delay10s_stop(void)
+{
+    SNDP_TRACE(0, "Srunning: %d HRrunning: %d", hr_ctx.sleep_running, hr_ctx.hr_running);
+    if(hr_ctx.sleep_running){
+        hr_ctx.delay_10S_start = false;
+        sndp_delay_exec_stop((uint32_t)sndp_sleep_comm_cmd_analysis_stop);        
+    }
 }
 
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)

@@ -20,28 +20,23 @@
 /**************************************************************************************************
  * Trace
  **************************************************************************************************/
-#define ROLE_TRACE(num, str, ...)   SNDP_TRACE(num, "[SLEEP_ROLE] %s, " str, __func__, ##__VA_ARGS__)
+#define ROLE_TRACE(num, str, ...)   SNDP_TRACE(num, "[SLEEP_ROLE_LOG] %s, " str, __func__, ##__VA_ARGS__)
 
 /**************************************************************************************************
  * Types & Constants
  **************************************************************************************************/
 typedef struct {
     Device_Role_t       role;               /* 当前角色 */
+    Device_Role_t       peer_role;          /* 对侧角色 */
     Role_Switch_Reason_t pending_reason;    /* 待处理的切换原因 */
     bool                initialized;        /* 是否已初始化 */
     uint32_t            switch_timeout_ms;  /* 切换超时计数 */
 } sndp_sleep_role_ctx_s;
 
-#define ROLE_SWITCH_TIMEOUT_MS_MAX      (5000)  /* 切换保护态最大持续时间 5s */
-
 /**************************************************************************************************
  * Global State
  **************************************************************************************************/
 static sndp_sleep_role_ctx_s role_ctx;
-
-/* 前向声明 */
-static void sndp_sleep_role_master_start(void);
-static void sndp_sleep_role_slave_start(void);
 
 /**************************************************************************************************
  * Role Query API
@@ -51,14 +46,14 @@ Device_Role_t sndp_sleep_role_get_current(void)
     return role_ctx.role;
 }
 
-bool sndp_sleep_role_is_master(void)
+bool sndp_sleep_role_is_active(void)
 {
-    return (role_ctx.role == ROLE_MASTER_ACTIVE);
+    return (role_ctx.role == ROLE_ACTIVE);
 }
 
-bool sndp_sleep_role_is_slave(void)
+bool sndp_sleep_role_is_standby(void)
 {
-    return (role_ctx.role == ROLE_SLAVE_STANDBY);
+    return (role_ctx.role == ROLE_STANDBY);
 }
 
 bool sndp_sleep_role_is_switching(void)
@@ -66,69 +61,110 @@ bool sndp_sleep_role_is_switching(void)
     return (role_ctx.role == ROLE_SWITCHING);
 }
 
+Device_Role_t sndp_sleep_role_get_peer(void)
+{
+    return role_ctx.peer_role;
+}
+
+bool sndp_sleep_role_is_peer_active(void)
+{
+    return (role_ctx.peer_role == ROLE_ACTIVE);
+}
+
+bool sndp_sleep_role_is_peer_idle(void)
+{
+    return (role_ctx.peer_role == ROLE_IDLE);
+}
+
+bool sndp_sleep_role_is_peer_standby(void)
+{
+    return (role_ctx.peer_role == ROLE_STANDBY);
+}
+
+void sndp_sleep_role_set_peer(Device_Role_t role)
+{
+    ROLE_TRACE(0, "peer role set to %d", role);
+    role_ctx.peer_role = role;
+}
+
+static void sndp_sleep_role_suspend_hr(void)
+{
+#if defined(__SNDP_HEART_RATE_MGR__) 
+    if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
+        sndp_hr_mearsuring_stop();
+        ROLE_TRACE(0, "suspend heart rate");
+    }           
+    
+    if(sndp_dev_sleep_app_get_stage_onoff(false)) {
+        sndp_sleep_analysis_stop();
+        ROLE_TRACE(0, "suspend sleep analysis");
+    }
+#endif
+}
+
+static void sndp_sleep_role_resume_hr(void)
+{
+#if defined(__SNDP_HEART_RATE_MGR__)
+    if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
+        sndp_hr_mearsuring_start(sndp_hr_mearsuring_get_sampling_rate(), sndp_hr_mearsuring_get_dump_state());
+        ROLE_TRACE(0, "resume heart rate");
+    }            
+    
+    if(sndp_dev_sleep_app_get_stage_onoff(false)) {
+        sndp_sleep_analysis_start(sndp_get_sleep_control());
+        ROLE_TRACE(0, "resume sleep analysis");
+    }
+#endif
+}
+
 /**************************************************************************************************
- * Internal: Master启动流程
+ * Internal: 启动流程
  *   - 开启PPG、ACC传感器
  *   - 初始化心率/睡眠算法
  *   - BLE由平台层管理（假设已在Sleep模式下建立）
  **************************************************************************************************/
-static void sndp_sleep_role_master_start(void)
+void sndp_sleep_role_start(void)
 {
-    ROLE_TRACE(0, "Master starting...");
-
-    /* 开启PPG传感器 */
-    sndp_hr_switch_reading_ppg(true);
-
-    /* 开启ACC加速度传感器 */
-    sndp_hr_switch_reading_acc_raw_data(true);
-
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
-    /* 初始化心率算法 */
-    dbbeats_initialize_heartrate_data(
-        (int8_t)sndp_hr_mearsuring_get_sampling_rate(),
-        sndp_hr_mearsuring_get_dump_state());
-
-    /* 初始化睡眠算法 */
-    dbbeats_initialize_sleep_data(sndp_get_sleep_control());
-#endif
-
-    role_ctx.role = ROLE_MASTER_ACTIVE;
-    ROLE_TRACE(0, "Master active");
+    ROLE_TRACE(0, "starting...");
+    role_ctx.role = ROLE_ACTIVE;
+    sndp_comm_cmd_send_lr_sync_sleep_role_status(role_ctx.role);
+    ROLE_TRACE(0, "Active");
 }
 
+void sndp_sleep_role_stop(void)
+{
+    ROLE_TRACE(0, "stopping...");
+    role_ctx.role = ROLE_IDLE;
+    sndp_comm_cmd_send_lr_sync_sleep_role_status(role_ctx.role);
+    ROLE_TRACE(0, "Stopped");
+}
 /**************************************************************************************************
  * Internal: Slave启动流程
  *   - 强制关闭PPG、ACC传感器
  *   - 屏蔽算法回调（通过停止传感器实现）
  *   - 进入极低功耗状态
  **************************************************************************************************/
-static void sndp_sleep_role_slave_start(void)
+POSSIBLY_UNUSED static void sndp_sleep_role_standby_start(void)
 {
-    ROLE_TRACE(0, "Slave starting...");
-
-    /* 关闭PPG传感器 */
-    sndp_hr_switch_reading_ppg(false);
-
-    /* 关闭ACC传感器 */
-    sndp_hr_switch_reading_acc_raw_data(false);
-
-    role_ctx.role = ROLE_SLAVE_STANDBY;
-    ROLE_TRACE(0, "Slave standby");
+    ROLE_TRACE(0, "starting...");
+    role_ctx.role = ROLE_STANDBY;
+    sndp_comm_cmd_send_lr_sync_sleep_role_status(role_ctx.role);
+    ROLE_TRACE(0, "SStandby");
 }
 
 /**************************************************************************************************
- * Internal: Master → Slave 降级
+ * Internal: 
  *   1. 标记 ROLE_SWITCHING（关键保护态）
  *   2. 获取算法快照
  *   3. 通过TWS发送快照到对侧
- *   4. 关闭本地传感器，降级为Slave
+ *   4. 关闭本地传感器，切换为Standby
  **************************************************************************************************/
-static void sndp_sleep_role_master_downgrade(void)
+static void sndp_sleep_role_switch_to_standby(void)
 {
     Algorithm_Snapshot_t snapshot;
     struct Snapshot lib_snapshot;
 
-    ROLE_TRACE(0, "Master downgrade starting...");
+    ROLE_TRACE(0, "downgrade starting...");
 
     role_ctx.role = ROLE_SWITCHING;
 
@@ -157,23 +193,23 @@ static void sndp_sleep_role_master_downgrade(void)
     ROLE_TRACE(0, "Snapshot sent, size=%d", snapshot.size);
 #endif
 
-    /* Step 3: 停止传感器，切换角色 */
-    sndp_hr_switch_reading_ppg(false);
-    sndp_hr_switch_reading_acc_raw_data(false);
+    /* Step 3: 停止传感器，停止算法，切换角色 */
+    sndp_sleep_analysis_stop();
+    sndp_hr_mearsuring_stop();
 
-    role_ctx.role = ROLE_SLAVE_STANDBY;
-    ROLE_TRACE(0, "Downgraded to Slave");
+    sndp_sleep_role_standby_start();
+    ROLE_TRACE(0, "Switched to Standby");
 }
 
 /**************************************************************************************************
- * Internal: Slave → Master 升级
+ * Internal:
  *   1. 标记 ROLE_SWITCHING
  *   2. 解析快照数据，调用 dbbeats_set_snapshot 恢复算法状态
  *   3. 开启传感器
  *   4. 重新初始化算法上下文
- *   5. 角色升级为Master
+ *   5. 角色切换为Active
  **************************************************************************************************/
-static void sndp_sleep_role_slave_upgrade(Algorithm_Snapshot_t *snapshot)
+static void sndp_sleep_role_switch_to_active(Algorithm_Snapshot_t *snapshot)
 {
     struct Snapshot lib_snapshot;
 
@@ -181,7 +217,11 @@ static void sndp_sleep_role_slave_upgrade(Algorithm_Snapshot_t *snapshot)
 
     role_ctx.role = ROLE_SWITCHING;
 
-    /* Step 1: 恢复算法状态快照 */
+    /* Step 1: 开启传感器和算法 */
+    sndp_hr_mearsuring_start(sndp_hr_mearsuring_get_sampling_rate(), sndp_hr_mearsuring_get_dump_state());
+    sndp_sleep_analysis_start(sndp_get_sleep_control());
+
+    /* Step 2: 恢复算法状态快照 */
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
     if (snapshot != NULL && snapshot->size > 0) {
         lib_snapshot.size = snapshot->size;
@@ -194,32 +234,17 @@ static void sndp_sleep_role_slave_upgrade(Algorithm_Snapshot_t *snapshot)
     }
 #endif
 
-    /* Step 2: 开启传感器 */
-    sndp_hr_switch_reading_ppg(true);
-    sndp_hr_switch_reading_acc_raw_data(true);
-
-    /* Step 3: 重新初始化算法上下文 */
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
-    dbbeats_initialize_heartrate_data(
-        (int8_t)sndp_hr_mearsuring_get_sampling_rate(),
-        sndp_hr_mearsuring_get_dump_state());
-    dbbeats_initialize_sleep_data(sndp_get_sleep_control());
-#endif
-
-    /* Step 4: 升级为Master */
-    role_ctx.role = ROLE_MASTER_ACTIVE;
-    ROLE_TRACE(0, "Upgraded to Master");
-
-    /* Step 5: 通知APP数据恢复 */
-#if defined(__SNDP_COMM_MGR__)
-    sndp_comm_cmd_sleepapp_proximity_role_switch_update();
-#endif
+    /* Step 3: 升级为Active */
+    role_ctx.role = ROLE_ACTIVE;
+    sndp_comm_cmd_send_lr_sync_sleep_role_status(role_ctx.role);
+    ROLE_TRACE(0, "Switched to Active");
+    
 }
 
 /**************************************************************************************************
  * Public API: 模块初始化
  * 开机时调用，根据TWS配对信息确定初始角色
- * 规则：右耳默认为Master，左耳为Slave（支持通过配置更改）
+ * 规则：
  **************************************************************************************************/
 void sndp_sleep_role_switch_init(void)
 {
@@ -227,30 +252,14 @@ void sndp_sleep_role_switch_init(void)
 
     memset(&role_ctx, 0, sizeof(role_ctx));
 
-    /* 初始角色判定：右耳=Master, 左耳=Slave */
-    if (sndp_dev_is_right_earphone()) {
-        role_ctx.role = ROLE_IDLE;
-        ROLE_TRACE(0, "Right ear - designated Master, entering IDLE");
-        /* 延迟启动Master，等待TWS连接建立 */
-    } else if (sndp_dev_is_left_earphone()) {
-        role_ctx.role = ROLE_IDLE;
-        ROLE_TRACE(0, "Left ear - designated Slave, entering IDLE");
-    } else {
-        role_ctx.role = ROLE_IDLE;
-        ROLE_TRACE(0, "Unknown side - entering IDLE");
-    }
-
+    role_ctx.role = ROLE_IDLE;  /* 初始角色为IDLE */
+    role_ctx.peer_role = ROLE_IDLE;
     role_ctx.initialized = true;
 }
 
 /**************************************************************************************************
- * Public API: 触发角色切换（Master侧调用）
+ * Public API: 触发角色切换状态
  * @param reason  触发原因（脱落/低电/APP强制）
- *
- * 前置条件：
- *   - 必须是Master角色
- *   - 不在SWITCHING保护态
- *   - TWS链路已连接
  **************************************************************************************************/
 void sndp_sleep_role_switch_trigger(Role_Switch_Reason_t reason)
 {
@@ -259,40 +268,37 @@ void sndp_sleep_role_switch_trigger(Role_Switch_Reason_t reason)
         return;
     }
 
-    if (role_ctx.role != ROLE_MASTER_ACTIVE) {
-        ROLE_TRACE(0, "Not Master (role=%d), rtn", role_ctx.role);
+
+    /* 检查TWS连接 以及对侧设备没佩戴 */
+    if (!sndp_is_tws_link_connected() || !sndp_dev_wear_is_worn(true)) {
+        ROLE_TRACE(0, "TWS link %d, peer worn %d rs:%d", sndp_is_tws_link_connected(), sndp_dev_wear_is_worn(true),reason);
+        if(ROLE_SWITCH_REASON_WEAR_OFF == reason){
+            sndp_sleep_role_suspend_hr();
+        }else if(ROLE_SWITCH_REASON_WEAR_ON == reason){
+            sndp_sleep_role_resume_hr();
+        }
         return;
     }
 
-    /* 防止重复触发切换 */
-    if (role_ctx.role == ROLE_SWITCHING) {
-        ROLE_TRACE(0, "Already switching, rtn");
-        return;
-    }
-
-    /* 检查TWS连接 */
-    if (!sndp_is_tws_link_connected()) {
-        ROLE_TRACE(0, "TWS not connected, cannot switch");
-        /* TWS断开时尝试本地恢复 */
-        sndp_sleep_role_switch_handle_tws_lost();
-        return;
-    }
-
-    /* 确保对侧耳机已佩戴（Slave必须佩戴才能接管） */
-    if (!sndp_dev_wear_is_worn(true)) {
-        ROLE_TRACE(0, "Peer not worn, rtn");
+    if(sndp_dev_wear_is_worn(true) && sndp_sleep_role_is_peer_active()) {
+        ROLE_TRACE(0, "Peer is active, rtn");
         return;
     }
 
     ROLE_TRACE(0, "Triggered by reason=%d", reason);
-    role_ctx.pending_reason = reason;
 
-    /* 执行降级切换：Master → Slave */
-    sndp_sleep_role_master_downgrade();
+    /* 执行切换：Active → Standby */
+    if(ROLE_SWITCH_REASON_WEAR_ON != reason) {
+        if(sndp_dev_sleep_app_get_stage_onoff(false)) {
+            if(sndp_sleep_role_is_peer_standby() || sndp_sleep_role_is_peer_idle()) {
+                sndp_sleep_role_switch_to_standby();
+            }
+        }
+    }
 }
 
 /**************************************************************************************************
- * Public API: 处理接收到的角色切换快照（Slave侧调用）
+ * Public API: 处理接收到的角色切换快照
  * @param snapshot  快照数据（来自TWS链路）
  * @param len       数据长度
  *
@@ -328,20 +334,20 @@ void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot_data, uint16_t len)
 
     ROLE_TRACE(0, "Snapshot received, size=%d, copy_len=%d", snapshot.size, copy_len);
 
-    /* 当前角色必须是Slave才能升级 */
-    if (role_ctx.role != ROLE_SLAVE_STANDBY) {
-        /* 如果当前是Master，说明出现了双Master冲突 */
-        if (role_ctx.role == ROLE_MASTER_ACTIVE) {
+    /* 当前角色必须是Standby或Idle才能升级 */
+    if (role_ctx.role != ROLE_STANDBY && role_ctx.role != ROLE_IDLE) {
+        /* 如果当前是Active，说明出现了双Active冲突 */
+        if (role_ctx.role == ROLE_ACTIVE) {
             ROLE_TRACE(0, "Conflict: already Master, rejecting takeover");
             sndp_sleep_role_switch_handle_conflict();
             return;
         }
-        ROLE_TRACE(0, "Not Slave (role=%d), rtn", role_ctx.role);
+        ROLE_TRACE(0, "Not Standby (role=%d), rtn", role_ctx.role);
         return;
     }
 
-    /* 执行升级：Slave → Master */
-    sndp_sleep_role_slave_upgrade(&snapshot);
+    /* 执行切换：Standby → Active */
+    sndp_sleep_role_switch_to_active(&snapshot);
 }
 
 /**************************************************************************************************
@@ -359,9 +365,9 @@ void sndp_sleep_role_switch_on_request(void)
 
     ROLE_TRACE(0, "Role switch request received, current role=%d", role_ctx.role);
 
-    /* 当前如果是Master，拒绝请求（防止双Master） */
-    if (role_ctx.role == ROLE_MASTER_ACTIVE) {
-        ROLE_TRACE(0, "Already Master, ignoring request");
+    /* 当前如果是Active，拒绝请求（防止双Active） */
+    if (role_ctx.role == ROLE_ACTIVE) {
+        ROLE_TRACE(0, "Already Active, ignoring request");
         return;
     }
 
@@ -371,67 +377,12 @@ void sndp_sleep_role_switch_on_request(void)
 }
 
 /**************************************************************************************************
- * Public API: 异常处理 - 双Master冲突解决
- *
- * 场景：Slave已切换为Master，但原Master重新连接尝试接管
- * 策略：维持当前Master状态，拒绝原Master重新接管
+
  **************************************************************************************************/
 void sndp_sleep_role_switch_handle_conflict(void)
 {
     ROLE_TRACE(0, "Handling conflict");
 
-    /* 维持当前Master状态不变 */
-    /* 可以在此处添加日志、上报APP等操作 */
-}
-
-/**************************************************************************************************
- * Public API: 异常处理 - TWS断开恢复
- *
- * 场景：切换过程中TWS链路断开
- * 策略：Master侧尝试本地恢复，保持Master角色等待重连；
- *       Slave侧若未完全接管，保持Standby等待重连
- **************************************************************************************************/
-void sndp_sleep_role_switch_handle_tws_lost(void)
-{
-    ROLE_TRACE(0, "Handling TWS lost, current role=%d", role_ctx.role);
-
-    if (role_ctx.role == ROLE_SWITCHING) {
-        /* 切换过程中断开：回退到原角色 */
-        ROLE_TRACE(0, "TWS lost during switching, recovering...");
-        // 保持当前传感器状态不变，等待TWS重连后重新发起切换
-        role_ctx.role = ROLE_MASTER_ACTIVE;
-        ROLE_TRACE(0, "Reverted to Master, waiting for TWS reconnect");
-    }
-    /* 其他状态下断开不做特殊处理 */
-}
-
-/**************************************************************************************************
- * Public API: 定时器回调 - 处理切换超时
- *
- * 在sndp_ui_timing_to_do中周期性调用
- * 如果切换保护态超过5秒，强制恢复
- **************************************************************************************************/
-void sndp_sleep_role_switch_timeout_check(void)
-{
-    if (role_ctx.role != ROLE_SWITCHING) {
-        role_ctx.switch_timeout_ms = 0;
-        return;
-    }
-
-    role_ctx.switch_timeout_ms += 10000; /* 假设每10秒调用一次，实际增量由调用方决定 */
-
-    if (role_ctx.switch_timeout_ms >= ROLE_SWITCH_TIMEOUT_MS_MAX) {
-        ROLE_TRACE(0, "Switch timeout, force recovery");
-        role_ctx.switch_timeout_ms = 0;
-
-        /* 超时回退：Slave降级侧保持Slave，等待下次触发 */
-        if (sndp_dev_is_right_earphone()) {
-            /* 右耳默认Master */
-            sndp_sleep_role_master_start();
-        } else {
-            sndp_sleep_role_slave_start();
-        }
-    }
 }
 
 #endif /* __SNDP_SLEEP_APP__ && __SNDP_HEART_RATE_MGR__ */

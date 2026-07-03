@@ -87,7 +87,7 @@ void sndp_sleep_analysis_stop(void);
  * @brief       Start PPG notifiycation.
  * @return      void
  */
-void sndp_ppg_notification_start(void);
+void sndp_ppg_notification_start(uint8_t dump_state);
 
 /**
  * @brief       Stop PPG notifiycation.
@@ -99,7 +99,7 @@ void sndp_ppg_notification_stop(void);
  * @brief       Start ACC notifiycation.
  * @return      void
  */
-void sndp_acc_notification_start(void);
+void sndp_acc_notification_start(uint8_t dump_state);
 
 /**
  * @brief       Stop ACC notifiycation.
@@ -113,8 +113,6 @@ void sndp_acc_notification_stop(void);
  * @return      void
  */
 void sndp_hr_app_init(void);
-
-void sndp_ppg_notification_start(void);
 
 uint8_t sndp_hr_running_state(void);
 
@@ -135,8 +133,8 @@ void sndp_hr_switch_reading_ppg(bool onoff);
 bool sndp_hr_is_reading_acc_enabled(void);
 void sndp_hr_switch_reading_acc_raw_data(bool onoff);
 bool sndp_hr_is_ppg_notification_enabled(void);
-
-
+void sndp_hr_ble_disconnected_delay10s_start(void);
+void sndp_hr_ble_connected_delay10s_stop(void);
 #ifdef __cplusplus
 	}
 #endif
