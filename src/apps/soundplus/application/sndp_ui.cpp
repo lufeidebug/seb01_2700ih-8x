@@ -1422,6 +1422,15 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 		case SNDP_BT_CONN_STATUS_TWS_DISCONNECTED:
 			sndp_update_audio_channel(false);
 			sndp_dev_clear_device_info(true);
+
+			SPUI_TRACE(1, "TWS_DISCONNECTED, pairing_status=%d", sndp_get_pairing_status());
+
+			/* [FIX] 配对过程中对耳出仓关盖，TWS断开后对耳不可见，重新开启配对模式
+			 * 保持仓外耳机的可发现性，避免 access_mode 从 BT_GENERAL_ACCESSIBLE(3) 降为 BT_CONNECTABLE_ONLY(2)
+			 */
+			if(sndp_get_pairing_status() == SNDP_PAIR_STA_PAIRING) {
+				sndp_call_func_in_app_thread((uint32_t)sndp_tws_enable_pairing_mode, 0, 0, 0);
+			}
       
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
                 sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
