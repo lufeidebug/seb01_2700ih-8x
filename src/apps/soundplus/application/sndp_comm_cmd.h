@@ -367,7 +367,7 @@ typedef enum {
                                                     rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_STOP_SLEEP = 0x36, /* recv: 0 bytes. 
                                                     rsp: 1 bytes, error code(1). */
-    SLEEP_APP_CMDID_WEAR_STATE_UPDATE = 0x37, /* recv: 0 bytes. 
+    SLEEP_APP_CMDID_WEAR_STATE_UPDATE = 0x62, /* recv: 0 bytes. 
                                                     rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_GESTURE_EVENT_UPDATE = 0x38, /* recv: 0 bytes. 
                                                     rsp: 1 bytes, error code(1). */
@@ -380,6 +380,8 @@ typedef enum {
     SLEEP_APP_CMDID_SENSOR_TEST = 0x60, /* recv: 1 bytes. 
                                                     rsp: 1 bytes, error code(1). */
     SLEEP_APP_CMDID_SENSOR_SAMPLE_RATE_REPORT = 0x61, /* recv: 1 bytes. 
+                                                    rsp: 1 bytes, error code(1). */
+    SLEEP_APP_CMDID_RESUME_HEART_RATE = 0x37, /* recv: 0 bytes. 
                                                     rsp: 1 bytes, error code(1). */
 } sleep_app_cmd_id_e;
 

@@ -2989,6 +2989,15 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_test(sleep_app_co
     return 0;
 }
 
+POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_resume_heart_rate(sleep_app_comm_cmd_info_s *cmd_info)
+{
+    cmd_info->data_len = 0x02;
+    cmd_info->value[0] = 0; // success
+    sndp_hr_ble_connected_delay10s_stop();
+    sndp_sleep_comm_main_rsp_cmd(cmd_info);
+    return 0;
+}
+
 void sndp_comm_cmd_sleepapp_report_ppg_samples(uint16_t sensor_samples)
 {
     if(!sndp_comm_ble_is_connected())
@@ -3608,6 +3617,7 @@ static const sndp_sleep_comm_cmd_handle_s sleep_app_comm_cmd_hdlr_list[] = {
     { SLEEP_APP_CMDID_STOP_SLEEP,                     "APP_STOP_SLEEP",                     sleep_comm_cmd_recv_app_stop_sleep },
     { SLEEP_APP_CMDID_WEAR_STATE_UPDATE,              "APP_WEAR_STATE",                     sleep_comm_cmd_recv_app_wear_state },
     { SLEEP_APP_CMDID_SENSOR_TEST,                    "APP_SENSOR_TEST",                    sleep_comm_cmd_recv_app_sensor_test  },
+    { SLEEP_APP_CMDID_RESUME_HEART_RATE,              "APP_RESUME_HEART_RATE",              sleep_comm_cmd_recv_app_resume_heart_rate }
 };
 
 
