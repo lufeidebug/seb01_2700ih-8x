@@ -155,7 +155,7 @@ extern "C" int32_t bt_sco_chain_bypass_tx_algo(uint32_t sel_ch)
 	
 #if defined(__SNDP_PROJ__)
 
-    if (sel_ch < SPEECH_CODEC_CAPTURE_CHANNEL_NUM || sel_ch == 0xFF) {
+    if (sel_ch < SNDP_BES_ALGO_CHANNEL_NUM || sel_ch == 0xFF) {
         g_bypass_tx_algo_sel_ch = sel_ch;
         return 0;
     } else {
