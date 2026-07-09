@@ -2381,6 +2381,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_ap
     char *sn = (char *)sndp_dev_get_dev_sn();
     char *hw_ver = (char *)sndp_dev_get_hw_ver(false);
     char *fw_ver = (char *)sndp_dev_get_fw_ver(false);
+    char *algo_ver = (char *)lib_engine_version();
     char temp_str[20];
     uint8_t len;
         
@@ -2426,6 +2427,14 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_ap
         p += len;
     }
 
+    // lib_engine_version ver
+    {
+        len = strlen(algo_ver);
+        *p++ = len + 1;
+        *p++ = DEVICE_INFO_TAG_ALGO_VER;
+        memcpy(p, algo_ver, len);
+        p += len;
+    }
     cmd_info->data_len = p - cmd_info->value + 1; // 加1是因为data_len不包含cmd_id本身
 
     COMM_CMD_TRACE(0,"data_len:%d", cmd_info->data_len);
@@ -3633,9 +3642,12 @@ int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
         return -1;
     }
 
-    if(sndp_is_tws_slave_mode()) {
-        return -1;
-    }
+    COMM_CMD_TRACE(2,"BLE CON: %d, slave mode:%d", sndp_comm_ble_is_connected(), sndp_is_tws_slave_mode());
+    // if(!sndp_comm_ble_is_connected()) {
+        if(sndp_is_tws_slave_mode()) {
+            return -1;
+        }
+    // }
 
     memcpy(&sndp_sleep_app_comm_exec_cmd, cmd, sizeof(sleep_app_comm_cmd_info_s));
     for(uint32_t i = 0; i < sndp_sleep_app_comm_cmd_hdlr_cnt; i++) {

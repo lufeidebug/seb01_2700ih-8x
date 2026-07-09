@@ -390,6 +390,7 @@ typedef enum {
     DEVICE_INFO_TAG_SN      = 0x02,
     DEVICE_INFO_TAG_FW_VER  = 0x03,
     DEVICE_INFO_TAG_HW_VER  = 0x04,
+    DEVICE_INFO_TAG_ALGO_VER = 0x05,
 } device_info_tag_e;
 
 typedef struct
