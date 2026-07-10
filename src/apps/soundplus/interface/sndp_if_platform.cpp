@@ -1076,11 +1076,22 @@ uint8_t sndp_music_get_avrcp_palyback_status(void)
 bool sndp_music_is_playing(void)
 {
 	bool ret = false;
-
+#if 0
 	if(bt_media_cur_is_bt_stream_music() 
         && (sndp_music_get_avrcp_palyback_status() == BTIF_AVRCP_MEDIA_PLAYING)) {
 		ret = true;
     }
+#else
+    uint8_t device_id = app_bt_audio_get_curr_a2dp_device();
+    struct BT_DEVICE_T* device = app_bt_get_device(device_id);
+
+    if (device == NULL) {
+        SNDP_IF_TRACE(0, "%d device NULL, ret=0", __LINE__);
+        return false;
+    }
+
+    ret = (device->a2dp_play_pause_flag != 0);
+#endif
 
 	SNDP_IF_TRACE(1, "ret=%d", ret);
 	return ret;
