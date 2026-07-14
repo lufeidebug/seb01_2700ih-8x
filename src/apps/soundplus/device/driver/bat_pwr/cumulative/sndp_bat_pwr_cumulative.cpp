@@ -278,7 +278,10 @@ static int32_t bat_cumulative_conver_volt_to_percentage(void)
         
 		/* In the discharging state, the current percentage can not higher than the last percentage.*/
 		if(per > bat_cumulative_ctx.last.bat_per) {
-			per = bat_cumulative_ctx.last.bat_per;	
+			if(per == 100 && bat_cumulative_ctx.last.bat_per == 99) {
+			} else {
+				per = bat_cumulative_ctx.last.bat_per;
+			}
 		}
         
 		bat_cumulative_ctx.charging_cap = BAT_TOTAL_CAPACITY*per/100;
