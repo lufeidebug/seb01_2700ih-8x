@@ -450,13 +450,13 @@ typedef union
     {
         //byte0
         uint8_t left_battery_level : 7;
-        uint8_t left_charging_statu : 1;
-        
+        //uint8_t left_charging_statu : 1;
+        uint8_t left_iobox_statu : 1;
 
         //byte1
-         uint8_t right_battery_level : 7;
-        uint8_t right_charging_statu : 1;
-       
+        uint8_t right_battery_level : 7;
+        //uint8_t right_charging_statu : 1;
+        uint8_t right_iobox_statu : 1;
 
         //byte2
         uint8_t cradle_battery_level : 7;

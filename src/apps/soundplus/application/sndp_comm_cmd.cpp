@@ -3507,28 +3507,34 @@ void sndp_sleep_app_report_battery(void)
     
     if(sndp_dev_is_left_earphone())
     {
-        reply_battery.bits.left_charging_statu = (uint8_t)sndp_dev_charger_is_charging(false);
+        //reply_battery.bits.left_charging_statu = (uint8_t)sndp_dev_charger_is_charging(false);
+        reply_battery.bits.left_iobox_statu = (uint8_t)sndp_dev_iobox_is_in_box(false);
         reply_battery.bits.left_battery_level = sndp_dev_get_bat_percentage(false);
 
         if(sndp_is_tws_link_connected()){
-            reply_battery.bits.right_charging_statu = (uint8_t)sndp_dev_charger_is_charging(true);
+            //reply_battery.bits.right_charging_statu = (uint8_t)sndp_dev_charger_is_charging(true);
+            reply_battery.bits.right_iobox_statu = (uint8_t)sndp_dev_iobox_is_in_box(true);
             reply_battery.bits.right_battery_level = sndp_dev_get_bat_percentage(true);
         }else{
-            reply_battery.bits.right_charging_statu = 1;
+            //reply_battery.bits.right_charging_statu = 1;
+            reply_battery.bits.right_iobox_statu = 1;
             reply_battery.bits.right_battery_level = 0x7f;
         }
     }
 
     if(sndp_dev_is_right_earphone())
     {
-        reply_battery.bits.right_charging_statu = (uint8_t)sndp_dev_charger_is_charging(false);
+        //reply_battery.bits.right_charging_statu = (uint8_t)sndp_dev_charger_is_charging(false);
+        reply_battery.bits.right_iobox_statu = (uint8_t)sndp_dev_iobox_is_in_box(false);
         reply_battery.bits.right_battery_level = sndp_dev_get_bat_percentage(false);
 
         if(sndp_is_tws_link_connected()){
-            reply_battery.bits.left_charging_statu = (uint8_t)sndp_dev_charger_is_charging(true);
+            //reply_battery.bits.left_charging_statu = (uint8_t)sndp_dev_charger_is_charging(true);
+            reply_battery.bits.left_iobox_statu = (uint8_t)sndp_dev_iobox_is_in_box(true);
             reply_battery.bits.left_battery_level = sndp_dev_get_bat_percentage(true);
         }else{
-            reply_battery.bits.left_charging_statu = 1;
+            //reply_battery.bits.left_charging_statu = 1;
+            reply_battery.bits.left_iobox_statu = 1;
             reply_battery.bits.left_battery_level = 0x7f;
         }
        
