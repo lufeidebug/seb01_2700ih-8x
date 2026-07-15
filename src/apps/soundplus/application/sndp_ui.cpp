@@ -247,6 +247,7 @@ POSSIBLY_UNUSED static void sndp_ui_anc_switch(void)
 
 	}
     sndp_comm_cmd_send_lr_sync_anc_mode(sndp_dev_sleep_app_anc_mode_get(false), 0);
+    sndp_sleep_app_report_anc_mode();
 }
 
 

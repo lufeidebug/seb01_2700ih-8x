@@ -2284,6 +2284,24 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_anc_mode(sleep_app_c
     return 0;
 }
 
+uint32_t sndp_sleep_app_report_anc_mode(void)
+{	
+    if(!sndp_comm_ble_is_connected())
+    {
+        return 1;
+    }
+    
+    uint8_t data_len = 0;
+    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
+
+    cmd->value[data_len++] = sndp_dev_sleep_app_anc_mode_get(false);
+    cmd->flag = AppFlag;
+    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
+    cmd->cmd = SLEEP_APP_CMDID_GET_ANC_MODE;
+    sleep_app_comm_main_send_cmd(cmd);
+	return 0;
+}
+
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sleep_app_comm_cmd_info_s *cmd_info)
 {
     /*
