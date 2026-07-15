@@ -688,11 +688,11 @@ void sndp_hr_ble_disconnected_delay10s_start(void)
 {   
     SNDP_TRACE(0, "running: %d cover_closed: %d", hr_ctx.sleep_running, sndp_dev_cover_is_closed(false));
     if(hr_ctx.sleep_running) {
-        if(sndp_dev_cover_is_closed(false)) {
-            sndp_sleep_comm_cmd_analysis_stop();
+        if(sndp_dev_cover_is_closed(false)) { //关盖后断连直接关闭analysis
+            sndp_sleep_comm_disconnect_timer_handler();
         }else {
             hr_ctx.delay_10S_start = true;
-            sndp_delay_exec_start(10000, (uint32_t)sndp_sleep_comm_cmd_analysis_stop, 0, 0, 0);
+            sndp_delay_exec_start(10000, (uint32_t)sndp_sleep_comm_disconnect_timer_handler, 0, 0, 0);
         }
     } 
 }

@@ -190,6 +190,8 @@ uint16_t sndp_comm_protocol_find_next_frame_idx(uint8_t *recv_data, uint16_t dat
 
     uint16_t idx = 0xffff;
     bool found = false;
+    uint32_t sleepFlag = 0;
+		uint8_t *flagaddr = (uint8_t*)&sleepFlag;
     
     for(uint16_t i = 1; i < data_len; i++) {
         if(recv_data[i] == SNDP_COMM_FRAME_FLAG) {
@@ -197,6 +199,15 @@ uint16_t sndp_comm_protocol_find_next_frame_idx(uint8_t *recv_data, uint16_t dat
             found = true;
             break;
         }
+				((uint8_t*)flagaddr)[2] = recv_data[i+0];
+				((uint8_t*)flagaddr)[1] = recv_data[i+1];
+				((uint8_t*)flagaddr)[0] = recv_data[i+2];
+				if(sleepFlag == 0x574D43) {
+					COMM_PROTOCOL_TRACE(2, "find next frame idx(%d)", i);
+					idx = i;
+					found = true;
+					break;
+				}
     }
 
     if(found) {
