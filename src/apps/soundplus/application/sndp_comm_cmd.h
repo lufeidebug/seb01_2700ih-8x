@@ -90,23 +90,37 @@ typedef enum {
     COMM_CMDID_LR_SYNC_CALL_CTRL                    = 0x29, /* desc: 左右耳同步通话控制指令。
                                                              * recv: 1 bytes, event(1)
                                                              * rsp : 0 bytes */
-#if defined(__SNDP_SLEEP_APP__)
-    COMM_CMDID_LR_SYNC_EQ_INDEX                     = 0x2A, /* desc: 左右耳同步EQ模式指令。
+    COMM_CMDID_LR_SYNC_ALL_DEV_STATUS               = 0x2A, /* desc: 左右耳同步所有设备状态指令。
+                                                             * recv: n bytes, 
+                                                             * rsp : 0 bytes */ 
+    COMM_CMDID_LR_SYNC_BT_ONOFF                     = 0x2B, /* desc: 左右耳同步BT开关指令。
+                                                             * recv: 1 bytes, onoff(1)
+                                                             * rsp : 0 bytes */ 
+    COMM_CMDID_LR_SYNC_MOBILE_CONNECTED             = 0x2C, /* desc: 左右耳同步手机已连接状态指令。
+                                                             * recv: 0 bytes,
+                                                             * rsp : 0 bytes */                                                          
+    
+                                                             
+#if defined(__SNDP_SLEEP_APP__)                                                  
+    COMM_CMDID_LR_SYNC_EQ_INDEX                     = 0x2D, /* desc: 左右耳同步EQ模式指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_ANC_MODE                     = 0x2B, /* desc: 左右耳同步ANC模式指令。
+    COMM_CMDID_LR_SYNC_ANC_MODE                     = 0x2E, /* desc: 左右耳同步ANC模式指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_PROMPT_ONOFF                 = 0x2C, /* desc: 左右耳同步提示音开关指令。
+    COMM_CMDID_LR_SYNC_SLEEP_MODE                   = 0x2F, /* desc: 左右耳同步睡眠模式指令。
+                                                             * recv: 1 bytes, sleep mode(1)
+                                                             * rsp : 0 bytes */ 
+    COMM_CMDID_LR_SYNC_PROMPT_ONOFF                 = 0x30, /* desc: 左右耳同步提示音开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_GESTRUE_ONOFF                = 0x30, /* desc: 左右耳同步按键手势开关指令。
+    COMM_CMDID_LR_SYNC_GESTRUE_ONOFF                = 0x31, /* desc: 左右耳同步按键手势开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF             = 0x31, /* desc: 左右耳同步开关smart play/pause。
+    COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF             = 0x32, /* desc: 左右耳同步开关smart play/pause。
                                                              * recv: 2 bytes, key behavior(1) + key function(1)
                                                              * rsp : 0 bytes */       
-    COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x32, /* desc: 左右耳同步手势使能开关指令。
+    COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x33, /* desc: 左右耳同步手势使能开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */    
     COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF = 0x34, /* desc: 左右耳同步 proximity 上报开关。
@@ -122,26 +136,16 @@ typedef enum {
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
 #endif
-    COMM_CMDID_LR_SYNC_MOBILE_CONNECTED             = 0x38, /* desc: 左右耳同步手机已连接状态指令。
-                                                             * recv: 0 bytes,
-                                                             * rsp : 0 bytes */
+    
 #if defined(__SNDP_SLEEP_APP__)
-    COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT               = 0x3A, /* desc: 左右耳同步睡眠算法快照。
+    COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT               = 0x38, /* desc: 左右耳同步睡眠算法快照。
                                                              * recv: n bytes, snapshot data(2 bytes size + n bytes data)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_SLEEP_ROLE_STATUS            = 0x3B, /* desc: 左右耳同步睡眠角色状态。
+    COMM_CMDID_LR_SYNC_SLEEP_ROLE_STATUS            = 0x39, /* desc: 左右耳同步睡眠角色状态。
                                                              * recv: 1 bytes, role status(1)
-                                                             * rsp : 0 bytes */
+                                                             * rsp : 0 bytes */                                                    
 #endif
-    COMM_CMDID_LR_SYNC_ALL_DEV_STATUS               = 0x2D, /* desc: 左右耳同步所有设备状态指令。
-                                                             * recv: n bytes, 
-                                                             * rsp : 0 bytes */ 
-    COMM_CMDID_LR_SYNC_BT_ONOFF                     = 0x2E, /* desc: 左右耳同步BT开关指令。
-                                                             * recv: 1 bytes, onoff(1)
-                                                             * rsp : 0 bytes */ 
-    COMM_CMDID_LR_SYNC_SLEEP_MODE                   = 0x2F, /* desc: 左右耳同步睡眠模式指令。
-                                                             * recv: 1 bytes, sleep mode(1)
-                                                             * rsp : 0 bytes */ 
+
     
     /****** 生产测试指令. ******/
     COMM_CMDID_PT_SWITCH_TEST_MODE                  = 0x40, /* recv: 1 bytes, mode(1).

@@ -774,6 +774,8 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_Proximity_Notification_DATA(sndp_comm
     if (cmd_info->data_len == 2) {
         unsigned short peer_value = ((unsigned short)cmd_info->data[0] << 8) | (unsigned short)cmd_info->data[1];
         sndp_dev_sleep_app_set_proximity_data(true, peer_value);
+
+        sndp_comm_cmd_sleepapp_report_proximity_to_app();
     }
     return 0;
 }
@@ -2012,25 +2014,27 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_LR_SYNC_MOBILE_CONNECTED       , "LR_SYNC_MOBILE_CONNECTED", sndp_comm_cmd_recv_lr_sync_mobile_connected       },
     { COMM_CMDID_LR_SYNC_MUSIC_CTRL             , "LR_SYNC_MUSIC_CTRL"      , sndp_comm_cmd_recv_lr_sync_music_ctrl             },
     { COMM_CMDID_LR_SYNC_CALL_CTRL              , "LR_SYNC_CALL_CTRL"       , sndp_comm_cmd_recv_lr_sync_call_ctrl              },
+    { COMM_CMDID_LR_SYNC_ALL_DEV_STATUS         , "LR_SYNC_ALL_DEV_STATUS"  , sndp_comm_cmd_recv_lr_sync_all_dev_status         },
+    { COMM_CMDID_LR_SYNC_BT_ONOFF               , "LR_SYNC_BT_ONOFF"        , sndp_comm_cmd_recv_lr_sync_bt_onoff               },
+        
 #if defined(__SNDP_SLEEP_APP__)
-    { COMM_CMDID_LR_SYNC_EQ_INDEX               , "LR_SYNC_EQ_INDEX"    , sndp_comm_cmd_recv_lr_sync_eq_set           },
-    { COMM_CMDID_LR_SYNC_ANC_MODE               , "LR_SYNC_ANC_MODE"    , sndp_comm_cmd_recv_lr_sync_anc_mode           },
-    { COMM_CMDID_LR_SYNC_SLEEP_MODE             , "LR_SYNC_SLEEP_MODE"    , sndp_comm_cmd_recv_lr_sync_sleep_mode           },
+    { COMM_CMDID_LR_SYNC_EQ_INDEX               , "LR_SYNC_EQ_INDEX"        , sndp_comm_cmd_recv_lr_sync_eq_set                 },
+    { COMM_CMDID_LR_SYNC_ANC_MODE               , "LR_SYNC_ANC_MODE"        , sndp_comm_cmd_recv_lr_sync_anc_mode               },
+    { COMM_CMDID_LR_SYNC_SLEEP_MODE             , "LR_SYNC_SLEEP_MODE"      , sndp_comm_cmd_recv_lr_sync_sleep_mode             },
     { COMM_CMDID_LR_SYNC_PROMPT_ONOFF           , "LR_SYNC_PROMPT_ONOFF"    , sndp_comm_cmd_recv_lr_sync_prompt_onoff           },
-    { COMM_CMDID_LR_SYNC_GESTRUE_ONOFF           , "LR_SYNC_GESTRUE_ONOFF"    , sndp_comm_cmd_recv_lr_sync_gesture_onoff           },
-    { COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF          , "LR_SYNC_SPLAYPAUSE_ONOFF"   , sndp_comm_cmd_recv_lr_sync_splaypause_onoff          },
+    { COMM_CMDID_LR_SYNC_GESTRUE_ONOFF          , "LR_SYNC_GESTRUE_ONOFF"   , sndp_comm_cmd_recv_lr_sync_gesture_onoff          },
+    { COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF       , "LR_SYNC_SPLAYPAUSE_ONOFF", sndp_comm_cmd_recv_lr_sync_splaypause_onoff       },
 #if defined(__SNDP_GESTURE_MAP__)
     { COMM_CMDID_LR_SYNC_UPDATE_MAPPING         , "LR_SYNC_UPDATE_MAPPING"  , sndp_comm_cmd_recv_lr_sync_update_mapping         },
 #endif
-    { COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF          , "LR_SYNC_Proximity_Notification_ONOFF"  , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_ONOFF         },
-    { COMM_CMDID_LR_SYNC_Proximity_Notification_DATA           , "LR_SYNC_Proximity_Notification_DATA"  , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_DATA         },
-    { COMM_CMDID_LR_SYNC_HEARTRATE_ONOFF           , "LR_SYNC_HEARTRATE_ONOFF"  , sndp_comm_cmd_recv_lr_sync_heart_rate_onoff         },
-    { COMM_CMDID_LR_SYNC_STAGE_ONOFF           , "LR_SYNC_STAGE_ONOFF"  , sndp_comm_cmd_recv_lr_sync_stage_onoff         },
-    { COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT                       , "LR_SYNC_SLEEP_SNAPSHOT"   , sndp_comm_cmd_recv_lr_sync_sleep_snapshot          },
-    { COMM_CMDID_LR_SYNC_SLEEP_ROLE_STATUS          , "LR_SYNC_SLEEP_ROLE_STATUS" , sndp_comm_cmd_recv_lr_sync_sleep_role_status         },
+    { COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF   , "LR_SYNC_Prox_Notifi_ONOFF"   , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_ONOFF   },
+    { COMM_CMDID_LR_SYNC_Proximity_Notification_DATA    , "LR_SYNC_Prox_Notifi_DATA"    , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_DATA    },
+    { COMM_CMDID_LR_SYNC_HEARTRATE_ONOFF        , "LR_SYNC_HEARTRATE_ONOFF"     , sndp_comm_cmd_recv_lr_sync_heart_rate_onoff       },
+    { COMM_CMDID_LR_SYNC_STAGE_ONOFF            , "LR_SYNC_STAGE_ONOFF"         , sndp_comm_cmd_recv_lr_sync_stage_onoff            },
+    { COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT         , "LR_SYNC_SLEEP_SNAPSHOT"      , sndp_comm_cmd_recv_lr_sync_sleep_snapshot         },
+    { COMM_CMDID_LR_SYNC_SLEEP_ROLE_STATUS      , "LR_SYNC_SLEEP_ROLE_STATUS"   , sndp_comm_cmd_recv_lr_sync_sleep_role_status      },
 #endif
-    { COMM_CMDID_LR_SYNC_ALL_DEV_STATUS         , "LR_SYNC_ALL_DEV_STATUS"  , sndp_comm_cmd_recv_lr_sync_all_dev_status         },
-    { COMM_CMDID_LR_SYNC_BT_ONOFF               , "LR_SYNC_BT_ONOFF"        , sndp_comm_cmd_recv_lr_sync_bt_onoff               },
+    
     
 #if defined(__SNDP_PRODUCT_TEST__)
     /****** 生产测试指令. ******/
@@ -2046,13 +2050,13 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
 	{ COMM_CMDID_PT_EXIT_DUT                    , "PT_EXIT_DUT"	            , sndp_comm_cmd_recv_pt_exit_dut_mode		        },
     { COMM_CMDID_PT_QUERY_FW_VER                , "PT_Q_FW_VER"	            , sndp_comm_cmd_recv_pt_query_fw_ver                },
 	{ COMM_CMDID_PT_QUERY_HW_VER                , "PT_Q_HW_VER"	            , sndp_comm_cmd_recv_pt_query_hw_ver                },
-    { COMM_CMDID_PT_READ_DEV_SN                 , "PT_R_DEV_SN "            , sndp_comm_cmd_recv_pt_read_dev_sn                },
+    { COMM_CMDID_PT_READ_DEV_SN                 , "PT_R_DEV_SN "            , sndp_comm_cmd_recv_pt_read_dev_sn                 },
 	{ COMM_CMDID_PT_WRITE_DEV_SN                , "PT_W_DEV_SN"	            , sndp_comm_cmd_recv_pt_write_dev_sn                },
-    { COMM_CMDID_PT_READ_BT_ADDR                , "PT_R_BT_ADDR"	        , sndp_comm_cmd_recv_pt_read_bt_addr               },
+    { COMM_CMDID_PT_READ_BT_ADDR                , "PT_R_BT_ADDR"	        , sndp_comm_cmd_recv_pt_read_bt_addr                },
 	{ COMM_CMDID_PT_WRITE_BT_ADDR               , "PT_W_BT_ADDR "	        , sndp_comm_cmd_recv_pt_set_bt_addr                 },
 	{ COMM_CMDID_PT_READ_BLE_ADDR               , "PT_R_BLE_ADDR"	        , sndp_comm_cmd_recv_pt_read_ble_addr		        },
 	{ COMM_CMDID_PT_WRITE_BLE_ADDR              , "PT_W_BLE_ADDR"	        , sndp_comm_cmd_recv_pt_set_ble_addr		        },
-    { COMM_CMDID_PT_READ_RF_FREQ_OFF            , "PT_R_RF_FQ_OFF"          , sndp_comm_cmd_recv_pt_read_frequency_offset      }, 
+    { COMM_CMDID_PT_READ_RF_FREQ_OFF            , "PT_R_RF_FQ_OFF"          , sndp_comm_cmd_recv_pt_read_frequency_offset       }, 
 	{ COMM_CMDID_PT_WRITE_RF_FREQ_OFF           , "PT_W_RF_FQ_OFF"          , sndp_comm_cmd_recv_pt_write_frequency_offset      },	
 	{ COMM_CMDID_PT_TEST_MIC                    , "PT_TEST_MIC"	            , sndp_comm_cmd_recv_pt_test_mic                    },
     { COMM_CMDID_PT_TEST_SPK                    , "PT_TEST_SPK"	            , sndp_comm_cmd_recv_pt_test_speaker                },
@@ -3374,11 +3378,12 @@ static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
 
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_peer(void)
 {
-    unsigned short proximity_value_local = 0;
-    sndp_dev_hr_read_proximity_value(&proximity_value_local);
-    sndp_sleep_app_set_flag_onoff(SNDP_PROXIMITY_ONOFF_FLAG, false, proximity_value_local, false);
-
     if (sndp_dev_sleep_app_get_proximity_onoff(false) && sndp_comm_proximity_slave_timer_running) {
+        unsigned short proximity_value_local = 0;
+        
+        sndp_dev_hr_read_proximity_value(&proximity_value_local);
+        sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(proximity_value_local);
+        
         sndp_delay_exec_start(sndp_comm_proximity_report_interval_ms,
                               (uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer,
                               0, 0, 0);
@@ -3388,11 +3393,6 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_p
 
 static uint32_t sndp_comm_cmd_sleepapp_start_report_proximity(void)
 {
-    // if (!sndp_is_tws_master_mode() && sndp_is_tws_link_connected()) {
-    //     COMM_CMD_TRACE(0, "not in master mode, skip reporting proximity");
-    //     return 0;
-    // }
-
     if (!sndp_dev_sleep_app_get_proximity_onoff(false)) {
         return 0;
     }
@@ -3400,8 +3400,13 @@ static uint32_t sndp_comm_cmd_sleepapp_start_report_proximity(void)
     if(!sndp_comm_ble_is_connected()){
         return 0;
     }
-    sndp_comm_cmd_sleepapp_report_proximity_to_app();
-    sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(sndp_dev_sleep_app_get_proximity_data(false));
+
+    if(sndp_is_tws_link_connected()) {
+        //call the sndp_comm_cmd_sleepapp_report_proximity_to_app() function within the sndp_comm_cmd_recv_lr_sync_Proximity_Notification_DATA() function.
+    } else {
+        sndp_dev_sleep_app_set_proximity_data(true, 0);
+        sndp_comm_cmd_sleepapp_report_proximity_to_app();
+    }
 
     sndp_delay_exec_start(sndp_comm_proximity_report_interval_ms,
                           (uint32_t)sndp_comm_cmd_sleepapp_start_report_proximity,
@@ -3417,7 +3422,6 @@ static uint32_t sndp_comm_cmd_sleepapp_stop_report_proximity(void)
 
     sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_start_report_proximity);
     sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer);
-    sndp_comm_proximity_slave_timer_running = false;
     return 0;
 }
 
