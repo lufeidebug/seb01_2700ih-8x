@@ -422,7 +422,7 @@ void da217e_drv_deal_tap_interruption(void)
             da217e_reg_write(DA217E_REG_TAP_THS, DA217E_TAP_THRESHOLD_BOOST);
         }
         osTimerStop(da217_tap_timer);
-        osTimerStart(da217_tap_timer, 600);
+        osTimerStart(da217_tap_timer, 700);
 #endif
 
     }
