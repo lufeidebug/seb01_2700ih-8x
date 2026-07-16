@@ -3611,8 +3611,10 @@ void sndp_sleep_app_report_gesture(uint32_t gesture)
         COMM_CMD_TRACE(0,"ble not connected,gesture no send......");
         return;
     }
-    uint8_t reply_gesture = gesture;
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GESTURE_EVENT_UPDATE, sizeof(reply_gesture), &reply_gesture);
+    uint8_t reply_gesture[2] = {0};
+    reply_gesture[0] = gesture;
+    reply_gesture[1] = sndp_dev_get_earside(false);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GESTURE_EVENT_UPDATE, sizeof(reply_gesture), reply_gesture);
 }
 
 void sndp_sleep_app_report_tap(void)
@@ -3628,8 +3630,10 @@ void sndp_sleep_app_report_tap(void)
         COMM_CMD_TRACE(0,"ble not connected,tap no send......");
         return;
     }
-    uint8_t reply_tap = 0x00;
-    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_TAP_UPDATE, sizeof(reply_tap), &reply_tap);
+    uint8_t reply_tap[2] = {0};
+    reply_tap[0] = 0x00;
+    reply_tap[1] = sndp_dev_get_earside(false);
+    sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_TAP_UPDATE, sizeof(reply_tap), reply_tap);
 }
 #endif
 /*
