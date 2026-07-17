@@ -23,7 +23,13 @@
 #ifdef PROMPT_IN_FLASH
 #define MEDIA_DEFAULT_LANGUAGE (LANGUAGE_ID_EN)
 #else
+
+#if defined(__SNDP_PROMPT_TEST__)
+#define MEDIA_DEFAULT_LANGUAGE (LANGUAGE_ID_CN - 1)
+#else
 #define MEDIA_DEFAULT_LANGUAGE (LANGUAGE_ID_EN - 1)
+#endif
+
 #endif
 
 typedef enum

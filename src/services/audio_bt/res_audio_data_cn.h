@@ -17,11 +17,11 @@
 #define __RES_AUDIO_DATA_CN_H
 
 const uint8_t CN_POWER_ON [] = {
-#include "res/cn/SOUND_POWER_ON.txt"
+#include "res/cn/SOUND_POWER_ON_16k.txt"
 };
 
 const uint8_t CN_POWER_OFF [] = {
-0//#include "res/cn/SOUND_POWER_OFF.txt"
+#include "res/cn/SOUND_POWER_OFF_16k.txt"
 };
 
 const uint8_t CN_SOUND_ZERO[] = { 
@@ -69,7 +69,7 @@ const uint8_t CN_BT_PAIR_ENABLE[] = {
 };
 
 const uint8_t CN_BT_PAIRING [] = {
-0//#include "res/cn/SOUND_PAIRING.txt"
+#include "res/cn/SOUND_PAIRING_16k.txt"
 };
 
 const uint8_t CN_BT_PAIRING_FAIL[] = {
@@ -81,36 +81,36 @@ const uint8_t CN_BT_PAIRING_SUCCESS[] = {
 };
 
 const uint8_t CN_BT_REFUSE[] = { 
-0//#include "res/cn/SOUND_REFUSE.txt"
+#include "res/cn/SOUND_REFUSE.txt"
 };
 
 const uint8_t CN_BT_OVER[] = { 
-0//#include "res/cn/SOUND_OVER.txt"
+#include "res/cn/SOUND_OVER.txt"
 };
 
 const uint8_t CN_BT_ANSWER[] = { 
-0//#include "res/cn/SOUND_ANSWER.txt"
+#include "res/cn/SOUND_ANSWER.txt"
 };
 
 
 const uint8_t CN_BT_HUNG_UP[] = { 
-0//#include "res/cn/SOUND_HUNG_UP.txt"
+#include "res/cn/SOUND_HUNG_UP.txt"
 };
 
 const uint8_t CN_BT_INCOMING_CALL [] = {
-0//#include "res/cn/SOUND_INCOMING_CALL.txt"
+#include "res/cn/SOUND_INCOMING_CALL_16k.txt"
 };
 
 const uint8_t CN_BT_CONNECTED [] = {
-0//#include "res/cn/SOUND_CONNECTED.txt"    
+#include "res/cn/SOUND_CONNECTED_16k.txt"    
 };
 
 const uint8_t CN_BT_DIS_CONNECT [] = {
-0//#include "res/cn/SOUND_DIS_CONNECT.txt"
+#include "res/cn/SOUND_DIS_CONNECT_16k.txt"
 };
 
 const uint8_t CN_CHARGE_PLEASE[] = {
-0//#include "res/cn/SOUND_CHARGE_PLEASE.txt"
+#include "res/cn/SOUND_CHARGE_PLEASE_16k.txt"
 };
 
 const uint8_t CN_CHARGE_FINISH[] = {
@@ -149,9 +149,14 @@ const uint8_t CN_SOUND_CUSTOM_LEAK_DETECT [] = {
 0//#include "res/ld/SOUND_PROMPT_CUSTOM_LEAK.txt"
 };
 
+const uint8_t CN_SOUND_PROMPT_ADAPTIVE_ANC [] = {
+0//#include "res/adapt_anc/SOUND_PROMPT_ADAPTIVE_ANC.txt"
+};
+
+
 #if defined(__INTERACTION__)||defined(__SNDP_FINDME__)
 const uint8_t CN_BT_FINDME[] = {
-0//#include "res/cn/SOUND_FINDME.txt"
+#include "res/cn/SOUND_FINDME_16K.txt"
 };
 #endif
 
@@ -162,27 +167,27 @@ const uint8_t CN_BT_MUTE[] = {
 
 #if defined(__SNDP_UI__)
 const uint8_t CN_SOUND_ANC_ON[] = {
-0//#include "res/cn/SOUND_ANC_ON_16K.txt"
+#include "res/cn/SOUND_ANC_ON_16K.txt"
 };
 
 const uint8_t CN_SOUND_ANC_OFF[] = {
-0//#include "res/cn/SOUND_ANC_OFF_16K.txt"
+#include "res/cn/SOUND_ANC_OFF_16K.txt"
 };
 
 const uint8_t CN_SOUND_TRANSPARENT[] = {
-0//#include "res/cn/SOUND_TRANSPARENT_16k.txt"
+#include "res/cn/SOUND_TRANSPARENT_16k.txt"
 };
 
 const uint8_t CN_SOUND_WORKING_MODE_SLEEP[] = {
-0//#include "res/cn/SOUND_WORKING_MODE_SLEEP_16k.txt"
+#include "res/cn/SOUND_WORKING_MODE_SLEEP_16k.txt"
 };
 
 const uint8_t CN_SOUND_WORKING_MODE_BT[] = {
-0//#include "res/cn/SOUND_WORKING_MODE_BT_16k.txt"
+#include "res/cn/SOUND_WORKING_MODE_BT_16k.txt"
 };
 
 const uint8_t CN_SOUND_WEAR_ON[] = {
-0//#include "res/cn/SOUND_WEAR_ON_16k.txt"
+#include "res/cn/SOUND_WEAR_ON_16k.txt"
 };
 
 
