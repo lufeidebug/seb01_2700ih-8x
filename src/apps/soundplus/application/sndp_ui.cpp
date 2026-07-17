@@ -675,7 +675,8 @@ void sndp_ui_gesture_3click_hdlr(bool remote)
         if(sndp_dev_is_left_earphone()) {
             sndp_ui_anc_switch();
         } else {
-            sndp_ui_working_mode_anc_switch();
+            //sndp_ui_working_mode_anc_switch();
+			sndp_ui_anc_switch();
         }
     } else if(sndp_call_is_active()) {
         if(sndp_call_is_threeway_incoming()) {
@@ -687,7 +688,8 @@ void sndp_ui_gesture_3click_hdlr(bool remote)
         if(sndp_dev_is_left_earphone()) {
             sndp_ui_anc_switch();
         } else {
-            sndp_ui_working_mode_anc_switch();
+            //sndp_ui_working_mode_anc_switch();
+            sndp_ui_anc_switch();
         }
     }
     
