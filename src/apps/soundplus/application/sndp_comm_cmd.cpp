@@ -202,7 +202,13 @@ static uint32_t sndp_comm_cmd_recv_eb_freeman_pairing(sndp_comm_cmd_info_s *cmd_
     sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
 
     if(err_code == SNDP_COMM_ERROR_NONE) {
-	    sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
+
+        if(!sndp_is_tws_link_connected()) {
+            sndp_call_func_in_app_thread((uint32_t)sndp_enter_freeman_pairing, 0, 0, 0);
+        } else {
+            sndp_call_func_in_app_thread((uint32_t)sndp_tws_enter_mobile_pairing_after_mobile_disconnect, 0, 0, 0);
+        }
+
     }
 	return 0;
 }
@@ -560,6 +566,20 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_mobile_connected(sndp_comm_cmd_info_s
 {
 	sndp_call_func_in_app_thread((uint32_t)sndp_mobile_pairing_sccessful, 0, 0, 0);
 	sndp_call_func_in_app_thread((uint32_t)sndp_mobile_reconnect_sccessful, 0, 0, 0);
+	return 0;
+}
+
+
+
+uint32_t sndp_comm_cmd_send_lr_sync_disconnect_and_tws_pair(void)
+{
+	sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_DISCONNECT_AND_TWS_PAIR, NULL, 0);
+	return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_disconnect_and_tws_pair(sndp_comm_cmd_info_s *cmd_info)
+{
+	sndp_call_func_in_app_thread((uint32_t)sndp_tws_enter_mobile_pairing_after_mobile_disconnect, 0, 0, 0);
 	return 0;
 }
 
@@ -934,14 +954,21 @@ static uint32_t sndp_comm_cmd_recv_pt_restore_factory_mode(sndp_comm_cmd_info_s 
 
 static uint32_t sndp_comm_cmd_recv_pt_single_pairing(sndp_comm_cmd_info_s *cmd_info)
 {
+    uint8_t path = cmd_info->path;
+    COMM_CMD_TRACE(0, " path=%d", path);
 	sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NONE);
 	if(sndp_is_tws_link_connected()) {
-		if(sndp_is_tws_master_mode()) {
-			sndp_call_func_in_app_thread((uint32_t)sndp_tws_enter_mobile_pairing_after_mobile_disconnect, 0, 0, 0);
-		}
-	} else {
-		sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
-	}
+        if(path == SNDP_COMM_PATH_SPP) {
+            if(sndp_is_tws_master_mode()) {
+                sndp_call_func_in_app_thread((uint32_t)sndp_tws_enter_mobile_pairing_after_mobile_disconnect, 0, 0, 0);
+            }
+        } else {
+            sndp_call_func_in_app_thread((uint32_t)sndp_tws_enter_mobile_pairing_after_mobile_disconnect, 0, 0, 0);
+        }
+    } else {
+        sndp_call_func_in_app_thread((uint32_t)sndp_enter_freeman_pairing, 0, 0, 0);
+    }
+
 	return 0;
 }
 
@@ -2012,6 +2039,7 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
 	{ COMM_CMDID_LR_SYNC_GESTURE                , "LR_SYNC_GESTURE"         , sndp_comm_cmd_recv_lr_sync_gesture                },
     { COMM_CMDID_LR_SYNC_BOTH_SHUTDOWN          , "LR_SYNC_BOTH_SHUTDOWN"   , sndp_comm_cmd_recv_lr_sync_both_shutdown          },
     { COMM_CMDID_LR_SYNC_MOBILE_CONNECTED       , "LR_SYNC_MOBILE_CONNECTED", sndp_comm_cmd_recv_lr_sync_mobile_connected       },
+    { COMM_CMDID_LR_SYNC_DISCONNECT_AND_TWS_PAIR, "LR_SYNC_DISCONNECT_TWSPR", sndp_comm_cmd_recv_lr_sync_disconnect_and_tws_pair },
     { COMM_CMDID_LR_SYNC_MUSIC_CTRL             , "LR_SYNC_MUSIC_CTRL"      , sndp_comm_cmd_recv_lr_sync_music_ctrl             },
     { COMM_CMDID_LR_SYNC_CALL_CTRL              , "LR_SYNC_CALL_CTRL"       , sndp_comm_cmd_recv_lr_sync_call_ctrl              },
     { COMM_CMDID_LR_SYNC_ALL_DEV_STATUS         , "LR_SYNC_ALL_DEV_STATUS"  , sndp_comm_cmd_recv_lr_sync_all_dev_status         },
@@ -2113,6 +2141,7 @@ int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd)
         && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_SWITCH_TEST_MODE
         && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_QUERY_TEST_MODE
         && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_QUERY_FW_VER
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_ENTER_DUT
         && sndp_comm_exec_cmd.path != SNDP_COMM_PATH_TRACE_UART) {
         if(!sndp_pt_is_in_test_mode()) {
             COMM_CMD_TRACE(1, "cmd(0x%02X) rejected, not in test mode", sndp_comm_exec_cmd.cmd_id);

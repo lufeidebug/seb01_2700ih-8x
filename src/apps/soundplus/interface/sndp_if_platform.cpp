@@ -297,6 +297,8 @@ void sndp_enter_freeman_pairing(void)
 {
     SNDP_IF_TRACE(0, "...");
 
+	sndp_disconnect_all_mobile_link();
+
     sndp_pairing_type = SNDP_PAIRING_FREEMAN;
     sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
     bta_tws_box_event_entry(BTA_TWS_OPEN);
@@ -489,6 +491,9 @@ void sndp_enter_mobile_pairing_after_tws_connected(void)
 void sndp_tws_enter_mobile_pairing_after_mobile_disconnect(void)
 {
     SNDP_IF_TRACE(0, "enter");
+	if (sndp_is_tws_slave_mode()) {
+		sndp_comm_cmd_send_lr_sync_disconnect_and_tws_pair();	
+	}
 
 	sndp_disconnect_all_mobile_link();
 	

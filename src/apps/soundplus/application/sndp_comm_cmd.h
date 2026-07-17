@@ -146,6 +146,9 @@ typedef enum {
                                                              * rsp : 0 bytes */                                                    
 #endif
 
+    COMM_CMDID_LR_SYNC_DISCONNECT_AND_TWS_PAIR       = 0x3A, /* desc: 左右耳同步断开手机连接并进入配对模式指令。
+                                                             * recv: 0 bytes,
+                                                             * rsp : 0 bytes */
     
     /****** 生产测试指令. ******/
     COMM_CMDID_PT_SWITCH_TEST_MODE                  = 0x40, /* recv: 1 bytes, mode(1).
@@ -286,6 +289,7 @@ uint32_t sndp_comm_cmd_send_lr_sync_gesture(uint8_t gesture);
 uint32_t sndp_comm_cmd_send_lr_sync_language_switch(uint8_t language);
 uint32_t sndp_comm_cmd_send_lr_sync_both_shutdown(void);
 uint32_t sndp_comm_cmd_send_lr_sync_mobile_connected(void);
+uint32_t sndp_comm_cmd_send_lr_sync_disconnect_and_tws_pair(void);
 uint32_t sndp_comm_cmd_send_lr_sync_music_ctrl(uint8_t event);
 uint32_t sndp_comm_cmd_send_lr_sync_call_ctrl(uint8_t event);
 uint32_t sndp_comm_cmd_send_lr_sync_all_dev_status(uint8_t *data, uint16_t data_len);

@@ -316,7 +316,12 @@ static void sndp_ui_wear_off_role_switch(void)
     if(sndp_is_tws_link_connected()) {
         if(sndp_is_tws_master_mode() && sndp_dev_wear_is_worn(true)) {
             SPUI_TRACE(0, "%d", __LINE__);
+            if(sndp_dev_iobox_is_in_box(true)) {
+                SPUI_TRACE(0, "%d", __LINE__);
+                return;
+            }
             sndp_ibrt_tws_switch();
+            
         }
     }
 }
