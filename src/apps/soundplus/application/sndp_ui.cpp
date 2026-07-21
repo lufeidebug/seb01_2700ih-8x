@@ -486,7 +486,8 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
     
 	/* update the ibrt status machine */
 	if(SNDP_DEV_WEAR_ON == wear_status) {
-        sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_on_exec_delayed, 0, 0, 0);
+        // sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_on_exec_delayed, 0, 0, 0);
+        sndp_ui_wear_on_exec_delayed();
 		/* play wear prompt tone */
 		sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_play_tone, 0, 0, 0);
 
