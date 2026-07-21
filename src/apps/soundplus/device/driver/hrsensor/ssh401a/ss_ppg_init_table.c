@@ -41,6 +41,7 @@ const unsigned char g_ss_ppg_init_register_ssh202[][2] = {
 
 // #define SS_PPG_INIT_PARAM_20260424
 #define SS_PPG_INIT_PARAM_20260511
+#define SS_PPG_INIT_PARAM_20260721
 
 /**
  * @brief SSH401 initial register settings
@@ -182,9 +183,13 @@ const unsigned char g_ss_ppg_init_register_ssh401[][2] = {
     // Hidden register settings
     {REG_H_TIA_GAIN, 0x63},      // SEQ0 TIA Gain=400Kohm (x16)
     {REG_H_INT_GAIN, 0x35},      // SEQ0 INT Gain=50Kohm/16pF
+#if defined(SS_PPG_INIT_PARAM_20260721)
+    {REG_SEQ1_H_TIA_GAIN, 0x63},  // SEQ1 TIA Gain=100Kohm (x16)
+    {REG_SEQ1_H_INT_GAIN, 0x65}, // SEQ1 INT Gain=100Kohm/16pF
+#else
     {REG_SEQ1_H_TIA_GAIN, 0x43},  // SEQ1 TIA Gain=100Kohm (x16)
     {REG_SEQ1_H_INT_GAIN, 0x45}, // SEQ1 INT Gain=100Kohm/16pF
-
+#endif
     {REG_H_AFE_TIME, 0xE0},      // AFE Rest time control
 
     // Interrupt settings
