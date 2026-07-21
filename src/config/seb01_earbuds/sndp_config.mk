@@ -85,6 +85,8 @@ export SNDP_APP_WHITE_NOISE                     := 1
 export SNDP_SLEEP_APP                           := 1
 export SNDP_BAT_SWITCH_ROLE                     := 1
 export SNDP_PROMPT_TEST                         := 1
+export SNDP_ANC_MODIFY                          := 1
+
 
 ifeq ($(SNDP_UI),1)
     KBUILD_CPPFLAGS += -D__SNDP_UI__
@@ -456,6 +458,11 @@ endif
 ifeq ($(SNDP_PROMPT_TEST),1)
     KBUILD_CPPFLAGS += -D__SNDP_PROMPT_TEST__
 endif
+
+ifeq ($(SNDP_ANC_MODIFY),1)
+    KBUILD_CPPFLAGS += -D__SNDP_ANC_MODIFY__
+endif
+
 
 
 endif 

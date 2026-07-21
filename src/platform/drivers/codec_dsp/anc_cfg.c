@@ -141,7 +141,7 @@ int anc_load_cfg(void)
 
     if(res) {
         LOG_I("[%s] WARNING(%d): Can not load anc coefficient from audio section!!!", __func__, res);
-        } else {
+    } else {
         LOG_I("[%s] Load anc coefficient from audio section.", __func__);
 #if (AUD_SECTION_STRUCT_VERSION == 1)
         LOG_I("[%s] L: gain = %d, len = %d, dac = %d, adc = %d", __func__, list[0]->anc_cfg_ff_l.total_gain, list[0]->anc_cfg_ff_l.fir_len, list[0]->anc_cfg_ff_l.dac_gain_offset, list[0]->anc_cfg_ff_l.adc_gain_offset);

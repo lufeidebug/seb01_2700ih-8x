@@ -25,7 +25,7 @@
 
 static const app_anc_coef_index_cfg_t app_anc_coef_index_cfg[APP_ANC_MODE_QTY] = {
   /*  FF ,  FB , PSAP, SPK ,  TT , SW PSAP, Custom */
-#if defined(__SNDP_ANC__)
+#if defined(__SNDP_ANC_MODIFY__)
     {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_OFF},        // APP_ANC_MODE_OFF
     {0x00, 0x00, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 1, Production calibration
     {0x01, 0x01, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 2, Default Depth
