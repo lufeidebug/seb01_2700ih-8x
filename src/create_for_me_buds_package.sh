@@ -16,6 +16,7 @@ if [ -z "$SOFTWARE_VERSION" ]; then
   exit 2
 fi
 
+DATE_TAG="$(date +%Y%m%d)"
 TARGET_BASE="$SCRIPT_DIR/For_me_buds_${SOFTWARE_VERSION}"
 BOX_DIR="$TARGET_BASE/box"
 EARBUDS_DIR="$TARGET_BASE/earbuds"
@@ -164,7 +165,7 @@ target_copy_rename "seb01_earbuds_app_v*.bin" "$DOWNLOAD_DIR"
 
 BOOT_FILE="$SCRIPT_DIR/out/prod_test/ota_copy/ota_copy.bin"
 if [[ -f "$BOOT_FILE" ]]; then
-  cp -v "$BOOT_FILE" "$DOWNLOAD_DIR/For_me_buds_boot_20260413.bin"
+  cp -v "$BOOT_FILE" "$DOWNLOAD_DIR/For_me_buds_boot_${DATE_TAG}.bin"
 else
   echo "WARNING: boot file not found: $BOOT_FILE"
 fi
