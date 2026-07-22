@@ -216,12 +216,12 @@ static bool dma_opened = false;
 static HAL_DMA_DELAY_FUNC dma_delay = NULL;
 
 #ifdef DMA_DEBUG
-#ifdef DMA2_BASE && (DMA2_CHAN_NUM > DMA0_CHAN_NUM)
+#if defined(DMA2_BASE) && (DMA2_CHAN_NUM > DMA0_CHAN_NUM)
 #define MAX_CHAN_NUM02                      DMA2_CHAN_NUM
 #else
 #define MAX_CHAN_NUM02                      DMA0_CHAN_NUM
 #endif
-#ifdef DMA1_BASE && (DMA1_CHAN_NUM > MAX_CHAN_NUM02)
+#if defined(DMA1_BASE) && (DMA1_CHAN_NUM > MAX_CHAN_NUM02)
 #define MAX_CHAN_NUM_PER_INST               DMA1_CHAN_NUM
 #else
 #define MAX_CHAN_NUM_PER_INST               MAX_CHAN_NUM02

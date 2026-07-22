@@ -105,7 +105,7 @@ enum HAL_SYSFREQ_USER_T hal_sysfreq_get_top_user(void);
 #ifdef SYSFREQ_STATS
 SYSTEM_SYSFREQ_STAT_T* system_sysfreq_stat_get(void);
 
-void system_sysfreq_stat_update(uint32_t tot, uint32_t arrFreq[][2], uint8_t size);
+void system_sysfreq_stat_update(uint32_t tot, uint32_t arrFreq[][2], uint32_t size);
 #endif
 
 #ifdef __cplusplus

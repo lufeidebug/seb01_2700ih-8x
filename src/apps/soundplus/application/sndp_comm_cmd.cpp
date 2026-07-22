@@ -1432,10 +1432,12 @@ static uint32_t sndp_comm_cmd_recv_pt_read_algo_auth_result(sndp_comm_cmd_info_s
 	return 0;
 }
 
+#if defined(__SNDP_LOG_OUTPUT_SWITCH__)
 static void hal_trace_log_output_switch(uint32_t en, uint32_t param1, uint32_t param2)
 {
     hal_trace_output_enable(en ? true : false);
 }
+#endif
 
 static bool sndp_comm_cmd_log_output_enabled = true;
 
