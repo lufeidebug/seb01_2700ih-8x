@@ -41,7 +41,7 @@
 #define APP_TRACE_RX_ROLE_NUM    8
 #endif
 
-#define APP_TRACE_RX_BUF_SIZE    1024
+#define APP_TRACE_RX_BUF_SIZE    (1024*2)
 
 #define APP_TRACE_RX_HEAD               '['
 #define APP_TRACE_RX_END                ']'
