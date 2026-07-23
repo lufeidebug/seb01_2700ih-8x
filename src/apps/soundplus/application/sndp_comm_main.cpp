@@ -390,12 +390,19 @@ static void sndp_comm_recv_thread(void const *argument)
 
             COMM_MIAN_TRACE(0, "queue_len=%d, peek_len=%d", queue_len, peek_len);
             sndp_comm_queue_peek_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, peek_len);
-
+            // if(queue_len > 200) {
+            //     DUMP8("%02X ", deal_buf, 64);
+            //     DUMP8("%02X ", deal_buf+64, 64);
+            //     DUMP8("%02X ", deal_buf+128, 64);
+            //     DUMP8("%02X ", deal_buf+192, queue_len-192);
+            // }else{
+            //     DUMP8("%02X ", deal_buf, peek_len > 32 ? 32 : peek_len);
+            // }
             DUMP8("%02X ", deal_buf, peek_len > 32 ? 32 : peek_len);
 
             if(deal_buf[0] == SNDP_COMM_FRAME_FLAG) {
                 error_code = sndp_comm_protocol_parse_recv_data(deal_buf, peek_len, recv_cmd);
-                // COMM_MIAN_TRACE(0, "error_code=%02x", error_code);
+                COMM_MIAN_TRACE(0, "error_code=%02x", error_code);
             
                 if(error_code == SNDP_COMM_ERROR_WAITTING_MORE) {
                     #if 0
@@ -432,11 +439,11 @@ static void sndp_comm_recv_thread(void const *argument)
                 SleepAppFlagGet(&appflag, deal_buf);
                 if(appflag == AppFlag) {
                     path_hdlr->recv_wait_more_cnt = 0;
-                    // COMM_MIAN_TRACE(0, "Sleep data, appflag=0x%08X", appflag);
+                    COMM_MIAN_TRACE(0, "Sleep data, appflag=0x%08X", appflag);
                     sleep_app_error_code = sleep_protocol_parse_recv_data(deal_buf, peek_len, &app_recv_cmd);
 
                     if(sleep_app_error_code == SLEEP_APP_ERROR_NONE) {
-                        app_pop_len = SLEEP_APP_COMM_HEAD_LEN + app_recv_cmd.data_len - SLEEP_APP_CMD_LEN; //SLEEP_APP_COMM_HEAD_LEN + data_len
+                        app_pop_len = SLEEP_APP_FLAG_LEN + app_recv_cmd.data_len + SLEEP_APP_CMD_LEN; //SLEEP_APP_COMM_HEAD_LEN + data_len
                         // COMM_MIAN_TRACE(0, "Sleep cmd(%02X), data_len=%d app_pop_len=%d", app_recv_cmd.cmd, app_recv_cmd.data_len, app_pop_len);
                         sndp_comm_queue_pop_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, app_pop_len);
                         sndp_comm_queue_set_change_status(path_hdlr, true);

@@ -641,6 +641,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_anc_mode(sndp_comm_cmd_info_s *cmd_in
         // COMM_CMD_TRACE(1, "ancmode=%d, is_save=%d", cmd_info->data[0], cmd_info->data[1]);
         sndp_dev_sleep_app_anc_mode_set(false, cmd_info->data[0], cmd_info->data[1]);
         sndp_anc_mode_set_locally((sndp_anc_mode_e)cmd_info->data[0]);
+        sndp_sleep_app_report_anc_mode();
     }
     return 0;
 }
@@ -2321,6 +2322,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_anc_mode(sleep_app_c
 
 uint32_t sndp_sleep_app_report_anc_mode(void)
 {	
+    //COMM_CMD_TRACE(1, "ble_is_connected %d", sndp_comm_ble_is_connected());
     if(!sndp_comm_ble_is_connected())
     {
         return 1;
