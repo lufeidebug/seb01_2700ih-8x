@@ -884,11 +884,17 @@ void sndp_comm_main_ms_init(void)
   
 int32_t sndp_comm_main_init(sndp_comm_init_mode_e mode)
 {
-    sndp_comm_recv_semaphore_id = osSemaphoreCreate(osSemaphore(sndp_comm_recv_semaphore), 0);
-    ASSERT(sndp_comm_recv_semaphore_id != NULL, "%s, sndp_comm_recv_semaphore_id == NULL", __func__);
+    /* 线程和信号量只允许创建一次。
+     * sndp_comm_main_init 在一次开机会被调用多次，位置-(BASIC/ALL)，
+     * 重复 osThreadCreate 会重新用 0xCC 水印填充 recv 线程的栈，
+     * 并产生第二个 TCB，导致调度器切回旧线程时弹出 0xCC -> INVPC 死机。 */
+    if(sndp_comm_recv_thread_tid == NULL) {
+        sndp_comm_recv_semaphore_id = osSemaphoreCreate(osSemaphore(sndp_comm_recv_semaphore), 0);
+        ASSERT(sndp_comm_recv_semaphore_id != NULL, "%s, sndp_comm_recv_semaphore_id == NULL", __func__);
 
-    sndp_comm_recv_thread_tid = osThreadCreate(osThread(sndp_comm_recv_thread), NULL);
-    ASSERT(sndp_comm_recv_thread_tid != NULL, "%s, sndp_comm_recv_thread_tid == NULL", __func__);
+        sndp_comm_recv_thread_tid = osThreadCreate(osThread(sndp_comm_recv_thread), NULL);
+        ASSERT(sndp_comm_recv_thread_tid != NULL, "%s, sndp_comm_recv_thread_tid == NULL", __func__);
+    }
 
 
     if(mode == SNDP_COMM_INIT_BASIC) {
