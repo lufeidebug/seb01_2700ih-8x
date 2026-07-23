@@ -376,14 +376,10 @@ static POSSIBLY_UNUSED void sndp_ui_wear_on_open_anc(void)
 
 static POSSIBLY_UNUSED void sndp_ui_wear_off_close_anc(void)
 {
-	if(!sndp_anc_is_on()) {
-		SPUI_TRACE(0, "%d, rtn", __LINE__);
-		return;
+	if(sndp_anc_is_on() || sndp_anc_is_transparent()) {
+		SPUI_TRACE(0, "stopping...");	
+        sndp_anc_mode_set_locally(SNDP_ANC_MODE_OFF);
 	} 
-
-	SPUI_TRACE(0, "stopping...");	
-
-    sndp_anc_mode_set_locally(SNDP_ANC_MODE_OFF);
 }
 
 static POSSIBLY_UNUSED void sndp_ui_wear_on_enable_gesture(void)
@@ -478,6 +474,7 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_role_switch);
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_enable_gesture);
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_exec_delayed);
+    sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_open_anc);
 
     if(sndp_ui_pairing_type_is(SNDP_UI_PAIRING_FREEMAN)) {
         SPUI_TRACE(0, "freeman pairing return.");
@@ -618,7 +615,7 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         
         bta_tws_box_event_entry(BTA_TWS_DOCK);
 
-        if(sndp_anc_is_on()) {
+        if(sndp_anc_is_on() || sndp_anc_is_transparent()) {
             sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
         } 
 
@@ -1676,15 +1673,17 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
         sndp_dev_wear_set_status(true, all_dev_sta.wear_sta);
         sndp_dev_set_bat_info(true, all_dev_sta.bat_info);
 #if defined(__SNDP_SLEEP_APP__)
-        sndp_dev_sleep_app_set_eq_index(false, all_dev_sta.sleep_flag.sleep_eq_index, true);
-        sndp_dev_sleep_app_anc_mode_set(false, all_dev_sta.sleep_flag.sleep_anc_mode, true);
-        sndp_dev_sleep_app_set_prompt_onoff(false, all_dev_sta.sleep_flag.sleep_prompt_onoff, true);
-        sndp_dev_sleep_app_set_gesture_onoff(false, all_dev_sta.sleep_flag.sleep_gesture_onoff, true);
-        sndp_dev_sleep_app_set_splaypause_onoff(false, all_dev_sta.sleep_flag.sleep_splaypause_onoff, true);
-        sndp_dev_sleep_app_set_proximity_onoff(false, all_dev_sta.sleep_proximity_onoff);
-        sndp_dev_sleep_app_set_heartrate_onoff(false, all_dev_sta.sleep_flag.sleep_heartrate_onoff);
-        sndp_dev_sleep_app_set_stage_onoff(false, all_dev_sta.sleep_flag.sleep_stage_onoff);
-        sndp_sleep_role_set_peer(all_dev_sta.device_role);
+        if(sndp_is_tws_slave_mode()) {
+            sndp_dev_sleep_app_set_eq_index(false, all_dev_sta.sleep_flag.sleep_eq_index, true);
+            sndp_dev_sleep_app_anc_mode_set(false, all_dev_sta.sleep_flag.sleep_anc_mode, true);
+            sndp_dev_sleep_app_set_prompt_onoff(false, all_dev_sta.sleep_flag.sleep_prompt_onoff, true);
+            sndp_dev_sleep_app_set_gesture_onoff(false, all_dev_sta.sleep_flag.sleep_gesture_onoff, true);
+            sndp_dev_sleep_app_set_splaypause_onoff(false, all_dev_sta.sleep_flag.sleep_splaypause_onoff, true);
+            sndp_dev_sleep_app_set_proximity_onoff(false, all_dev_sta.sleep_proximity_onoff);
+            sndp_dev_sleep_app_set_heartrate_onoff(false, all_dev_sta.sleep_flag.sleep_heartrate_onoff);
+            sndp_dev_sleep_app_set_stage_onoff(false, all_dev_sta.sleep_flag.sleep_stage_onoff);
+            sndp_sleep_role_set_peer(all_dev_sta.device_role);
+        }
 #endif
     }
 }

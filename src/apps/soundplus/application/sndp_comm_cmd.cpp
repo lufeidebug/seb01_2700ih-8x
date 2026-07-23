@@ -640,7 +640,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_anc_mode(sndp_comm_cmd_info_s *cmd_in
      if(cmd_info->data_len == 2) {
         // COMM_CMD_TRACE(1, "ancmode=%d, is_save=%d", cmd_info->data[0], cmd_info->data[1]);
         sndp_dev_sleep_app_anc_mode_set(false, cmd_info->data[0], cmd_info->data[1]);
-        sndp_anc_mode_set_locally((sndp_anc_mode_e)cmd_info->data[0]);
+        //sndp_anc_mode_set_locally((sndp_anc_mode_e)cmd_info->data[0]);
         sndp_sleep_app_report_anc_mode();
     }
     return 0;

@@ -61,6 +61,11 @@
 #include "app_voice_assist_ada_iir.h"
 #endif
 
+
+#if defined(__SNDP_PROJ__)
+#include "sndp_if_device.h"
+#endif
+
 // #define ANC_BLOCK_ANC_SYNC_SWITCH_CMD
 
 #define ANC_SMOOTH_SWITCH_GAIN_MS   (500)
@@ -928,6 +933,12 @@ int32_t app_anc_switch(app_anc_mode_t mode)
 int32_t app_anc_switch_locally(app_anc_mode_t mode)
 {
     ANC_TRACE(0, "[%s] Mode: %d --> %d", __func__, g_app_anc_mode, mode);
+
+#if defined(__SNDP_PROJ__)
+    if(mode != APP_ANC_MODE_OFF && !sndp_dev_wear_is_worn(false)) {
+        return 0;
+    }
+#endif
 
 #if defined(ANC_BLOCK_ANC_SYNC_SWITCH_CMD)
     _update_event_msg_list_with_mode(ANC_EVENT_SWITCH_MODE, mode);

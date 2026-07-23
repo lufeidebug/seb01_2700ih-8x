@@ -90,3 +90,8 @@ subdir-ccflags-y += \
 	-Iservices/audio_manager/inc \
 	$(BT_BLE_AUDIO_POLICY_INCLUDES) \
 	-Iapps/earbuds/conn
+
+ifeq ($(SNDP_UI),1)
+subdir-ccflags-y += -Iapps/soundplus/interface \
+                    -Iapps/soundplus/application
+endif

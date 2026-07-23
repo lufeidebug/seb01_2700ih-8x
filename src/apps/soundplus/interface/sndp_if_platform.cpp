@@ -1387,7 +1387,7 @@ bool sndp_anc_is_on(void)
 {
     app_anc_mode_t anc_mode = app_anc_get_curr_mode();
 
-    if(anc_mode > APP_ANC_MODE_OFF && anc_mode < APP_ANC_MODE_QTY) {
+    if(anc_mode > APP_ANC_MODE_OFF && anc_mode < APP_ANC_MODE5) {
         return true;   
     }
 
