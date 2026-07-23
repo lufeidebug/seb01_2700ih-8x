@@ -184,38 +184,42 @@ uint16_t sndp_comm_protocol_pack_send_data(sndp_comm_cmd_info_s *cmd_info, uint8
 	return send_len;
 }
 
-uint16_t sndp_comm_protocol_find_next_frame_idx(uint8_t *recv_data, uint16_t data_len)
+uint16_t sndp_comm_protocol_find_next_frame_flag_idx(uint8_t *recv_data, uint16_t data_len)
 {
     ASSERT(recv_data != NULL, "%s, recv_data == NULL", __func__);
-
-    uint16_t idx = 0xffff;
-    bool found = false;
-    uint32_t sleepFlag = 0;
-		uint8_t *flagaddr = (uint8_t*)&sleepFlag;
     
     for(uint16_t i = 1; i < data_len; i++) {
         if(recv_data[i] == SNDP_COMM_FRAME_FLAG) {
-            idx = i;
-            found = true;
-            break;
+            COMM_PROTOCOL_TRACE(2, "find next frame flag idx(%d)", i);
+            return i;
         }
-				((uint8_t*)flagaddr)[2] = recv_data[i+0];
-				((uint8_t*)flagaddr)[1] = recv_data[i+1];
-				((uint8_t*)flagaddr)[0] = recv_data[i+2];
-				if(sleepFlag == 0x574D43) {
-					COMM_PROTOCOL_TRACE(2, "find next frame idx(%d)", i);
-					idx = i;
-					found = true;
-					break;
-				}
     }
+    
+    return data_len;
+}
 
-    if(found) {
-        return idx; 
-    } else {
+uint16_t sndp_comm_protocol_find_next_sleep_flag_idx(uint8_t *recv_data, uint16_t data_len)
+{
+    ASSERT(recv_data != NULL, "%s, recv_data == NULL", __func__);
+    
+    if(data_len < 3) {
         return data_len;
     }
     
+    uint32_t sleepFlag = 0;
+    uint8_t *flagaddr = (uint8_t*)&sleepFlag;
+    
+    for(uint16_t i = 1; i < data_len - 2; i++) {
+        ((uint8_t*)flagaddr)[2] = recv_data[i+0];
+        ((uint8_t*)flagaddr)[1] = recv_data[i+1];
+        ((uint8_t*)flagaddr)[0] = recv_data[i+2];
+        if(sleepFlag == 0x574D43) {
+            COMM_PROTOCOL_TRACE(2, "find next sleep flag idx(%d)", i);
+            return i;
+        }
+    }
+    
+    return data_len;
 }
 
 bool sndp_comm_protocol_data_is_valid(uint8_t *recv_data, uint16_t recv_len)											

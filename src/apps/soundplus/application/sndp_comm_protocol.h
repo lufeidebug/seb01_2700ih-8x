@@ -117,7 +117,8 @@ typedef struct {
 
 uint32_t sndp_comm_protocol_parse_recv_data(uint8_t *recv_data, uint16_t recv_len, sndp_comm_cmd_info_s *cmd_info);
 uint16_t sndp_comm_protocol_pack_send_data(sndp_comm_cmd_info_s *cmd_info, uint8_t *send_buf, uint16_t send_buf_size);
-uint16_t sndp_comm_protocol_find_next_frame_idx(uint8_t *recv_data, uint16_t data_len);
+uint16_t sndp_comm_protocol_find_next_frame_flag_idx(uint8_t *recv_data, uint16_t data_len);
+uint16_t sndp_comm_protocol_find_next_sleep_flag_idx(uint8_t *recv_data, uint16_t data_len);
 bool sndp_comm_protocol_data_is_valid(uint8_t *recv_data, uint16_t recv_len);
 
 

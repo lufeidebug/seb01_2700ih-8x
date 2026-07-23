@@ -410,7 +410,7 @@ static void sndp_comm_recv_thread(void const *argument)
                     if(path_hdlr->recv_wait_more_cnt >= 20) {
                         path_hdlr->recv_wait_more_cnt = 0;
                         COMM_MIAN_TRACE(0, "wait more clear");
-                        pop_len = sndp_comm_protocol_find_next_frame_idx(deal_buf, peek_len);
+                        pop_len = sndp_comm_protocol_find_next_frame_flag_idx(deal_buf, peek_len);
                         sndp_comm_queue_pop_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, pop_len);
                     }
                     #endif
@@ -424,7 +424,7 @@ static void sndp_comm_recv_thread(void const *argument)
                         sndp_comm_main_execute_cmd(recv_cmd);
                         
                     } else {
-                        pop_len = sndp_comm_protocol_find_next_frame_idx(deal_buf, peek_len);
+                        pop_len = sndp_comm_protocol_find_next_frame_flag_idx(deal_buf, peek_len);
                         //COMM_MIAN_TRACE(0, "000 pop_len=%02x", pop_len);
                         sndp_comm_queue_pop_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, pop_len);
                         sndp_comm_queue_set_change_status(path_hdlr, true);
@@ -450,7 +450,7 @@ static void sndp_comm_recv_thread(void const *argument)
                         sleep_app_execute_cmd_hdlr(&app_recv_cmd);
                     } else {
                         COMM_MIAN_TRACE(0, "recv invalid Sleep data, error_code=%d", sleep_app_error_code);
-                        pop_len = sndp_comm_protocol_find_next_frame_idx(deal_buf, peek_len);
+                        pop_len = sndp_comm_protocol_find_next_sleep_flag_idx(deal_buf, peek_len);
                         //COMM_MIAN_TRACE(0, "111 pop_len=%02x", pop_len);
                         sndp_comm_queue_pop_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, pop_len);
                         sndp_comm_queue_set_change_status(path_hdlr, true);
@@ -459,7 +459,7 @@ static void sndp_comm_recv_thread(void const *argument)
                     COMM_MIAN_TRACE(0, "recv unknown data, appflag=0x%08X", appflag);
 #endif
                     path_hdlr->recv_wait_more_cnt = 0;
-                    pop_len = sndp_comm_protocol_find_next_frame_idx(deal_buf, peek_len);
+                    pop_len = sndp_comm_protocol_find_next_sleep_flag_idx(deal_buf, peek_len);
                     //COMM_MIAN_TRACE(0, "111 pop_len=%02x", pop_len);
                     sndp_comm_queue_pop_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, pop_len);
                     sndp_comm_queue_set_change_status(path_hdlr, true);
