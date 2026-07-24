@@ -2298,7 +2298,14 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
     
     COMM_CMD_TRACE(1, "anc mode=%d", anc_mode);
     if(anc_mode <= 0x05){
-        sndp_anc_mode_set_locally((sndp_anc_mode_e)anc_mode);
+        if(sndp_dev_wear_is_worn(true))
+        {
+            sndp_anc_mode_set((sndp_anc_mode_e)anc_mode);
+        }
+        else
+        {
+            sndp_anc_mode_set_locally((sndp_anc_mode_e)anc_mode);
+        }
         sndp_dev_sleep_app_anc_mode_set(false, (sndp_anc_mode_e)anc_mode, true);
         sndp_comm_cmd_send_lr_sync_anc_mode(anc_mode, 1);
         cmd_info->value[0] = 0; // success
@@ -2715,8 +2722,14 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
         {
             anc_mode = SNDP_ANC_MODE_OFF;
         }
-
-        sndp_anc_mode_set_locally((sndp_anc_mode_e)anc_mode);
+        if(sndp_dev_wear_is_worn(true))
+        {
+            sndp_anc_mode_set((sndp_anc_mode_e)anc_mode);
+        }
+        else
+        {
+            sndp_anc_mode_set_locally((sndp_anc_mode_e)anc_mode);
+        }
         if(anc_mode < SNDP_ANC_MODE_QTY)
         {
             sndp_sleep_app_set_flag_onoff(SNDP_ANC_MODE_FLAG, false, anc_mode, false);
