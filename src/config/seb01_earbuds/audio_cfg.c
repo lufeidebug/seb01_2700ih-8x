@@ -80,19 +80,17 @@ const IIR_CFG_T audio_eq_hw_dac_iir_cfg = {
     .gain0 = -22,
     .gain1 = -22,
 #else
-    .gain0 = 0,
+    .gain0 = -3,
     .gain1 = 0,
 #endif
-    .num = 8,
+    .num = 6,
     .param = {
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
-        {IIR_TYPE_PEAK, 0,   1000.0,   0.7},
+        {IIR_TYPE_PEAK, -4, 200, 0.9},
+        {IIR_TYPE_PEAK, -2, 70, 0.7},
+        {IIR_TYPE_PEAK, -4, 800, 0.8},
+        {IIR_TYPE_PEAK, -8, 450, 0.6},
+        {IIR_TYPE_PEAK, 3, 3500, 0.5},
+        {IIR_TYPE_PEAK, -2, 1500, 2.2},
     }
 };
 #if defined(__SNDP_SLEEP_APP__)
