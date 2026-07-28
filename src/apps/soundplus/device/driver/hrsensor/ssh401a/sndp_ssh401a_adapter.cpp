@@ -516,7 +516,7 @@ int32_t ssh401a_enter_standby_mode(void)
     SSH401A_TRACE(0, ".");
     ss_ppg_interrupt_setting(PROX_INT_EN, 0);
     ss_ppg_stop_measurement();
-    return SNDP_HAL_RET_FAIL;
+    return SNDP_HAL_RET_OK;
 }
 
 int32_t ssh401a_enter_detection_mode(void)
@@ -529,7 +529,7 @@ int32_t ssh401a_enter_detection_mode(void)
     ss_ppg_interrupt_setting(PROX_INT_EN, 1);
     ss_ppg_start_measurement();
 #endif
-    return SNDP_HAL_RET_FAIL;
+    return SNDP_HAL_RET_OK;
 }
 
 int32_t ssh401a_set_reading_ppg_callback(sndp_hal_hr_read_ppg_callback callback)

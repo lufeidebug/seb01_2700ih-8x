@@ -42,9 +42,6 @@
 
 //#define __DA217E_READ_RAW_DATA_MODIS__
 
-//#define __DA217E_IRQ_DEBOUNCE__
-
-#define FIFO_POLLING_OPEN
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -67,18 +64,6 @@ static sndp_hal_acc_read_raw_data_callback  da217e_acc_read_raw_data_cb_ptr = NU
 static sndp_hal_gesture_event_callback  da217e_gesture_event_cb_ptr = NULL;
 #endif
 
-#if defined(__DA217E_IRQ_DEBOUNCE__)
-static void da217e_int1_debounce_handler(void const *param);
-osTimerDef(DA217_INT1_DEBOUNCE_TIMER, da217e_int1_debounce_handler);
-static osTimerId da217e_int1_debounce_timer = NULL;
-
-static void da217e_int2_debounce_handler(void const *param);
-osTimerDef(DA217_INT2_DEBOUNCE_TIMER, da217e_int2_debounce_handler);
-static osTimerId da217e_int2_debounce_timer = NULL;
-
-#endif
-
-#if defined(FIFO_POLLING_OPEN)
 osSemaphoreId da217e_fifo_polling_semaphore_id = NULL;
 osSemaphoreDef(da217e_fifo_polling_semaphore);
 
@@ -89,34 +74,10 @@ osThreadDef(da217e_fifo_polling_thread, osPriorityAboveNormal, 1, DA217E_FIFO_PO
 osThreadId da217e_fifo_polling_thread_id = NULL;
 
 static bool da217e_fifo_polling_thread_run = false;
-#endif
-
+static sndp_hal_acc_samples_callback da217e_acc_samples_callback = NULL;
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
-POSSIBLY_UNUSED static int32_t da217e_nv_read(uint8_t *ptrData, uint16_t num)
-{
-#if 0    
-    int ret = sndp_da_read_field(SNDP_DA_FIELD_ACC_CALIB_DATA, ptrData, num, true);
-    if(ret){
-        DA217E_TRACE(1, "ret=%d", ret);
-    }
-#endif    
-    return 0;
-}
-
-POSSIBLY_UNUSED static int32_t da217e_nv_write(uint8_t *ptrData, uint16_t num)
-{
-#if 0     
-    int ret = sndp_da_write_field(SNDP_DA_FIELD_ACC_CALIB_DATA, ptrData, num, true);
-    if(ret){
-        DA217E_TRACE(1, "ret=%d", ret);
-    }
-#endif    
-    return 0;
-}
-
-
 static bool da217e_i2c_init(void)
 {   
     sndp_i2c_open(DA217E_I2C_TYPE, DA217E_I2C_ID, DA217E_I2C_SPEED);
@@ -191,41 +152,6 @@ static void da217e_deal_int1_data(void)
 }
 
 
-#if !defined(FIFO_POLLING_OPEN)
-static void da217e_deal_int2_data(void)
-{
-    da217e_drv_deal_fifo_interruption();
-}
-#endif
-
-#if defined(__DA217E_IRQ_DEBOUNCE__) 
-static void da217e_int1_debounce_handler(void const *param)
-{
-    da217e_deal_int1_data();
-}
-
-static void da217e_int1_debounce(void)
-{
-    DA217E_TRACE(0, "...");
-    osTimerStop(da217e_int1_debounce_timer);
-    osTimerStart(da217e_int1_debounce_timer, DA217E_INT1_DEBOUNCE_DELAY_MS);
-}
-
-static void da217e_int2_debounce_handler(void const *param)
-{
-    da217e_deal_int2_data();
-}
-
-static void da217e_int2_debounce(void)
-{
-    DA217E_TRACE(0, "...");
-    osTimerStop(da217e_int2_debounce_timer);
-    osTimerStart(da217e_int2_debounce_timer, DA217E_INT2_DEBOUNCE_DELAY_MS);
-    
-}
-#endif
-
-#if defined(FIFO_POLLING_OPEN)
 static void da217e_fifo_polling_thread(void const *argument)
 {
     osSemaphoreWait(da217e_fifo_polling_semaphore_id, 10);
@@ -263,57 +189,11 @@ static void da217e_drv_fifo_polling_start(void)
     }
 }
 
-POSSIBLY_UNUSED static void da217e_drv_fifo_polling_stop(void)
-{
-    if(da217e_fifo_polling_thread_id) {
-        osThreadTerminate(da217e_fifo_polling_thread_id);
-        da217e_fifo_polling_thread_id = NULL;
-    }
-    if(da217e_fifo_polling_semaphore_id) {
-        osSemaphoreDelete(da217e_fifo_polling_semaphore_id);
-        da217e_fifo_polling_semaphore_id = NULL;
-    }
-}
-#endif
-
 static void da217e_int1_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
-#if defined(__DA217E_IRQ_DEBOUNCE__)   
-    static uint32_t last_time = 0;
-    uint32_t curr_time = hal_sys_timer_get();
-    uint32_t passed_ticks = hal_timer_get_passed_ticks(curr_time, last_time);
-
-    //DA217E_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), DA217E_INT1_DEBOUNCE_REPEAT_MS);
-    
-    if(TICKS_TO_MS(passed_ticks) >= DA217E_INT1_DEBOUNCE_REPEAT_MS) {
-        last_time = hal_sys_timer_get();
-        sndp_call_func_in_app_thread((uint32_t)da217e_int1_debounce, 0, 0, 0);
-    }
-#else
     sndp_call_func_in_app_thread((uint32_t)da217e_deal_int1_data, 0, 0, 0);
-#endif
 }
 
-#if !defined(FIFO_POLLING_OPEN)
-static void da217e_int2_irq_handler(enum HAL_GPIO_PIN_T pin)
-{
-#if defined(__DA217E_IRQ_DEBOUNCE__)    
-    static uint32_t last_time = 0;
-    uint32_t curr_time = hal_sys_timer_get();
-    uint32_t passed_ticks = hal_timer_get_passed_ticks(curr_time, last_time);
-
-    //DA217E_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), DA217E_INT1_DEBOUNCE_REPEAT_MS);
-    
-    if(TICKS_TO_MS(passed_ticks) >= DA217E_INT1_DEBOUNCE_REPEAT_MS) {
-        last_time = hal_sys_timer_get();
-        sndp_call_func_in_app_thread((uint32_t)da217e_int2_debounce, 0, 0, 0);
-    }
-#else
-    sndp_call_func_in_app_thread((uint32_t)da217e_deal_int2_data, 0, 0, 0);
-#endif
-}
-#else
-static sndp_hal_acc_samples_callback da217e_acc_samples_callback = NULL;
 void da217e_sample_rate_callback(uint16_t samplerate)
 {
     sndp_call_func_in_app_thread((uint32_t)da217e_acc_samples_callback, samplerate, 0, 0);
@@ -344,22 +224,9 @@ static void da217e_int2_polling_irq_handler(enum HAL_GPIO_PIN_T pin)
     // DA217E_TRACE(0, "enter %d", TICKS_TO_MS(hal_sys_timer_get()));
     osSemaphoreRelease(da217e_fifo_polling_semaphore_id);
 }
-#endif
 
 static void da217e_irq_init(void)
 {
-#if defined(__SSH401A_IRQ_DEBOUNCE__)    
-    if (da217e_int1_debounce_timer == NULL) {
-        da217e_int1_debounce_timer = osTimerCreate(osTimer(DA217_INT1_DEBOUNCE_TIMER), osTimerOnce, NULL);
-        ASSERT(da217e_int1_debounce_timer != NULL, "%s, %d", __func__, __LINE__);
-    }
-
-    if (da217e_int2_debounce_timer == NULL) {
-        da217e_int2_debounce_timer = osTimerCreate(osTimer(DA217_INT2_DEBOUNCE_TIMER), osTimerOnce, NULL);
-        ASSERT(da217e_int2_debounce_timer != NULL, "%s, %d", __func__, __LINE__);
-    }
-#endif
-    
     if(app_gsensor_int1_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
         struct HAL_GPIO_IRQ_CFG_T gpiocfg;
         
@@ -371,18 +238,6 @@ static void da217e_irq_init(void)
         hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_gsensor_int1_pin_cfg.pin, &gpiocfg);
     }
 
-#if !defined(FIFO_POLLING_OPEN)
-    if(app_gsensor_int2_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
-        struct HAL_GPIO_IRQ_CFG_T gpiocfg;
-        
-        gpiocfg.irq_enable = true;
-        gpiocfg.irq_debounce = true;
-        gpiocfg.irq_polarity = HAL_GPIO_IRQ_POLARITY_HIGH_RISING;
-        gpiocfg.irq_handler = da217e_int2_irq_handler;
-        gpiocfg.irq_type = HAL_GPIO_IRQ_TYPE_EDGE_SENSITIVE;
-        hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_gsensor_int2_pin_cfg.pin, &gpiocfg);
-    }
-#else
     if(app_gsensor_int2_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
         struct HAL_GPIO_IRQ_CFG_T gpiocfg;
         
@@ -393,7 +248,6 @@ static void da217e_irq_init(void)
         gpiocfg.irq_type = HAL_GPIO_IRQ_TYPE_EDGE_SENSITIVE;
         hal_gpio_setup_irq((enum HAL_GPIO_PIN_T)app_gsensor_int2_pin_cfg.pin, &gpiocfg);
     }
-#endif
 
 }
 
@@ -474,13 +328,9 @@ int32_t da217e_start_reading_raw_data(void)
 #if defined(__DA217E_READ_RAW_DATA_MODIS__)
     sndp_delay_exec_start(1000, (uint32_t)da217e_read_raw_data_test, 0, 0, 0);
 #else
-#if defined(FIFO_POLLING_OPEN)
     // da217e_interrupt_cnt = 0;
     da217e_drv_fifo_polling_start();
     da217e_open_fifo_watermark_int(25);
-#else
-    da217e_open_fifo_watermark_int(25);
-#endif
 #endif
 
     return SNDP_HAL_RET_OK;
@@ -493,13 +343,8 @@ int32_t da217e_stop_reading_raw_data(void)
 #if defined(__DA217E_READ_RAW_DATA_MODIS__)
     sndp_delay_exec_stop((uint32_t)da217e_read_raw_data_test);
 #else
-#if defined(FIFO_POLLING_OPEN)
-    // sndp_call_func_in_dev_thread((uint32_t)da217e_drv_fifo_polling_stop, 0, 0, 0);
     da217e_close_fifo_int();
     da217e_fifo_polling_thread_run = false;
-#else
-    da217e_close_fifo_int();
-#endif
 #endif
 
     return SNDP_HAL_RET_OK;

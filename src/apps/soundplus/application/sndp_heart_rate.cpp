@@ -389,7 +389,7 @@ int32_t sndp_get_acc_notification(void)
 }
 
 
-#if defined(__SNDP_HEART_RATE_MGR__)
+
 static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 {
     // HR_TRACE(0, "cnt=%d", cnt);
@@ -416,7 +416,7 @@ static void sndp_report_ppg_raw_data_callback(uint8_t *data, uint16_t cnt)
     }
 }
 
-#endif 
+
 
 
 #if defined(__SNDP_GSENSOR_SUPPORT__)

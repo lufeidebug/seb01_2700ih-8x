@@ -1869,7 +1869,7 @@ uint8_t sndp_dev_sleep_app_flash_anc_mode_get(void)
 /**************************************************set eq mode end************************************************/
 void sndp_dev_sleep_app_set_gesture_onoff(bool peer, uint8_t onoff, bool sava)
 {
-	SNDP_IF_TRACE(0, "enter");
+	SNDP_IF_TRACE(0, "enter %d", onoff);
 	if(peer) {
 		sndp_dev_ctx.peer.sleep_app_flag.sleep_gesture_onoff = onoff;
 	} else {
