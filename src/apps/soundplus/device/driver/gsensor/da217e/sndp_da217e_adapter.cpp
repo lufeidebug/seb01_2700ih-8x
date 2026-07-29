@@ -15,6 +15,7 @@
 #include "sndp_if_platform.h"
 #include "sndp_da217e_adapter.h"
 #include "sndp_da217e_drv.h"
+#include "sndp_heart_rate.h"
 #include "sndp_i2c.h"
 #if defined(__SNDP_GSENSOR_SUPPORT__)
 #include "sndp_hal_acc.h"
@@ -64,16 +65,6 @@ static sndp_hal_acc_read_raw_data_callback  da217e_acc_read_raw_data_cb_ptr = NU
 static sndp_hal_gesture_event_callback  da217e_gesture_event_cb_ptr = NULL;
 #endif
 
-osSemaphoreId da217e_fifo_polling_semaphore_id = NULL;
-osSemaphoreDef(da217e_fifo_polling_semaphore);
-
-static void da217e_fifo_polling_thread(void const *argument);
-#define DA217E_FIFO_POLLING_INTERVAL_MS          (200) //ms
-#define DA217E_FIFO_POLLING_THREAD_STACK_SIZE    (1024)
-osThreadDef(da217e_fifo_polling_thread, osPriorityAboveNormal, 1, DA217E_FIFO_POLLING_THREAD_STACK_SIZE, "da217e_fifo_polling_thread");
-osThreadId da217e_fifo_polling_thread_id = NULL;
-
-static bool da217e_fifo_polling_thread_run = false;
 static sndp_hal_acc_samples_callback da217e_acc_samples_callback = NULL;
 /**************************************************************************************************
 * Function
@@ -152,41 +143,10 @@ static void da217e_deal_int1_data(void)
 }
 
 
-static void da217e_fifo_polling_thread(void const *argument)
+int32_t da217e_acc_fifo_task(void)
 {
-    osSemaphoreWait(da217e_fifo_polling_semaphore_id, 10);
-    while(1) {
-        // DA217E_TRACE(1, "%d",da217e_fifo_polling_thread_run);
-        if(da217e_fifo_polling_thread_run) {
-            osSemaphoreWait(da217e_fifo_polling_semaphore_id, 250);
-            da217e_drv_deal_fifo_interruption();
-        }else {
-            app_sysfreq_req(APP_SYSFREQ_USER_SNDP_ACC_POLL, APP_SYSFREQ_32K);
-            osSemaphoreWait(da217e_fifo_polling_semaphore_id, osWaitForever);
-            da217e_drv_deal_fifo_interruption();
-            app_sysfreq_req(APP_SYSFREQ_USER_SNDP_ACC_POLL, APP_SYSFREQ_104M);
-        }
-        // DA217E_TRACE(1, "%d",TICKS_TO_MS(hal_sys_timer_get()));
-    }
-}
-
-static void da217e_drv_fifo_polling_start(void)
-{
-    if(da217e_fifo_polling_semaphore_id == NULL) {
-        da217e_fifo_polling_semaphore_id = osSemaphoreCreate(osSemaphore(da217e_fifo_polling_semaphore), 1);
-        ASSERT(da217e_fifo_polling_semaphore_id != NULL, "%s, %d", __func__, __LINE__);
-    }
-    //create thread
-    if(da217e_fifo_polling_thread_id == NULL) {
-        da217e_fifo_polling_thread_id = osThreadCreate(osThread(da217e_fifo_polling_thread), NULL);
-        ASSERT(da217e_fifo_polling_thread_id != NULL, "%s, %d", __func__, __LINE__);
-    }
-
-    if(da217e_fifo_polling_thread_id && da217e_fifo_polling_semaphore_id) {
-        DA217E_TRACE(1, "da217e_drv_fifo_polling_start");
-    }else {
-        DA217E_TRACE(1, "da217e_drv_fifo_polling_start fail");
-    }
+    da217e_drv_deal_fifo_interruption();
+    return SNDP_HAL_RET_OK;
 }
 
 static void da217e_int1_irq_handler(enum HAL_GPIO_PIN_T pin)
@@ -216,13 +176,9 @@ int32_t da217e_read_samples_rate(sndp_hal_acc_samples_callback callback)
 // static int da217e_interrupt_cnt = 0;
 static void da217e_int2_polling_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
-    if(!da217e_fifo_polling_thread_run) {
-        da217e_fifo_polling_thread_run = true;
-    }
     // da217e_interrupt_cnt++;
     // DA217E_TRACE(0, "enter %d cnt %d", TICKS_TO_MS(hal_sys_timer_get()), da217e_interrupt_cnt);
-    // DA217E_TRACE(0, "enter %d", TICKS_TO_MS(hal_sys_timer_get()));
-    osSemaphoreRelease(da217e_fifo_polling_semaphore_id);
+    sndp_hr_notify_acc_fifo_ready();
 }
 
 static void da217e_irq_init(void)
@@ -323,13 +279,12 @@ void da217e_read_raw_data_test(void)
 
 int32_t da217e_start_reading_raw_data(void)
 {
-    DA217E_TRACE(0, "reading_raw_data timer...");
-    
+    // DA217E_TRACE(0, "reading_raw_data timer...");
+
 #if defined(__DA217E_READ_RAW_DATA_MODIS__)
     sndp_delay_exec_start(1000, (uint32_t)da217e_read_raw_data_test, 0, 0, 0);
 #else
     // da217e_interrupt_cnt = 0;
-    da217e_drv_fifo_polling_start();
     da217e_open_fifo_watermark_int(25);
 #endif
 
@@ -338,13 +293,12 @@ int32_t da217e_start_reading_raw_data(void)
 
 int32_t da217e_stop_reading_raw_data(void)
 {
-    DA217E_TRACE(0, "...");
-    
+    // DA217E_TRACE(0, "da217e_stop_reading_raw_data...");
+
 #if defined(__DA217E_READ_RAW_DATA_MODIS__)
     sndp_delay_exec_stop((uint32_t)da217e_read_raw_data_test);
 #else
     da217e_close_fifo_int();
-    da217e_fifo_polling_thread_run = false;
 #endif
 
     return SNDP_HAL_RET_OK;
@@ -413,6 +367,7 @@ extern "C" const sndp_hal_acc_s sndp_acc_da217e = {
     .read_raw_data                  = da217e_read_raw_data,
     .samples_measurement_start      = da217e_samples_measurement_start,
     .read_samples_rate              = da217e_read_samples_rate,
+    .acc_fifo_task                  = da217e_acc_fifo_task,
 };
 
 #endif

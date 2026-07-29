@@ -27,6 +27,7 @@
 #include "ss_ppg_example.h"
 #include "app_utils.h"
 #include "sndp_if_platform.h"
+#include "sndp_heart_rate.h"
 
 /**************************************************************************************************
 * Constant
@@ -39,8 +40,6 @@
 #define SSH401A_I2C_SPEED                         (400000)
 
 //#define __SSH401A_TEST_READ_PROXIMITY_VALUE__
-
-//#define __SSH401A_IRQ_DEBOUNCE__
 
 
 /**************************************************************************************************
@@ -59,12 +58,6 @@
 **************************************************************************************************/
 static bool ssh401a_inited = false;
 
-#if defined(__SSH401A_IRQ_DEBOUNCE__)
-static void ssh401a_irq_debounce_delay_handler(void const *param);
-osTimerDef(SSH401A_IRQ_DEBOUNCE_TIMER, ssh401a_irq_debounce_delay_handler);
-static osTimerId ssh401a_irq_debounce_timer = NULL;
-#endif
-
 static sndp_hal_hr_read_ppg_callback ssh401a_hr_read_ppg_cb_ptr = NULL;
 static sndp_hal_hr_calib_callback ssh401a_hr_calib_cb_ptr = NULL;
 static sndp_hal_hr_report_ppg_raw_data_callback ssh401a_hr_report_ppg_raw_data_cb_ptr = NULL;
@@ -81,77 +74,17 @@ static uint8_t ssh401a_heap_buf[64*4 + 3];
 static SS_OS_API ssh401a_os_api_config;
 
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
-static int32_t ssh401a_ppg_data[32];
-#endif
-
-#define PPG_FIFO_POLLING_THREAD
-
-#if defined(PPG_FIFO_POLLING_THREAD)
-static void ss_ppg_fifo_polling_thread(void const *argument);
-#define SS_PPG_FIFO_POLLING_INTERVAL_MS          (500) //ms
-#define SS_PPG_FIFO_POLLING_THREAD_STACK_SIZE      (1024)
-osThreadDef(ss_ppg_fifo_polling_thread, osPriorityAboveNormal, 1, SS_PPG_FIFO_POLLING_THREAD_STACK_SIZE, "ss_ppg_fifo_polling_thread");
-osThreadId ss_ppg_fifo_polling_thread_id = NULL;
-
-osSemaphoreId ss_ppg_fifo_polling_semaphore_id = NULL;
-osSemaphoreDef(ss_ppg_fifo_polling_semaphore);
-
-static bool ss_ppg_fifo_polling_thread_run = false;
+static int32_t ssh401a_ppg_data[64];
 #endif
 
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
-#if defined(PPG_FIFO_POLLING_THREAD)
-static void ss_ppg_fifo_polling_thread(void const *argument)
+int32_t ssh401a_ppg_fifo_task(void)
 {
-    while(1) {
-        app_sysfreq_req(APP_SYSFREQ_USER_SNDP_PPG_POLL, APP_SYSFREQ_32K);
-        osSemaphoreWait(ss_ppg_fifo_polling_semaphore_id, osWaitForever);
-        app_sysfreq_req(APP_SYSFREQ_USER_SNDP_PPG_POLL, APP_SYSFREQ_104M);
-        
-        ss_ppg_interrupt_handler();
-
-    }
+    ss_ppg_interrupt_handler();
+    return SNDP_HAL_RET_OK;
 }
-
-static void ss_ppg_fifo_polling_start(void)
-{
-    //create thread
-    if(ss_ppg_fifo_polling_thread_id == NULL) {
-        ss_ppg_fifo_polling_thread_id = osThreadCreate(osThread(ss_ppg_fifo_polling_thread), NULL);
-        ASSERT(ss_ppg_fifo_polling_thread_id != NULL, "%s, %d", __func__, __LINE__);
-    }
-
-    //create semaphore
-    if(ss_ppg_fifo_polling_semaphore_id == NULL) {
-        ss_ppg_fifo_polling_semaphore_id = osSemaphoreCreate(osSemaphore(ss_ppg_fifo_polling_semaphore), 1);
-        ASSERT(ss_ppg_fifo_polling_semaphore_id != NULL, "%s, %d", __func__, __LINE__);
-    }
-
-    if(ss_ppg_fifo_polling_thread_id && ss_ppg_fifo_polling_semaphore_id) {
-        SSH401A_TRACE(1, "ss_ppg_fifo_polling_start");
-    }else {
-        SSH401A_TRACE(1, "ss_ppg_fifo_polling_start fail");
-    }
-
-}
-
-POSSIBLY_UNUSED static void ss_ppg_fifo_polling_stop(void)
-{
-    //stop semaphore
-    if(ss_ppg_fifo_polling_semaphore_id) {
-        osSemaphoreDelete(ss_ppg_fifo_polling_semaphore_id);
-        ss_ppg_fifo_polling_semaphore_id = NULL;
-    }
-
-    //stop thread
-    if(ss_ppg_fifo_polling_thread_id) {
-        osThreadTerminate(ss_ppg_fifo_polling_thread_id);
-        ss_ppg_fifo_polling_thread_id = NULL;
-    }
-}
-#endif
 
 int32_t ssh401a_proximity_read_calib_data(ssh401a_proximity_calib_data_s *proximity_calib_data)
 {
@@ -356,22 +289,6 @@ void ssh401a_test_read_proximity_value(void)
 }
 #endif
 
-
-
-#if defined(__SSH401A_IRQ_DEBOUNCE__)
-static void ssh401a_irq_debounce_delay_handler(void const *param)
-{
-    ss_ppg_interrupt_handler();
-}
-
-void ssh401a_irq_debounce(void)
-{
-    SSH401A_TRACE(1, "...");
-    osTimerStop(ssh401a_irq_debounce_timer);
-    osTimerStart(ssh401a_irq_debounce_timer, SSH401A_IRQ_DEBOUNCE_DELAY_MS);
-    
-}
-#endif
 static sndp_hal_hr_ppg_samples_callback ssh401a_hr_ppg_samples_callback = NULL;
 void ssh401_samples_rate_callback(uint16_t samplerate)
 {
@@ -395,38 +312,11 @@ int32_t ssh401a_read_samples_rate(sndp_hal_hr_ppg_samples_callback callback)
 // static int ssh401_irq_cnt = 0;
 static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
-#if defined(__SSH401A_IRQ_DEBOUNCE__)    
-    static uint32_t last_time = 0;
-    uint32_t curr_time = hal_sys_timer_get();
-    uint32_t passed_ticks = hal_timer_get_passed_ticks(curr_time, last_time);
-
-    SSH401A_TRACE(1, "passed_ms=%d, repeat_ms=%d", TICKS_TO_MS(passed_ticks), SSH401A_IRQ_DEBOUNCE_REPEAT_MS);
-    
-    if(TICKS_TO_MS(passed_ticks) >= SSH401A_IRQ_DEBOUNCE_REPEAT_MS) {
-        last_time = hal_sys_timer_get();
-        sndp_call_func_in_dev_thread((uint32_t)ssh401a_irq_debounce, 0, 0, 0);
-    }
-#else
-    if(ss_ppg_fifo_polling_thread_run){
-        // ssh401_irq_cnt++;
-        // SSH401A_TRACE(1, "enter %d cnt %d",TICKS_TO_MS(hal_sys_timer_get()), ssh401_irq_cnt);
-        osSemaphoreRelease(ss_ppg_fifo_polling_semaphore_id);
-    }else{
-        sndp_call_func_in_dev_thread((uint32_t)ss_ppg_interrupt_handler, 0, 0, 0);
-    }
-#endif
-
+    sndp_hr_notify_ppg_fifo_ready();
 }
 
 static void ssh401a_irq_init(void)
 {
-#if defined(__SSH401A_IRQ_DEBOUNCE__)    
-    if (ssh401a_irq_debounce_timer == NULL) {
-        ssh401a_irq_debounce_timer = osTimerCreate(osTimer(SSH401A_IRQ_DEBOUNCE_TIMER), osTimerOnce, NULL);
-		ASSERT(ssh401a_irq_debounce_timer != NULL, "%s, %d", __func__, __LINE__);
-    }
-#endif
-
     if(app_hrsensor_status_pin_cfg.pin != HAL_IOMUX_PIN_NUM) {
         struct HAL_GPIO_IRQ_CFG_T gpiocfg;
         
@@ -541,12 +431,8 @@ int32_t ssh401a_set_reading_ppg_callback(sndp_hal_hr_read_ppg_callback callback)
 
 int32_t ssh401a_start_reading_ppg(void)
 {
-    SSH401A_TRACE(0, "...");
+    // SSH401A_TRACE(0, "ssh401a_start_reading_ppg...");
     // ssh401_irq_cnt = 0;
-#if defined(PPG_FIFO_POLLING_THREAD)
-    ss_ppg_fifo_polling_start();
-    ss_ppg_fifo_polling_thread_run = true;
-#endif
     ss_ppg_operation_mode(PROX_PPG_0);
     ss_ppg_open_fifo();
 
@@ -555,14 +441,10 @@ int32_t ssh401a_start_reading_ppg(void)
 
 int32_t ssh401a_stop_reading_ppg(void)
 {
-    SSH401A_TRACE(0, "...");
-    
+    // SSH401A_TRACE(0, "ssh401a_stop_reading_ppg...");
+
     ss_ppg_close_fifo();
     ss_ppg_operation_mode(PROX);
-#if defined(PPG_FIFO_POLLING_THREAD)
-    // ss_ppg_fifo_polling_stop();
-    ss_ppg_fifo_polling_thread_run = false;
-#endif
     return SNDP_HAL_RET_OK;
 }
 
@@ -680,6 +562,7 @@ extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .read_chip_id                   = ssh401a_read_chip_id,
     .samples_measurement_start      = ssh401_samples_measurement_start,
     .read_samples_rate              = ssh401a_read_samples_rate,
+    .ppg_fifo_task                  = ssh401a_ppg_fifo_task,
 };
 
 

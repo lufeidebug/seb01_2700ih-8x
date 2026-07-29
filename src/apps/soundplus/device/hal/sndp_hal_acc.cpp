@@ -80,8 +80,10 @@ int32_t sndp_hal_acc_set_reading_raw_data_callback(sndp_hal_acc_read_raw_data_ca
 
 int32_t sndp_hal_acc_start_reading_raw_data(void)
 {
-	if((p_hal_acc != NULL) && (p_hal_acc->start_reading_raw_data != NULL))
+	if((p_hal_acc != NULL) && (p_hal_acc->start_reading_raw_data != NULL)) {
+		// TRACE(0, "start_reading_raw_data");
 		return p_hal_acc->start_reading_raw_data();
+	}
 	return SNDP_HAL_RET_FAIL;
 }
 
@@ -166,6 +168,13 @@ int32_t sndp_hal_acc_read_samples_rate(sndp_hal_acc_samples_callback callback)
 {
 	if((p_hal_acc != NULL) && (p_hal_acc->read_samples_rate != NULL))
 		return p_hal_acc->read_samples_rate(callback);
+	return SNDP_HAL_RET_FAIL;
+}
+
+int32_t sndp_hal_acc_fifo_task(void)
+{
+	if((p_hal_acc != NULL) && (p_hal_acc->acc_fifo_task != NULL))
+		return p_hal_acc->acc_fifo_task();
 	return SNDP_HAL_RET_FAIL;
 }
 

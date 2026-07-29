@@ -17,6 +17,7 @@ ccflags-y := \
 	-Iapps/soundplus/device/driver/hrsensor/ssh401a \
 	-Iapps/soundplus/device/driver/hrsensor/ssh401a/ss_os_api \
 	-Iapps/soundplus/device/driver/hrsensor/ssh401a/ss_ppg_example \
+	-Iapps/soundplus/application \
 	-Iapps/soundplus/device/driver/hrsensor/ssh401a/ss_utils
 
 

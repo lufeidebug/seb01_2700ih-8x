@@ -95,12 +95,7 @@ POSSIBLY_UNUSED static uint8_t dev_test_from = SNDP_COMM_DEVICE_ATE;
 POSSIBLY_UNUSED static uint8_t dev_test_path = SNDP_COMM_PATH_POGOPIN;
 
 #if defined(__SNDP_SLEEP_APP__)
-POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_start_report_proximity(void);
-bool sndp_comm_proximity_slave_timer_running = false;
-static uint32_t sndp_comm_proximity_report_interval_ms = 1000;
-static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_peer(void);
 static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void);
-static uint32_t sndp_comm_cmd_sleepapp_stop_report_proximity(void);
 static void sndp_findme_loop_handler(uint8_t onoff);
 uint8_t wear_state_update_onoff = 0;
 uint8_t sndp_sleepapp_report_battery_onoff = 0;
@@ -818,15 +813,10 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_Proximity_Notification_ONOFF(sndp_com
     sndp_dev_sleep_app_set_proximity_onoff(false, onoff);
 
     if (onoff == 0x01) {
-        if (!sndp_comm_proximity_slave_timer_running) {
-            sndp_comm_proximity_slave_timer_running = true;
-            sndp_comm_cmd_sleepapp_send_local_proximity_to_peer();
-        }
+        sndp_hr_proximity_tick_enable(true);
+        sndp_comm_cmd_sleepapp_proximity_task();    // 立即执行一次, 与主耳流程一致
     } else {
-        if (sndp_comm_proximity_slave_timer_running) {
-            sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer);
-            sndp_comm_proximity_slave_timer_running = false;
-        }
+        sndp_hr_proximity_tick_enable(false);
     }
 
     return 0;
@@ -2396,18 +2386,15 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_set_local_proximity(void)
 
 void sndp_comm_cmd_sleepapp_start_proximity(void)
 {
-    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_start_report_proximity);
-    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer);
     sndp_sleep_app_set_flag_onoff(SNDP_PROXIMITY_ONOFF_FLAG, false, 0x01, false);
-    sndp_comm_cmd_sleepapp_start_report_proximity();
-}   
+    sndp_hr_proximity_tick_enable(true);
+    sndp_comm_cmd_sleepapp_proximity_task();    // 立即执行一次, 与原逻辑一致
+}
 
 void sndp_comm_cmd_sleepapp_stop_proximity(void)
 {
-    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_start_report_proximity);
-    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer);
     sndp_sleep_app_set_flag_onoff(SNDP_PROXIMITY_ONOFF_FLAG, false, 0x00, false);
-    sndp_comm_cmd_sleepapp_stop_report_proximity();
+    sndp_hr_proximity_tick_enable(false);
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notification(sleep_app_comm_cmd_info_s *cmd_info)
@@ -2668,12 +2655,11 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
         /******************proximity map*******************/
         if(BitMap.proximity_off)
         {
-            sndp_sleep_app_set_flag_onoff(SNDP_PROXIMITY_ONOFF_FLAG, false, 0x00, false);
+            sndp_comm_cmd_sleepapp_stop_proximity();
         }
         if(BitMap.proximity_on)
         {
-            sndp_sleep_app_set_flag_onoff(SNDP_PROXIMITY_ONOFF_FLAG, false, 0x01, false);
-            sndp_comm_cmd_sleepapp_start_report_proximity();
+            sndp_comm_cmd_sleepapp_start_proximity();
         }
         /******************proximity map*******************/
 
@@ -3440,52 +3426,33 @@ static uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
     return 0;
 }
 
-POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_send_local_proximity_to_peer(void)
-{
-    if (sndp_dev_sleep_app_get_proximity_onoff(false) && sndp_comm_proximity_slave_timer_running) {
-        unsigned short proximity_value_local = 0;
-        
-        sndp_dev_hr_read_proximity_value(&proximity_value_local);
-        sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(proximity_value_local);
-        
-        sndp_delay_exec_start(sndp_comm_proximity_report_interval_ms,
-                              (uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer,
-                              0, 0, 0);
-    }
-    return 0;
-}
-
-static uint32_t sndp_comm_cmd_sleepapp_start_report_proximity(void)
+/**
+ * @brief   proximity周期任务: 由统一任务线程每1秒tick调用一次, 左右耳运行完全相同的流程
+ *          1. 读取本地proximity并缓存
+ *          2. TWS连接时: 转发本地值给对耳(对耳收到后缓存并触发上报)
+ *             单耳时: 直接上报手机
+ *          注: 上报动作两侧都会执行, 仅BLE连接手机的一侧实际发出数据
+ */
+uint32_t sndp_comm_cmd_sleepapp_proximity_task(void)
 {
     if (!sndp_dev_sleep_app_get_proximity_onoff(false)) {
         return 0;
     }
 
-    if(!sndp_comm_ble_is_connected()){
-        return 0;
-    }
+    /* 1. 读取本地proximity并缓存 */
+    unsigned short proximity_value_local = 0;
 
-    if(sndp_is_tws_link_connected()) {
-        //call the sndp_comm_cmd_sleepapp_report_proximity_to_app() function within the sndp_comm_cmd_recv_lr_sync_Proximity_Notification_DATA() function.
-    } else {
+    sndp_dev_hr_read_proximity_value(&proximity_value_local);
+    sndp_dev_sleep_app_set_proximity_data(false, proximity_value_local);
+
+    if (sndp_is_tws_link_connected()) {
+        /* 2. TWS连接: 转发本地值给对耳, 使对耳也持有双耳数据 */
+        sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(proximity_value_local);
+    } else if (sndp_comm_ble_is_connected()) {
+        /* 3. 单耳直连手机: 直接上报 */
         sndp_dev_sleep_app_set_proximity_data(true, 0);
         sndp_comm_cmd_sleepapp_report_proximity_to_app();
     }
-
-    sndp_delay_exec_start(sndp_comm_proximity_report_interval_ms,
-                          (uint32_t)sndp_comm_cmd_sleepapp_start_report_proximity,
-                          0, 0, 0);
-    return 0;
-}
-
-static uint32_t sndp_comm_cmd_sleepapp_stop_report_proximity(void)
-{
-    if (!sndp_is_tws_master_mode()) { 
-        return 0;
-    }
-
-    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_start_report_proximity);
-    sndp_delay_exec_stop((uint32_t)sndp_comm_cmd_sleepapp_send_local_proximity_to_peer);
     return 0;
 }
 

@@ -495,6 +495,7 @@ void sndp_comm_cmd_sleepapp_report_ppg_samples(uint16_t sensor_samples);
 void sndp_sleep_comm_cmd_analysis_stop(void);
 void sndp_sleep_comm_cmd_heartrate_stop(void);
 void sndp_sleep_comm_disconnect_timer_handler(void);
+uint32_t sndp_comm_cmd_sleepapp_proximity_task(void);
 #ifdef __SNDP_SEND_GESTURE__
 void sndp_sleep_app_report_gesture(uint32_t gesture);
 void sndp_sleep_app_report_tap(void);

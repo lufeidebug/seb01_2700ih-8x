@@ -178,5 +178,12 @@ int32_t sndp_hal_hr_read_samples_rate(sndp_hal_hr_ppg_samples_callback callback)
 		return p_hal_hr->read_samples_rate(callback);
 	return SNDP_HAL_RET_FAIL;
 }
+
+int32_t sndp_hal_hr_ppg_fifo_task(void)
+{
+	if((p_hal_hr != NULL) && (p_hal_hr->ppg_fifo_task != NULL))
+		return p_hal_hr->ppg_fifo_task();
+	return SNDP_HAL_RET_FAIL;
+}
 #endif	/* __SNDP_HRSENSOR_SUPPORT__ */
 

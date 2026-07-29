@@ -124,6 +124,13 @@ typedef struct {
 
     int32_t (* read_samples_rate)(sndp_hal_hr_ppg_samples_callback callback);
 
+    /**
+     * desc: Handle ppg fifo interruption (read fifo and trigger callbacks).
+     *       Called by the unified sleep app process thread.
+     * return: 0 no error.
+     */
+    int32_t (* ppg_fifo_task)(void);
+
 } sndp_hal_hr_s;
 
 
@@ -151,6 +158,7 @@ int32_t sndp_hal_hr_switch_operation_mode(sndp_hal_hr_operation_mode_e op_mode);
 int32_t sndp_hal_hr_read_chip_id(uint8_t *chipid);
 int32_t sndp_hal_hr_samples_measurement_start(int duration_s);
 int32_t sndp_hal_hr_read_samples_rate(sndp_hal_hr_ppg_samples_callback callback);
+int32_t sndp_hal_hr_ppg_fifo_task(void);
 #ifdef __cplusplus
 }
 #endif

@@ -35,12 +35,12 @@
 #include "sndp_sleep_role_switch.h"
 
 /**************************************************************************************************
-* 1、创建心率处理线程。
-* 2、创建心率处理线程唤醒信号量。
-* 3、创建心率RAW Data 队列。接收到数据时Push到队列中，并唤醒心率处理线程。
-* 4、创建加速度RAW Data 队列。接收到数据时Push到队列中，并唤醒心率处理线程。
-* 5、处理线程中每次被唤醒，检测心率RAW Data和加速度RAW Data数据是否有足够的数据。有就送入算法中计算。
-* 6、
+* 统一任务轮询线程(MCU super-loop风格):
+* 1、创建统一任务轮询线程 sndp_sleep_app_process_thread。
+* 2、PPG/ACC传感器GPIO IRQ、proximity周期定时器通过osSignalSet发送任务信号唤醒线程。
+* 3、线程每次被唤醒后按序轮询5个task: ppg_task/acc_task/heartrate_task/sleep_analysis_task/proximity_task。
+* 4、心率/睡眠RAW Data队列: 传感器回调(线程内同步执行)Push数据, task3检测数据量足够后送入算法计算。
+* 5、各task是否执行由hr_ctx运行状态flag与任务信号位共同决定。
 **************************************************************************************************/
 
 
@@ -114,12 +114,26 @@ osMutexDef(acc_raw_data_queue_mutex);
 
 
 #define HR_PROCESS_THREAD_STACK_SIZE 				(1024*10)
-static void sndp_hr_process_thread(void const *argument);
-osThreadDef(sndp_hr_process_thread, osPriorityAboveNormal, 1, HR_PROCESS_THREAD_STACK_SIZE, "hr_process_thread");
+static void sndp_sleep_app_process_thread(void const *argument);
+osThreadDef(sndp_sleep_app_process_thread, osPriorityAboveNormal, 1, HR_PROCESS_THREAD_STACK_SIZE, "hr_process_thread");
 osThreadId hr_process_thread_tid = NULL;
 
-osSemaphoreId hr_process_wait_semaphore_id = NULL;
-osSemaphoreDef(hr_process_wait_semaphore);
+/*************** 统一任务轮询线程的任务信号位(osSignal: 置位即唤醒, 线程wait返回时自动清除) ***************/
+#define SENSOR_TASK_SIGNAL_PPG_FIFO             (1 << 0)  /* ssh401a GPIO IRQ: PPG FIFO就绪 */
+#define SENSOR_TASK_SIGNAL_ACC_FIFO             (1 << 1)  /* da217e GPIO IRQ: ACC FIFO就绪 */
+#define SENSOR_TASK_SIGNAL_PROXIMITY_TICK       (1 << 2)  /* proximity周期定时器tick */
+#define SENSOR_TASK_SIGNAL_SLEEP_TRACK          (1 << 3)  /* 手机端睡眠数据到达 */
+#define SENSOR_TASK_SIGNAL_HEARTRATE            (1 << 4)  /* PPG队列凑满1秒数据: 触发心率算法 */
+#define SENSOR_TASK_SIGNAL_WAKEUP               (1 << 5)  /* 纯唤醒: 使线程重估看门狗超时, 不触发任何task */
+
+#define SENSOR_TASK_ACC_WATCHDOG_MS             (250)     /* ACC FIFO看门狗周期(沿用原da217e线程行为) */
+#define SNDP_HR_PROXIMITY_TICK_PERIOD_MS        (1000)    /* proximity周期上报tick */
+
+static void sndp_hr_proximity_tick_timer_handler(void const *param);
+osTimerDef(SNDP_HR_PROXIMITY_TICK_TIMER, sndp_hr_proximity_tick_timer_handler);
+static osTimerId sndp_hr_proximity_tick_timer_id = NULL;
+
+static void sndp_heartrate_algo_task(void);
 
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
 POSSIBLY_UNUSED static struct Dump debug_dump;
@@ -214,7 +228,7 @@ POSSIBLY_UNUSED static int acc_raw_data_queue_pop_data(int16_t *item, int cnt)
 POSSIBLY_UNUSED static int acc_raw_data_queue_get_len(void)
 {
     uint16_t queue_len;
-    
+
     osMutexWait(acc_raw_data_queue_mutex_id, osWaitForever);
     queue_len = LengthOfCQueue(&acc_raw_data_queue);
     osMutexRelease(acc_raw_data_queue_mutex_id);
@@ -223,128 +237,213 @@ POSSIBLY_UNUSED static int acc_raw_data_queue_get_len(void)
     return queue_len;
 }
 
-// #define __SNDP_RUN_ALGO_ONLY__
-static void sndp_hr_process_thread(void const *argument)
+/**
+ * @brief   PPG传感器GPIO IRQ上下文调用: 发送PPG FIFO就绪信号唤醒统一任务线程
+ */
+void sndp_hr_notify_ppg_fifo_ready(void)
 {
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)    
+    SNDP_TRACE(0, "PPG FIFO ready");
+    if(hr_process_thread_tid) {
+        osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_PPG_FIFO);
+    }
+}
+
+/**
+ * @brief   ACC传感器GPIO IRQ上下文调用: 发送ACC FIFO就绪信号唤醒统一任务线程
+ */
+void sndp_hr_notify_acc_fifo_ready(void)
+{
+    // SNDP_TRACE(0, "ACC FIFO ready");
+    if(hr_process_thread_tid) {
+        osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_ACC_FIFO);
+    }
+}
+
+static void sndp_hr_proximity_tick_timer_handler(void const *param)
+{
+    if(hr_process_thread_tid) {
+        osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_PROXIMITY_TICK);
+    }
+}
+
+/**
+ * @brief   使能/停止proximity周期tick定时器(仅发信号, proximity_task由统一线程执行)
+ */
+void sndp_hr_proximity_tick_enable(bool en)
+{
+    if(sndp_hr_proximity_tick_timer_id == NULL) {
+        return;
+    }
+
+    if(en) {
+        osTimerStart(sndp_hr_proximity_tick_timer_id, SNDP_HR_PROXIMITY_TICK_PERIOD_MS);
+    } else {
+        osTimerStop(sndp_hr_proximity_tick_timer_id);
+    }
+}
+
+/**
+ * @brief   心率/睡眠算法处理任务: 从队列取1秒PPG+ACC数据送入dbbeats算法, 并上报心率结果
+ *          由统一任务线程在PPG队列数据量足够时调用(约1秒周期)
+ */
+static void sndp_heartrate_algo_task(void)
+{
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
     POSSIBLY_UNUSED struct HrvIndices hrv;
     POSSIBLY_UNUSED uint8_t* hrv_ptr = (uint8_t*)&hrv;
-#endif
     POSSIBLY_UNUSED sndp_hr_dbbeats_data dbbeats_data;
     POSSIBLY_UNUSED int8_t led;
     POSSIBLY_UNUSED int32_t acc_queue_len;
     POSSIBLY_UNUSED int32_t acc_data_len;
-#if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)    
+#if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)
     uint32_t start_time;
     uint32_t end_time;
-#endif    
+#endif
+
+    // hr_setp_5: Read ppg data
+    // sleep_step_5: Read ppg data
+    memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
+    ppg_raw_data_queue_pop_data(hr_ppg_raw_data, HR_PPG_SECOND_ALLCH_SAMPLES);
+
+    // hr_setp_6: Read acc data
+    // sleep_step_6: Read acc data
+    acc_queue_len = acc_raw_data_queue_get_len();
+    if(acc_queue_len >= HR_ACC_SECOND_ALLCH_SAMPLES) {
+        acc_data_len = HR_ACC_SECOND_ALLCH_SAMPLES;
+    } else {
+        acc_data_len = acc_queue_len;
+    }
+    memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
+    acc_raw_data_queue_pop_data(hr_acc_raw_data, acc_data_len);
+
+#if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)
+    start_time = hal_sys_timer_get();
+#endif
+
+    // hr_setp_7: Input data
+    // sleep_step_7: Input data
+    dbbeats_data.is_contact = 1;
+    dbbeats_data.led_state = 50;
+    dbbeats_data.pck_interval = 1000;
+    dbbeats_put_heartrate_data(
+            hr_acc_raw_data,
+            hr_ppg_raw_data,
+            hr_dev_state,
+            dbbeats_data.is_contact,
+            dbbeats_data.led_state,
+            HR_ACC_SECOND_ALLCH_SAMPLES,
+            HR_PPG_SECOND_ALLCH_SAMPLES,
+            HR_DEV_SECOND_ALLCH_SAMPLES,
+            dbbeats_data.pck_interval);
+    // hr_setp_8: Return results
+    // sleep_step_8: Return results
+    memset(&hrv, 0, sizeof(struct HrvIndices));
+    dbbeats_get_heartrate_data(&hrv, &dbbeats_data.result_code, &dbbeats_data.count, &led, &debug_dump);
+
+#if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)
+    end_time = hal_sys_timer_get();
+    SNDP_TRACE(0, "HR algo cost: %d us", TICKS_TO_US(end_time - start_time));
+#endif
+
+    // hr_setp_9: Display hr results
+    // sleep_step_9: Display hr results
+    if(dbbeats_data.result_code == 1 && hrv.HR > 1) {
+        SNDP_TRACE(0, "HR: %d BPM, SDNN: %d ms libv: %s", hrv.HR, hrv.SDNN, lib_engine_version());
+    } else if (dbbeats_data.result_code == 101) {
+        SNDP_TRACE(0, "HR: Sensor detached");
+    }
+
+    // hr_setp_10: Report results
+    if(hr_ctx.hr_running) {
+        sndp_comm_cmd_sleepapp_report_hr(hrv_ptr, (uint8_t*)&dbbeats_data);
+    }
+
+    hr_measure_time++;
+#endif
+}
+
+/**
+ * @brief   统一任务轮询线程(MCU super-loop风格):
+ *          while(1)轮询5个task, 由osSignal信号位唤醒, 运行状态由hr_ctx各flag控制
+ *          task1: ppg_task            - PPG FIFO读取(SIGNAL_PPG_FIFO: GPIO IRQ)
+ *          task2: acc_task            - ACC FIFO读取(SIGNAL_ACC_FIFO: GPIO IRQ + 250ms看门狗)
+ *          task3: heartrate_task      - 心率算法(SIGNAL_HEARTRATE: PPG队列凑满1秒时回调发出)
+ *          task4: sleep_analysis_task - 睡眠分期(SIGNAL_SLEEP_TRACK: 手机端数据到达)
+ *          task5: proximity_task      - proximity上报(SIGNAL_PROXIMITY_TICK: 1秒定时器)
+ */
+static void sndp_sleep_app_process_thread(void const *argument)
+{
+    uint32_t acc_last_poll_ms = 0;
+    uint32_t curr_ms;
+    uint32_t wait_timeout;
+    int32_t fired_signals;
+    osEvent evt;
 
     HR_TRACE(0, "running...");
 
     while(1) {
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
-        osSemaphoreWait(hr_process_wait_semaphore_id, osWaitForever);
+
+        // ACC读取期间保留250ms看门狗轮询(沿用原da217e线程行为), 其余情况无限等待任务信号
+        wait_timeout = hr_ctx.acc_reading_en ? SENSOR_TASK_ACC_WATCHDOG_MS : osWaitForever;
+        evt = osSignalWait(0, wait_timeout);
+
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
-        //HR_TRACE(0, "wakeup");
+        curr_ms = TICKS_TO_MS(hal_sys_timer_get());
 
-        if(!hr_ctx.hr_running && !hr_ctx.sleep_running) {
-            HR_TRACE(0, "app not running, ret");
-            continue;
-        }
+        // 超时不携带信号位, 仅用于ACC看门狗
+        fired_signals = (evt.status == osEventSignal) ? evt.value.signals : 0;
+        // SNDP_TRACE(0, "fired_signals: 0x%08x ppg_queue_len: %d", fired_signals, ppg_raw_data_queue_get_len());
 
-        // hr_setp_4: Check whether the PPG data is enough.
-        // sleep_step_4: Check whether the PPG data is enough.
-        if(ppg_raw_data_queue_get_len() < HR_PPG_SECOND_ALLCH_SAMPLES) {
-            HR_TRACE(0, "ppg is not enough, ret");
-            continue;
-        }
-
-
-#if 0
-        // Check whether the acc data is enough.
-        if(acc_raw_data_queue_get_len() < HR_ACC_SECOND_ALLCH_SAMPLES) {
-            continue;
+        /********** task1: ppg_task **********/
+#if defined(__SNDP_HRSENSOR_SUPPORT__)
+        /* 注意: 绝不能用ppg_reading_en门控! ss_ppg_interrupt_handler除读FIFO外,
+           还负责处理佩戴事件(g_proximity_sta, FIFO中断使能的前提)并清除传感器INT引脚;
+           若被门控跳过, 边沿触发的GPIO将因INT未清除而永久收不到后续中断 */
+        if(fired_signals & SENSOR_TASK_SIGNAL_PPG_FIFO) {
+            sndp_hal_hr_ppg_fifo_task();
         }
 #endif
-        // hr_setp_5: Read ppg data
-        // sleep_step_5: Read ppg data
-        memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
-        ppg_raw_data_queue_pop_data(hr_ppg_raw_data, HR_PPG_SECOND_ALLCH_SAMPLES);
 
-
-        // hr_setp_6: Read acc data
-        // sleep_step_6: Read acc data
-        acc_queue_len = acc_raw_data_queue_get_len();
-        if(acc_queue_len >= HR_ACC_SECOND_ALLCH_SAMPLES) {
-            acc_data_len = HR_ACC_SECOND_ALLCH_SAMPLES;
-        } else {
-            acc_data_len = acc_queue_len;
+        /********** task2: acc_task **********/
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+        if(hr_ctx.acc_reading_en) {
+            if(fired_signals & SENSOR_TASK_SIGNAL_ACC_FIFO) {
+                acc_last_poll_ms = curr_ms;
+                sndp_hal_acc_fifo_task();
+            } else if((curr_ms - acc_last_poll_ms) >= SENSOR_TASK_ACC_WATCHDOG_MS) {
+                // 看门狗: 中断丢失时兜底轮询一次
+                acc_last_poll_ms = curr_ms;
+                SNDP_TRACE(0, "250ms acc_fifo_task");
+                sndp_hal_acc_fifo_task();
+            }
         }
-        memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
-        acc_raw_data_queue_pop_data(hr_acc_raw_data, acc_data_len);
-        
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
-
-#if 0
-        SNDP_TRACE(0, "engine_ver: %s", lib_engine_version());
-        SNDP_TRACE(0, "ppg data, idx:(%d):", hr_measure_time);
-        SNDP_DUMP32("%6d, ", &hr_ppg_raw_data[0],  16);
-        SNDP_DUMP32("%6d, ", &hr_ppg_raw_data[16],  16);
-        SNDP_DUMP32("%6d, ", &hr_ppg_raw_data[32],  16);
-        SNDP_DUMP32("%6d, ", &hr_ppg_raw_data[48],  16);
-#endif        
-
-#if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)    
-        start_time = hal_sys_timer_get();
-#endif         
-
-        // hr_setp_7: Input data
-        // sleep_step_7: Input data
-        dbbeats_data.is_contact = 1;
-        dbbeats_data.led_state = 50;
-        dbbeats_data.pck_interval = 1000;
-        dbbeats_put_heartrate_data(
-                hr_acc_raw_data, 
-                hr_ppg_raw_data, 
-                hr_dev_state, 
-                dbbeats_data.is_contact, 
-                dbbeats_data.led_state, 
-                HR_ACC_SECOND_ALLCH_SAMPLES, 
-                HR_PPG_SECOND_ALLCH_SAMPLES, 
-                HR_DEV_SECOND_ALLCH_SAMPLES, 
-                dbbeats_data.pck_interval);
-        // hr_setp_8: Return results
-        // sleep_step_8: Return results
-		memset(&hrv, 0, sizeof(struct HrvIndices));
-        dbbeats_get_heartrate_data(&hrv, &dbbeats_data.result_code, &dbbeats_data.count, &led, &debug_dump);
-
-#if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)    
-        end_time = hal_sys_timer_get();
-        SNDP_TRACE(0, "HR algo cost: %d us", TICKS_TO_US(end_time - start_time));
 #endif
 
-        // hr_setp_9: Display hr results
-        // sleep_step_9: Display hr results
-        if(dbbeats_data.result_code == 1 && hrv.HR > 1) {
-            SNDP_TRACE(0, "HR: %d BPM, SDNN: %d ms libv: %s", hrv.HR, hrv.SDNN, lib_engine_version());
-        } else if (dbbeats_data.result_code == 101) {
-            SNDP_TRACE(0, "HR: Sensor detached");
+        /********** task3: heartrate_task **********/
+        if((fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) &&
+           (hr_ctx.hr_running || hr_ctx.sleep_running) &&
+           (ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES)) {
+            sndp_heartrate_algo_task();
         }
 
-        // hr_setp_10: Report results
-        if(hr_ctx.hr_running) {
-
-                // sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_report_hr, (uint32_t)hrv_ptr, (uint32_t)&dbbeats_data, 0);
-                sndp_comm_cmd_sleepapp_report_hr(hrv_ptr, (uint8_t*)&dbbeats_data);
+        if(fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) {
+            if(ppg_raw_data_queue_get_len() < HR_PPG_SECOND_ALLCH_SAMPLES){
+                SNDP_TRACE(0, "queue_len: %d hr_ctx.hr_running: %d hr_ctx.sleep_running: %d", 
+                                ppg_raw_data_queue_get_len(), hr_ctx.hr_running, hr_ctx.sleep_running);
+            }
         }
-        
+
+        /********** task4: sleep_analysis_task **********/
         if(hr_ctx.sleep_running && hr_ctx.sleep_tracking) {
             hr_ctx.sleep_tracking = false;
             sndp_sleep_analysis();
         }
-#endif
 
-        hr_measure_time++;
+        /********** task5: proximity_task **********/
+        if(fired_signals & SENSOR_TASK_SIGNAL_PROXIMITY_TICK) {
+            sndp_comm_cmd_sleepapp_proximity_task();
+        }
     }
 }
 
@@ -397,10 +496,11 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
         // SNDP_DUMP32("%08X ", data,  cnt > 16?16:cnt);
         ppg_raw_data_queue_push_data(data, cnt);
 
-        //HR_TRACE(0, "queue_len=%d, %d", ppg_raw_data_queue_get_len(), HR_PPG_SECOND_ALLCH_SAMPLES);
+        // 队列凑满1秒数据, 显式发送信号触发heartrate_task(task3)
         if(ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES) {
-            //HR_TRACE(0, "wakeup thread");
-            osSemaphoreRelease(hr_process_wait_semaphore_id);
+            if(hr_process_thread_tid) {
+                osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_HEARTRATE);
+            }
         }
     }
 }
@@ -448,16 +548,23 @@ bool sndp_hr_is_reading_ppg_enabled(void)
 void sndp_hr_switch_reading_ppg(bool onoff)
 {
     hr_ctx.ppg_reading_en = onoff;
-    
+    // HR_TRACE(0, "onoff=%d", onoff);
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
     if(onoff) {
         sndp_hal_hr_set_reading_ppg_callback(sndp_hr_read_ppg_callback);
         sndp_hal_hr_set_report_ppg_raw_data_callback(sndp_report_ppg_raw_data_callback);
         sndp_hal_hr_start_reading_ppg();
+
+        /* 立即唤醒线程服务一次传感器INT:
+           1)清除启动前可能挂起的INT(边沿触发,不服务则永久阻塞后续中断);
+           2)线程可能正阻塞在osWaitForever,需踢醒后重估看门狗超时 */
+        if(hr_process_thread_tid) {
+            osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_PPG_FIFO);
+        }
     } else {
         sndp_hal_hr_stop_reading_ppg();
     }
-#endif     
+#endif
 }
 
 bool sndp_hr_is_reading_acc_enabled(void)
@@ -468,17 +575,24 @@ bool sndp_hr_is_reading_acc_enabled(void)
 void sndp_hr_switch_reading_acc_raw_data(bool onoff)
 {
     hr_ctx.acc_reading_en = onoff;
-    
+    // HR_TRACE(0, "onoff=%d", onoff);
 #if defined(__SNDP_GSENSOR_SUPPORT__)
     if(onoff) {
         sndp_hal_acc_stop_single_tap_interrupt();
         sndp_hal_acc_set_reading_raw_data_callback(sndp_hr_acc_read_raw_data_callback);
         sndp_hal_acc_start_reading_raw_data();
+
+        /* 踢醒线程重估看门狗超时:
+           线程可能正阻塞在osWaitForever(进入wait时acc_reading_en=false),
+           若不踢醒且首个INT2中断丢失, 250ms看门狗将永远没机会启动, task2饿死 */
+        if(hr_process_thread_tid) {
+            osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_WAKEUP);
+        }
     } else {
         sndp_hal_acc_stop_reading_raw_data();
         sndp_hal_acc_start_single_tap_interrupt();
     }
-#endif     
+#endif
 }
 
 
@@ -486,7 +600,7 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
 
-    SNDP_TRACE(0, "...");
+    SNDP_TRACE(0, "sndp_hr_mearsuring_start...");
 
     ppg_raw_data_queue_reset();
 
@@ -511,7 +625,7 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 
 void sndp_hr_mearsuring_stop(void)
 {
-    SNDP_TRACE(0, "...");
+    SNDP_TRACE(0, "sndp_hr_mearsuring_stop...");
     
     // hr_setp_10: 停止处理
     hr_ctx.hr_running = false;
@@ -541,6 +655,11 @@ void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
     sleep_sound_state = sound_state;
 
     hr_ctx.sleep_tracking = true;
+
+    // 通知统一任务线程立即处理(否则要等下一次传感器IRQ唤醒)
+    if(hr_process_thread_tid) {
+        osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_SLEEP_TRACK);
+    }
 }
 // sleep analysis function
 static void sndp_sleep_analysis(void) 
@@ -554,9 +673,10 @@ static void sndp_sleep_analysis(void)
         // sleep_step_15: Use sleep_stage[0~39]
 
         // sleep_step_16: report data to app via ble.
+        // 统一任务线程内直接上报(与HR/PPG/ACC/proximity上报同线程, 共享发送缓冲区无需再切换上下文)
         if(hr_ctx.sleep_running) {
             uint16_t position_and_control = (sleep_position & 0xFF) | ((sound_control & 0xFF)<<8);
-            sndp_call_func_in_app_thread((uint32_t)sndp_comm_cmd_sleepapp_report_sleep_stage, (uint32_t)sleep_stage, position_and_control, result_code);
+            sndp_comm_cmd_sleepapp_report_sleep_stage(sleep_stage, position_and_control, result_code);
         }
     } else {
         SNDP_TRACE(0, "Error: %d\n", result_code);
@@ -566,7 +686,7 @@ static void sndp_sleep_analysis(void)
 void sndp_sleep_analysis_start(int32_t sleep_control)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
-    SNDP_TRACE(0, "...");
+    SNDP_TRACE(0, "sndp_sleep_analysis_start...");
     
     ppg_raw_data_queue_reset();
     
@@ -588,7 +708,7 @@ void sndp_sleep_analysis_start(int32_t sleep_control)
 
 void sndp_sleep_analysis_stop(void)
 {
-    SNDP_TRACE(0, "...");
+    SNDP_TRACE(0, "sndp_sleep_analysis_stop...");
     
     // hr_setp_17: 停止处理
     hr_ctx.hr_running = false;
@@ -613,7 +733,7 @@ bool sndp_hr_is_ppg_notification_enabled(void)
 void sndp_ppg_notification_start(uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
-    SNDP_TRACE(0, "...");
+    SNDP_TRACE(0, "sndp_ppg_notification_start...");
     
     ppg_raw_data_queue_reset();
 
@@ -635,7 +755,7 @@ void sndp_ppg_notification_start(uint8_t dump_state)
 
 void sndp_ppg_notification_stop(void)
 {
-    SNDP_TRACE(0, "...");
+    SNDP_TRACE(0, "sndp_ppg_notification_stop...");
     
     // hr_setp_3: 停止处理
     hr_ctx.ppg_notification = false;
@@ -650,7 +770,7 @@ void sndp_ppg_notification_stop(void)
 void sndp_acc_notification_start(uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
-    SNDP_TRACE(0, "...");
+    SNDP_TRACE(0, "sndp_acc_notification_start...");
     
     ppg_raw_data_queue_reset();
 
@@ -672,7 +792,7 @@ void sndp_acc_notification_start(uint8_t dump_state)
 
 void sndp_acc_notification_stop(void)
 {
-    SNDP_TRACE(0, "...");
+    SNDP_TRACE(0, "sndp_acc_notification_stop...");
     
     // hr_setp_3: 停止处理
     hr_ctx.acc_notification = false;
@@ -731,14 +851,15 @@ void sndp_hr_app_init(void)
     }
     InitCQueue(&acc_raw_data_queue, sizeof(acc_raw_data_queue_buf), (CQItemType *)acc_raw_data_queue_buf);
 
-    // 2. 创建处理线程唤醒信号量。
-    if (hr_process_wait_semaphore_id == NULL) {
-        hr_process_wait_semaphore_id = osSemaphoreCreate(osSemaphore(hr_process_wait_semaphore), 0);
+    // 2. 创建proximity周期tick定时器(仅发任务信号, proximity_task由统一任务线程执行)。
+    if (sndp_hr_proximity_tick_timer_id == NULL) {
+        sndp_hr_proximity_tick_timer_id = osTimerCreate(osTimer(SNDP_HR_PROXIMITY_TICK_TIMER), osTimerPeriodic, NULL);
+        ASSERT(sndp_hr_proximity_tick_timer_id != NULL, "%s, line=%d", __func__, __LINE__);
     }
 
-    // 3. 创建处理线程。
+    // 3. 创建统一任务轮询线程(任务信号由IRQ/定时器通过osSignalSet发送, 无需信号量)。
     if (hr_process_thread_tid == NULL)  {
-        hr_process_thread_tid = osThreadCreate(osThread(sndp_hr_process_thread), NULL);
+        hr_process_thread_tid = osThreadCreate(osThread(sndp_sleep_app_process_thread), NULL);
         ASSERT(hr_process_thread_tid != NULL, "%s, line=%d", __func__, __LINE__);
     }
 

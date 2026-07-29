@@ -135,6 +135,11 @@ void sndp_hr_switch_reading_acc_raw_data(bool onoff);
 bool sndp_hr_is_ppg_notification_enabled(void);
 void sndp_hr_ble_disconnected_delay10s_start(void);
 void sndp_hr_ble_connected_delay10s_stop(void);
+
+/* 统一任务轮询线程接口: IRQ/控制路径调用 */
+void sndp_hr_notify_ppg_fifo_ready(void);
+void sndp_hr_notify_acc_fifo_ready(void);
+void sndp_hr_proximity_tick_enable(bool en);
 #ifdef __cplusplus
 	}
 #endif

@@ -105,6 +105,13 @@ typedef struct {
     int32_t (* samples_measurement_start)(int duration_s);
 
     int32_t (* read_samples_rate)(sndp_hal_acc_samples_callback callback);
+
+    /**
+     * desc: Handle acc fifo interruption (read fifo and trigger callbacks).
+     *       Called by the unified sleep app process thread.
+     * return: 0 no error.
+     */
+    int32_t (* acc_fifo_task)(void);
 } sndp_hal_acc_s;
 
 int32_t sndp_hal_acc_init(void);
@@ -125,6 +132,7 @@ int32_t sndp_hal_acc_read_chip_id(uint8_t *chipid);
 int32_t sndp_hal_acc_read_raw_data(sndp_hal_acc_data_s *acc_data);
 int32_t sndp_hal_acc_samples_measurement_start(int duration_s);
 int32_t sndp_hal_acc_read_samples_rate(sndp_hal_acc_samples_callback callback);
+int32_t sndp_hal_acc_fifo_task(void);
 #ifdef __cplusplus
 }
 #endif
