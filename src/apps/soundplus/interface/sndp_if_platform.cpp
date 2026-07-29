@@ -443,12 +443,19 @@ void sndp_mobile_pairing_timeout(void)
     sndp_pairing_status = SNDP_PAIR_STA_TIMEOUT;
     app_stop_10_second_timer(APP_PAIR_TIMER_ID);
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
-    	// 主耳连接设备断开后，超时关机，从耳同步也关机
-	if (sndp_is_tws_link_connected() && sndp_is_tws_master_mode()) {
-		sndp_comm_cmd_send_lr_sync_both_shutdown();
-		sndp_delay_exec_start(200, (uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_PAIR_TIMEOUT, 0, 0);
-	}else
-	{
+	// 主耳连接设备断开后，超时关机，从耳同步也关机
+	if (sndp_is_tws_link_connected()) {
+		if (sndp_is_tws_master_mode()) {
+			// 主耳：通知从耳一起关机
+			sndp_comm_cmd_send_lr_sync_both_shutdown();
+			sndp_delay_exec_start(200, (uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_PAIR_TIMEOUT, 0, 0);
+		} else {
+			// 从耳：不独立关机，重启配对定时器，等待主耳统一决策
+			SNDP_IF_TRACE(0, "slave timeout, restart pair timer, wait master decision");
+			app_start_10_second_timer(APP_PAIR_TIMER_ID);
+		}
+	} else {
+		// 单耳模式（TWS 未连接）自主关机
 		sndp_app_shutdown(SNDP_SHUTDOWN_REASON_PAIR_TIMEOUT);
 	}
     
