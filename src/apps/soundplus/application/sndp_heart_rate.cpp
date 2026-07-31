@@ -78,13 +78,14 @@ typedef struct {
     bool ppg_notification;
     bool acc_notification;
     uint8_t sampling_rate;
-    uint8_t dump_state;
+    uint8_t dump_state[DUMP_STATE_MAX]; /* 0:dump close, 1:dump open */
     int32_t sleep_control;
 
     bool ppg_reading_en;
     bool acc_reading_en;
     bool delay_10S_start;
-    
+    bool hr_suspended;      /* 挂起态: 算法(task3/task4)暂停, ACC传感器暂停; PPG无需管理(取下后底层自动断流) */
+
 } sndp_hr_ctx_s;
 
 
@@ -237,6 +238,12 @@ POSSIBLY_UNUSED static int acc_raw_data_queue_get_len(void)
     return queue_len;
 }
 
+static void acc_raw_data_queue_reset(void)
+{
+    osMutexWait(acc_raw_data_queue_mutex_id, osWaitForever);
+    ResetCQueue(&acc_raw_data_queue);
+    osMutexRelease(acc_raw_data_queue_mutex_id);
+}
 /**
  * @brief   PPG传感器GPIO IRQ上下文调用: 发送PPG FIFO就绪信号唤醒统一任务线程
  */
@@ -421,15 +428,15 @@ static void sndp_sleep_app_process_thread(void const *argument)
 #endif
 
         /********** task3: heartrate_task **********/
-        if((fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) &&
-           (hr_ctx.hr_running || hr_ctx.sleep_running) &&
+        if((fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) && !hr_ctx.hr_suspended &&
+           (hr_ctx.hr_running) &&
            (ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES)) {
             sndp_heartrate_algo_task();
         }
 
         if(fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) {
             if(ppg_raw_data_queue_get_len() < HR_PPG_SECOND_ALLCH_SAMPLES){
-                SNDP_TRACE(0, "queue_len: %d hr_ctx.hr_running: %d hr_ctx.sleep_running: %d", 
+                SNDP_TRACE(0, "queue_len: %d hr_ctx.hr_running: %d hr_ctx.sleep_running: %d",
                                 ppg_raw_data_queue_get_len(), hr_ctx.hr_running, hr_ctx.sleep_running);
             }
         }
@@ -457,14 +464,14 @@ void sndp_hr_mearsuring_set_sampling_rate(uint8_t sampling_rate)
     hr_ctx.sampling_rate = sampling_rate;
 }
 
-uint8_t sndp_hr_mearsuring_get_dump_state(void)
+uint8_t sndp_mearsuring_get_dump_state(dump_state_e state)
 {
-    return hr_ctx.dump_state;
+    return hr_ctx.dump_state[state];
 }
 
-void sndp_hr_mearsuring_set_dump_state(uint8_t dump_state)
+void sndp_mearsuring_set_dump_state(dump_state_e dump_state, uint8_t onoff)
 {
-    hr_ctx.dump_state = dump_state;
+    hr_ctx.dump_state[dump_state] = onoff;
 }
 
 void sndp_set_sleep_control(int32_t sleep_control)
@@ -492,7 +499,7 @@ int32_t sndp_get_acc_notification(void)
 static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 {
     // HR_TRACE(0, "cnt=%d", cnt);
-    if(hr_ctx.hr_running || hr_ctx.sleep_running) {
+    if(hr_ctx.hr_running) {
         // SNDP_DUMP32("%08X ", data,  cnt > 16?16:cnt);
         ppg_raw_data_queue_push_data(data, cnt);
 
@@ -507,7 +514,8 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 
 static void sndp_report_ppg_raw_data_callback(uint8_t *data, uint16_t cnt)
 {
-    if(hr_ctx.dump_state) {
+    if(sndp_mearsuring_get_dump_state(PPG_DUMP_STATE) == 0x01 || 
+       sndp_mearsuring_get_dump_state(HR_DUMP_STATE) == 0x01) {
         if(cnt > 0) {
             sndp_comm_cmd_sleepapp_report_ppg_raw_data(data, cnt);
             //report PPG data
@@ -525,11 +533,12 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
     //HR_TRACE(0, "cnt=%d", cnt);
     //SNDP_DUMP32("%04X ", data,  cnt > 16?16:cnt);
     
-    if(hr_ctx.hr_running || hr_ctx.sleep_running) {
+    if(hr_ctx.hr_running) {
         acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
     }
 
-    if(hr_ctx.dump_state) {
+    if(sndp_mearsuring_get_dump_state(ACC_DUMP_STATE) == 0x01 || 
+        sndp_mearsuring_get_dump_state(HR_DUMP_STATE) == 0x01) {
         if(cnt > 0) {
             //report ACC data
                 // HR_TRACE(0, "acc notification, cnt=%d", cnt);
@@ -555,12 +564,12 @@ void sndp_hr_switch_reading_ppg(bool onoff)
         sndp_hal_hr_set_report_ppg_raw_data_callback(sndp_report_ppg_raw_data_callback);
         sndp_hal_hr_start_reading_ppg();
 
-        /* 立即唤醒线程服务一次传感器INT:
-           1)清除启动前可能挂起的INT(边沿触发,不服务则永久阻塞后续中断);
-           2)线程可能正阻塞在osWaitForever,需踢醒后重估看门狗超时 */
-        if(hr_process_thread_tid) {
-            osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_PPG_FIFO);
-        }
+        // /* 立即唤醒线程服务一次传感器INT:
+        //    1)清除启动前可能挂起的INT(边沿触发,不服务则永久阻塞后续中断);
+        //    2)线程可能正阻塞在osWaitForever,需踢醒后重估看门狗超时 */
+        // if(hr_process_thread_tid) {
+        //     osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_PPG_FIFO);
+        // }
     } else {
         sndp_hal_hr_stop_reading_ppg();
     }
@@ -582,12 +591,12 @@ void sndp_hr_switch_reading_acc_raw_data(bool onoff)
         sndp_hal_acc_set_reading_raw_data_callback(sndp_hr_acc_read_raw_data_callback);
         sndp_hal_acc_start_reading_raw_data();
 
-        /* 踢醒线程重估看门狗超时:
-           线程可能正阻塞在osWaitForever(进入wait时acc_reading_en=false),
-           若不踢醒且首个INT2中断丢失, 250ms看门狗将永远没机会启动, task2饿死 */
-        if(hr_process_thread_tid) {
-            osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_WAKEUP);
-        }
+        // /* 踢醒线程重估看门狗超时:
+        //    线程可能正阻塞在osWaitForever(进入wait时acc_reading_en=false),
+        //    若不踢醒且首个INT2中断丢失, 250ms看门狗将永远没机会启动, task2饿死 */
+        // if(hr_process_thread_tid) {
+        //     osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_WAKEUP);
+        // }
     } else {
         sndp_hal_acc_stop_reading_raw_data();
         sndp_hal_acc_start_single_tap_interrupt();
@@ -595,6 +604,27 @@ void sndp_hr_switch_reading_acc_raw_data(bool onoff)
 #endif
 }
 
+/**
+ * @brief   传感器需求聚合应用(按传感器分别记录user)
+ *          PPG user: 心率测量(hr_running) / PPG Notification(ppg_notification)
+ *          ACC user: 心率测量(hr_running) / ACC Notification(acc_notification)
+ *          注: sleep_analysis不持有传感器, 仅记录sleep标志(sleep_running/sleep_tracking)
+ *          任一user开启则传感器开启; 全部user关闭后传感器才真正关闭。
+ *          各功能函数只需设置自己的flag后调用本函数, 禁止直接调用switch函数。
+ */
+static void sndp_sensor_reading_apply(void)
+{
+    bool need_ppg = hr_ctx.hr_running || hr_ctx.ppg_notification;
+    /* ACC在挂起态强制关闭(取下佩戴时ACC不会自动停止, 必须软件挂起以省电) */
+    bool need_acc = (hr_ctx.hr_running || hr_ctx.acc_notification) && !hr_ctx.hr_suspended;
+    SNDP_TRACE(0, "need_ppg=%d, need_acc=%d ppg_en=%d acc_en=%d", need_ppg, need_acc, hr_ctx.ppg_reading_en, hr_ctx.acc_reading_en);
+    if(need_ppg != hr_ctx.ppg_reading_en) {
+        sndp_hr_switch_reading_ppg(need_ppg);
+    }
+    if(need_acc != hr_ctx.acc_reading_en) {
+        sndp_hr_switch_reading_acc_raw_data(need_acc);
+    }
+}
 
 void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 {
@@ -605,41 +635,84 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
     ppg_raw_data_queue_reset();
 
     // hr_setp_1: 算法初始化
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)   
+#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
     dbbeats_initialize_heartrate_data(ppg_sampling_rate, dump_state);
 #endif
 
-    // hr_setp_2: 打开读取加速度数据
-    sndp_hr_switch_reading_acc_raw_data(true);
-
-    // hr_setp_3: 打开读取PPG数据
-    sndp_hr_switch_reading_ppg(true);
-
     hr_measure_time = 0;
-    hr_ctx.sleep_running = false;
-    hr_ctx.sleep_tracking = false;
+    // flag不再互斥: HR仅注册自己为PPG/ACC的user, 不影响sleep/notification的flag
     hr_ctx.hr_running = true;
+    // hr_setp_2/3: 按聚合需求打开PPG+ACC(若已被其他user打开则保持)
+    sndp_sensor_reading_apply();
     sndp_hr_mearsuring_set_sampling_rate(ppg_sampling_rate);
-    sndp_hr_mearsuring_set_dump_state(dump_state);
+    sndp_mearsuring_set_dump_state(HR_DUMP_STATE, dump_state);
 }
 
 void sndp_hr_mearsuring_stop(void)
 {
     SNDP_TRACE(0, "sndp_hr_mearsuring_stop...");
-    
-    // hr_setp_10: 停止处理
+
+    // hr_setp_10: 停止处理(flag不再互斥: 仅注销HR自己, 不影响sleep/notification的flag)
     hr_ctx.hr_running = false;
-    hr_ctx.sleep_running = false;
-    hr_ctx.sleep_tracking = false;
 
-    // hr_setp_11: 停止读取ppg数据
-    sndp_hr_switch_reading_ppg(false);
+    // hr_setp_11/12: ACC仅当无其他user时关闭; PPG仅当ppg_notification也已关闭时才关闭
+    sndp_sensor_reading_apply();
 
-    // hr_setp_12: 停止读取加速度数据
-    sndp_hr_switch_reading_acc_raw_data(false);
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
+}
+
+/**
+ * @brief   挂起HR/睡眠算法运行(取下佩戴场景):
+ *          1)关闭ACC传感器; 2)task3/task4算法被hr_suspended门控暂停, 算法状态保留;
+ *          PPG无需处理: 取下佩戴后传感器底层自动停止数据上传和中断触发。
+ *          不改动hr_running/sleep_running等user标志, resume时按原样恢复。
+ */
+void sndp_hr_suspend(void)
+{
+    if(hr_ctx.hr_suspended) {
+        return;
+    }
+    SNDP_TRACE(0, "hr suspend");
+    hr_ctx.hr_suspended = true;
+    sndp_sensor_reading_apply();
+    app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
+}
+
+void sndp_sleep_analysis_suspend(void)
+{
+    if(!hr_ctx.sleep_running) {
+        return;
+    }
+    SNDP_TRACE(0, "sleep analysis suspend");
+    hr_ctx.sleep_running = false;
+}
+
+/**
+ * @brief   恢复HR/睡眠算法运行(重新佩戴场景):
+ *          清除挂起态, ACC按user需求恢复开启, 清空挂起前残留的队列数据从新鲜数据起算。
+ */
+void sndp_hr_resume(void)
+{
+    if(!hr_ctx.hr_suspended) {
+        return;
+    }
+    SNDP_TRACE(0, "hr resume");
+    hr_ctx.hr_suspended = false;
+    ppg_raw_data_queue_reset();
+    acc_raw_data_queue_reset();
+    sndp_sensor_reading_apply();
+    app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
+}
+
+void sndp_sleep_analysis_resume(void)
+{
+    if(!hr_ctx.sleep_running) {
+        return;
+    }
+    SNDP_TRACE(0, "sleep analysis resume");
+    hr_ctx.sleep_running = true;
 }
 
 void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
@@ -695,13 +768,7 @@ void sndp_sleep_analysis_start(int32_t sleep_control)
     dbbeats_initialize_sleep_data(sleep_control);
 #endif
 
-    // sleep_step_2:打开读取加速度数据。
-    sndp_hr_switch_reading_acc_raw_data(true);   
-
-    // sleep_step_3:打开读取PPG数据。
-    sndp_hr_switch_reading_ppg(true);
-
-    hr_ctx.hr_running = true;
+    // sleep_analysis不持有传感器, 仅记录sleep标志, 不触碰hr_running及其他flag
     hr_ctx.sleep_running = true;
     hr_ctx.sleep_tracking = false;
 }
@@ -709,17 +776,10 @@ void sndp_sleep_analysis_start(int32_t sleep_control)
 void sndp_sleep_analysis_stop(void)
 {
     SNDP_TRACE(0, "sndp_sleep_analysis_stop...");
-    
-    // hr_setp_17: 停止处理
-    hr_ctx.hr_running = false;
+
+    // hr_setp_17: 停止处理(仅清除sleep标志, 不触碰hr_running及传感器)
     hr_ctx.sleep_running = false;
     hr_ctx.sleep_tracking = false;
-
-    // hr_setp_18: 停止读取ppg数据
-    sndp_hr_switch_reading_ppg(false);
-
-    // hr_setp_19: 停止读取加速度数据
-    sndp_hr_switch_reading_acc_raw_data(false);
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
@@ -734,35 +794,26 @@ void sndp_ppg_notification_start(uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "sndp_ppg_notification_start...");
-    
+
     ppg_raw_data_queue_reset();
 
-    // sleep_step_1:停止读取ACC数据。
-    sndp_hr_switch_reading_acc_raw_data(false);
-
-    // sleep_step_2:打开读取PPG数据。
-    sndp_hr_switch_reading_ppg(true);
-
-    hr_ctx.hr_running = false;
-    hr_ctx.sleep_running = false;
-    hr_ctx.sleep_tracking = false;
+    // flag不再互斥: 仅注册ppg_notification自己为PPG的user, 不影响HR/sleep/ACC的flag
     hr_ctx.ppg_notification = true;
-    hr_ctx.acc_notification = false;
-    sndp_hr_mearsuring_set_dump_state(dump_state);
+    sndp_sensor_reading_apply();
+    sndp_mearsuring_set_dump_state(PPG_DUMP_STATE, dump_state);
     memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
-
 }
 
 void sndp_ppg_notification_stop(void)
 {
     SNDP_TRACE(0, "sndp_ppg_notification_stop...");
-    
+
     // hr_setp_3: 停止处理
     hr_ctx.ppg_notification = false;
-    
-    // hr_setp_4: 停止读取ppg数据
-    sndp_hr_switch_reading_ppg(false);
-    sndp_hr_mearsuring_set_dump_state(0x00);
+
+    // hr_setp_4: 仅当无其他需求方(HR/睡眠)时才真正关闭PPG
+    sndp_sensor_reading_apply();
+    sndp_mearsuring_set_dump_state(PPG_DUMP_STATE, 0x00);
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
 }
@@ -771,37 +822,34 @@ void sndp_acc_notification_start(uint8_t dump_state)
 {
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "sndp_acc_notification_start...");
-    
+
     ppg_raw_data_queue_reset();
 
-    // sleep_step_1:停止读取PPG数据。
-    sndp_hr_switch_reading_ppg(false);
-
-    // sleep_step_2:开始读取ACC数据。
-    sndp_hr_switch_reading_acc_raw_data(true);
-
-    hr_ctx.hr_running = false;
-    hr_ctx.sleep_running = false;
-    hr_ctx.sleep_tracking = false;
-    hr_ctx.ppg_notification = false;
+    // flag不再互斥: 仅注册acc_notification自己为ACC的user, 不影响HR/sleep/PPG的flag
     hr_ctx.acc_notification = true;
-    sndp_hr_mearsuring_set_dump_state(dump_state);
+    sndp_sensor_reading_apply();
+    sndp_mearsuring_set_dump_state(ACC_DUMP_STATE, dump_state);
     memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
-
 }
 
 void sndp_acc_notification_stop(void)
 {
     SNDP_TRACE(0, "sndp_acc_notification_stop...");
-    
+
     // hr_setp_3: 停止处理
     hr_ctx.acc_notification = false;
-    sndp_hr_mearsuring_set_dump_state(0x00);
-    // hr_setp_4: 停止读取ACC数据
-    sndp_hr_switch_reading_acc_raw_data(false);
+    sndp_mearsuring_set_dump_state(ACC_DUMP_STATE, 0x00);
+    // hr_setp_4: 仅当无其他需求方(HR/睡眠)时才真正关闭ACC
+    sndp_sensor_reading_apply();
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
+}
+
+bool sndp_is_notifi_hr_enabled(void)
+{
+    SNDP_TRACE(0, "hr: %d acc: %d ppg: %d", hr_ctx.hr_running, hr_ctx.acc_notification, hr_ctx.ppg_notification);
+    return hr_ctx.hr_running || hr_ctx.acc_notification || hr_ctx.ppg_notification;
 }
 
 void sndp_hr_ble_disconnected_delay10s_start(void)

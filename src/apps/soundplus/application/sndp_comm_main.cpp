@@ -443,7 +443,7 @@ static void sndp_comm_recv_thread(void const *argument)
                     sleep_app_error_code = sleep_protocol_parse_recv_data(deal_buf, peek_len, &app_recv_cmd);
 
                     if(sleep_app_error_code == SLEEP_APP_ERROR_NONE) {
-                        app_pop_len = SLEEP_APP_FLAG_LEN + app_recv_cmd.data_len + SLEEP_APP_CMD_LEN; //SLEEP_APP_COMM_HEAD_LEN + data_len
+                        app_pop_len = SLEEP_APP_FLAG_LEN + app_recv_cmd.data_len + SLEEP_APP_CMD_LEN; //SLEEP_APP_COMM_FLAG_LEN_DATA_LEN + data_len
                         // COMM_MIAN_TRACE(0, "Sleep cmd(%02X), data_len=%d app_pop_len=%d", app_recv_cmd.cmd, app_recv_cmd.data_len, app_pop_len);
                         sndp_comm_queue_pop_data(path_hdlr->recv_queue, path_hdlr->recv_mutex_id, deal_buf, app_pop_len);
                         sndp_comm_queue_set_change_status(path_hdlr, true);
@@ -699,7 +699,7 @@ int32_t sleep_app_comm_main_send_cmd(sleep_app_comm_cmd_info_s *cmd)
     }
 #endif    
 
-    sndp_comm_main_send_data(send_path, sndp_comm_send_frame, SLEEP_APP_COMM_HEAD_LEN + cmd->data_len);
+    sndp_comm_main_send_data(send_path, sndp_comm_send_frame, SLEEP_APP_COMM_FLAG_LEN_DATA_LEN + cmd->data_len);
     return 0;
 }
 

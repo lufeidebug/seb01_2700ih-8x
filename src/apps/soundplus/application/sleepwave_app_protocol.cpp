@@ -26,24 +26,19 @@ uint32_t sleep_protocol_parse_recv_data(uint8_t *recv_data, uint16_t recv_len, s
     uint8_t cmd_id = recv_data[4];
     uint8_t *cmd_data = &recv_data[5];
     
-    if(recv_len < SLEEP_APP_COMM_HEAD_LEN) {
-        SLEEP_PROTOCOL_TRACE(2, "recv_len(%d) < SLEEP_APP_COMM_HEAD_LEN(%d), return", recv_len, SLEEP_APP_COMM_HEAD_LEN);
+    if(recv_len < SLEEP_APP_COMM_FLAG_LEN_DATA_LEN) {
+        SLEEP_PROTOCOL_TRACE(2, "recv_len(%d) < FLAG_LEN_DATA_LEN(%d), return", recv_len, SLEEP_APP_COMM_FLAG_LEN_DATA_LEN);
         return SLEEP_APP_ERROR_INVALID_DATA_LEN;
     }
 
     if(data_len > SLEEP_APP_COMM_DATA_LEN_MAX) {
-        SLEEP_PROTOCOL_TRACE(2, "data_len(%d) > SLEEP_APP_COMM_DATA_LEN_MAX(%d), return", data_len, SLEEP_APP_COMM_DATA_LEN_MAX);
+        SLEEP_PROTOCOL_TRACE(2, "data_len(%d) > DATA_LEN_MAX(%d), return", data_len, SLEEP_APP_COMM_DATA_LEN_MAX);
         return SLEEP_APP_ERROR_INVALID_DATA_LEN;
     }
 
-    if(recv_len > SLEEP_APP_COMM_HEAD_LEN + data_len) {
-        SLEEP_PROTOCOL_TRACE(2, "recv_len(%d) > HEAD_LEN(%d) + data_len(%d), return", recv_len, SLEEP_APP_COMM_HEAD_LEN, data_len);
+    if(recv_len < SLEEP_APP_COMM_FLAG_LEN_DATA_LEN + data_len) {
+        SLEEP_PROTOCOL_TRACE(2, "recv_len(%d) > FLAG_LEN(%d) + data_len(%d), return", recv_len, SLEEP_APP_COMM_FLAG_LEN_DATA_LEN, data_len);
         // ASSERT(0, "Invalid cmd_data_len(%d) > MAX(%d)", data_len, SLEEP_APP_COMM_DATA_LEN_MAX);
-        return SLEEP_APP_ERROR_INVALID_DATA_LEN;
-    }
-
-    if(recv_len < SLEEP_APP_COMM_HEAD_LEN + data_len) {
-        SLEEP_PROTOCOL_TRACE(2, "recv_len(%d) < HEAD_LEN(%d) + data_len(%d), return", recv_len, SLEEP_APP_COMM_HEAD_LEN, data_len);
         return SLEEP_APP_ERROR_INVALID_DATA_LEN;
     }
 
@@ -77,9 +72,9 @@ uint16_t sleep_protocol_pack_send_data(sleep_app_comm_cmd_info_s *cmd_info, uint
         return 0;
     }
 
-    if(SLEEP_APP_COMM_HEAD_LEN + cmd_info->data_len > send_buf_size) {
-        SLEEP_PROTOCOL_TRACE(2, "SLEEP_APP_COMM_HEAD_LEN(%d) + data_len(%d) > send_buf_size(%d), return", 
-            SLEEP_APP_COMM_HEAD_LEN, cmd_info->data_len, send_buf_size);
+    if(SLEEP_APP_COMM_FLAG_LEN_DATA_LEN + cmd_info->data_len > send_buf_size) {
+        SLEEP_PROTOCOL_TRACE(2, "SLEEP_APP_COMM_FLAG_LEN_DATA_LEN(%d) + data_len(%d) > send_buf_size(%d), return", 
+            SLEEP_APP_COMM_FLAG_LEN_DATA_LEN, cmd_info->data_len, send_buf_size);
         return 0;
     }
 

@@ -709,7 +709,7 @@ uint32_t sndp_comm_cmd_send_lr_sync_heart_rate_onoff(uint8_t onoff)
     uint8_t data[3] = {0};
     data[0] = onoff;
     data[1] = sndp_hr_mearsuring_get_sampling_rate();
-    data[2] = sndp_hr_mearsuring_get_dump_state();
+    data[2] = sndp_mearsuring_get_dump_state(HR_DUMP_STATE);
     sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_HEARTRATE_ONOFF, data, 3);
     return 0;
 }
@@ -719,7 +719,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_heart_rate_onoff(sndp_comm_cmd_info_s
     if(cmd_info->data_len == 3) {
         sndp_dev_sleep_app_set_heartrate_onoff(false, cmd_info->data[0]);
         sndp_hr_mearsuring_set_sampling_rate(cmd_info->data[1]);
-        sndp_hr_mearsuring_set_dump_state(cmd_info->data[2]);
+        sndp_mearsuring_set_dump_state(HR_DUMP_STATE, cmd_info->data[2]);
     }
     return 0;
 }
@@ -2367,11 +2367,10 @@ POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_
     if(onoff){
         sndp_ppg_notification_start(0x01);
     }else{
-        if(!sndp_hr_running_state()){
-            sndp_ppg_notification_stop();
-        }  
+        // 始终注销ppg_notification user; 若HR仍在运行, apply会保持PPG传感器开启
+        sndp_ppg_notification_stop();
     }
-    COMM_CMD_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state());
+    COMM_CMD_TRACE(1, "dump=%d", sndp_mearsuring_get_dump_state(PPG_DUMP_STATE));
     return 0;
 }
 
@@ -2419,12 +2418,11 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_accelerometer_notifi
     if(onoff){
         sndp_acc_notification_start(0x01);
     }else{
-        if(!sndp_hr_running_state()){
-            sndp_acc_notification_stop();
-        }
+        // 始终注销acc_notification user; 若HR仍在运行, apply会保持ACC传感器开启
+        sndp_acc_notification_stop();
     }
     
-    COMM_CMD_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state());
+    COMM_CMD_TRACE(1, "dump=%d", sndp_mearsuring_get_dump_state(ACC_DUMP_STATE));
     return 0;
 }
 
@@ -3005,7 +3003,7 @@ void sndp_sleep_comm_cmd_analysis_stop(void)
 {
     COMM_CMD_TRACE(0, "sleep analysis stop");
     sndp_sleep_app_set_flag_onoff(SNDP_STAGE_ONOFF_FLAG, false, 0x00, false);
-    sndp_ui_working_mode_sleep_app_set(SNDP_DEV_WORKING_MODE_SLEEP);
+    sndp_ui_working_mode_sleep_app_set(SNDP_DEV_WORKING_MODE_BT);
     sndp_ui_sleep_anc_mode_off();
     sndp_sleep_role_stop();
     sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);
@@ -3046,7 +3044,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_test(sleep_app_co
     uint8_t sensor_type = cmd_info->value[0];
     uint8_t measurement_duration = cmd_info->value[1];
     if(sensor_type == 0x00){
-        if(sndp_hr_is_ppg_notification_enabled() || sndp_hr_mearsuring_get_dump_state()){
+        if(sndp_hr_is_ppg_notification_enabled() || sndp_mearsuring_get_dump_state(PPG_DUMP_STATE)){
             sndp_hal_hr_read_samples_rate(sndp_comm_cmd_sleepapp_report_ppg_samples);
             sndp_hal_hr_samples_measurement_start(measurement_duration);
         }else{
@@ -3057,7 +3055,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_test(sleep_app_co
     }
     else if(sensor_type == 0x01)
     {
-        if(sndp_hr_is_reading_acc_enabled() || sndp_hr_mearsuring_get_dump_state()){
+        if(sndp_hr_is_reading_acc_enabled() || sndp_mearsuring_get_dump_state(ACC_DUMP_STATE)){
             sndp_hal_acc_read_samples_rate(sndp_comm_cmd_sleepapp_report_acc_samples);
             sndp_hal_acc_samples_measurement_start(measurement_duration);
         }else{
@@ -3201,7 +3199,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data
     cmd->value[data_len++] = dbbeats_data_ptr->count;
     cmd->value[data_len++] = dbbeats_data_ptr->result_code & 0xFF;
     cmd->value[data_len++] = (dbbeats_data_ptr->result_code>>8) & 0xFF;
-    if(sndp_hr_mearsuring_get_dump_state())
+    if(sndp_mearsuring_get_dump_state(HR_DUMP_STATE))
     {
         if(sndp_dev_is_left_earphone()){
             cmd->value[data_len++] = 0x01;
@@ -3234,7 +3232,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t p
         return 0;
     }
 
-    if(sndp_hr_mearsuring_get_dump_state() == 0){
+    if(sndp_mearsuring_get_dump_state(PPG_DUMP_STATE) == 0){
         COMM_CMD_TRACE(0, "dump state is off, not report ppg");
         return 0;
     }
@@ -3310,7 +3308,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf_debug(int16_t *acc_raw_data, uint
         return 0;
     }
 
-    if(sndp_hr_mearsuring_get_dump_state() == 0){
+    if(sndp_mearsuring_get_dump_state(ACC_DUMP_STATE) == 0){
         COMM_CMD_TRACE(0, "dump state is off, not report accelerometer");
         return 0;
     }
@@ -3353,7 +3351,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t a
         return 0;
     }
 
-    if(sndp_hr_mearsuring_get_dump_state() == 0){
+    if(sndp_mearsuring_get_dump_state(ACC_DUMP_STATE) == 0){
         COMM_CMD_TRACE(0, "dump state is off, not report accelerometer");
         return 0;
     }

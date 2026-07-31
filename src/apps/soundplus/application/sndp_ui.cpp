@@ -436,6 +436,10 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
             if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP))
             {
                 sndp_delay_exec_start(1000, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_ON, 0, 0); 
+            }
+            else if(sndp_is_notifi_hr_enabled() && sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
+            {
+                sndp_delay_exec_start(1000, (uint32_t)sndp_hr_resume, 0, 0, 0);
             }     
 	    } else if(SNDP_DEV_WEAR_OFF == wear_action) {
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_off_tone_switch_to_phone, 0, 0, 0);
@@ -447,9 +451,11 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
             {
                 sndp_delay_exec_start(1000, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_OFF, 0, 0); 
             }
-		}
-
-        
+            else if(sndp_is_notifi_hr_enabled() && sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
+            {
+                sndp_delay_exec_start(1000, (uint32_t)sndp_hr_suspend, 0, 0, 0);
+            }     
+	    }        
 	} else if(remote == true) {
 		// only the master can execute.
 		if(SNDP_DEV_WEAR_ON == wear_action) {		

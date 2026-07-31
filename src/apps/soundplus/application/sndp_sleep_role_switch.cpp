@@ -26,11 +26,11 @@
  * Types & Constants
  **************************************************************************************************/
 typedef struct {
-    Device_Role_t       role;               /* µ±Ç°½ÇÉ« */
-    Device_Role_t       peer_role;          /* ¶Ô²à½ÇÉ« */
-    Role_Switch_Reason_t pending_reason;    /* ´ý´¦ÀíµÄÇÐ»»Ô­Òò */
-    bool                initialized;        /* ÊÇ·ñÒÑ³õÊ¼»¯ */
-    uint32_t            switch_timeout_ms;  /* ÇÐ»»³¬Ê±¼ÆÊý */
+    Device_Role_t       role;               /* ï¿½ï¿½Ç°ï¿½ï¿½É« */
+    Device_Role_t       peer_role;          /* ï¿½Ô²ï¿½ï¿½É« */
+    Role_Switch_Reason_t pending_reason;    /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð»ï¿½Ô­ï¿½ï¿½ */
+    bool                initialized;        /* ï¿½Ç·ï¿½ï¿½Ñ³ï¿½Ê¼ï¿½ï¿½ */
+    uint32_t            switch_timeout_ms;  /* ï¿½Ð»ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ */
 } sndp_sleep_role_ctx_s;
 
 /**************************************************************************************************
@@ -91,12 +91,12 @@ static void sndp_sleep_role_suspend_hr(void)
 {
 #if defined(__SNDP_HEART_RATE_MGR__) 
     if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
-        sndp_hr_mearsuring_stop();
+        sndp_hr_suspend();
         ROLE_TRACE(0, "suspend heart rate");
     }           
     
     if(sndp_dev_sleep_app_get_stage_onoff(false)) {
-        sndp_sleep_analysis_stop();
+        sndp_sleep_analysis_suspend();
         ROLE_TRACE(0, "suspend sleep analysis");
     }
 #endif
@@ -106,22 +106,22 @@ static void sndp_sleep_role_resume_hr(void)
 {
 #if defined(__SNDP_HEART_RATE_MGR__)
     if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
-        sndp_hr_mearsuring_start(sndp_hr_mearsuring_get_sampling_rate(), sndp_hr_mearsuring_get_dump_state());
+        sndp_hr_resume();
         ROLE_TRACE(0, "resume heart rate");
     }            
     
     if(sndp_dev_sleep_app_get_stage_onoff(false)) {
-        sndp_sleep_analysis_start(sndp_get_sleep_control());
+        sndp_sleep_analysis_resume();
         ROLE_TRACE(0, "resume sleep analysis");
     }
 #endif
 }
 
 /**************************************************************************************************
- * Internal: Æô¶¯Á÷³Ì
- *   - ¿ªÆôPPG¡¢ACC´«¸ÐÆ÷
- *   - ³õÊ¼»¯ÐÄÂÊ/Ë¯ÃßËã·¨
- *   - BLEÓÉÆ½Ì¨²ã¹ÜÀí£¨¼ÙÉèÒÑÔÚSleepÄ£Ê½ÏÂ½¨Á¢£©
+ * Internal: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ *   - ï¿½ï¿½ï¿½ï¿½PPGï¿½ï¿½ACCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ *   - ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/Ë¯ï¿½ï¿½ï¿½ã·¨
+ *   - BLEï¿½ï¿½Æ½Ì¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½SleepÄ£Ê½ï¿½Â½ï¿½ï¿½ï¿½ï¿½ï¿½
  **************************************************************************************************/
 void sndp_sleep_role_start(void)
 {
@@ -139,10 +139,10 @@ void sndp_sleep_role_stop(void)
     ROLE_TRACE(0, "Stopped");
 }
 /**************************************************************************************************
- * Internal: SlaveÆô¶¯Á÷³Ì
- *   - Ç¿ÖÆ¹Ø±ÕPPG¡¢ACC´«¸ÐÆ÷
- *   - ÆÁ±ÎËã·¨»Øµ÷£¨Í¨¹ýÍ£Ö¹´«¸ÐÆ÷ÊµÏÖ£©
- *   - ½øÈë¼«µÍ¹¦ºÄ×´Ì¬
+ * Internal: Slaveï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ *   - Ç¿ï¿½Æ¹Ø±ï¿½PPGï¿½ï¿½ACCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ *   - ï¿½ï¿½ï¿½ï¿½ï¿½ã·¨ï¿½Øµï¿½ï¿½ï¿½Í¨ï¿½ï¿½Í£Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½Ö£ï¿½
+ *   - ï¿½ï¿½ï¿½ë¼«ï¿½Í¹ï¿½ï¿½ï¿½×´Ì¬
  **************************************************************************************************/
 POSSIBLY_UNUSED static void sndp_sleep_role_standby_start(void)
 {
@@ -154,10 +154,10 @@ POSSIBLY_UNUSED static void sndp_sleep_role_standby_start(void)
 
 /**************************************************************************************************
  * Internal: 
- *   1. ±ê¼Ç ROLE_SWITCHING£¨¹Ø¼ü±£»¤Ì¬£©
- *   2. »ñÈ¡Ëã·¨¿ìÕÕ
- *   3. Í¨¹ýTWS·¢ËÍ¿ìÕÕµ½¶Ô²à
- *   4. ¹Ø±Õ±¾µØ´«¸ÐÆ÷£¬ÇÐ»»ÎªStandby
+ *   1. ï¿½ï¿½ï¿½ ROLE_SWITCHINGï¿½ï¿½ï¿½Ø¼ï¿½ï¿½ï¿½ï¿½ï¿½Ì¬ï¿½ï¿½
+ *   2. ï¿½ï¿½È¡ï¿½ã·¨ï¿½ï¿½ï¿½ï¿½
+ *   3. Í¨ï¿½ï¿½TWSï¿½ï¿½ï¿½Í¿ï¿½ï¿½Õµï¿½ï¿½Ô²ï¿½
+ *   4. ï¿½Ø±Õ±ï¿½ï¿½Ø´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð»ï¿½ÎªStandby
  **************************************************************************************************/
 static void sndp_sleep_role_switch_to_standby(void)
 {
@@ -168,11 +168,11 @@ static void sndp_sleep_role_switch_to_standby(void)
 
     role_ctx.role = ROLE_SWITCHING;
 
-    /* Step 1: »ñÈ¡ dbbeats Ëã·¨µ±Ç°×´Ì¬¿ìÕÕ */
+    /* Step 1: ï¿½ï¿½È¡ dbbeats ï¿½ã·¨ï¿½ï¿½Ç°×´Ì¬ï¿½ï¿½ï¿½ï¿½ */
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
     dbbeats_get_snapshot(&lib_snapshot);
 
-    /* Ó³Éäµ½´«Êä½á¹¹Ìå */
+    /* Ó³ï¿½äµ½ï¿½ï¿½ï¿½ï¿½á¹¹ï¿½ï¿½ */
     snapshot.size = lib_snapshot.size;
     if (snapshot.size > SNDP_SLEEP_SNAPSHOT_DATA_SIZE) {
         snapshot.size = SNDP_SLEEP_SNAPSHOT_DATA_SIZE;
@@ -182,7 +182,7 @@ static void sndp_sleep_role_switch_to_standby(void)
     memset(&snapshot, 0, sizeof(snapshot));
 #endif
 
-    /* Step 2: Í¨¹ýTWSÁ´Â··¢ËÍ¿ìÕÕµ½¶Ô²à */
+    /* Step 2: Í¨ï¿½ï¿½TWSï¿½ï¿½Â·ï¿½ï¿½ï¿½Í¿ï¿½ï¿½Õµï¿½ï¿½Ô²ï¿½ */
 #if defined(__SNDP_COMM_MGR__)
     uint8_t send_buf[sizeof(Algorithm_Snapshot_t) + 2]; /* +2 for size field */
     send_buf[0] = (uint8_t)(snapshot.size & 0xFF);
@@ -193,7 +193,7 @@ static void sndp_sleep_role_switch_to_standby(void)
     ROLE_TRACE(0, "Snapshot sent, size=%d", snapshot.size);
 #endif
 
-    /* Step 3: Í£Ö¹´«¸ÐÆ÷£¬Í£Ö¹Ëã·¨£¬ÇÐ»»½ÇÉ« */
+    /* Step 3: Í£Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£Ö¹ï¿½ã·¨ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½É« */
     sndp_sleep_analysis_stop();
     sndp_hr_mearsuring_stop();
 
@@ -203,11 +203,11 @@ static void sndp_sleep_role_switch_to_standby(void)
 
 /**************************************************************************************************
  * Internal:
- *   1. ±ê¼Ç ROLE_SWITCHING
- *   2. ½âÎö¿ìÕÕÊý¾Ý£¬µ÷ÓÃ dbbeats_set_snapshot »Ö¸´Ëã·¨×´Ì¬
- *   3. ¿ªÆô´«¸ÐÆ÷
- *   4. ÖØÐÂ³õÊ¼»¯Ëã·¨ÉÏÏÂÎÄ
- *   5. ½ÇÉ«ÇÐ»»ÎªActive
+ *   1. ï¿½ï¿½ï¿½ ROLE_SWITCHING
+ *   2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½ dbbeats_set_snapshot ï¿½Ö¸ï¿½ï¿½ã·¨×´Ì¬
+ *   3. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ *   4. ï¿½ï¿½ï¿½Â³ï¿½Ê¼ï¿½ï¿½ï¿½ã·¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ *   5. ï¿½ï¿½É«ï¿½Ð»ï¿½ÎªActive
  **************************************************************************************************/
 static void sndp_sleep_role_switch_to_active(Algorithm_Snapshot_t *snapshot)
 {
@@ -217,11 +217,11 @@ static void sndp_sleep_role_switch_to_active(Algorithm_Snapshot_t *snapshot)
 
     role_ctx.role = ROLE_SWITCHING;
 
-    /* Step 1: ¿ªÆô´«¸ÐÆ÷ºÍËã·¨ */
-    sndp_hr_mearsuring_start(sndp_hr_mearsuring_get_sampling_rate(), sndp_hr_mearsuring_get_dump_state());
+    /* Step 1: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã·¨ */
+    sndp_hr_mearsuring_start(sndp_hr_mearsuring_get_sampling_rate(), sndp_mearsuring_get_dump_state(HR_DUMP_STATE));
     sndp_sleep_analysis_start(sndp_get_sleep_control());
 
-    /* Step 2: »Ö¸´Ëã·¨×´Ì¬¿ìÕÕ */
+    /* Step 2: ï¿½Ö¸ï¿½ï¿½ã·¨×´Ì¬ï¿½ï¿½ï¿½ï¿½ */
 #if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
     if (snapshot != NULL && snapshot->size > 0) {
         lib_snapshot.size = snapshot->size;
@@ -234,7 +234,7 @@ static void sndp_sleep_role_switch_to_active(Algorithm_Snapshot_t *snapshot)
     }
 #endif
 
-    /* Step 3: Éý¼¶ÎªActive */
+    /* Step 3: ï¿½ï¿½ï¿½ï¿½ÎªActive */
     role_ctx.role = ROLE_ACTIVE;
     sndp_comm_cmd_send_lr_sync_sleep_role_status(role_ctx.role);
     ROLE_TRACE(0, "Switched to Active");
@@ -242,9 +242,9 @@ static void sndp_sleep_role_switch_to_active(Algorithm_Snapshot_t *snapshot)
 }
 
 /**************************************************************************************************
- * Public API: Ä£¿é³õÊ¼»¯
- * ¿ª»úÊ±µ÷ÓÃ£¬¸ù¾ÝTWSÅä¶ÔÐÅÏ¢È·¶¨³õÊ¼½ÇÉ«
- * ¹æÔò£º
+ * Public API: Ä£ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
+ * ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½TWSï¿½ï¿½ï¿½ï¿½ï¿½Ï¢È·ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½É«
+ * ï¿½ï¿½ï¿½ï¿½
  **************************************************************************************************/
 void sndp_sleep_role_switch_init(void)
 {
@@ -252,14 +252,14 @@ void sndp_sleep_role_switch_init(void)
 
     memset(&role_ctx, 0, sizeof(role_ctx));
 
-    role_ctx.role = ROLE_IDLE;  /* ³õÊ¼½ÇÉ«ÎªIDLE */
+    role_ctx.role = ROLE_IDLE;  /* ï¿½ï¿½Ê¼ï¿½ï¿½É«ÎªIDLE */
     role_ctx.peer_role = ROLE_IDLE;
     role_ctx.initialized = true;
 }
 
 /**************************************************************************************************
- * Public API: ´¥·¢½ÇÉ«ÇÐ»»×´Ì¬
- * @param reason  ´¥·¢Ô­Òò£¨ÍÑÂä/µÍµç/APPÇ¿ÖÆ£©
+ * Public API: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½Ð»ï¿½×´Ì¬
+ * @param reason  ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½Íµï¿½/APPÇ¿ï¿½Æ£ï¿½
  **************************************************************************************************/
 void sndp_sleep_role_switch_trigger(Role_Switch_Reason_t reason)
 {
@@ -269,7 +269,7 @@ void sndp_sleep_role_switch_trigger(Role_Switch_Reason_t reason)
     }
 
 
-    /* ¼ì²éTWSÁ¬½Ó ÒÔ¼°¶Ô²àÉè±¸Ã»Åå´÷ */
+    /* ï¿½ï¿½ï¿½TWSï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½Ô²ï¿½ï¿½è±¸Ã»ï¿½ï¿½ï¿½ */
     if (!sndp_is_tws_link_connected() || !sndp_dev_wear_is_worn(true)) {
         ROLE_TRACE(0, "TWS link %d, peer worn %d rs:%d", sndp_is_tws_link_connected(), sndp_dev_wear_is_worn(true),reason);
         if(ROLE_SWITCH_REASON_WEAR_OFF == reason){
@@ -287,7 +287,7 @@ void sndp_sleep_role_switch_trigger(Role_Switch_Reason_t reason)
 
     ROLE_TRACE(0, "Triggered by reason=%d", reason);
 
-    /* Ö´ÐÐÇÐ»»£ºActive ¡ú Standby */
+    /* Ö´ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½Active ï¿½ï¿½ Standby */
     if(ROLE_SWITCH_REASON_WEAR_ON != reason) {
         if(sndp_dev_sleep_app_get_stage_onoff(false)) {
             if(sndp_sleep_role_is_peer_standby() || sndp_sleep_role_is_peer_idle()) {
@@ -298,11 +298,11 @@ void sndp_sleep_role_switch_trigger(Role_Switch_Reason_t reason)
 }
 
 /**************************************************************************************************
- * Public API: ´¦Àí½ÓÊÕµ½µÄ½ÇÉ«ÇÐ»»¿ìÕÕ
- * @param snapshot  ¿ìÕÕÊý¾Ý£¨À´×ÔTWSÁ´Â·£©
- * @param len       Êý¾Ý³¤¶È
+ * Public API: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õµï¿½ï¿½Ä½ï¿½É«ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param snapshot  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½TWSï¿½ï¿½Â·ï¿½ï¿½
+ * @param len       ï¿½ï¿½ï¿½Ý³ï¿½ï¿½ï¿½
  *
- * ÓÉÍ¨ÐÅÄ£¿éÊÕµ½ COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT Ê±µ÷ÓÃ
+ * ï¿½ï¿½Í¨ï¿½ï¿½Ä£ï¿½ï¿½ï¿½Õµï¿½ COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT Ê±ï¿½ï¿½ï¿½ï¿½
  **************************************************************************************************/
 void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot_data, uint16_t len)
 {
@@ -318,7 +318,7 @@ void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot_data, uint16_t len)
         return;
     }
 
-    /* ½âÎö¿ìÕÕ£ºÇ°2×Ö½ÚÎªsize£¬ºóÐøÎªÊý¾Ý */
+    /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ£ï¿½Ç°2ï¿½Ö½ï¿½Îªsizeï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ */
     snapshot.size = (uint16_t)snapshot_data[0] | ((uint16_t)snapshot_data[1] << 8);
     if (snapshot.size > SNDP_SLEEP_SNAPSHOT_DATA_SIZE) {
         snapshot.size = SNDP_SLEEP_SNAPSHOT_DATA_SIZE;
@@ -334,9 +334,9 @@ void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot_data, uint16_t len)
 
     ROLE_TRACE(0, "Snapshot received, size=%d, copy_len=%d", snapshot.size, copy_len);
 
-    /* µ±Ç°½ÇÉ«±ØÐëÊÇStandby»òIdle²ÅÄÜÉý¼¶ */
+    /* ï¿½ï¿½Ç°ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Standbyï¿½ï¿½Idleï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
     if (role_ctx.role != ROLE_STANDBY && role_ctx.role != ROLE_IDLE) {
-        /* Èç¹ûµ±Ç°ÊÇActive£¬ËµÃ÷³öÏÖÁËË«Active³åÍ» */
+        /* ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Activeï¿½ï¿½Ëµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë«Activeï¿½ï¿½Í» */
         if (role_ctx.role == ROLE_ACTIVE) {
             ROLE_TRACE(0, "Conflict: already Master, rejecting takeover");
             sndp_sleep_role_switch_handle_conflict();
@@ -346,15 +346,15 @@ void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot_data, uint16_t len)
         return;
     }
 
-    /* Ö´ÐÐÇÐ»»£ºStandby ¡ú Active */
+    /* Ö´ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½Standby ï¿½ï¿½ Active */
     sndp_sleep_role_switch_to_active(&snapshot);
 }
 
 /**************************************************************************************************
- * Public API: ´¦Àí½ÇÉ«ÇÐ»»ÇëÇóÃüÁî£¨½ÓÊÕ·½µ÷ÓÃ£©
+ * Public API: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½î£¨ï¿½ï¿½ï¿½Õ·ï¿½ï¿½ï¿½ï¿½Ã£ï¿½
  *
- * ÊÕµ½¶Ô²à·¢À´µÄ COMM_CMDID_LR_SYNC_SLEEP_ROLE_SWITCH Ê±µ÷ÓÃ
- * Slave²à×¼±¸ºÃ½ÓÊÕ¿ìÕÕºóµ÷ÓÃ
+ * ï¿½Õµï¿½ï¿½Ô²à·¢ï¿½ï¿½ï¿½ï¿½ COMM_CMDID_LR_SYNC_SLEEP_ROLE_SWITCH Ê±ï¿½ï¿½ï¿½ï¿½
+ * Slaveï¿½ï¿½×¼ï¿½ï¿½ï¿½Ã½ï¿½ï¿½Õ¿ï¿½ï¿½Õºï¿½ï¿½ï¿½ï¿½
  **************************************************************************************************/
 void sndp_sleep_role_switch_on_request(void)
 {
@@ -365,13 +365,13 @@ void sndp_sleep_role_switch_on_request(void)
 
     ROLE_TRACE(0, "Role switch request received, current role=%d", role_ctx.role);
 
-    /* µ±Ç°Èç¹ûÊÇActive£¬¾Ü¾øÇëÇó£¨·ÀÖ¹Ë«Active£© */
+    /* ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½Activeï¿½ï¿½ï¿½Ü¾ï¿½ï¿½ï¿½ï¿½ó£¨·ï¿½Ö¹Ë«Activeï¿½ï¿½ */
     if (role_ctx.role == ROLE_ACTIVE) {
         ROLE_TRACE(0, "Already Active, ignoring request");
         return;
     }
 
-    /* ±ê¼ÇµÈ´ý¿ìÕÕ */
+    /* ï¿½ï¿½ÇµÈ´ï¿½ï¿½ï¿½ï¿½ï¿½ */
     role_ctx.role = ROLE_SWITCHING;
     role_ctx.switch_timeout_ms = 0;
 }

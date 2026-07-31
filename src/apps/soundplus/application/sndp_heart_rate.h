@@ -30,6 +30,12 @@ typedef struct {
     int32_t pck_interval;
 } sndp_hr_dbbeats_data;
 
+typedef enum {
+    ACC_DUMP_STATE = 0,
+    PPG_DUMP_STATE = 1,
+    HR_DUMP_STATE = 2,
+    DUMP_STATE_MAX = 3,
+} dump_state_e;
 /**
  * @brief       Start heartrate mearsuring
  * @param[in]   ppg_sampling_rate  1:64Hz, 2:128Hz, 3:256Hz
@@ -61,17 +67,17 @@ void sndp_hr_mearsuring_set_sampling_rate(uint8_t sampling_rate);
  * @brief       Get heartrate mearsuring dump state
  * @return      uint8_t
  */
-uint8_t sndp_hr_mearsuring_get_dump_state(void);
+uint8_t sndp_mearsuring_get_dump_state(dump_state_e dump_state);
 
 /**
- * @brief       Set heartrate mearsuring sampling rate
- * @param[in]   dump_state  1:on, 2:off
+ * @brief       Set heartrate mearsuring dump state
+ * @param[in]   onoff  1:on, 0:off
  * @return      void
  */
-void sndp_hr_mearsuring_set_dump_state(uint8_t dump_state);
+void sndp_mearsuring_set_dump_state(dump_state_e dump_state, uint8_t onoff);
 
 /**
- * @brief       Start heartrate mearsuring
+ * @brief       Start sleep analysis
  * @param[in]   sleep_control default:0
  * @return      void
  */
@@ -129,8 +135,12 @@ void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
 int32_t sndp_get_acc_notification(void);
 
 bool sndp_hr_is_reading_ppg_enabled(void);
-void sndp_hr_switch_reading_ppg(bool onoff);
 bool sndp_hr_is_reading_acc_enabled(void);
+
+/* 低层传感器驱动接口: 仅由 sndp_sensor_reading_apply() 按聚合需求调用。
+ * 各功能函数(HR/睡眠/PPG_NTF/ACC_NTF)禁止直接调用, 只需设置自己的flag后调apply。
+ * 传感器在任一需求方开启时打开, 全部需求方关闭后才真正关闭。 */
+void sndp_hr_switch_reading_ppg(bool onoff);
 void sndp_hr_switch_reading_acc_raw_data(bool onoff);
 bool sndp_hr_is_ppg_notification_enabled(void);
 void sndp_hr_ble_disconnected_delay10s_start(void);
@@ -140,6 +150,15 @@ void sndp_hr_ble_connected_delay10s_stop(void);
 void sndp_hr_notify_ppg_fifo_ready(void);
 void sndp_hr_notify_acc_fifo_ready(void);
 void sndp_hr_proximity_tick_enable(bool en);
+
+/* 挂起/恢复HR与睡眠算法(取下/重新佩戴场景):
+ * suspend关闭ACC传感器并暂停算法(状态保留), PPG无需管理(取下后底层自动断流);
+ * resume按user需求恢复ACC并清空残留队列 */
+void sndp_hr_suspend(void);
+void sndp_hr_resume(void);
+void sndp_sleep_analysis_resume(void);
+void sndp_sleep_analysis_suspend(void);
+bool sndp_is_notifi_hr_enabled(void);
 #ifdef __cplusplus
 	}
 #endif
