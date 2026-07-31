@@ -2300,7 +2300,10 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
     if(anc_mode <= 0x05){
         if(sndp_dev_wear_is_worn(true))
         {
-            sndp_anc_mode_set((sndp_anc_mode_e)anc_mode);
+            if(!sndp_dev_iobox_is_in_box(false))
+            {
+                sndp_anc_mode_set((sndp_anc_mode_e)anc_mode);
+            }            
         }
         else
         {
