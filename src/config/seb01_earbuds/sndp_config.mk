@@ -86,6 +86,7 @@ export SNDP_SLEEP_APP                           := 1
 export SNDP_BAT_SWITCH_ROLE                     := 1
 export SNDP_PROMPT_TEST                         := 1
 export SNDP_ANC_MODIFY                          := 1
+export SNDP_DAC_ZERO_CROSSING_MUTE              := 1
 
 
 ifeq ($(SNDP_UI),1)
@@ -467,7 +468,9 @@ ifeq ($(SNDP_ANC_MODIFY),1)
 endif
 
 
-
-endif 
+ifeq ($(SNDP_DAC_ZERO_CROSSING_MUTE),1)
+export DAC_STOP_WITH_ZERO_CROSSING_MUTE := 1
+endif
+endif
 # SNDP_PROJ Total Control
 
