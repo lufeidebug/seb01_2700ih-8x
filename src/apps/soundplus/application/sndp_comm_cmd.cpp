@@ -3044,7 +3044,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_test(sleep_app_co
     uint8_t sensor_type = cmd_info->value[0];
     uint8_t measurement_duration = cmd_info->value[1];
     if(sensor_type == 0x00){
-        if(sndp_hr_is_ppg_notification_enabled() || sndp_mearsuring_get_dump_state(PPG_DUMP_STATE)){
+        if(sndp_hr_is_reading_ppg_enabled() || sndp_mearsuring_get_dump_state(PPG_DUMP_STATE)){
             sndp_hal_hr_read_samples_rate(sndp_comm_cmd_sleepapp_report_ppg_samples);
             sndp_hal_hr_samples_measurement_start(measurement_duration);
         }else{
@@ -3225,46 +3225,6 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data
 	return 0;
 }
 
-uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len)
-{
-    if(!sndp_comm_ble_is_connected()){
-        COMM_CMD_TRACE(0, "ble is not connected, not report ppg");
-        return 0;
-    }
-
-    if(sndp_mearsuring_get_dump_state(PPG_DUMP_STATE) == 0){
-        COMM_CMD_TRACE(0, "dump state is off, not report ppg");
-        return 0;
-    }
-
-    uint8_t data_len = 0;
-    sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
-
-    // 1. 打包LR_flag 1字节
-    if(sndp_dev_is_left_earphone())
-        cmd->value[data_len++] = 0x01;
-    else
-        cmd->value[data_len++] = 0x02;
-
-    // 2. 打包sampleSize（1字节）
-    uint8_t ppg_samples_size = (uint8_t)(ppg_raw_len > 64 ? 64 : ppg_raw_len); // 最多打包64个数据点
-    cmd->value[data_len++] = ppg_samples_size;           // 低字节
-
-    // 3. 打包ppg_samples_size个int32的低3字节 ppg_samples_size*3=96字节
-    for (int i = 0; i < ppg_samples_size; i++) {
-        cmd->value[data_len++] = (uint8_t)(ppg_raw_data[i] & 0xFF);         // 最低字节
-        cmd->value[data_len++] = (uint8_t)((ppg_raw_data[i] >> 8) & 0xFF);  // 中间字节
-        cmd->value[data_len++] = (uint8_t)((ppg_raw_data[i] >> 16) & 0xFF); // 最高字节（低3字节中的）
-    }
-    
-    cmd->flag = AppFlag;
-    cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
-    cmd->cmd = SLEEP_APP_CMDID_PPG_NOTIFICATION;
-    sleep_app_comm_main_send_cmd(cmd);
-    
-    return 0;
-}
-
 uint32_t sndp_comm_cmd_sleepapp_report_ppg_raw_data(uint8_t *ppg_raw_data, uint16_t ppg_raw_len)
 {
     if(!sndp_comm_ble_is_connected()){
@@ -3308,10 +3268,6 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf_debug(int16_t *acc_raw_data, uint
         return 0;
     }
 
-    if(sndp_mearsuring_get_dump_state(ACC_DUMP_STATE) == 0){
-        COMM_CMD_TRACE(0, "dump state is off, not report accelerometer");
-        return 0;
-    }
     uint8_t data_len = 0;
     sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd(); // 1字节LR_flag + 2字节count + 最多25个数据点，每个数据点包含X/Y/Z三个轴，每轴2字节
     // COMM_CMD_TRACE(1, "report accelerometer to app, len=%d", acc_raw_len);
@@ -3351,10 +3307,6 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t a
         return 0;
     }
 
-    if(sndp_mearsuring_get_dump_state(ACC_DUMP_STATE) == 0){
-        COMM_CMD_TRACE(0, "dump state is off, not report accelerometer");
-        return 0;
-    }
     uint8_t data_len = 0;
     sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
     // COMM_CMD_TRACE(1, "report accelerometer to app, len=%d", acc_raw_len);

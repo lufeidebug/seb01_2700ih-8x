@@ -87,7 +87,7 @@ void sndp_sleep_role_set_peer(Device_Role_t role)
     role_ctx.peer_role = role;
 }
 
-static void sndp_sleep_role_suspend_hr(void)
+static void sndp_sleep_role_suspend(void)
 {
 #if defined(__SNDP_HEART_RATE_MGR__) 
     if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
@@ -102,7 +102,7 @@ static void sndp_sleep_role_suspend_hr(void)
 #endif
 }
 
-static void sndp_sleep_role_resume_hr(void)
+static void sndp_sleep_role_resume(void)
 {
 #if defined(__SNDP_HEART_RATE_MGR__)
     if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
@@ -273,9 +273,9 @@ void sndp_sleep_role_switch_trigger(Role_Switch_Reason_t reason)
     if (!sndp_is_tws_link_connected() || !sndp_dev_wear_is_worn(true)) {
         ROLE_TRACE(0, "TWS link %d, peer worn %d rs:%d", sndp_is_tws_link_connected(), sndp_dev_wear_is_worn(true),reason);
         if(ROLE_SWITCH_REASON_WEAR_OFF == reason){
-            sndp_sleep_role_suspend_hr();
+            sndp_sleep_role_suspend();
         }else if(ROLE_SWITCH_REASON_WEAR_ON == reason){
-            sndp_sleep_role_resume_hr();
+            sndp_sleep_role_resume();
         }
         return;
     }

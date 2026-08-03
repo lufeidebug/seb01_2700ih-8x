@@ -31,10 +31,24 @@ typedef struct {
 } sndp_hr_dbbeats_data;
 
 typedef enum {
+    SENSOR_OP_USER_PPG = 1 << 0,
+    SENSOR_OP_USER_HR_PPG  = 1 << 1,
+    SENSOR_OP_USER_SUSPEND_PPG = 1 << 2,
+    SENSOR_OP_USER_PPG_MAX,
+} sensor_ppg_op_user_e;
+
+typedef enum {
+    SENSOR_OP_USER_ACC = 1 << 0,    
+    SENSOR_OP_USER_HR_ACC = 1 << 1,
+    SENSOR_OP_USER_SUSPEND_ACC = 1 << 2,
+    SENSOR_OP_USER_ACC_MAX,
+} sensor_acc_op_user_e;
+
+typedef enum {
     ACC_DUMP_STATE = 0,
     PPG_DUMP_STATE = 1,
     HR_DUMP_STATE = 2,
-    DUMP_STATE_MAX = 3,
+    DUMP_STATE_MAX,
 } dump_state_e;
 /**
  * @brief       Start heartrate mearsuring
@@ -137,12 +151,8 @@ int32_t sndp_get_acc_notification(void);
 bool sndp_hr_is_reading_ppg_enabled(void);
 bool sndp_hr_is_reading_acc_enabled(void);
 
-/* 低层传感器驱动接口: 仅由 sndp_sensor_reading_apply() 按聚合需求调用。
- * 各功能函数(HR/睡眠/PPG_NTF/ACC_NTF)禁止直接调用, 只需设置自己的flag后调apply。
- * 传感器在任一需求方开启时打开, 全部需求方关闭后才真正关闭。 */
-void sndp_hr_switch_reading_ppg(bool onoff);
-void sndp_hr_switch_reading_acc_raw_data(bool onoff);
-bool sndp_hr_is_ppg_notification_enabled(void);
+void sndp_hr_switch_reading_ppg_raw_data(uint32_t user, bool onoff);
+void sndp_hr_switch_reading_acc_raw_data(uint32_t user, bool onoff);
 void sndp_hr_ble_disconnected_delay10s_start(void);
 void sndp_hr_ble_connected_delay10s_stop(void);
 

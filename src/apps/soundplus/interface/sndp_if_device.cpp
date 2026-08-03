@@ -1677,8 +1677,8 @@ void sndp_dev_acc_enter_standby_mode(void)
 	SNDP_IF_TRACE_ENTER();
 	
 #if defined(__SNDP_GSENSOR_SUPPORT__)	
-	if(sndp_get_acc_notification()){
-		SNDP_IF_TRACE(0, "acc notification is on, not start single tap interrupt");
+	if(sndp_hr_is_reading_acc_enabled()){
+		SNDP_IF_TRACE(0, "acc is on, not enter standby mode");
 		return;
 	}
 	sndp_hal_acc_enter_standby_mode();
@@ -1690,8 +1690,8 @@ void sndp_dev_acc_enter_detection_mode(void)
 	SNDP_IF_TRACE_ENTER();
 	
 #if defined(__SNDP_GSENSOR_SUPPORT__)	
-	if(sndp_get_acc_notification()){
-		SNDP_IF_TRACE(0, "acc notification is on, not start single tap interrupt");
+	if(sndp_hr_is_reading_acc_enabled()){
+		SNDP_IF_TRACE(0, "acc is on, not enter detection mode");
 		return;
 	}
 	sndp_hal_acc_enter_detection_mode();
@@ -1702,8 +1702,8 @@ void sndp_dev_acc_start_single_tap_interrupt(void)
 {
 	SNDP_IF_TRACE_ENTER();
 #if defined(__SNDP_GSENSOR_SUPPORT__)	
-	if(sndp_get_acc_notification()){
-		SNDP_IF_TRACE(0, "acc notification is on, not start single tap interrupt");
+	if(sndp_hr_is_reading_acc_enabled()){
+		SNDP_IF_TRACE(0, "acc is on, not start single tap interrupt");
 		return;
 	}
 	sndp_hal_acc_start_single_tap_interrupt();
@@ -1921,7 +1921,7 @@ uint8_t sndp_dev_sleep_app_get_splaypause_onoff(bool peer)
 
 uint8_t sndp_dev_sleep_app_set_proximity_onoff(bool peer, uint8_t onoff)
 {
-	SNDP_IF_TRACE(0, "enter");
+	SNDP_IF_TRACE(0, "enter %d", onoff);
 	if(peer) {
 		sndp_dev_ctx.peer.sleep_proximity_onoff = onoff;
 	} else {

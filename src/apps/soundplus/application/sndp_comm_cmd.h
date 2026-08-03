@@ -483,7 +483,6 @@ uint32_t sndp_comm_cmd_send_lr_sync_stage_onoff(uint8_t onoff);
 uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
                                                     uint16_t position_and_control,
                                                     int16_t result_code);
-uint32_t sndp_comm_cmd_sleepapp_report_ppg_ntf(int32_t *ppg_raw_data, uint16_t ppg_raw_len);
 uint32_t sndp_comm_cmd_sleepapp_report_ppg_raw_data(uint8_t *ppg_raw_data, uint16_t ppg_raw_len);
 uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t acc_raw_len);
 uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf_debug(int16_t *acc_raw_data, uint16_t acc_raw_len);

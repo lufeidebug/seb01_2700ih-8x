@@ -479,7 +479,6 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_role_switch);
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_off_role_switch);
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_enable_gesture);
-    sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_exec_delayed);
     sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_open_anc);
 
     if(sndp_ui_pairing_type_is(SNDP_UI_PAIRING_FREEMAN)) {
@@ -489,7 +488,6 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
     
 	/* update the ibrt status machine */
 	if(SNDP_DEV_WEAR_ON == wear_status) {
-        // sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_on_exec_delayed, 0, 0, 0);
         sndp_ui_wear_on_exec_delayed();
 		/* play wear prompt tone */
 		sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_play_tone, 0, 0, 0);
@@ -601,7 +599,6 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
     
     if(inout_status == SNDP_DEV_IOBOX_IN) {
 
-        sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_exec_delayed);
         sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_tone);
         sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_music);
         sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds);
