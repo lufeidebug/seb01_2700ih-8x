@@ -2998,8 +2998,21 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app
 
 void sndp_sleep_comm_disconnect_timer_handler(void)
 {
-    sndp_sleep_comm_cmd_analysis_stop();
-    sndp_comm_cmd_sleepapp_stop_proximity();
+    if(sndp_dev_sleep_app_get_stage_onoff(false)){
+        sndp_sleep_comm_cmd_analysis_stop();
+    }
+    if(sndp_dev_sleep_app_get_proximity_onoff(false)){
+        sndp_comm_cmd_sleepapp_stop_proximity();
+    }
+    if(sndp_dev_sleep_app_get_heartrate_onoff(false)){
+        sndp_hr_mearsuring_stop();
+    }
+    if(sndp_mearsuring_get_dump_state(ACC_DUMP_STATE)){
+        sndp_acc_notification_stop();
+    }
+    if(sndp_mearsuring_get_dump_state(PPG_DUMP_STATE)){
+        sndp_ppg_notification_stop();
+    }
 }
 
 void sndp_sleep_comm_cmd_analysis_stop(void)
