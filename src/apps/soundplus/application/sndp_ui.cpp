@@ -437,7 +437,7 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
             {
                 sndp_delay_exec_start(1000, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_ON, 0, 0); 
             }
-            else if(sndp_is_notifi_hr_enabled() && sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
+            else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
             {
                 sndp_delay_exec_start(1000, (uint32_t)sndp_hr_resume, 0, 0, 0);
             }     
@@ -451,7 +451,7 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
             {
                 sndp_delay_exec_start(1000, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_OFF, 0, 0); 
             }
-            else if(sndp_is_notifi_hr_enabled() && sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
+            else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
             {
                 sndp_delay_exec_start(1000, (uint32_t)sndp_hr_suspend, 0, 0, 0);
             }     

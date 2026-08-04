@@ -329,18 +329,23 @@ static uint32_t sndp_comm_cmd_recv_eb_report_box_info(sndp_comm_cmd_info_s *cmd_
 	uint8_t fw_ver[3];
 	sndp_dev_bat_info_s bat_info;
 
-	COMM_CMD_TRACE(1, "data_len=%d", cmd_info->data_len);
-
 	if(cmd_info->data_len == 6) {
-		memcpy(fw_ver, &cmd_info->data[0], 3);
-		bat_info.bat_volt = (uint16_t)((cmd_info->data[3]<<8)|cmd_info->data[4]);
-		bat_info.bat_per = cmd_info->data[5];
-		
-		sndp_dev_set_box_fw_ver(fw_ver);
-		sndp_dev_set_box_bat_info(bat_info);
+
+        memcpy(fw_ver, &cmd_info->data[0], 3);
+        bat_info.bat_volt = (uint16_t)((cmd_info->data[3]<<8)|cmd_info->data[4]);
+        if(bat_info.bat_per > 0x64){
+            err_code = SNDP_COMM_ERROR_BOX_BATPER_ERR;
+            bat_info.bat_per = 0x64;
+        }else{
+            bat_info.bat_per = cmd_info->data[5];
+        }
+        sndp_dev_set_box_fw_ver(fw_ver);
+        sndp_dev_set_box_bat_info(bat_info);
 	} else {
 		err_code = SNDP_COMM_ERROR_INVALID_DATA_LEN;
 	}
+
+    COMM_CMD_TRACE(1, "data_len=%d percent=%d", cmd_info->data_len,bat_info.bat_per);
 
     sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
 

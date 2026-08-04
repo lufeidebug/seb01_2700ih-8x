@@ -93,7 +93,7 @@ typedef enum {
 	SNDP_COMM_ERROR_PARAM_LEN_INVALID       = 0x20,
 	SNDP_COMM_ERROR_PARAM_OUT_RANG          = 0x21,
 	SNDP_COMM_ERROR_NOT_IN_TEST_MODE        = 0x22,
-	
+	SNDP_COMM_ERROR_BOX_BATPER_ERR          = 0x23,
 	
 } sndp_comm_error_code_e;
 

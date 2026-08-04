@@ -602,6 +602,7 @@ void sndp_hr_switch_reading_ppg_raw_data(uint32_t user, bool onoff)
 
 void sndp_hr_switch_reading_acc_raw_data(uint32_t user, bool onoff)
 {
+    HR_TRACE(0, "user=%d, onoff=%d", user, onoff);
     if(user == (SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_SUSPEND_ACC)){
         if(onoff){
             hr_ctx.hr_suspended = true;
@@ -644,7 +645,6 @@ void sndp_hr_switch_reading_acc_raw_data(uint32_t user, bool onoff)
             }
         }
     }
-    HR_TRACE(0, "user=%d, onoff=%d", user, onoff);
 #if defined(__SNDP_GSENSOR_SUPPORT__)
     if(onoff) {
         sndp_hal_acc_stop_single_tap_interrupt();
@@ -704,6 +704,10 @@ void sndp_hr_mearsuring_stop(void)
  */
 void sndp_hr_suspend(void)
 {
+    if(!sndp_is_notifi_hr_enabled()){
+        SNDP_TRACE(0, "hr suspend, notifi hr is not enabled");
+        return;
+    }
     SNDP_TRACE(0, "hr suspend");   
     sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_SUSPEND_ACC, false);
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
@@ -724,6 +728,10 @@ void sndp_sleep_analysis_suspend(void)
  */
 void sndp_hr_resume(void)
 {
+    if(!sndp_is_notifi_hr_enabled()){
+        SNDP_TRACE(0, "hr resume, notifi hr is not enabled");
+        return;
+    }
     SNDP_TRACE(0, "hr resume");
     ppg_raw_data_queue_reset();
     acc_raw_data_queue_reset();
