@@ -28,7 +28,7 @@
 #endif
 
 
-#define CHARGER_PLUGIN_DELAY_TIME_MS				(100)
+#define CHARGER_PLUGIN_DELAY_TIME_MS				(200)	//100-200延长防抖时间，避免充电器插入瞬间电平抖动导致误触发
 #define CHARGER_PLUGOUT_DELAY_TIME_MS				(100)
 
 

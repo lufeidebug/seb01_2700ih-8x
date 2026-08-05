@@ -366,8 +366,16 @@ bool sndp_is_left_right_bound(void)
 void sndp_mobile_reconnect_timeout(void)
 {
     SNDP_IF_TRACE(0, ".");
-	//sndp_enter_mobile_pairing_after_tws_connected();
-	sndp_app_shutdown(SNDP_SHUTDOWN_REASON_RECONNECT_TIMEOUT);
+
+    if(sndp_is_master_mobile_link_connected()) {
+        SNDP_IF_TRACE(0, "mobile already connected, skip shutdown");
+#if defined(__BTIF_AUTOPOWEROFF__)
+        app_stop_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
+#endif
+        return;
+    }
+
+    sndp_app_shutdown(SNDP_SHUTDOWN_REASON_RECONNECT_TIMEOUT);
 }
 
 void sndp_mobile_reconnect_sccessful(void)
@@ -382,6 +390,15 @@ void sndp_mobile_reconnect_sccessful(void)
 
 void sndp_enter_mobile_reconnect(void)
 {
+
+    if(sndp_is_master_mobile_link_connected()) {
+        SNDP_IF_TRACE(0, "mobile already connected, skip reconnect");
+#if defined(__BTIF_AUTOPOWEROFF__)
+        app_stop_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
+#endif
+        return;
+    }
+
     bta_tws_box_event_entry(BTA_TWS_OPEN);
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
