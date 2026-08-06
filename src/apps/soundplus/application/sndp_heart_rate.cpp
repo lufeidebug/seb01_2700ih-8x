@@ -82,8 +82,8 @@ typedef struct {
     uint32_t ppg_user_flag;
     uint32_t acc_user_flag;
     bool delay_10S_start;
-    bool hr_suspended;
-
+    bool hr_acc_suspended;
+    bool hr_ppg_suspended;
 } sndp_hr_ctx_s;
 
 
@@ -152,6 +152,7 @@ POSSIBLY_UNUSED static int8_t sound_control;
 POSSIBLY_UNUSED static int16_t result_code;
 
 static void sndp_sleep_analysis(void);
+static bool sndp_is_notifi_hr_enabled(void);
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
@@ -202,9 +203,14 @@ bool sndp_hr_is_reading_acc_enabled(void)
     return hr_ctx.acc_user_flag ? true : false;   
 }
 
-static bool sndp_is_suspend(void)
+static bool sndp_acc_is_suspend(void)
 {
-    return hr_ctx.hr_suspended;
+    return hr_ctx.hr_acc_suspended;
+}
+
+static bool sndp_ppg_is_suspend(void)
+{
+    return hr_ctx.hr_ppg_suspended;
 }
 
 void sndp_user_ppg_flag_set(uint32_t *user_flag, sensor_ppg_op_user_e user)
@@ -461,7 +467,7 @@ static void sndp_sleep_app_process_thread(void const *argument)
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
         // ACC读取期间保留250ms看门狗轮询(沿用原da217e线程行为), 其余情况无限等待任务信号
-        wait_timeout = (sndp_hr_is_reading_acc_enabled() && !sndp_is_suspend()) ? SENSOR_TASK_ACC_WATCHDOG_MS : osWaitForever;
+        wait_timeout = (sndp_hr_is_reading_acc_enabled() && !sndp_acc_is_suspend()) ? SENSOR_TASK_ACC_WATCHDOG_MS : osWaitForever;
         evt = osSignalWait(0, wait_timeout);
 
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
@@ -476,7 +482,8 @@ static void sndp_sleep_app_process_thread(void const *argument)
         /* 注意: 绝不能用sndp_hr_is_reading_ppg_enabled()门控! ss_ppg_interrupt_handler除读FIFO外,
            还负责处理佩戴事件(g_proximity_sta, FIFO中断使能的前提)并清除传感器INT引脚;
            若被门控跳过, 边沿触发的GPIO将因INT未清除而永久收不到后续中断 */
-           SNDP_TRACE(0, "ppg_enabled: %d, suspend: %d", sndp_hr_is_reading_ppg_enabled(), sndp_is_suspend());
+        SNDP_TRACE(0, "ppg_enabled: %d, ppgpend:%d accpend: %d", sndp_hr_is_reading_ppg_enabled(), 
+                                                        sndp_ppg_is_suspend(), sndp_acc_is_suspend());
         if((fired_signals & SENSOR_TASK_SIGNAL_PPG_FIFO)) {
             sndp_hal_hr_ppg_fifo_task();
         }
@@ -484,7 +491,7 @@ static void sndp_sleep_app_process_thread(void const *argument)
 
         /********** task2: acc_task **********/
 #if defined(__SNDP_GSENSOR_SUPPORT__)
-        if(sndp_hr_is_reading_acc_enabled() && !sndp_is_suspend()) {
+        if(sndp_hr_is_reading_acc_enabled() && !sndp_acc_is_suspend()) {
             if(fired_signals & SENSOR_TASK_SIGNAL_ACC_FIFO) {
                 acc_last_poll_ms = curr_ms;
                 sndp_hal_acc_fifo_task();
@@ -498,8 +505,8 @@ static void sndp_sleep_app_process_thread(void const *argument)
 #endif
 
         /********** task3: heartrate_task **********/
-        if((fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) && !sndp_is_suspend() &&
-           (hr_ctx.hr_running) &&
+        if((fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) && !sndp_acc_is_suspend() &&
+           (hr_ctx.hr_running) && !sndp_ppg_is_suspend() &&
            (ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES)) {
             sndp_heartrate_algo_task();
         }
@@ -570,7 +577,38 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
 
 void sndp_hr_switch_reading_ppg_raw_data(uint32_t user, bool onoff)
 {
-    if(user != SENSOR_OP_USER_SUSPEND_PPG) {
+    HR_TRACE(0, "user=%d, onoff=%d", user, onoff);
+    if(user == (SENSOR_OP_USER_SUSPEND_PPG|SENSOR_OP_USER_HR_PPG)) {
+        if(onoff){
+            hr_ctx.hr_ppg_suspended = true;
+            sndp_user_ppg_flag_set(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)(user&SENSOR_OP_USER_HR_PPG));
+            return;
+        }
+        else{
+            sndp_user_ppg_flag_clear(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)(user&SENSOR_OP_USER_HR_PPG));
+            hr_ctx.hr_ppg_suspended = false;
+        }
+    }
+
+    if(user == (SENSOR_OP_USER_HR_PPG|SENSOR_OP_USER_SUSPEND_PPG)) {
+        if(onoff){
+            hr_ctx.hr_ppg_suspended = true;
+            sndp_user_ppg_flag_set(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)(user&SENSOR_OP_USER_HR_PPG));
+            return;
+        }
+        else{
+            sndp_user_ppg_flag_clear(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)(user&SENSOR_OP_USER_HR_PPG));
+            hr_ctx.hr_ppg_suspended = false;
+        }
+    }
+
+    if(user == SENSOR_OP_USER_SUSPEND_PPG) {
+         if(onoff){
+            hr_ctx.hr_ppg_suspended = false;
+        }else{
+            hr_ctx.hr_ppg_suspended = true;
+        }       
+    }else{
         if(onoff){
             sndp_user_ppg_flag_set(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)user);
         } else {
@@ -579,9 +617,9 @@ void sndp_hr_switch_reading_ppg_raw_data(uint32_t user, bool onoff)
                 HR_TRACE(0, "ppg_user_flag=%d", hr_ctx.ppg_user_flag);
                 return;
             }
-        }        
+        }
     }
-    HR_TRACE(0, "user=%d, onoff=%d", user, onoff);
+    
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
     if(onoff) {
         sndp_hal_hr_set_reading_ppg_callback(sndp_hr_read_ppg_callback);
@@ -605,32 +643,32 @@ void sndp_hr_switch_reading_acc_raw_data(uint32_t user, bool onoff)
     HR_TRACE(0, "user=%d, onoff=%d", user, onoff);
     if(user == (SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_SUSPEND_ACC)){
         if(onoff){
-            hr_ctx.hr_suspended = true;
+            hr_ctx.hr_acc_suspended = true;
             sndp_user_acc_flag_set(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)(user&SENSOR_OP_USER_HR_ACC));
             return;
         }else{
             sndp_user_acc_flag_clear(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)(user&SENSOR_OP_USER_HR_ACC));
-            hr_ctx.hr_suspended = false;
+            hr_ctx.hr_acc_suspended = false;
         }
     }
 
     if(user == (SENSOR_OP_USER_ACC|SENSOR_OP_USER_SUSPEND_ACC)){
         if(onoff){
             sndp_user_acc_flag_set(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)(user&SENSOR_OP_USER_ACC));
-            hr_ctx.hr_suspended = true;
+            hr_ctx.hr_acc_suspended = true;
             return;
         }
         else{
             sndp_user_acc_flag_clear(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)(user&SENSOR_OP_USER_ACC));
-            hr_ctx.hr_suspended = false;
+            hr_ctx.hr_acc_suspended = false;
         }
     }
 
     if(user == SENSOR_OP_USER_SUSPEND_ACC){
         if(onoff){
-            hr_ctx.hr_suspended = false;
+            hr_ctx.hr_acc_suspended = false;
         }else{
-            hr_ctx.hr_suspended = true;
+            hr_ctx.hr_acc_suspended = true;
         }
     }else{
         if(user == SENSOR_OP_USER_HR_ACC || user == SENSOR_OP_USER_ACC) { 
@@ -673,11 +711,12 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
     hr_ctx.hr_running = true;
     sndp_mearsuring_set_dump_state(HR_DUMP_STATE, dump_state);
     sndp_hr_mearsuring_set_sampling_rate(ppg_sampling_rate);
-    sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG, true);
     if(sndp_dev_wear_is_worn(false)) {
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC, true);
+        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG, true);
     }else{
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_SUSPEND_ACC, true);
+        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG|SENSOR_OP_USER_SUSPEND_PPG, true);
     }
 }
 
@@ -686,11 +725,12 @@ void sndp_hr_mearsuring_stop(void)
     SNDP_TRACE(0, "sndp_hr_mearsuring_stop...");
     hr_ctx.hr_running = false;
     sndp_mearsuring_set_dump_state(HR_DUMP_STATE, 0x00);
-    sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG, false);
     if(sndp_dev_wear_is_worn(false)) {
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC, false);
+        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG, false);
     }else{
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_SUSPEND_ACC, false);
+        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG|SENSOR_OP_USER_SUSPEND_PPG, false);
     }
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
@@ -708,9 +748,16 @@ void sndp_hr_suspend(void)
         SNDP_TRACE(0, "hr suspend, notifi hr is not enabled");
         return;
     }
-    SNDP_TRACE(0, "hr suspend");   
-    sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_SUSPEND_ACC, false);
-    app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
+    SNDP_TRACE(0, "hr suspend");
+    if(sndp_hr_is_reading_ppg_enabled()){
+        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_SUSPEND_PPG, false);
+    }   
+    if(sndp_hr_is_reading_acc_enabled()){
+        sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_SUSPEND_ACC, false);
+    }
+    if(sndp_hr_running_state()){
+        app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
+    }
 }
 
 void sndp_sleep_analysis_suspend(void)
@@ -733,10 +780,17 @@ void sndp_hr_resume(void)
         return;
     }
     SNDP_TRACE(0, "hr resume");
-    ppg_raw_data_queue_reset();
-    acc_raw_data_queue_reset();
-    sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_SUSPEND_ACC, true);
-    app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
+    if(sndp_hr_is_reading_ppg_enabled()){
+        ppg_raw_data_queue_reset();
+        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_SUSPEND_PPG, true);
+    }
+    if(sndp_hr_is_reading_acc_enabled()){
+        acc_raw_data_queue_reset();
+        sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_SUSPEND_ACC, true);
+    }
+    if(sndp_hr_running_state()){
+        app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
+    }
 }
 
 void sndp_sleep_analysis_resume(void)
@@ -859,7 +913,7 @@ void sndp_acc_notification_stop(void)
 
 }
 
-bool sndp_is_notifi_hr_enabled(void)
+static bool sndp_is_notifi_hr_enabled(void)
 {
     SNDP_TRACE(0, "hr: %d acc: %d ppg: %d", hr_ctx.hr_running, hr_ctx.acc_user_flag, hr_ctx.ppg_user_flag);
    if(hr_ctx.hr_running || hr_ctx.acc_user_flag || hr_ctx.ppg_user_flag) 

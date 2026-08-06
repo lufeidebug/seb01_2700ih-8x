@@ -47,7 +47,10 @@ typedef enum {
 
 	SNDP_BT_CONN_AVRCP_PLAYBACK_STATUS_CHANGED  = 22,
 	SNDP_BT_CONN_ROLE_ROLE_CHANGED                     = 23,
-	
+	SNDP_BT_HFP_CALLSETUP_NONE          = 24,
+	SNDP_BT_HFP_CALLSETUP_OUTGOING          = 25,
+	SNDP_BT_HFP_CALLSETUP_INCOMING          = 26,
+	SNDP_BT_HFP_CALLSETUP_ALERTING          = 27,
 } sndp_bt_conn_status_e;
 
 typedef enum {

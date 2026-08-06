@@ -168,7 +168,6 @@ void sndp_hr_suspend(void);
 void sndp_hr_resume(void);
 void sndp_sleep_analysis_resume(void);
 void sndp_sleep_analysis_suspend(void);
-bool sndp_is_notifi_hr_enabled(void);
 #ifdef __cplusplus
 	}
 #endif
