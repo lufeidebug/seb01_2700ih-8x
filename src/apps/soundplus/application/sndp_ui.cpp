@@ -125,8 +125,14 @@ typedef struct {
 static void sndp_ui_all_status_sync_send(void);
 static void sndp_ui_bt_event_exec_after_power_on(void);
 
-
-
+typedef enum {
+    SLEEP_APP_OP_USER_WEAR = 1 << 0,
+    SLEEP_APP_OP_USER_BT_CALL = 1 << 1,
+    SLEEP_APP_OP_USER_MAX,
+}sndp_sleep_app_op_user_e;
+static void sndp_sleep_app_resume(sndp_sleep_app_op_user_e user);
+static void sndp_sleep_app_suspend(sndp_sleep_app_op_user_e user);
+uint32_t sndp_sleepapp_flag;
 /**************************************************************************************************
 * Variable
 **************************************************************************************************/
@@ -422,6 +428,67 @@ static void sndp_ui_wear_on_play_tone(void)
 
 }
 
+static void sndp_user_sleepapp_flag_set(uint32_t *user_flag, sndp_sleep_app_op_user_e user)
+{
+	*user_flag |= user; 
+}
+
+static void sndp_user_sleepapp_flag_clear(uint32_t *user_flag, sndp_sleep_app_op_user_e user)
+{
+	*user_flag &= ~user; 
+}
+
+static void sndp_sleep_app_suspend(sndp_sleep_app_op_user_e user)
+{
+    uint16_t delay_time = 1000;
+    SPUI_TRACE(0, "user=0x%x,sndp_sleepapp_flag=0x%x", user, sndp_sleepapp_flag);
+    if((sndp_sleepapp_flag & user) == 0){
+        sndp_user_sleepapp_flag_set(&sndp_sleepapp_flag, user);
+    }else{
+        SPUI_TRACE(0,"user exist, rtn suspend");
+        return;
+    }
+
+    if(user == SLEEP_APP_OP_USER_BT_CALL){
+        delay_time = 1;
+    }
+    if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP))
+    {
+        sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_OFF, 0, 0); 
+    }
+    else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
+    {
+        sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_suspend, 0, 0, 0);
+    }     
+}
+
+static void sndp_sleep_app_resume(sndp_sleep_app_op_user_e user)
+{
+    uint16_t delay_time = 1000;
+    SPUI_TRACE(0, "user=0x%x,sndp_sleepapp_flag=0x%x", user, sndp_sleepapp_flag);
+    if((sndp_sleepapp_flag&user) == 0){
+        SPUI_TRACE(0,"user not exist, rtn resume");
+        return;
+    }else{
+        sndp_user_sleepapp_flag_clear(&sndp_sleepapp_flag, user);
+        if(sndp_sleepapp_flag){
+            SPUI_TRACE(0, "sndp_sleepapp_flag=%d", sndp_sleepapp_flag);
+            return;
+        }        
+    }
+    if(user == SLEEP_APP_OP_USER_BT_CALL){
+        delay_time = 1;
+    }
+    if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP))
+    {
+        sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_ON, 0, 0); 
+    }
+    else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
+    {
+        sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_resume, 0, 0, 0);
+    }
+}
+
 void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 {
 	SPUI_TRACE(2, "wear_action=%d, remote=%d", wear_action, remote);
@@ -433,28 +500,14 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 			sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_role_switch, 0, 0, 0);  
             sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_open_anc, 0, 0, 0);  
             sndp_delay_exec_start(2000, (uint32_t)sndp_ui_wear_on_enable_gesture, 0, 0, 0);
-            if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP))
-            {
-                sndp_delay_exec_start(1000, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_ON, 0, 0); 
-            }
-            else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
-            {
-                sndp_delay_exec_start(1000, (uint32_t)sndp_hr_resume, 0, 0, 0);
-            }     
+            sndp_sleep_app_resume(SLEEP_APP_OP_USER_WEAR);
 	    } else if(SNDP_DEV_WEAR_OFF == wear_action) {
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_off_tone_switch_to_phone, 0, 0, 0);
 			sndp_ui_wear_off_stop_music();
             sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_off_role_switch, 0, 0, 0);
             sndp_ui_wear_off_close_anc();
             sndp_ui_wear_off_disable_gesture();
-            if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP))
-            {
-                sndp_delay_exec_start(1000, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_OFF, 0, 0); 
-            }
-            else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
-            {
-                sndp_delay_exec_start(1000, (uint32_t)sndp_hr_suspend, 0, 0, 0);
-            }     
+            sndp_sleep_app_suspend(SLEEP_APP_OP_USER_WEAR);
 	    }        
 	} else if(remote == true) {
 		// only the master can execute.
@@ -1547,6 +1600,17 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			break;
         case SNDP_BT_CONN_ROLE_ROLE_CHANGED:
             break;
+        case SNDP_BT_HFP_CALLSETUP_NONE:
+            sndp_sleep_app_resume(SLEEP_APP_OP_USER_BT_CALL);
+            break;
+        case SNDP_BT_HFP_CALLSETUP_OUTGOING:
+            sndp_sleep_app_suspend(SLEEP_APP_OP_USER_BT_CALL);
+            break;
+        case SNDP_BT_HFP_CALLSETUP_INCOMING:
+            sndp_sleep_app_suspend(SLEEP_APP_OP_USER_BT_CALL);
+            break;
+        case SNDP_BT_HFP_CALLSETUP_ALERTING:
+            break;
 		default:
 			break;
 
@@ -1727,6 +1791,7 @@ static void sndp_ui_check_dev_initial_status(void)
 	sndp_call_func_in_dev_thread((uint32_t)sndp_dev_cover_check_curr_status, 0, 0, 0);
 	sndp_call_func_in_dev_thread((uint32_t)sndp_dev_iobox_check_curr_status, 0, 0, 0);
 	sndp_call_func_in_dev_thread((uint32_t)sndp_dev_wear_check_curr_status, 0, 0, 0);
+    sndp_sleepapp_flag = 0;
 }
 
 void sndp_ui_init_pre(void)
