@@ -933,7 +933,8 @@ bool hal_dma_busy(void)
         start = chan_start[inst];
         end = start + chan_num[inst];
         for (hwch = start; hwch < end; hwch++) {
-            if (hal_dma_chan_busy_inst(inst, hwch)) {
+            if (hal_dma_chan_busy_inst(inst, hwch) &&
+                (dma[inst]->CH[hwch].CONFIG & DMA_CONFIG_ACTIVE)) {
                 return true;
             }
         }

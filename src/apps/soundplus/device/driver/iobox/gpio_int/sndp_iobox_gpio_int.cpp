@@ -30,6 +30,7 @@
 * Prototype
 **************************************************************************************************/
 static void sndp_iobox_gpio_int_debounce_timer_handler(void const *param);
+void sndp_comm_set_freq_32k(void);
 
 
 /**************************************************************************************************
@@ -71,6 +72,15 @@ static void sndp_iobox_gpio_int_debounce_timer_handler(void const *param)
 	if(iob_status != SNDP_HAL_IOBOX_UNKNOWN) {
 		iobox_status = iob_status;
 
+#if defined(__SNDP_COMM_MGR__)
+		if(iob_status == SNDP_HAL_IOBOX_IN) {
+			// 防抖确认入盒：取消待执行的降频，保持 52M，pogopin RX 存活
+			sndp_delay_exec_stop((uint32_t)sndp_comm_set_freq_32k);
+		} else {
+			// 防抖确认出盒：5 秒后降 32K，允许深睡
+			sndp_delay_exec_start(5000, (uint32_t)sndp_comm_set_freq_32k, 0, 0, 0);
+		}
+#endif
 		if(iob_gpio_status_changed_cb_ptr) {
 			sndp_call_func_in_app_thread((uint32_t)iob_gpio_status_changed_cb_ptr, 
 						(uint32_t)iobox_status, 0, 0);
@@ -91,17 +101,14 @@ static void sndp_iobox_gpio_int_debounce_start(void)
 	uint32_t delay_time;
 	
 	iob_status = sndp_iobox_gpio_get_iob_status();
-	if(iob_status == SNDP_HAL_IOBOX_IN)
+	if(iob_status == SNDP_HAL_IOBOX_IN) {
 		delay_time = IOBOX_INT_INBOX_DEBOUNCE_DELAYE_MS;
-	else
+	} else {
 		delay_time = IOBOX_INT_OUTBOX_DEBOUNCE_DELAYE_MS;
-		
+	}
+
 	osTimerStop(iobox_int_debounce_timer);
 	osTimerStart(iobox_int_debounce_timer, delay_time);
-    
-#if defined(__SNDP_COMM_MGR__)
-    sndp_delay_exec_start(5000, (uint32_t)sndp_comm_set_freq_32k, 0, 0, 0);
-#endif
 }
 
 static void sndp_iobox_gpio_int_disable(void)

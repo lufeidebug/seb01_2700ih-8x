@@ -34,11 +34,14 @@
 #include "hal_sysfreq.h"
 #include "hal_timer.h"
 #include "hal_uart.h"
+#include "hal_sleep.h"
 #include "mpu.h"
 #include "pmu.h"
 #include "stdarg.h"
 #include "stdio.h"
 #include "string.h"
+
+#define HAL_SYS_WAKE_LOCK_USER_TRACE         HAL_SYS_WAKE_LOCK_USER_8
 
 #ifdef CORE_DUMP
 #include "CrashCatcherApi.h"
@@ -3764,6 +3767,7 @@ int hal_trace_rx_open(unsigned char *buf, unsigned int len, HAL_TRACE_RX_CALLBAC
 
     if (trace_rx_state != HAL_TRACE_RX_STATE_OPENED) {
         trace_rx_state = HAL_TRACE_RX_STATE_OPENED;
+        hal_sys_wake_lock(HAL_SYS_WAKE_LOCK_USER_TRACE);
         hal_trace_rx_start();
     }
 
@@ -3781,6 +3785,7 @@ int hal_trace_rx_close(void)
     lock = int_lock();
     hal_trace_rx_stop();
     trace_rx_state = HAL_TRACE_RX_STATE_CLOSED;
+    hal_sys_wake_unlock(HAL_SYS_WAKE_LOCK_USER_TRACE);
     int_unlock(lock);
 
     trace_rx_buf = NULL;

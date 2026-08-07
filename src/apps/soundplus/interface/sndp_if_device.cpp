@@ -446,6 +446,8 @@ void sndp_dev_register_gesture_funcs(function_callback_t *funcs)
 
 
 /************************************************** InOut Box Info Start **************************************************/
+// 仓内不进深睡（sys 锁，浅睡即可），保证单线 UART 指令能立即收到；出盒释放
+#define HAL_SYS_WAKE_LOCK_USER_SNDP_IOBOX     HAL_SYS_WAKE_LOCK_USER_10 // 注意: 勿用 USER_9，其值=10 与 HAL_BUS_WAKE_LOCK_USER_PMU 共用同一位
 bool sndp_dev_iobox_is_in_box(bool peer)
 {
 	sndp_dev_iobox_status_e inout_status;
@@ -494,6 +496,13 @@ void sndp_dev_iobox_status_changed_handler(sndp_dev_iobox_status_e status)
 
 	if(status != SNDP_DEV_IOBOX_UNKNOWN) {
 		sndp_dev_iobox_set_status(false, status);
+
+		// 仓内不进深睡（浅睡即可），保证单线指令立即收到，无需先唤醒
+		if(status == SNDP_DEV_IOBOX_IN) {
+			hal_sys_wake_lock(HAL_SYS_WAKE_LOCK_USER_SNDP_IOBOX);
+		} else {
+			hal_sys_wake_unlock(HAL_SYS_WAKE_LOCK_USER_SNDP_IOBOX);
+		}
         
 #if defined(__SNDP_COMM_MGR__)    
         sndp_comm_cmd_send_lr_sync_iobox_status(status);
