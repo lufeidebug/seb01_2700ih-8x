@@ -178,5 +178,12 @@ int32_t sndp_hal_acc_fifo_task(void)
 	return SNDP_HAL_RET_FAIL;
 }
 
+int32_t sndp_hal_set_acc_fifo_ready_callback(sndp_hal_acc_fifo_ready_callback callback)
+{
+	if((p_hal_acc != NULL) && (p_hal_acc->set_acc_fifo_ready_callback != NULL))
+		return p_hal_acc->set_acc_fifo_ready_callback(callback);
+	return SNDP_HAL_RET_FAIL;
+}
+
 #endif	/* __SNDP_GSENSOR_SUPPORT__ */
 

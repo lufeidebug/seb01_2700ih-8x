@@ -61,7 +61,7 @@ static bool ssh401a_inited = false;
 static sndp_hal_hr_read_ppg_callback ssh401a_hr_read_ppg_cb_ptr = NULL;
 static sndp_hal_hr_calib_callback ssh401a_hr_calib_cb_ptr = NULL;
 static sndp_hal_hr_report_ppg_raw_data_callback ssh401a_hr_report_ppg_raw_data_cb_ptr = NULL;
-
+static sndp_hal_hr_fifo_ready_callback ssh401a_hr_fifo_ready_ptr = NULL;
 #if defined(__SNDP_WEAR_DETECT_MGR__)
 static sndp_hal_wear_status_changed_callback ssh401a_wear_status_changed_cb_ptr = NULL;
 static sndp_hal_wear_status_e ssh401a_wear_status = SNDP_HAL_WEAR_OFF;
@@ -312,7 +312,18 @@ int32_t ssh401a_read_samples_rate(sndp_hal_hr_ppg_samples_callback callback)
 // static int ssh401_irq_cnt = 0;
 static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
-    sndp_hr_notify_ppg_fifo_ready();
+    if(ssh401a_hr_fifo_ready_ptr){
+        ssh401a_hr_fifo_ready_ptr();
+    }
+}
+
+int32_t ssh401a_set_fifo_ready_callback(sndp_hal_hr_fifo_ready_callback callback)
+{
+    if(callback == NULL) {
+        return SNDP_HAL_RET_FAIL;
+    }
+    ssh401a_hr_fifo_ready_ptr = callback;
+    return SNDP_HAL_RET_OK;
 }
 
 static void ssh401a_irq_init(void)
@@ -563,6 +574,7 @@ extern "C" const sndp_hal_hr_s sndp_hr_ssh401a = {
     .samples_measurement_start      = ssh401_samples_measurement_start,
     .read_samples_rate              = ssh401a_read_samples_rate,
     .ppg_fifo_task                  = ssh401a_ppg_fifo_task,
+    .set_fifo_ready_callback        = ssh401a_set_fifo_ready_callback,
 };
 
 

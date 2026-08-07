@@ -185,5 +185,12 @@ int32_t sndp_hal_hr_ppg_fifo_task(void)
 		return p_hal_hr->ppg_fifo_task();
 	return SNDP_HAL_RET_FAIL;
 }
+
+int32_t sndp_hal_hr_set_fifo_ready_callback(sndp_hal_hr_fifo_ready_callback callback)
+{
+	if((p_hal_hr != NULL) && (p_hal_hr->set_fifo_ready_callback != NULL))
+		return p_hal_hr->set_fifo_ready_callback(callback);
+	return SNDP_HAL_RET_FAIL;
+}
 #endif	/* __SNDP_HRSENSOR_SUPPORT__ */
 

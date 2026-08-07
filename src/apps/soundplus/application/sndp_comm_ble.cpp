@@ -299,7 +299,9 @@ POSSIBLY_UNUSED static void sndp_comm_ble_disconnected_done(uint8_t conidx)
 {
 	COMM_BLE_ENTER();
 	sndp_comm_ble_ctx.conn_status = SNDP_COMM_BLE_DISCONNECTED;
+#if defined(__SNDP_HEART_RATE_MGR__)
     sndp_hr_ble_disconnected_delay10s_start();
+#endif
 }
 
 POSSIBLY_UNUSED static void sndp_comm_ble_connected_done(uint8_t conidx)
@@ -308,7 +310,9 @@ POSSIBLY_UNUSED static void sndp_comm_ble_connected_done(uint8_t conidx)
 	sndp_comm_ble_ctx.conn_status = SNDP_COMM_BLE_CONNECTED;
     sndp_comm_ble_ctx.conidx = conidx;
     if(sndp_comm_ble_ctx.conidx == 0x01) {
+#if defined(__SNDP_HEART_RATE_MGR__)
         sndp_hr_ble_connected_delay10s_stop();
+#endif
 #ifdef CFG_APP_DATAPATH_SERVER    
         app_datapath_server_register_tx_done(sndp_comm_ble_tx_done);
 #endif

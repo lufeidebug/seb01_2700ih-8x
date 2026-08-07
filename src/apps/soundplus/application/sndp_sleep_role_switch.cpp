@@ -1,4 +1,4 @@
-#if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_HEART_RATE_MGR__)
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
 
 #include "stdio.h"
 #include "string.h"

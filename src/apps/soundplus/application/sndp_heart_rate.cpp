@@ -609,6 +609,7 @@ void sndp_hr_switch_reading_ppg_raw_data(uint32_t user, bool onoff)
     if (after_on) {
         sndp_hal_hr_set_reading_ppg_callback(sndp_hr_read_ppg_callback);
         sndp_hal_hr_set_report_ppg_raw_data_callback(sndp_report_ppg_raw_data_callback);
+        sndp_hal_hr_set_fifo_ready_callback(sndp_hr_notify_ppg_fifo_ready);
         sndp_hal_hr_start_reading_ppg();
 
         /* 立即唤醒线程服务一次传感器INT:
@@ -657,6 +658,7 @@ void sndp_hr_switch_reading_acc_raw_data(uint32_t user, bool onoff)
     if (after_on) {
         sndp_hal_acc_stop_single_tap_interrupt();
         sndp_hal_acc_set_reading_raw_data_callback(sndp_hr_acc_read_raw_data_callback);
+        sndp_hal_set_acc_fifo_ready_callback(sndp_hr_notify_acc_fifo_ready);
         sndp_hal_acc_start_reading_raw_data();
     } else {
         sndp_hal_acc_stop_reading_raw_data();
@@ -702,7 +704,7 @@ void sndp_hr_mearsuring_stop(void)
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_WEAR_SUSPEND_ACC, false);
         sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG|SENSOR_OP_USER_WEAR_SUSPEND_PPG, false);
     }
-    
+
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
 }

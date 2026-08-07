@@ -17,6 +17,7 @@ typedef struct {
 typedef void (*sndp_hal_acc_read_raw_data_callback)(sndp_hal_acc_data_s *data, uint16_t cnt);
 typedef void (*sndp_hal_acc_calibration_rsp_func)(uint8_t *data, uint16_t data_len);
 typedef void (*sndp_hal_acc_samples_callback)(uint16_t data);
+typedef void (*sndp_hal_acc_fifo_ready_callback)(void);
 
 typedef struct {
     /**
@@ -112,6 +113,11 @@ typedef struct {
      * return: 0 no error.
      */
     int32_t (* acc_fifo_task)(void);
+
+    /** 
+     * return: 0 no error.
+     */
+    int32_t (* set_acc_fifo_ready_callback)(sndp_hal_acc_fifo_ready_callback callback);
 } sndp_hal_acc_s;
 
 int32_t sndp_hal_acc_init(void);
@@ -133,6 +139,7 @@ int32_t sndp_hal_acc_read_raw_data(sndp_hal_acc_data_s *acc_data);
 int32_t sndp_hal_acc_samples_measurement_start(int duration_s);
 int32_t sndp_hal_acc_read_samples_rate(sndp_hal_acc_samples_callback callback);
 int32_t sndp_hal_acc_fifo_task(void);
+int32_t sndp_hal_set_acc_fifo_ready_callback(sndp_hal_acc_fifo_ready_callback callback);
 #ifdef __cplusplus
 }
 #endif

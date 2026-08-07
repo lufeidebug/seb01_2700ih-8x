@@ -1686,10 +1686,12 @@ void sndp_dev_acc_enter_standby_mode(void)
 	SNDP_IF_TRACE_ENTER();
 	
 #if defined(__SNDP_GSENSOR_SUPPORT__)	
+#if defined(__SNDP_HEART_RATE_MGR__)
 	if(sndp_hr_is_reading_acc_enabled()){
 		SNDP_IF_TRACE(0, "acc is on, not enter standby mode");
 		return;
 	}
+#endif
 	sndp_hal_acc_enter_standby_mode();
 #endif
 }
@@ -1699,10 +1701,12 @@ void sndp_dev_acc_enter_detection_mode(void)
 	SNDP_IF_TRACE_ENTER();
 	
 #if defined(__SNDP_GSENSOR_SUPPORT__)	
+#if defined(__SNDP_HEART_RATE_MGR__)
 	if(sndp_hr_is_reading_acc_enabled()){
 		SNDP_IF_TRACE(0, "acc is on, not enter detection mode");
 		return;
 	}
+#endif
 	sndp_hal_acc_enter_detection_mode();
 #endif
 }
@@ -1711,10 +1715,12 @@ void sndp_dev_acc_start_single_tap_interrupt(void)
 {
 	SNDP_IF_TRACE_ENTER();
 #if defined(__SNDP_GSENSOR_SUPPORT__)	
+#if defined(__SNDP_HEART_RATE_MGR__)
 	if(sndp_hr_is_reading_acc_enabled()){
 		SNDP_IF_TRACE(0, "acc is on, not start single tap interrupt");
 		return;
 	}
+#endif
 	sndp_hal_acc_start_single_tap_interrupt();
 #endif
 }

@@ -64,6 +64,7 @@ static sndp_hal_acc_read_raw_data_callback  da217e_acc_read_raw_data_cb_ptr = NU
 #if defined(__SNDP_GESTURE_MGR__)
 static sndp_hal_gesture_event_callback  da217e_gesture_event_cb_ptr = NULL;
 #endif
+static sndp_hal_acc_fifo_ready_callback da217e_acc_fifo_ready_cb_ptr = NULL;
 
 static sndp_hal_acc_samples_callback da217e_acc_samples_callback = NULL;
 /**************************************************************************************************
@@ -178,7 +179,9 @@ static void da217e_int2_polling_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
     // da217e_interrupt_cnt++;
     // DA217E_TRACE(0, "enter %d cnt %d", TICKS_TO_MS(hal_sys_timer_get()), da217e_interrupt_cnt);
-    sndp_hr_notify_acc_fifo_ready();
+    if(da217e_acc_fifo_ready_cb_ptr) {
+        da217e_acc_fifo_ready_cb_ptr();
+    }
 }
 
 static void da217e_irq_init(void)
@@ -277,6 +280,15 @@ void da217e_read_raw_data_test(void)
 }
 #endif
 
+
+
+int32_t da217e_set_acc_fifo_ready_callback(sndp_hal_acc_fifo_ready_callback callback)
+{
+    DA217E_TRACE(0, "%d", (uint32_t)callback);
+    da217e_acc_fifo_ready_cb_ptr = callback;
+    return SNDP_HAL_RET_OK;
+}
+
 int32_t da217e_start_reading_raw_data(void)
 {
     // DA217E_TRACE(0, "reading_raw_data timer...");
@@ -368,6 +380,7 @@ extern "C" const sndp_hal_acc_s sndp_acc_da217e = {
     .samples_measurement_start      = da217e_samples_measurement_start,
     .read_samples_rate              = da217e_read_samples_rate,
     .acc_fifo_task                  = da217e_acc_fifo_task,
+    .set_acc_fifo_ready_callback    = da217e_set_acc_fifo_ready_callback,
 };
 
 #endif

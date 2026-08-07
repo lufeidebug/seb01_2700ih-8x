@@ -1,7 +1,7 @@
 #ifndef __SNDP_SLEEP_ROLE_SWITCH_H__
 #define __SNDP_SLEEP_ROLE_SWITCH_H__
 
-#if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_HEART_RATE_MGR__)
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -11,103 +11,103 @@ extern "C" {
 #endif
 
 /**************************************************************************************************
- * ½ÇÉ«×´Ì¬»ú¶¨Òå
- * TWSË¯Ãß¼à²â
+ * ï¿½ï¿½É«×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * TWSË¯ï¿½ß¼ï¿½ï¿½
  **************************************************************************************************/
 
 typedef enum {
-    ROLE_IDLE           = 0,    /* ³õÊ¼Ì¬£ºÉÐÎ´È·¶¨½ÇÉ« */
-    ROLE_ACTIVE         = 1,    /* Éè±¸¹¤×÷ÖÐ£º²É¼¯PPG/ACCÊý¾Ý£¬BLEÁ¬½ÓAPP£¬Ö´ÐÐËã·¨ */
-    ROLE_STANDBY        = 2,    /* Éè±¸´ýÃü£º¹Ø±Õ´«¸ÐÆ÷ºÍËã·¨£¬¼«µÍ¹¦ºÄ */
-    ROLE_SWITCHING      = 3,    /* ÇÐ»»ÖÐ£º¹Ø¼ü±£»¤Ì¬£¬½ûÖ¹ÖØ¸´´¥·¢ */
+    ROLE_IDLE           = 0,    /* ï¿½ï¿½Ê¼Ì¬ï¿½ï¿½ï¿½ï¿½Î´È·ï¿½ï¿½ï¿½ï¿½É« */
+    ROLE_ACTIVE         = 1,    /* ï¿½è±¸ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½É¼ï¿½PPG/ACCï¿½ï¿½ï¿½Ý£ï¿½BLEï¿½ï¿½ï¿½ï¿½APPï¿½ï¿½Ö´ï¿½ï¿½ï¿½ã·¨ */
+    ROLE_STANDBY        = 2,    /* ï¿½è±¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø±Õ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ã·¨ï¿½ï¿½ï¿½ï¿½ï¿½Í¹ï¿½ï¿½ï¿½ */
+    ROLE_SWITCHING      = 3,    /* ï¿½Ð»ï¿½ï¿½Ð£ï¿½ï¿½Ø¼ï¿½ï¿½ï¿½ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½ */
 } Device_Role_t;
 
 /**
- * @brief Ëã·¨¿ìÕÕ½á¹¹Ìå£¨ÓÃÓÚTWS´«Êä£©
- * »ùÓÚ SleepSense ¿âµÄ struct Snapshot£¬´«ÊäÊµ¼ÊÊý¾Ý²¿·Ö
+ * @brief ï¿½ã·¨ï¿½ï¿½ï¿½Õ½á¹¹ï¿½å£¨ï¿½ï¿½ï¿½ï¿½TWSï¿½ï¿½ï¿½ä£©
+ * ï¿½ï¿½ï¿½ï¿½ SleepSense ï¿½ï¿½ï¿½ struct Snapshotï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½
  */
-#define SNDP_SLEEP_SNAPSHOT_DATA_SIZE   213   /* Óë SNAPSHOT_PAYLOAD_SIZE Ò»ÖÂ */
+#define SNDP_SLEEP_SNAPSHOT_DATA_SIZE   213   /* ï¿½ï¿½ SNAPSHOT_PAYLOAD_SIZE Ò»ï¿½ï¿½ */
 
 typedef struct {
-    uint16_t size;                                  /* Êµ¼ÊÊý¾Ý³¤¶È */
-    uint8_t  data[SNDP_SLEEP_SNAPSHOT_DATA_SIZE];   /* Ëã·¨×´Ì¬¿ìÕÕÊý¾Ý */
+    uint16_t size;                                  /* Êµï¿½ï¿½ï¿½ï¿½ï¿½Ý³ï¿½ï¿½ï¿½ */
+    uint8_t  data[SNDP_SLEEP_SNAPSHOT_DATA_SIZE];   /* ï¿½ã·¨×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 } Algorithm_Snapshot_t;
 
 /**
- * @brief ½ÇÉ«ÇÐ»»´¥·¢Ô­Òò
+ * @brief ï¿½ï¿½É«ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½
  */
 typedef enum {
-    ROLE_SWITCH_REASON_WEAR_OFF     = 0,    /* Master ÍÑÂä´¥·¢ */
-    ROLE_SWITCH_REASON_WEAR_ON      = 1,    /* Master ´÷ÉÏ´¥·¢ */
-    ROLE_SWITCH_REASON_LOW_BATTERY  = 2,    /* Master µÍµç´¥·¢ */
-    ROLE_SWITCH_REASON_APP_FORCE    = 3,    /* APP Ç¿ÖÆÇÐ»»Ö¸Áî */
+    ROLE_SWITCH_REASON_WEAR_OFF     = 0,    /* Master ï¿½ï¿½ï¿½ä´¥ï¿½ï¿½ */
+    ROLE_SWITCH_REASON_WEAR_ON      = 1,    /* Master ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½ */
+    ROLE_SWITCH_REASON_LOW_BATTERY  = 2,    /* Master ï¿½Íµç´¥ï¿½ï¿½ */
+    ROLE_SWITCH_REASON_APP_FORCE    = 3,    /* APP Ç¿ï¿½ï¿½ï¿½Ð»ï¿½Ö¸ï¿½ï¿½ */
 } Role_Switch_Reason_t;
 
 /**
- * @brief »ñÈ¡µ±Ç°Éè±¸½ÇÉ«
- * @return Device_Role_t µ±Ç°½ÇÉ«
+ * @brief ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½è±¸ï¿½ï¿½É«
+ * @return Device_Role_t ï¿½ï¿½Ç°ï¿½ï¿½É«
  */
 Device_Role_t sndp_sleep_role_get_current(void);
 
 /**
- * @brief ÅÐ¶Ïµ±Ç°Éè±¸ÊÇ·ñÎª Master
- * @return true=Master, false=·ÇMaster
+ * @brief ï¿½Ð¶Ïµï¿½Ç°ï¿½è±¸ï¿½Ç·ï¿½Îª Master
+ * @return true=Master, false=ï¿½ï¿½Master
  */
 bool sndp_sleep_role_is_active(void);
 
 /**
- * @brief ÅÐ¶Ïµ±Ç°Éè±¸ÊÇ·ñÎª Slave
- * @return true=Slave, false=·ÇSlave
+ * @brief ï¿½Ð¶Ïµï¿½Ç°ï¿½è±¸ï¿½Ç·ï¿½Îª Slave
+ * @return true=Slave, false=ï¿½ï¿½Slave
  */
 bool sndp_sleep_role_is_standby(void);
 
 /**
- * @brief ¼ì²éÊÇ·ñ´¦ÓÚÇÐ»»±£»¤Ì¬
- * @return true=ÕýÔÚÇÐ»»ÖÐ
+ * @brief ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½Ì¬
+ * @return true=ï¿½ï¿½ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½
  */
 bool sndp_sleep_role_is_switching(void);
 
 /**
- * @brief Ä£¿é³õÊ¼»¯
- * ¿ª»úÊ±µ÷ÓÃ£¬¸ù¾ÝTWSÅä¶ÔÐÅÏ¢È·¶¨³õÊ¼½ÇÉ«
+ * @brief Ä£ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
+ * ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½TWSï¿½ï¿½ï¿½ï¿½ï¿½Ï¢È·ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½É«
  */
 void sndp_sleep_role_switch_init(void);
 
 /**
- * @brief ´¥·¢½ÇÉ«ÇÐ»»£¨Master²àµ÷ÓÃ£©
- * @param reason ÇÐ»»´¥·¢Ô­Òò
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½Ð»ï¿½ï¿½ï¿½Masterï¿½ï¿½ï¿½ï¿½Ã£ï¿½
+ * @param reason ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½
  * 
- * Ö´ÐÐÁ÷³Ì£º
- * 1. ±ê¼Ç ROLE_SWITCHING
- * 2. Í£Ö¹Ëã·¨£¬»ñÈ¡ dbbeats ¿ìÕÕ
- * 3. Í¨¹ý TWS Á´Â··¢ËÍ¿ìÕÕµ½¶Ô²à
- * 4. ¹Ø±Õ´«¸ÐÆ÷£¬½µ¼¶Îª Slave
+ * Ö´ï¿½ï¿½ï¿½ï¿½ï¿½Ì£ï¿½
+ * 1. ï¿½ï¿½ï¿½ ROLE_SWITCHING
+ * 2. Í£Ö¹ï¿½ã·¨ï¿½ï¿½ï¿½ï¿½È¡ dbbeats ï¿½ï¿½ï¿½ï¿½
+ * 3. Í¨ï¿½ï¿½ TWS ï¿½ï¿½Â·ï¿½ï¿½ï¿½Í¿ï¿½ï¿½Õµï¿½ï¿½Ô²ï¿½
+ * 4. ï¿½Ø±Õ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª Slave
  */
 void sndp_sleep_role_switch_trigger(Role_Switch_Reason_t reason);
 
 /**
- * @brief ´¦Àí½ÓÊÕµ½µÄ½ÇÉ«ÇÐ»»¿ìÕÕ£¨Slave²àµ÷ÓÃ£©
- * @param snapshot Ëã·¨¿ìÕÕÊý¾ÝÖ¸Õë
- * @param len      ¿ìÕÕÊý¾Ý³¤¶È
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õµï¿½ï¿½Ä½ï¿½É«ï¿½Ð»ï¿½ï¿½ï¿½ï¿½Õ£ï¿½Slaveï¿½ï¿½ï¿½ï¿½Ã£ï¿½
+ * @param snapshot ï¿½ã·¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+ * @param len      ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý³ï¿½ï¿½ï¿½
  * 
- * Ö´ÐÐÁ÷³Ì£º
- * 1. ½âÎö¿ìÕÕÊý¾Ý
- * 2. µ÷ÓÃ dbbeats_set_snapshot »Ö¸´Ëã·¨×´Ì¬
- * 3. ¿ªÆô´«¸ÐÆ÷
- * 4. ÖØÐÂ³õÊ¼»¯Ëã·¨ÉÏÏÂÎÄ
- * 5. Éý¼¶Îª Master
+ * Ö´ï¿½ï¿½ï¿½ï¿½ï¿½Ì£ï¿½
+ * 1. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * 2. ï¿½ï¿½ï¿½ï¿½ dbbeats_set_snapshot ï¿½Ö¸ï¿½ï¿½ã·¨×´Ì¬
+ * 3. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * 4. ï¿½ï¿½ï¿½Â³ï¿½Ê¼ï¿½ï¿½ï¿½ã·¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * 5. ï¿½ï¿½ï¿½ï¿½Îª Master
  */
 void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot, uint16_t len);
 
 /**
- * @brief ´¦Àí½ÇÉ«ÇÐ»»ÇëÇóÃüÁî£¨½ÓÊÕ·½µ÷ÓÃ£©
- * µ±ÊÕµ½¶Ô²à·¢À´µÄ½ÇÉ«ÇÐ»»ÇëÇóÊ±µ÷ÓÃ
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½î£¨ï¿½ï¿½ï¿½Õ·ï¿½ï¿½ï¿½ï¿½Ã£ï¿½
+ * ï¿½ï¿½ï¿½Õµï¿½ï¿½Ô²à·¢ï¿½ï¿½ï¿½Ä½ï¿½É«ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
  */
 void sndp_sleep_role_switch_on_request(void);
 
 /**
- * @brief Òì³£´¦Àí£º¶Ô²àÖØÐÂÁ¬½ÓÊ±µÄ³åÍ»½â¾ö
- * Èç¹ûµ±Ç°ÒÑÊÇMaster£¬¾Ü¾øÔ­MasterÖØÐÂ½Ó¹Ü
+ * @brief ï¿½ì³£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½Ä³ï¿½Í»ï¿½ï¿½ï¿½
+ * ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Masterï¿½ï¿½ï¿½Ü¾ï¿½Ô­Masterï¿½ï¿½ï¿½Â½Ó¹ï¿½
  */
 void sndp_sleep_role_switch_handle_conflict(void);
 
