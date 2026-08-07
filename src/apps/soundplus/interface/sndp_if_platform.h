@@ -278,6 +278,7 @@ int sndp_hal_user_timer1_is_enabled(void);
 void sndp_hal_user_timer1_start(uint32_t load);
 void sndp_hal_user_timer1_stop(void);
 void sndp_hal_user_timer1_setup(int type, void(*handler)(uint32_t elapsed));
+uint8_t sndp_call_get_in_out_flag(void);
 #ifdef __cplusplus
 }
 #endif

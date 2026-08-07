@@ -577,51 +577,36 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
 
 void sndp_hr_switch_reading_ppg_raw_data(uint32_t user, bool onoff)
 {
-    HR_TRACE(0, "user=%d, onoff=%d", user, onoff);
-    if(user == (SENSOR_OP_USER_SUSPEND_PPG|SENSOR_OP_USER_HR_PPG)) {
-        if(onoff){
-            hr_ctx.hr_ppg_suspended = true;
-            sndp_user_ppg_flag_set(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)(user&SENSOR_OP_USER_HR_PPG));
-            return;
-        }
-        else{
-            sndp_user_ppg_flag_clear(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)(user&SENSOR_OP_USER_HR_PPG));
-            hr_ctx.hr_ppg_suspended = false;
-        }
-    }
+    HR_TRACE(0, "user=%d, onoff=%d, flag=%d", user, onoff, hr_ctx.ppg_user_flag);
 
-    if(user == (SENSOR_OP_USER_HR_PPG|SENSOR_OP_USER_SUSPEND_PPG)) {
-        if(onoff){
-            hr_ctx.hr_ppg_suspended = true;
-            sndp_user_ppg_flag_set(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)(user&SENSOR_OP_USER_HR_PPG));
-            return;
-        }
-        else{
-            sndp_user_ppg_flag_clear(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)(user&SENSOR_OP_USER_HR_PPG));
-            hr_ctx.hr_ppg_suspended = false;
-        }
-    }
-
-    if(user == SENSOR_OP_USER_SUSPEND_PPG) {
-         if(onoff){
-            hr_ctx.hr_ppg_suspended = false;
-        }else{
-            hr_ctx.hr_ppg_suspended = true;
-        }       
-    }else{
-        if(onoff){
-            sndp_user_ppg_flag_set(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)user);
-        } else {
-            sndp_user_ppg_flag_clear(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)user);
-            if(hr_ctx.ppg_user_flag){
-                HR_TRACE(0, "ppg_user_flag=%d", hr_ctx.ppg_user_flag);
-                return;
-            }
-        }
-    }
-    
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
-    if(onoff) {
+    uint32_t suspend_mask = SENSOR_OP_USER_WEAR_SUSPEND_PPG | SENSOR_OP_USER_BT_CALL_SUSPEND_PPG;
+
+    /* 计算修改flag前的期望传感器状态 */
+    bool before_suspended = (hr_ctx.ppg_user_flag & suspend_mask) != 0;
+    bool before_normal    = (hr_ctx.ppg_user_flag & ~suspend_mask) != 0;
+    bool before_on        = !before_suspended && before_normal;
+
+    /* 更新user flag */
+    if (onoff) {
+        sndp_user_ppg_flag_set(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)user);
+    } else {
+        sndp_user_ppg_flag_clear(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)user);
+    }
+
+    /* 计算修改flag后的期望传感器状态 */
+    bool after_suspended = (hr_ctx.ppg_user_flag & suspend_mask) != 0;
+    bool after_normal    = (hr_ctx.ppg_user_flag & ~suspend_mask) != 0;
+    bool after_on        = !after_suspended && after_normal;
+
+    hr_ctx.hr_ppg_suspended = after_suspended;
+
+    /* 传感器状态无变化, 跳过重复开/关 */
+    if (before_on == after_on) {
+        return;
+    }
+
+    if (after_on) {
         sndp_hal_hr_set_reading_ppg_callback(sndp_hr_read_ppg_callback);
         sndp_hal_hr_set_report_ppg_raw_data_callback(sndp_report_ppg_raw_data_callback);
         sndp_hal_hr_start_reading_ppg();
@@ -640,51 +625,36 @@ void sndp_hr_switch_reading_ppg_raw_data(uint32_t user, bool onoff)
 
 void sndp_hr_switch_reading_acc_raw_data(uint32_t user, bool onoff)
 {
-    HR_TRACE(0, "user=%d, onoff=%d", user, onoff);
-    if(user == (SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_SUSPEND_ACC)){
-        if(onoff){
-            hr_ctx.hr_acc_suspended = true;
-            sndp_user_acc_flag_set(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)(user&SENSOR_OP_USER_HR_ACC));
-            return;
-        }else{
-            sndp_user_acc_flag_clear(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)(user&SENSOR_OP_USER_HR_ACC));
-            hr_ctx.hr_acc_suspended = false;
-        }
-    }
+    HR_TRACE(0, "user=%d, onoff=%d, flag=%d", user, onoff, hr_ctx.acc_user_flag);
 
-    if(user == (SENSOR_OP_USER_ACC|SENSOR_OP_USER_SUSPEND_ACC)){
-        if(onoff){
-            sndp_user_acc_flag_set(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)(user&SENSOR_OP_USER_ACC));
-            hr_ctx.hr_acc_suspended = true;
-            return;
-        }
-        else{
-            sndp_user_acc_flag_clear(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)(user&SENSOR_OP_USER_ACC));
-            hr_ctx.hr_acc_suspended = false;
-        }
-    }
-
-    if(user == SENSOR_OP_USER_SUSPEND_ACC){
-        if(onoff){
-            hr_ctx.hr_acc_suspended = false;
-        }else{
-            hr_ctx.hr_acc_suspended = true;
-        }
-    }else{
-        if(user == SENSOR_OP_USER_HR_ACC || user == SENSOR_OP_USER_ACC) { 
-            if(onoff){
-                sndp_user_acc_flag_set(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)user);
-            } else {
-                sndp_user_acc_flag_clear(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)user);
-                if(hr_ctx.acc_user_flag){
-                    HR_TRACE(0, "acc_user_flag=%d", hr_ctx.acc_user_flag);
-                    return;
-                }
-            }
-        }
-    }
 #if defined(__SNDP_GSENSOR_SUPPORT__)
-    if(onoff) {
+    uint32_t suspend_mask = SENSOR_OP_USER_WEAR_SUSPEND_ACC | SENSOR_OP_USER_BT_CALL_SUSPEND_ACC;
+
+    /* 计算修改flag前的期望传感器状态 */
+    bool before_suspended = (hr_ctx.acc_user_flag & suspend_mask) != 0;
+    bool before_normal    = (hr_ctx.acc_user_flag & ~suspend_mask) != 0;
+    bool before_on        = !before_suspended && before_normal;
+
+    /* 更新user flag */
+    if (onoff) {
+        sndp_user_acc_flag_set(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)user);
+    } else {
+        sndp_user_acc_flag_clear(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)user);
+    }
+
+    /* 计算修改flag后的期望传感器状态 */
+    bool after_suspended = (hr_ctx.acc_user_flag & suspend_mask) != 0;
+    bool after_normal    = (hr_ctx.acc_user_flag & ~suspend_mask) != 0;
+    bool after_on        = !after_suspended && after_normal;
+
+    hr_ctx.hr_acc_suspended = after_suspended;
+
+    /* 传感器状态无变化, 跳过重复开/关 */
+    if (before_on == after_on) {
+        return;
+    }
+
+    if (after_on) {
         sndp_hal_acc_stop_single_tap_interrupt();
         sndp_hal_acc_set_reading_raw_data_callback(sndp_hr_acc_read_raw_data_callback);
         sndp_hal_acc_start_reading_raw_data();
@@ -711,12 +681,12 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
     hr_ctx.hr_running = true;
     sndp_mearsuring_set_dump_state(HR_DUMP_STATE, dump_state);
     sndp_hr_mearsuring_set_sampling_rate(ppg_sampling_rate);
-    if(sndp_dev_wear_is_worn(false)) {
+    if(sndp_dev_wear_is_worn(false) || sndp_call_get_in_out_flag() == 0 ) {
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC, true);
         sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG, true);
     }else{
-        sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_SUSPEND_ACC, true);
-        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG|SENSOR_OP_USER_SUSPEND_PPG, true);
+        sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_WEAR_SUSPEND_ACC, true);
+        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG|SENSOR_OP_USER_WEAR_SUSPEND_PPG, true);
     }
 }
 
@@ -725,13 +695,14 @@ void sndp_hr_mearsuring_stop(void)
     SNDP_TRACE(0, "sndp_hr_mearsuring_stop...");
     hr_ctx.hr_running = false;
     sndp_mearsuring_set_dump_state(HR_DUMP_STATE, 0x00);
-    if(sndp_dev_wear_is_worn(false)) {
+    if(sndp_dev_wear_is_worn(false) || sndp_call_get_in_out_flag() == 0) {
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC, false);
         sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG, false);
     }else{
-        sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_SUSPEND_ACC, false);
-        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG|SENSOR_OP_USER_SUSPEND_PPG, false);
+        sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_WEAR_SUSPEND_ACC, false);
+        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG|SENSOR_OP_USER_WEAR_SUSPEND_PPG, false);
     }
+    
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
 }
@@ -741,19 +712,33 @@ void sndp_hr_mearsuring_stop(void)
  *          1)关闭ACC传感器; 2)task3/task4算法被hr_suspended门控暂停, 算法状态保留;
  *          PPG无需处理: 取下佩戴后传感器底层自动停止数据上传和中断触发。
  *          不改动hr_running/sleep_running等user标志, resume时按原样恢复。
+ *          usersuspend: 0 is wear suspend 1 is bt call suspend
  */
-void sndp_hr_suspend(void)
+void sndp_hr_suspend(uint32_t usersuspend)
 {
+    sensor_acc_op_user_e acc_op_user;
+    sensor_ppg_op_user_e ppg_op_user;
+
     if(!sndp_is_notifi_hr_enabled()){
         SNDP_TRACE(0, "hr suspend, notifi hr is not enabled");
         return;
     }
+    if(usersuspend == 0){
+        acc_op_user = SENSOR_OP_USER_WEAR_SUSPEND_ACC;
+        ppg_op_user = SENSOR_OP_USER_WEAR_SUSPEND_PPG;
+    }else{
+        acc_op_user = SENSOR_OP_USER_BT_CALL_SUSPEND_ACC;
+        ppg_op_user = SENSOR_OP_USER_BT_CALL_SUSPEND_PPG;        
+    }
+    
     SNDP_TRACE(0, "hr suspend");
     if(sndp_hr_is_reading_ppg_enabled()){
-        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_SUSPEND_PPG, false);
+        /* onoff=true: 置位suspend flag, 优先级高于普通user, 强制关闭PPG传感器 */
+        sndp_hr_switch_reading_ppg_raw_data(ppg_op_user, true);
     }   
     if(sndp_hr_is_reading_acc_enabled()){
-        sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_SUSPEND_ACC, false);
+        /* onoff=true: 置位suspend flag, 优先级高于普通user, 强制关闭ACC传感器 */
+        sndp_hr_switch_reading_acc_raw_data(acc_op_user, true);
     }
     if(sndp_hr_running_state()){
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
@@ -773,20 +758,33 @@ void sndp_sleep_analysis_suspend(void)
  * @brief   恢复HR/睡眠算法运行(重新佩戴场景):
  *          清除挂起态, ACC按user需求恢复开启, 清空挂起前残留的队列数据从新鲜数据起算。
  */
-void sndp_hr_resume(void)
+void sndp_hr_resume(uint32_t usersuspend)
 {
+    sensor_acc_op_user_e acc_op_user;
+    sensor_ppg_op_user_e ppg_op_user;
+
     if(!sndp_is_notifi_hr_enabled()){
         SNDP_TRACE(0, "hr resume, notifi hr is not enabled");
         return;
     }
+    if(usersuspend == 0){
+        acc_op_user = SENSOR_OP_USER_WEAR_SUSPEND_ACC;
+        ppg_op_user = SENSOR_OP_USER_WEAR_SUSPEND_PPG;
+    }else{
+        acc_op_user = SENSOR_OP_USER_BT_CALL_SUSPEND_ACC;
+        ppg_op_user = SENSOR_OP_USER_BT_CALL_SUSPEND_PPG;        
+    }
+    
     SNDP_TRACE(0, "hr resume");
     if(sndp_hr_is_reading_ppg_enabled()){
         ppg_raw_data_queue_reset();
-        sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_SUSPEND_PPG, true);
+        /* onoff=false: 清除suspend flag, 恢复后由普通user flag决定PPG传感器开关 */
+        sndp_hr_switch_reading_ppg_raw_data(ppg_op_user, false);
     }
     if(sndp_hr_is_reading_acc_enabled()){
         acc_raw_data_queue_reset();
-        sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_SUSPEND_ACC, true);
+        /* onoff=false: 清除suspend flag, 恢复后由普通user flag决定ACC传感器开关 */
+        sndp_hr_switch_reading_acc_raw_data(acc_op_user, false);
     }
     if(sndp_hr_running_state()){
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);

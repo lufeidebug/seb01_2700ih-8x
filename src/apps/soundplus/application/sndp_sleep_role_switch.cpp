@@ -91,7 +91,7 @@ static void sndp_sleep_role_suspend(void)
 {
 #if defined(__SNDP_HEART_RATE_MGR__) 
     if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
-        sndp_hr_suspend();
+        sndp_hr_suspend(0x00);
         ROLE_TRACE(0, "suspend heart rate");
     }           
     
@@ -106,7 +106,7 @@ static void sndp_sleep_role_resume(void)
 {
 #if defined(__SNDP_HEART_RATE_MGR__)
     if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
-        sndp_hr_resume();
+        sndp_hr_resume(0x00);
         ROLE_TRACE(0, "resume heart rate");
     }            
     

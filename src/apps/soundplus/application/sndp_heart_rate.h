@@ -33,14 +33,16 @@ typedef struct {
 typedef enum {
     SENSOR_OP_USER_PPG = 1 << 0,
     SENSOR_OP_USER_HR_PPG  = 1 << 1,
-    SENSOR_OP_USER_SUSPEND_PPG = 1 << 2,
+    SENSOR_OP_USER_WEAR_SUSPEND_PPG = 1 << 2,
+    SENSOR_OP_USER_BT_CALL_SUSPEND_PPG = 1 << 3,
     SENSOR_OP_USER_PPG_MAX,
 } sensor_ppg_op_user_e;
 
 typedef enum {
     SENSOR_OP_USER_ACC = 1 << 0,    
     SENSOR_OP_USER_HR_ACC = 1 << 1,
-    SENSOR_OP_USER_SUSPEND_ACC = 1 << 2,
+    SENSOR_OP_USER_WEAR_SUSPEND_ACC = 1 << 2,
+    SENSOR_OP_USER_BT_CALL_SUSPEND_ACC = 1 << 3,
     SENSOR_OP_USER_ACC_MAX,
 } sensor_acc_op_user_e;
 
@@ -164,8 +166,8 @@ void sndp_hr_proximity_tick_enable(bool en);
 /* 挂起/恢复HR与睡眠算法(取下/重新佩戴场景):
  * suspend关闭ACC传感器并暂停算法(状态保留), PPG无需管理(取下后底层自动断流);
  * resume按user需求恢复ACC并清空残留队列 */
-void sndp_hr_suspend(void);
-void sndp_hr_resume(void);
+void sndp_hr_suspend(uint32_t usersuspend);
+void sndp_hr_resume(uint32_t usersuspend);
 void sndp_sleep_analysis_resume(void);
 void sndp_sleep_analysis_suspend(void);
 #ifdef __cplusplus
