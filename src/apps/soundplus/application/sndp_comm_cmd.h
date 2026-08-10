@@ -4,6 +4,9 @@
 #if defined(__SNDP_COMM_MGR__)
 #include "sndp_comm_protocol.h"
 #include "sleepwave_app_protocol.h"
+#if defined(__SNDP_SLEEP_APP__)
+#include "sndp_if_device.h"
+#endif
 
 
 #ifdef __cplusplus
@@ -101,25 +104,10 @@ typedef enum {
                                                              * rsp : 0 bytes */                                                          
     
                                                              
-#if defined(__SNDP_SLEEP_APP__)                                                  
-    COMM_CMDID_LR_SYNC_EQ_INDEX                     = 0x2D, /* desc: 左右耳同步EQ模式指令。
-                                                             * recv: 1 bytes, onoff(1)
+#if defined(__SNDP_SLEEP_APP__)
+    COMM_CMDID_LR_SYNC_SLEEP_APP_FLAG                = 0x2D, /* desc: 左右耳同步sleep app flag(eq/anc/sleep_mode/prompt/gesture/splaypause)。
+                                                             * recv: 3 bytes, flag_name(1) + value(1) + is_save(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_ANC_MODE                     = 0x2E, /* desc: 左右耳同步ANC模式指令。
-                                                             * recv: 1 bytes, onoff(1)
-                                                             * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_SLEEP_MODE                   = 0x2F, /* desc: 左右耳同步睡眠模式指令。
-                                                             * recv: 1 bytes, sleep mode(1)
-                                                             * rsp : 0 bytes */ 
-    COMM_CMDID_LR_SYNC_PROMPT_ONOFF                 = 0x30, /* desc: 左右耳同步提示音开关指令。
-                                                             * recv: 1 bytes, onoff(1)
-                                                             * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_GESTRUE_ONOFF                = 0x31, /* desc: 左右耳同步按键手势开关指令。
-                                                             * recv: 1 bytes, onoff(1)
-                                                             * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_SPLAYPAUSE_ONOFF             = 0x32, /* desc: 左右耳同步开关smart play/pause。
-                                                             * recv: 2 bytes, key behavior(1) + key function(1)
-                                                             * rsp : 0 bytes */       
     COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x33, /* desc: 左右耳同步手势使能开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */    
@@ -296,8 +284,8 @@ uint32_t sndp_comm_cmd_send_lr_sync_all_dev_status(uint8_t *data, uint16_t data_
 uint32_t sndp_comm_cmd_send_lr_sync_bt_onoff(uint8_t onoff);
 #if defined(__SNDP_SLEEP_APP__)
 uint32_t sndp_comm_cmd_send_lr_sync_sleep_snapshot(uint8_t *data, uint16_t data_len);
+uint32_t sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_SLEEP_APP_FLAG_NAME flag_name, uint8_t value, bool is_save);
 #endif
-uint32_t sndp_comm_cmd_send_lr_sync_sleep_mode(uint8_t mode);
 
 
 uint32_t sndp_comm_cmd_send_pt_test_touch(uint8_t *data, uint16_t data_len);
@@ -476,7 +464,6 @@ typedef union
 
 
 uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data);
-uint32_t sndp_comm_cmd_send_lr_sync_anc_mode(uint8_t ancmode,uint8_t is_save);
 uint32_t sndp_comm_cmd_send_lr_sync_sleep_role_status(uint8_t status);
 uint32_t sndp_comm_cmd_send_lr_sync_heart_rate_onoff(uint8_t onoff);
 uint32_t sndp_comm_cmd_send_lr_sync_stage_onoff(uint8_t onoff);

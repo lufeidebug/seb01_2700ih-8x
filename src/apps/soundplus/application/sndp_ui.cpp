@@ -175,7 +175,7 @@ void sndp_ui_sleep_anc_mode_on(void)
 void sndp_ui_working_mode_sleep_app_set(sndp_dev_working_mode_e mode)
 {
     sndp_dev_set_working_mode(mode);
-    sndp_comm_cmd_send_lr_sync_sleep_mode(mode);
+    sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_SLEEP_MODE_FLAG, (uint8_t)mode, true);
 }
 
 static void sndp_ui_working_mode_anc_switch(void)
@@ -253,7 +253,7 @@ POSSIBLY_UNUSED static void sndp_ui_anc_switch(void)
 #endif
 
 	}
-    sndp_comm_cmd_send_lr_sync_anc_mode(sndp_dev_sleep_app_anc_mode_get(false), 1);
+    sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_ANC_MODE_FLAG, sndp_dev_sleep_app_anc_mode_get(false), true);
     sndp_sleep_app_report_anc_mode();
 }
 
@@ -1708,9 +1708,9 @@ static void sndp_ui_all_status_sync_send(void)
         all_dev_sta.sleep_proximity_onoff = sndp_dev_sleep_app_get_proximity_onoff(false);
         all_dev_sta.sleep_flag.sleep_heartrate_onoff = sndp_dev_sleep_app_get_heartrate_onoff(false);
         all_dev_sta.sleep_flag.sleep_stage_onoff = sndp_dev_sleep_app_get_stage_onoff(false);
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-        all_dev_sta.device_role = sndp_sleep_role_get_current();
 #endif
+#if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+        all_dev_sta.device_role = sndp_sleep_role_get_current();
 #endif
         sndp_comm_cmd_send_lr_sync_all_dev_status((uint8_t *)&all_dev_sta, sizeof(sndp_ui_all_dev_sta_s));
 #endif        
