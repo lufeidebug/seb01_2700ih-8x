@@ -1674,6 +1674,7 @@ void sndp_dev_hr_init(void)
 
 #if defined(__SNDP_HRSENSOR_SUPPORT__)	
 	sndp_hal_hr_init();
+	sndp_hal_hr_set_fifo_ready_callback(sndp_hr_notify_ppg_fifo_ready);
 #endif
 }
 
