@@ -313,6 +313,7 @@ int32_t ssh401a_read_samples_rate(sndp_hal_hr_ppg_samples_callback callback)
 static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
     if(ssh401a_hr_fifo_ready_ptr){
+        // SSH401A_TRACE(1, "irq_handler");
         ssh401a_hr_fifo_ready_ptr();
     }
 }
@@ -322,6 +323,7 @@ int32_t ssh401a_set_fifo_ready_callback(sndp_hal_hr_fifo_ready_callback callback
     if(callback == NULL) {
         return SNDP_HAL_RET_FAIL;
     }
+    // SSH401A_TRACE(1, "set_fifo_ready_callback");
     ssh401a_hr_fifo_ready_ptr = callback;
     return SNDP_HAL_RET_OK;
 }

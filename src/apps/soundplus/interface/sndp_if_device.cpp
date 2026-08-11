@@ -170,7 +170,7 @@ void sndp_dev_wear_check_curr_status(void)
 	SNDP_IF_TRACE_ENTER();
 
 #if 0   //for test
-    sndp_dev_set_wear_status(false, SNDP_DEV_WEAR_ON);
+    sndp_dev_wear_set_status(false, SNDP_DEV_WEAR_ON);
     return;
 #endif
     

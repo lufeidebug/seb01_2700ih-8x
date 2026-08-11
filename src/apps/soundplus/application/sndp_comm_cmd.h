@@ -110,10 +110,10 @@ typedef enum {
                                                              * rsp : 0 bytes */
     COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x33, /* desc: 左右耳同步手势使能开关指令。
                                                              * recv: 1 bytes, onoff(1)
-                                                             * rsp : 0 bytes */    
+                                                             * rsp : 0 bytes */
     COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF = 0x34, /* desc: 左右耳同步 proximity 上报开关。
                                                              * recv: 1 bytes, onoff(1)
-                                                             * rsp : 0 bytes */ 
+                                                             * rsp : 0 bytes */
     COMM_CMDID_LR_SYNC_Proximity_Notification_DATA  = 0x35, /* desc: 左右耳同步 proximity 数据。
                                                              * recv: 2 bytes, proximity value(2)
                                                              * rsp : 0 bytes */
@@ -121,6 +121,27 @@ typedef enum {
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
     COMM_CMDID_LR_SYNC_STAGE_ONOFF                  = 0x37, /* desc: 左右耳同步阶段开关指令。
+                                                             * recv: 1 bytes, onoff(1)
+                                                             * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_START_SLEEP                   = 0x3B, /* desc: 左右耳同步启动睡眠分析。
+                                                             * recv: 4 bytes, sleep_control(4)
+                                                             * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_SLEEP_TRACKING                = 0x3C, /* desc: 左右耳同步睡眠追踪数据。
+                                                             * recv: n bytes, tracking data(n)
+                                                             * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_STOP_SLEEP                    = 0x3D, /* desc: 左右耳同步停止睡眠分析。
+                                                             * recv: 0 bytes
+                                                             * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_START_HEARTRATE               = 0x73, /* desc: 左右耳同步启动心率测量。
+                                                             * recv: 2 bytes, sampling_rate(1) + dump_data(1)
+                                                             * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_STOP_HEARTRATE                = 0x74, /* desc: 左右耳同步停止心率测量。
+                                                             * recv: 0 bytes
+                                                             * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_PPG_NOTIFICATION              = 0x75, /* desc: 左右耳同步PPG数据通知开关。
+                                                             * recv: 1 bytes, onoff(1)
+                                                             * rsp : 0 bytes */
+    COMM_CMDID_LR_SYNC_ACC_NOTIFICATION              = 0x76, /* desc: 左右耳同步ACC数据通知开关。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
 #endif
@@ -137,7 +158,7 @@ typedef enum {
     COMM_CMDID_LR_SYNC_DISCONNECT_AND_TWS_PAIR       = 0x3A, /* desc: 左右耳同步断开手机连接并进入配对模式指令。
                                                              * recv: 0 bytes,
                                                              * rsp : 0 bytes */
-    
+
     /****** 生产测试指令. ******/
     COMM_CMDID_PT_SWITCH_TEST_MODE                  = 0x40, /* recv: 1 bytes, mode(1).
                                                             rsp: 1 bytes, error code(1). */
@@ -285,6 +306,13 @@ uint32_t sndp_comm_cmd_send_lr_sync_bt_onoff(uint8_t onoff);
 #if defined(__SNDP_SLEEP_APP__)
 uint32_t sndp_comm_cmd_send_lr_sync_sleep_snapshot(uint8_t *data, uint16_t data_len);
 uint32_t sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_SLEEP_APP_FLAG_NAME flag_name, uint8_t value, bool is_save);
+uint32_t sndp_comm_cmd_send_lr_sync_start_sleep(uint32_t sleep_control);
+uint32_t sndp_comm_cmd_send_lr_sync_sleep_tracking(uint8_t *data, uint16_t data_len);
+uint32_t sndp_comm_cmd_send_lr_sync_stop_sleep(void);
+uint32_t sndp_comm_cmd_send_lr_sync_start_heartrate(uint8_t sampling_rate, uint8_t dump_data);
+uint32_t sndp_comm_cmd_send_lr_sync_stop_heartrate(void);
+uint32_t sndp_comm_cmd_send_lr_sync_ppg_notification(uint8_t onoff);
+uint32_t sndp_comm_cmd_send_lr_sync_acc_notification(uint8_t onoff);
 #endif
 
 

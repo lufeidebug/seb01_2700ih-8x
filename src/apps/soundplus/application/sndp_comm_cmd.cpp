@@ -807,6 +807,145 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_sleep_role_status(sndp_comm_cmd_info_
 #endif
 #endif
 
+#if defined(__SNDP_SLEEP_APP__)
+uint32_t sndp_comm_cmd_send_lr_sync_start_sleep(uint32_t sleep_control)
+{
+    uint8_t data[4];
+    data[0] = (sleep_control >> 24) & 0xFF;
+    data[1] = (sleep_control >> 16) & 0xFF;
+    data[2] = (sleep_control >> 8) & 0xFF;
+    data[3] = sleep_control & 0xFF;
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_START_SLEEP, data, sizeof(data));
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_start_sleep(sndp_comm_cmd_info_s *cmd_info)
+{
+    if(cmd_info->data_len == 4) {
+        uint32_t sleep_control = cmd_info->data[0]<<24 | cmd_info->data[1]<<16 | cmd_info->data[2]<<8 | cmd_info->data[3];
+        COMM_CMD_TRACE(1, "LR sync start sleep, control=%d", sleep_control);
+        /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
+        sndp_dev_sleep_app_set_stage_onoff(false, 0x01);
+        sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_SLEEP);
+        sndp_set_sleep_control((int32_t)sleep_control);
+        sndp_ui_sleep_anc_mode_on();
+        sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_start, 0, 0, 0);
+    }
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_lr_sync_sleep_tracking(uint8_t *data, uint16_t data_len)
+{
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_SLEEP_TRACKING, data, data_len);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_sleep_tracking(sndp_comm_cmd_info_s *cmd_info)
+{
+    if(cmd_info->data_len >= 211) {
+        int16_t *accel_data_m = (int16_t*)&cmd_info->data[0];
+        uint8_t *screen_status = &cmd_info->data[180];
+        uint8_t sound_state = cmd_info->data[210];
+        sndp_dbbeats_put_sleep_app_data(accel_data_m, screen_status, sound_state);
+    }
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_lr_sync_stop_sleep(void)
+{
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_STOP_SLEEP, NULL, 0);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_stop_sleep(sndp_comm_cmd_info_s *cmd_info)
+{
+    COMM_CMD_TRACE(0, "LR sync stop sleep");
+    /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
+    sndp_dev_sleep_app_set_stage_onoff(false, 0x00);
+    sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_BT);
+    sndp_ui_sleep_anc_mode_off();
+    sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_lr_sync_start_heartrate(uint8_t sampling_rate, uint8_t dump_data)
+{
+    uint8_t data[2] = {sampling_rate, dump_data};
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_START_HEARTRATE, data, sizeof(data));
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_start_heartrate(sndp_comm_cmd_info_s *cmd_info)
+{
+    if(cmd_info->data_len == 2) {
+        uint8_t sampling_rate = cmd_info->data[0];
+        uint8_t dump_data = cmd_info->data[1];
+        COMM_CMD_TRACE(1, "LR sync start heartrate, sampling=%d dump=%d", sampling_rate, dump_data);
+        /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
+        sndp_dev_sleep_app_set_heartrate_onoff(false, 0x01);
+        sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_start, sampling_rate, dump_data, 0);
+    }
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_lr_sync_stop_heartrate(void)
+{
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_STOP_HEARTRATE, NULL, 0);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_stop_heartrate(sndp_comm_cmd_info_s *cmd_info)
+{
+    COMM_CMD_TRACE(0, "LR sync stop heartrate");
+    /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
+    sndp_dev_sleep_app_set_heartrate_onoff(false, 0x00);
+    sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_stop, 0, 0, 0);
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_lr_sync_ppg_notification(uint8_t onoff)
+{
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_PPG_NOTIFICATION, &onoff, 1);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_ppg_notification(sndp_comm_cmd_info_s *cmd_info)
+{
+    if(cmd_info->data_len == 1) {
+        uint8_t onoff = cmd_info->data[0];
+        COMM_CMD_TRACE(1, "LR sync ppg notification, onoff=%d", onoff);
+        /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
+        if(onoff) {
+            sndp_ppg_notification_start(0x01);
+        } else {
+            sndp_ppg_notification_stop();
+        }
+    }
+    return 0;
+}
+
+uint32_t sndp_comm_cmd_send_lr_sync_acc_notification(uint8_t onoff)
+{
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_ACC_NOTIFICATION, &onoff, 1);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_acc_notification(sndp_comm_cmd_info_s *cmd_info)
+{
+    if(cmd_info->data_len == 1) {
+        uint8_t onoff = cmd_info->data[0];
+        COMM_CMD_TRACE(1, "LR sync acc notification, onoff=%d", onoff);
+        /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
+        if(onoff) {
+            sndp_acc_notification_start(0x01);
+        } else {
+            sndp_acc_notification_stop();
+        }
+    }
+    return 0;
+}
+#endif
+
 uint32_t sndp_comm_cmd_send_lr_sync_all_dev_status(uint8_t *data, uint16_t data_len)
 {
     sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_ALL_DEV_STATUS, data, data_len);
@@ -1992,24 +2131,7 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_LR_SYNC_CALL_CTRL              , "LR_SYNC_CALL_CTRL"       , sndp_comm_cmd_recv_lr_sync_call_ctrl              },
     { COMM_CMDID_LR_SYNC_ALL_DEV_STATUS         , "LR_SYNC_ALL_DEV_STATUS"  , sndp_comm_cmd_recv_lr_sync_all_dev_status         },
     { COMM_CMDID_LR_SYNC_BT_ONOFF               , "LR_SYNC_BT_ONOFF"        , sndp_comm_cmd_recv_lr_sync_bt_onoff               },
-        
-#if defined(__SNDP_SLEEP_APP__)
-    { COMM_CMDID_LR_SYNC_SLEEP_APP_FLAG          , "LR_SYNC_SLEEP_APP_FLAG"  , sndp_comm_cmd_recv_lr_sync_sleep_app_flag          },
-#endif
-#if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_GESTURE_MAP__)
-    { COMM_CMDID_LR_SYNC_UPDATE_MAPPING         , "LR_SYNC_UPDATE_MAPPING"  , sndp_comm_cmd_recv_lr_sync_update_mapping         },
-#endif
-#if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_HEART_RATE_MGR__)
-    { COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF   , "LR_SYNC_Prox_Notifi_ONOFF"   , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_ONOFF   },
-    { COMM_CMDID_LR_SYNC_Proximity_Notification_DATA    , "LR_SYNC_Prox_Notifi_DATA"    , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_DATA    },
-    { COMM_CMDID_LR_SYNC_HEARTRATE_ONOFF        , "LR_SYNC_HEARTRATE_ONOFF"     , sndp_comm_cmd_recv_lr_sync_heart_rate_onoff       },
-    { COMM_CMDID_LR_SYNC_STAGE_ONOFF            , "LR_SYNC_STAGE_ONOFF"         , sndp_comm_cmd_recv_lr_sync_stage_onoff            },
-#endif
-#if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    { COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT         , "LR_SYNC_SLEEP_SNAPSHOT"      , sndp_comm_cmd_recv_lr_sync_sleep_snapshot         },
-    { COMM_CMDID_LR_SYNC_SLEEP_ROLE_STATUS      , "LR_SYNC_SLEEP_ROLE_STATUS"   , sndp_comm_cmd_recv_lr_sync_sleep_role_status      },
-#endif
-    
+   
 #if defined(__SNDP_PRODUCT_TEST__)
     /****** 生产测试指令. ******/
 	{ COMM_CMDID_PT_SWITCH_TEST_MODE            , "PT_S_TEST_MODE"          , sndp_comm_cmd_recv_pt_switch_test_mode            },
@@ -2068,7 +2190,30 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     /***** 与APP交互指令 *****/
     { COMM_CMDID_APP_QUERY_DEV_INFO             , "APP_Q_DEV_INFO"      , sndp_comm_cmd_recv_app_query_dev_info                 },
 	{ COMM_CMDID_APP_QUERY_DEV_STATUS           , "APP_Q_DEV_STA"       , sndp_comm_cmd_recv_app_query_dev_status               },
-
+        
+#if defined(__SNDP_SLEEP_APP__)
+    { COMM_CMDID_LR_SYNC_SLEEP_APP_FLAG          , "LR_SYNC_SLEEP_APP_FLAG"  , sndp_comm_cmd_recv_lr_sync_sleep_app_flag          },
+#if defined(__SNDP_GESTURE_MAP__)
+    { COMM_CMDID_LR_SYNC_UPDATE_MAPPING         , "LR_SYNC_UPDATE_MAPPING"  , sndp_comm_cmd_recv_lr_sync_update_mapping         },
+#endif
+#if defined(__SNDP_HEART_RATE_MGR__)
+    { COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF   , "LR_SYNC_Prox_Notifi_ONOFF"   , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_ONOFF   },
+    { COMM_CMDID_LR_SYNC_Proximity_Notification_DATA    , "LR_SYNC_Prox_Notifi_DATA"    , sndp_comm_cmd_recv_lr_sync_Proximity_Notification_DATA    },
+    { COMM_CMDID_LR_SYNC_HEARTRATE_ONOFF        , "LR_SYNC_HEARTRATE_ONOFF"     , sndp_comm_cmd_recv_lr_sync_heart_rate_onoff       },
+    { COMM_CMDID_LR_SYNC_STAGE_ONOFF            , "LR_SYNC_STAGE_ONOFF"         , sndp_comm_cmd_recv_lr_sync_stage_onoff            },
+    { COMM_CMDID_LR_SYNC_START_SLEEP             , "LR_SYNC_START_SLEEP"    , sndp_comm_cmd_recv_lr_sync_start_sleep              },
+    { COMM_CMDID_LR_SYNC_SLEEP_TRACKING          , "LR_SYNC_SLEEP_TRACKING" , sndp_comm_cmd_recv_lr_sync_sleep_tracking           },
+    { COMM_CMDID_LR_SYNC_STOP_SLEEP              , "LR_SYNC_STOP_SLEEP"     , sndp_comm_cmd_recv_lr_sync_stop_sleep               },
+    { COMM_CMDID_LR_SYNC_START_HEARTRATE         , "LR_SYNC_START_HR"      , sndp_comm_cmd_recv_lr_sync_start_heartrate          },
+    { COMM_CMDID_LR_SYNC_STOP_HEARTRATE          , "LR_SYNC_STOP_HR"       , sndp_comm_cmd_recv_lr_sync_stop_heartrate           },
+    { COMM_CMDID_LR_SYNC_PPG_NOTIFICATION        , "LR_SYNC_PPG_NTF"       , sndp_comm_cmd_recv_lr_sync_ppg_notification         },
+    { COMM_CMDID_LR_SYNC_ACC_NOTIFICATION        , "LR_SYNC_ACC_NTF"       , sndp_comm_cmd_recv_lr_sync_acc_notification         },
+#endif
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    { COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT         , "LR_SYNC_SLEEP_SNAPSHOT"      , sndp_comm_cmd_recv_lr_sync_sleep_snapshot         },
+    { COMM_CMDID_LR_SYNC_SLEEP_ROLE_STATUS      , "LR_SYNC_SLEEP_ROLE_STATUS"   , sndp_comm_cmd_recv_lr_sync_sleep_role_status      },
+#endif
+#endif
 };
 
 static const int32_t sndp_comm_cmd_hdlr_cnt = sizeof(sndp_comm_cmd_hdlr_list) / sizeof(sndp_comm_cmd_hdlr_list[0]);
@@ -2319,16 +2464,19 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_ppg_setting(sleep_ap
 static uint16_t acc_ntf_debug_count = 0;
 static uint16_t ppg_ntf_debug_count = 0;
 POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_comm_cmd_info_s *cmd_info)
-{   
+{
     //if StartHeartrate 0x30 Dump on
     uint8_t onoff = cmd_info->value[0];
     ppg_ntf_debug_count = 0;
+    COMM_CMD_TRACE(1, "ppg notification=%d", onoff);
     if(onoff){
         sndp_ppg_notification_start(0x01);
     }else{
         // 始终注销ppg_notification user; 若HR仍在运行, apply会保持PPG传感器开启
         sndp_ppg_notification_stop();
     }
+    /* 同步给对耳 */
+    sndp_comm_cmd_send_lr_sync_ppg_notification(onoff);
     COMM_CMD_TRACE(1, "dump=%d", sndp_mearsuring_get_dump_state(PPG_DUMP_STATE));
     return 0;
 }
@@ -2374,12 +2522,16 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_accelerometer_notifi
 {
     uint8_t onoff = cmd_info->value[0];
     acc_ntf_debug_count = 0;
+    COMM_CMD_TRACE(1, "acc notification=%d", onoff);
+
     if(onoff){
         sndp_acc_notification_start(0x01);
     }else{
         // 始终注销acc_notification user; 若HR仍在运行, apply会保持ACC传感器开启
         sndp_acc_notification_stop();
     }
+    /* 同步给对耳 */
+    sndp_comm_cmd_send_lr_sync_acc_notification(onoff);
     
     COMM_CMD_TRACE(1, "dump=%d", sndp_mearsuring_get_dump_state(ACC_DUMP_STATE));
     return 0;
@@ -2905,6 +3057,8 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_ap
     }
     sndp_sleep_app_set_flag_onoff(SNDP_HEARTRATE_ONOFF_FLAG, false, 0x01, false);
     sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_start, sampling_rate, dump_data, 0);
+    /* 同步给对耳 */
+    sndp_comm_cmd_send_lr_sync_start_heartrate(sampling_rate, dump_data);
     return 0;
 }
 
@@ -2920,6 +3074,8 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app
     cmd_info->data_len = 0x02;
     cmd_info->value[0] = 0; // success
     sndp_sleep_comm_cmd_heartrate_stop();
+    /* 同步给对耳 */
+    sndp_comm_cmd_send_lr_sync_stop_heartrate();
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
@@ -2944,6 +3100,8 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_co
     COMM_CMD_TRACE(1, "sleep control=%d wear state=%d", sleep_control, sndp_dev_wear_is_worn(false));
     if(sndp_dev_wear_is_worn(false)){
         sndp_sleep_comm_cmd_analysis_start(sleep_control);
+        /* 同步给对耳，两耳同时运行睡眠分析 */
+        sndp_comm_cmd_send_lr_sync_start_sleep(sleep_control);
         cmd_info->value[0] = 0; // success
     } else {
         cmd_info->value[0] = 0x01; // fail
@@ -2958,7 +3116,9 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app
     int16_t *accel_data_m = (int16_t*)&cmd_info->value[0];
     uint8_t *screen_status = &cmd_info->value[180];
     uint8_t sound_state = cmd_info->value[210];
-   sndp_dbbeats_put_sleep_app_data(accel_data_m, screen_status, sound_state);
+    sndp_dbbeats_put_sleep_app_data(accel_data_m, screen_status, sound_state);
+    /* 同步追踪数据给对耳，运行相同的逻辑 */
+    sndp_comm_cmd_send_lr_sync_sleep_tracking(cmd_info->value, 211);
     return 0;
 }
 
@@ -2998,6 +3158,8 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_com
     cmd_info->data_len = 0x02;
     cmd_info->value[0] = 0; // success
     sndp_sleep_comm_cmd_analysis_stop();
+    /* 同步给对耳，两耳同时停止睡眠分析 */
+    sndp_comm_cmd_send_lr_sync_stop_sleep();
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }

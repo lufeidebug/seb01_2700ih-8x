@@ -193,13 +193,13 @@ uint8_t sndp_hr_running_state(void)
 
 bool sndp_hr_is_reading_ppg_enabled(void)
 {
-    SNDP_TRACE(0, "ppg_user_flag=%d", hr_ctx.ppg_user_flag);
+    // SNDP_TRACE(0, "ppg_user_flag=%d", hr_ctx.ppg_user_flag);
     return hr_ctx.ppg_user_flag ? true : false;   
 }
 
 bool sndp_hr_is_reading_acc_enabled(void)
 {
-    SNDP_TRACE(0, "acc_user_flag=%d", hr_ctx.acc_user_flag);
+    // SNDP_TRACE(0, "acc_user_flag=%d", hr_ctx.acc_user_flag);
     return hr_ctx.acc_user_flag ? true : false;   
 }
 
@@ -324,7 +324,7 @@ static void acc_raw_data_queue_reset(void)
  */
 void sndp_hr_notify_ppg_fifo_ready(void)
 {
-    SNDP_TRACE(0, "PPG FIFO ready");
+    // SNDP_TRACE(0, "PPG FIFO ready");
     if(hr_process_thread_tid) {
         osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_PPG_FIFO);
     }
@@ -335,7 +335,7 @@ void sndp_hr_notify_ppg_fifo_ready(void)
  */
 void sndp_hr_notify_acc_fifo_ready(void)
 {
-    SNDP_TRACE(0, "ACC FIFO ready");
+    // SNDP_TRACE(0, "ACC FIFO ready");
     if(hr_process_thread_tid) {
         osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_ACC_FIFO);
     }
@@ -482,8 +482,8 @@ static void sndp_sleep_app_process_thread(void const *argument)
         /* 注意: 绝不能用sndp_hr_is_reading_ppg_enabled()门控! ss_ppg_interrupt_handler除读FIFO外,
            还负责处理佩戴事件(g_proximity_sta, FIFO中断使能的前提)并清除传感器INT引脚;
            若被门控跳过, 边沿触发的GPIO将因INT未清除而永久收不到后续中断 */
-        SNDP_TRACE(0, "ppg_enabled: %d, ppgpend:%d accpend: %d", sndp_hr_is_reading_ppg_enabled(), 
-                                                        sndp_ppg_is_suspend(), sndp_acc_is_suspend());
+        // SNDP_TRACE(0, "ppg_enabled: %d, ppgpend:%d accpend: %d", sndp_hr_is_reading_ppg_enabled(), 
+        //                                                 sndp_ppg_is_suspend(), sndp_acc_is_suspend());
         if((fired_signals & SENSOR_TASK_SIGNAL_PPG_FIFO)) {
             sndp_hal_hr_ppg_fifo_task();
         }
@@ -498,7 +498,7 @@ static void sndp_sleep_app_process_thread(void const *argument)
             } else if((curr_ms - acc_last_poll_ms) >= SENSOR_TASK_ACC_WATCHDOG_MS) {
                 // 看门狗: 中断丢失时兜底轮询一次
                 acc_last_poll_ms = curr_ms;
-                SNDP_TRACE(0, "250ms acc_fifo_task");
+                // SNDP_TRACE(0, "250ms acc_fifo_task");
                 sndp_hal_acc_fifo_task();
             }
         }
@@ -609,7 +609,7 @@ void sndp_hr_switch_reading_ppg_raw_data(uint32_t user, bool onoff)
     if (after_on) {
         sndp_hal_hr_set_reading_ppg_callback(sndp_hr_read_ppg_callback);
         sndp_hal_hr_set_report_ppg_raw_data_callback(sndp_report_ppg_raw_data_callback);
-        sndp_hal_hr_set_fifo_ready_callback(sndp_hr_notify_ppg_fifo_ready);
+        // sndp_hal_hr_set_fifo_ready_callback(sndp_hr_notify_ppg_fifo_ready);
         sndp_hal_hr_start_reading_ppg();
 
         /* 立即唤醒线程服务一次传感器INT:
@@ -897,7 +897,7 @@ void sndp_acc_notification_start(uint8_t dump_state)
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "sndp_acc_notification_start...");
 
-    ppg_raw_data_queue_reset();
+    acc_raw_data_queue_reset();
     sndp_mearsuring_set_dump_state(ACC_DUMP_STATE, dump_state);
     sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_ACC, true);
     memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
