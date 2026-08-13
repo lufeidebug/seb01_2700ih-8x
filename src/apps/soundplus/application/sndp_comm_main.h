@@ -4,7 +4,9 @@
 #if defined(__SNDP_COMM_MGR__)
 #include "sndp_comm_protocol.h"
 #include "sndp_comm_cmd.h"
-
+#if defined(__SNDP_SLEEP_APP__)
+#include "sndp_interact_app.h"
+#endif
 
 
 #ifdef __cplusplus
@@ -41,7 +43,7 @@ int32_t sndp_sleep_comm_main_rsp_cmd(sleep_app_comm_cmd_info_s *rsp_cmd);
 int32_t sleep_app_comm_main_send_cmd(sleep_app_comm_cmd_info_s *cmd);
 int32_t sleep_app_comm_main_send_cmd_by_id(sleep_app_cmd_id_e cmd_id, uint8_t datalen, uint8_t *cmd_data);
 sleep_app_comm_cmd_info_s * sleep_app_comm_main_get_send_cmd(void);
-
+int32_t sndp_sleep_comm_cmd_rsp_with_errcode(sleep_app_comm_cmd_info_s *rsp_cmd);
 #endif
 #ifdef __cplusplus
 }

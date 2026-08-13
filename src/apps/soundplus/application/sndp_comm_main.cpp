@@ -32,8 +32,6 @@
 #include "sndp_comm_ms.h"
 #endif
 
-#include "sndp_comm_cmd.h"
-
 
 
 /**************************************************************************************************
@@ -741,6 +739,21 @@ int32_t sndp_sleep_comm_main_rsp_cmd(sleep_app_comm_cmd_info_s *rsp_cmd)
     COMM_MIAN_TRACE(0, "Sleep cmd(%02X), data_len=%d", cmd->cmd, cmd->data_len);
 
     sleep_app_comm_main_send_cmd(cmd);
+    return 0;
+}
+
+int32_t sndp_sleep_comm_cmd_rsp_with_errcode(sleep_app_comm_cmd_info_s *rsp_cmd)
+{
+    sleep_app_comm_cmd_info_s *cmd = &sndp_sleep_comm_recv_cmd;
+    
+    if(rsp_cmd == NULL) {
+        return -1;
+    }
+    
+    cmd->flag = AppFlag;
+    cmd->cmd = rsp_cmd->cmd;
+    cmd->data_len = SLEEP_APP_COMM_FLAG_LEN_DATA_LEN;
+    cmd->value[0] = 1;
     return 0;
 }
 #endif

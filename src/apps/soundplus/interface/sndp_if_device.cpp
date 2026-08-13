@@ -1674,7 +1674,11 @@ void sndp_dev_hr_init(void)
 
 #if defined(__SNDP_HRSENSOR_SUPPORT__)	
 	sndp_hal_hr_init();
+#if defined(__SNDP_HEART_RATE_MGR__)
 	sndp_hal_hr_set_fifo_ready_callback(sndp_hr_notify_ppg_fifo_ready);
+#else
+	sndp_hal_hr_set_fifo_ready_callback(sndp_hal_hr_ppg_fifo_task_ready_callback);
+#endif
 #endif
 }
 
@@ -1902,6 +1906,7 @@ void sndp_dev_sleep_app_set_gesture_onoff(bool peer, uint8_t onoff, bool sava)
 
 bool sndp_dev_sleep_app_get_gesture_onoff(bool peer)
 {
+	SNDP_IF_TRACE(0, "gesture_onoff=%d", sndp_dev_ctx.peer.sleep_app_flag.sleep_gesture_onoff);
 	if(peer) {
 		return sndp_dev_ctx.peer.sleep_app_flag.sleep_gesture_onoff;
 	} else {

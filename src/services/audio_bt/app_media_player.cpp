@@ -121,6 +121,7 @@
 #include "sndp_if_platform.h"
 #if defined(__SNDP_FINDME__)
 #include "sndp_comm_cmd.h"
+#include "sndp_interact_app.h"
 #endif
 #endif
 

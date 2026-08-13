@@ -46,9 +46,6 @@
 #include "sndp_if_data_access.h"
 #include "hal_timer_user_irq.h"
 
-#if defined(__SNDP_ALG_APPLICATION__)
-#include "sndp_algo_app.h"
-#endif
 #if defined(__SNDP_CHARGER_MGR__)
 #include "sndp_hal_charger.h"
 #endif
@@ -137,10 +134,6 @@ void sndp_save_data_before_shutdown(void)
 #if defined(__SNDP_EQ_PARAM_SETTING__)
 	sndp_save_eq_param_to_flash();
 #endif
-#endif
-
-#if defined(__SNDP_ALG_APPLICATION__)
-	sndp_alg_save_param();
 #endif
 
 	nv_record_flash_flush();
@@ -1658,7 +1651,9 @@ uint8_t sndp_bt_audio_updata_eq_for_anc(void)
 /*****************************************tools function *******************************************/
 void sndp_play_findme(void)
 {
+#if defined(__SNDP_FINDME__)
 	media_PlayAudio(AUD_ID_BT_FINDME, 0);
+#endif
 }
 
 #endif

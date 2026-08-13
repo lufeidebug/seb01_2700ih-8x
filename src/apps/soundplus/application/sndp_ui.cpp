@@ -36,6 +36,10 @@
 #include "sndp_heart_rate.h"
 #endif
 
+#if defined(__SNDP_SLEEP_APP__)
+#include "sndp_interact_app.h"
+#endif
+
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
 #include "sndp_sleep_role_switch.h"
 #endif
@@ -113,7 +117,9 @@ typedef struct {
     sndp_dev_iobox_status_e iobox_sta;
     sndp_dev_wear_status_e wear_sta;
     sndp_dev_bat_info_s bat_info;
+#if defined(__SNDP_SLEEP_APP__)
     sndp_sleep_app_flag sleep_flag;
+#endif
     uint8_t sleep_proximity_onoff;
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     Device_Role_t device_role;
@@ -159,7 +165,9 @@ void sndp_ui_sleep_anc_mode_off(void)
     //Play prompt sound.
     sndp_delay_exec_start(100, (uint32_t) sndp_ui_working_mode_switch_tone, AUD_ID_WORKING_MODE_BT, 0, 0);
     sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+#if defined(__SNDP_SLEEP_APP__)
     sndp_dev_sleep_app_anc_mode_set(false, SNDP_ANC_MODE_OFF, false);
+#endif
 }
 
 void sndp_ui_sleep_anc_mode_on(void)
@@ -169,13 +177,17 @@ void sndp_ui_sleep_anc_mode_on(void)
     //Play prompt sound.
     sndp_delay_exec_start(100, (uint32_t) sndp_ui_working_mode_switch_tone, AUD_ID_WORKING_MODE_SLEEP, 0, 0);
     sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
+#if defined(__SNDP_SLEEP_APP__)
     sndp_dev_sleep_app_anc_mode_set(false, sndp_anc_get_mode_index(), false);
+#endif
 }
 
 void sndp_ui_working_mode_sleep_app_set(sndp_dev_working_mode_e mode)
 {
     sndp_dev_set_working_mode(mode);
+#if defined(__SNDP_SLEEP_APP__)
     sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_SLEEP_MODE_FLAG, (uint8_t)mode, true);
+#endif
 }
 
 static void sndp_ui_working_mode_anc_switch(void)
@@ -232,7 +244,9 @@ POSSIBLY_UNUSED static void sndp_ui_anc_switch(void)
 		media_PlayAudio(AUD_ID_ANC_ON, 0);
 #endif
 		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
+#if defined(__SNDP_SLEEP_APP__)
         sndp_dev_sleep_app_anc_mode_set(false, sndp_anc_get_mode_index(), true);
+#endif
 	} else if(sndp_anc_is_on()) {
         SPUI_TRACE(0, "ANC_TT");
 
@@ -242,19 +256,25 @@ POSSIBLY_UNUSED static void sndp_ui_anc_switch(void)
 		media_PlayAudio(AUD_ID_TRANSPARENT, 0);
 #endif           
 		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE_TRANSPARENT, 0, 0);
+#if defined(__SNDP_SLEEP_APP__)
         sndp_dev_sleep_app_anc_mode_set(false, SNDP_ANC_MODE_TRANSPARENT, true);
+#endif
 	} else if(sndp_anc_is_transparent()) {
         SPUI_TRACE(0, "ANC_OFF");
         
 	    sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
+#if defined(__SNDP_SLEEP_APP__)
         sndp_dev_sleep_app_anc_mode_set(false, SNDP_ANC_MODE_OFF, true);
+#endif
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_OFF, 0);
 #endif
 
 	}
+#if defined(__SNDP_SLEEP_APP__)
     sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_ANC_MODE_FLAG, sndp_dev_sleep_app_anc_mode_get(false), true);
     sndp_sleep_app_report_anc_mode();
+#endif
 }
 
 
@@ -373,12 +393,16 @@ static POSSIBLY_UNUSED void sndp_ui_wear_on_open_anc(void)
         SPUI_TRACE(0, "skip: already in box");
         return;
     }
-
+#if defined(__SNDP_SLEEP_APP__)
     sndp_anc_mode_e running_param_anc_mode = (sndp_anc_mode_e)sndp_dev_sleep_app_anc_mode_get(false);
     SPUI_TRACE(0, "starting... %d",running_param_anc_mode);
     if(running_param_anc_mode != SNDP_ANC_MODE_OFF) {
         sndp_anc_mode_set_locally(running_param_anc_mode);
     }
+#else
+    sndp_anc_mode_set_locally(SNDP_ANC_MODE_1);
+#endif
+    
 }
 
 static POSSIBLY_UNUSED void sndp_ui_wear_off_close_anc(void)
@@ -1054,9 +1078,11 @@ void sndp_ui_bat_pwr_measure_callback(sndp_dev_bat_info_s old_bat_info, sndp_dev
 #if defined(__SNDP_BAT_SWITCH_ROLE__)
     sndp_ui_bat_role_switch();
 #endif
+#if defined(__SNDP_SLEEP_APP__)
     if(old_bat_info.bat_per != new_bat_info.bat_per) {
         sndp_sleep_app_report_battery();
     }
+#endif
 }
 
 

@@ -1,4 +1,4 @@
 
-ifeq ($(SNDP_HR_ALGO_SLEEPSENSE),1)
+ifeq ($(SNDP_HR_ALGO),1)
 obj-y += SleepSense/
 endif

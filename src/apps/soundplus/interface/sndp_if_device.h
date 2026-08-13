@@ -129,9 +129,6 @@ typedef struct {
 	sndp_dev_iobox_status_e inout_status;
 	sndp_dev_cover_status_e cover_status;
 	sndp_dev_wear_status_e wear_status;
-#if defined(__SNDP_ALG_APPLICATION__)
-	uint8_t hearaid_status;		// 0:stop, 1:running
-#endif	
 } sndp_dev_all_status_s;
 
 #if defined(__SNDP_SLEEP_APP__)

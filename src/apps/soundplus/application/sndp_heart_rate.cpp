@@ -20,7 +20,7 @@
 
 #include "sndp_heart_rate.h"
 
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+#if defined(__SNDP_HR_ALGO__)
 #include "sleepsense.h"
 #endif
 
@@ -32,11 +32,12 @@
 #include "sndp_hal_hr.h"
 #endif
 #include "sndp_comm_cmd.h"
+#include "sndp_interact_app.h"
 #include "sndp_sleep_role_switch.h"
 
 /**************************************************************************************************
 * 统一任务轮询线程(MCU super-loop风格):
-* 1、创建统一任务轮询线程 sndp_sleep_app_process_thread。
+* 1、创建统一任务轮询线程 sndp_hr_sleep_app_process_thread。
 * 2、PPG/ACC传感器GPIO IRQ、proximity周期定时器通过osSignalSet发送任务信号唤醒线程。
 * 3、线程每次被唤醒后按序轮询5个task: ppg_task/acc_task/heartrate_task/sleep_analysis_task/proximity_task。
 * 4、心率/睡眠RAW Data队列: 传感器回调(线程内同步执行)Push数据, task3检测数据量足够后送入算法计算。
@@ -113,8 +114,8 @@ osMutexDef(acc_raw_data_queue_mutex);
 
 
 #define HR_PROCESS_THREAD_STACK_SIZE 				(1024*10)
-static void sndp_sleep_app_process_thread(void const *argument);
-osThreadDef(sndp_sleep_app_process_thread, osPriorityAboveNormal, 1, HR_PROCESS_THREAD_STACK_SIZE, "hr_process_thread");
+static void sndp_hr_sleep_app_process_thread(void const *argument);
+osThreadDef(sndp_hr_sleep_app_process_thread, osPriorityAboveNormal, 1, HR_PROCESS_THREAD_STACK_SIZE, "hr_process_thread");
 osThreadId hr_process_thread_tid = NULL;
 
 /*************** 统一任务轮询线程的任务信号位(osSignal: 置位即唤醒, 线程wait返回时自动清除) ***************/
@@ -134,7 +135,7 @@ static osTimerId sndp_hr_proximity_tick_timer_id = NULL;
 
 static void sndp_heartrate_algo_task(void);
 
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+#if defined(__SNDP_HR_ALGO__)
 POSSIBLY_UNUSED static struct Dump debug_dump;
 #endif
 
@@ -166,22 +167,22 @@ void sndp_hr_mearsuring_set_sampling_rate(uint8_t sampling_rate)
     hr_ctx.sampling_rate = sampling_rate;
 }
 
-uint8_t sndp_mearsuring_get_dump_state(dump_state_e state)
+uint8_t sndp_hr_mearsuring_get_dump_state(dump_state_e state)
 {
     return hr_ctx.dump_state[state];
 }
 
-void sndp_mearsuring_set_dump_state(dump_state_e dump_state, uint8_t onoff)
+void sndp_hr_mearsuring_set_dump_state(dump_state_e dump_state, uint8_t onoff)
 {
     hr_ctx.dump_state[dump_state] = onoff;
 }
 
-void sndp_set_sleep_control(int32_t sleep_control)
+void sndp_hr_set_sleep_control(int32_t sleep_control)
 {
     hr_ctx.sleep_control = sleep_control;
 }
 
-int32_t sndp_get_sleep_control(void)
+int32_t sndp_hr_get_sleep_control(void)
 {
     return hr_ctx.sleep_control;
 }
@@ -203,37 +204,37 @@ bool sndp_hr_is_reading_acc_enabled(void)
     return hr_ctx.acc_user_flag ? true : false;   
 }
 
-static bool sndp_acc_is_suspend(void)
+static bool sndp_hr_acc_is_suspend(void)
 {
     return hr_ctx.hr_acc_suspended;
 }
 
-static bool sndp_ppg_is_suspend(void)
+static bool sndp_hr_ppg_is_suspend(void)
 {
     return hr_ctx.hr_ppg_suspended;
 }
 
-void sndp_user_ppg_flag_set(uint32_t *user_flag, sensor_ppg_op_user_e user)
+void sndp_hr_user_ppg_flag_set(uint32_t *user_flag, sensor_ppg_op_user_e user)
 {
 	*user_flag |= user; 
 }
 
-void sndp_user_ppg_flag_clear(uint32_t *user_flag, sensor_ppg_op_user_e user)
+void sndp_hr_user_ppg_flag_clear(uint32_t *user_flag, sensor_ppg_op_user_e user)
 {
 	*user_flag &= ~user; 
 }
 
-void sndp_user_acc_flag_set(uint32_t *user_flag, sensor_acc_op_user_e user)
+void sndp_hr_user_acc_flag_set(uint32_t *user_flag, sensor_acc_op_user_e user)
 {
 	*user_flag |= user; 
 }
 
-void sndp_user_acc_flag_clear(uint32_t *user_flag, sensor_acc_op_user_e user)
+void sndp_hr_user_acc_flag_clear(uint32_t *user_flag, sensor_acc_op_user_e user)
 {
 	*user_flag &= ~user; 
 }
 
-static int ppg_raw_data_queue_push_data(int32_t *item, int cnt)
+static int sndp_hr_ppg_raw_data_queue_push_data(int32_t *item, int cnt)
 {
     int ret;
     
@@ -243,7 +244,7 @@ static int ppg_raw_data_queue_push_data(int32_t *item, int cnt)
     return ret;
 }
 
-POSSIBLY_UNUSED static int ppg_raw_data_queue_pop_data(int32_t *item, int cnt)
+POSSIBLY_UNUSED static int sndp_hr_ppg_raw_data_queue_pop_data(int32_t *item, int cnt)
 {
     int ret;
     
@@ -254,7 +255,7 @@ POSSIBLY_UNUSED static int ppg_raw_data_queue_pop_data(int32_t *item, int cnt)
     return ret;
 }
 
-static int ppg_raw_data_queue_get_len(void)
+static int sndp_hr_ppg_raw_data_queue_get_len(void)
 {
     uint16_t queue_len;
     
@@ -266,7 +267,7 @@ static int ppg_raw_data_queue_get_len(void)
     return queue_len;
 }
 
-static void ppg_raw_data_queue_reset(void)
+static void sndp_hr_ppg_raw_data_queue_reset(void)
 {
     osMutexWait(ppg_raw_data_queue_mutex_id, osWaitForever);
     ResetCQueue(&ppg_raw_data_queue);
@@ -274,7 +275,7 @@ static void ppg_raw_data_queue_reset(void)
 }
 
 
-static int acc_raw_data_queue_push_data(int16_t *item, int cnt)
+static int sndp_hr_acc_raw_data_queue_push_data(int16_t *item, int cnt)
 {
     int ret;
 
@@ -287,7 +288,7 @@ static int acc_raw_data_queue_push_data(int16_t *item, int cnt)
     return ret;
 }
 
-POSSIBLY_UNUSED static int acc_raw_data_queue_pop_data(int16_t *item, int cnt)
+POSSIBLY_UNUSED static int sndp_hr_acc_raw_data_queue_pop_data(int16_t *item, int cnt)
 {
     int ret;
 
@@ -301,7 +302,7 @@ POSSIBLY_UNUSED static int acc_raw_data_queue_pop_data(int16_t *item, int cnt)
     return ret;
 }
 
-POSSIBLY_UNUSED static int acc_raw_data_queue_get_len(void)
+POSSIBLY_UNUSED static int sndp_hr_acc_raw_data_queue_get_len(void)
 {
     uint16_t queue_len;
 
@@ -313,7 +314,7 @@ POSSIBLY_UNUSED static int acc_raw_data_queue_get_len(void)
     return queue_len;
 }
 
-static void acc_raw_data_queue_reset(void)
+static void sndp_hr_acc_raw_data_queue_reset(void)
 {
     osMutexWait(acc_raw_data_queue_mutex_id, osWaitForever);
     ResetCQueue(&acc_raw_data_queue);
@@ -370,9 +371,12 @@ void sndp_hr_proximity_tick_enable(bool en)
  */
 static void sndp_heartrate_algo_task(void)
 {
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+#if defined(__SNDP_HR_ALGO__)
     POSSIBLY_UNUSED struct HrvIndices hrv;
     POSSIBLY_UNUSED uint8_t* hrv_ptr = (uint8_t*)&hrv;
+#else
+    POSSIBLY_UNUSED uint8_t* hrv_ptr = NULL;
+#endif
     POSSIBLY_UNUSED sndp_hr_dbbeats_data dbbeats_data;
     POSSIBLY_UNUSED int8_t led;
     POSSIBLY_UNUSED int32_t acc_queue_len;
@@ -385,18 +389,18 @@ static void sndp_heartrate_algo_task(void)
     // hr_setp_5: Read ppg data
     // sleep_step_5: Read ppg data
     memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
-    ppg_raw_data_queue_pop_data(hr_ppg_raw_data, HR_PPG_SECOND_ALLCH_SAMPLES);
+    sndp_hr_ppg_raw_data_queue_pop_data(hr_ppg_raw_data, HR_PPG_SECOND_ALLCH_SAMPLES);
 
     // hr_setp_6: Read acc data
     // sleep_step_6: Read acc data
-    acc_queue_len = acc_raw_data_queue_get_len();
+    acc_queue_len = sndp_hr_acc_raw_data_queue_get_len();
     if(acc_queue_len >= HR_ACC_SECOND_ALLCH_SAMPLES) {
         acc_data_len = HR_ACC_SECOND_ALLCH_SAMPLES;
     } else {
         acc_data_len = acc_queue_len;
     }
     memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
-    acc_raw_data_queue_pop_data(hr_acc_raw_data, acc_data_len);
+    sndp_hr_acc_raw_data_queue_pop_data(hr_acc_raw_data, acc_data_len);
 
 #if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)
     start_time = hal_sys_timer_get();
@@ -407,6 +411,7 @@ static void sndp_heartrate_algo_task(void)
     dbbeats_data.is_contact = 1;
     dbbeats_data.led_state = 50;
     dbbeats_data.pck_interval = 1000;
+#if defined(__SNDP_HR_ALGO__)
     dbbeats_put_heartrate_data(
             hr_acc_raw_data,
             hr_ppg_raw_data,
@@ -421,6 +426,7 @@ static void sndp_heartrate_algo_task(void)
     // sleep_step_8: Return results
     memset(&hrv, 0, sizeof(struct HrvIndices));
     dbbeats_get_heartrate_data(&hrv, &dbbeats_data.result_code, &dbbeats_data.count, &led, &debug_dump);
+#endif
 
 #if defined(__SNDP_HR_PRINT_ALGO_EXEC_TIME__)
     end_time = hal_sys_timer_get();
@@ -429,19 +435,23 @@ static void sndp_heartrate_algo_task(void)
 
     // hr_setp_9: Display hr results
     // sleep_step_9: Display hr results
+#if defined(__SNDP_HR_ALGO__)
     if(dbbeats_data.result_code == 1 && hrv.HR > 1) {
         SNDP_TRACE(0, "HR: %d BPM, SDNN: %d ms libv: %s", hrv.HR, hrv.SDNN, lib_engine_version());
     } else if (dbbeats_data.result_code == 101) {
         SNDP_TRACE(0, "HR: Sensor detached");
     }
-
+#else
+    SNDP_TRACE(0, "HR_ALGO disabled: No Hr data");
+#endif
     // hr_setp_10: Report results
     if(hr_ctx.hr_running) {
+#if defined(__SNDP_SLEEP_APP__)
         sndp_comm_cmd_sleepapp_report_hr(hrv_ptr, (uint8_t*)&dbbeats_data);
+#endif
     }
 
     hr_measure_time++;
-#endif
 }
 
 /**
@@ -453,7 +463,7 @@ static void sndp_heartrate_algo_task(void)
  *          task4: sleep_analysis_task - 睡眠分期(SIGNAL_SLEEP_TRACK: 手机端数据到达)
  *          task5: proximity_task      - proximity上报(SIGNAL_PROXIMITY_TICK: 1秒定时器)
  */
-static void sndp_sleep_app_process_thread(void const *argument)
+static void sndp_hr_sleep_app_process_thread(void const *argument)
 {
     uint32_t acc_last_poll_ms = 0;
     uint32_t curr_ms;
@@ -467,7 +477,7 @@ static void sndp_sleep_app_process_thread(void const *argument)
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
         // ACC读取期间保留250ms看门狗轮询(沿用原da217e线程行为), 其余情况无限等待任务信号
-        wait_timeout = (sndp_hr_is_reading_acc_enabled() && !sndp_acc_is_suspend()) ? SENSOR_TASK_ACC_WATCHDOG_MS : osWaitForever;
+        wait_timeout = (sndp_hr_is_reading_acc_enabled() && !sndp_hr_acc_is_suspend()) ? SENSOR_TASK_ACC_WATCHDOG_MS : osWaitForever;
         evt = osSignalWait(0, wait_timeout);
 
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
@@ -475,7 +485,7 @@ static void sndp_sleep_app_process_thread(void const *argument)
 
         // 超时不携带信号位, 仅用于ACC看门狗
         fired_signals = (evt.status == osEventSignal) ? evt.value.signals : 0;
-        // SNDP_TRACE(0, "fired_signals: 0x%08x ppg_queue_len: %d", fired_signals, ppg_raw_data_queue_get_len());
+        // SNDP_TRACE(0, "fired_signals: 0x%08x ppg_queue_len: %d", fired_signals, sndp_hr_ppg_raw_data_queue_get_len());
 
         /********** task1: ppg_task **********/
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
@@ -483,7 +493,7 @@ static void sndp_sleep_app_process_thread(void const *argument)
            还负责处理佩戴事件(g_proximity_sta, FIFO中断使能的前提)并清除传感器INT引脚;
            若被门控跳过, 边沿触发的GPIO将因INT未清除而永久收不到后续中断 */
         // SNDP_TRACE(0, "ppg_enabled: %d, ppgpend:%d accpend: %d", sndp_hr_is_reading_ppg_enabled(), 
-        //                                                 sndp_ppg_is_suspend(), sndp_acc_is_suspend());
+        //                                                 sndp_hr_ppg_is_suspend(), sndp_hr_acc_is_suspend());
         if((fired_signals & SENSOR_TASK_SIGNAL_PPG_FIFO)) {
             sndp_hal_hr_ppg_fifo_task();
         }
@@ -491,7 +501,7 @@ static void sndp_sleep_app_process_thread(void const *argument)
 
         /********** task2: acc_task **********/
 #if defined(__SNDP_GSENSOR_SUPPORT__)
-        if(sndp_hr_is_reading_acc_enabled() && !sndp_acc_is_suspend()) {
+        if(sndp_hr_is_reading_acc_enabled() && !sndp_hr_acc_is_suspend()) {
             if(fired_signals & SENSOR_TASK_SIGNAL_ACC_FIFO) {
                 acc_last_poll_ms = curr_ms;
                 sndp_hal_acc_fifo_task();
@@ -505,9 +515,9 @@ static void sndp_sleep_app_process_thread(void const *argument)
 #endif
 
         /********** task3: heartrate_task **********/
-        if((fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) && !sndp_acc_is_suspend() &&
-           (hr_ctx.hr_running) && !sndp_ppg_is_suspend() &&
-           (ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES)) {
+        if((fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) && !sndp_hr_acc_is_suspend() &&
+           (hr_ctx.hr_running) && !sndp_hr_ppg_is_suspend() &&
+           (sndp_hr_ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES)) {
             sndp_heartrate_algo_task();
         }
 
@@ -519,7 +529,9 @@ static void sndp_sleep_app_process_thread(void const *argument)
 
         /********** task5: proximity_task **********/
         if(fired_signals & SENSOR_TASK_SIGNAL_PROXIMITY_TICK) {
+#if defined(__SNDP_SLEEP_APP__)
             sndp_comm_cmd_sleepapp_proximity_task();
+#endif
         }
     }
 }
@@ -529,10 +541,10 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
     // HR_TRACE(0, "cnt=%d", cnt);
     if(hr_ctx.hr_running) {
         // SNDP_DUMP32("%08X ", data,  cnt > 16?16:cnt);
-        ppg_raw_data_queue_push_data(data, cnt);
+        sndp_hr_ppg_raw_data_queue_push_data(data, cnt);
 
         // 队列凑满1秒数据, 显式发送信号触发heartrate_task(task3)
-        if(ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES) {
+        if(sndp_hr_ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES) {
             if(hr_process_thread_tid) {
                 osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_HEARTRATE);
             }
@@ -542,10 +554,12 @@ static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 
 static void sndp_report_ppg_raw_data_callback(uint8_t *data, uint16_t cnt)
 {
-    if(sndp_mearsuring_get_dump_state(PPG_DUMP_STATE) == 0x01 || 
-       sndp_mearsuring_get_dump_state(HR_DUMP_STATE) == 0x01) {
+    if(sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE) == 0x01 || 
+       sndp_hr_mearsuring_get_dump_state(HR_DUMP_STATE) == 0x01) {
         if(cnt > 0) {
+#if defined(__SNDP_SLEEP_APP__)
             sndp_comm_cmd_sleepapp_report_ppg_raw_data(data, cnt);
+#endif
         }
     }
 }
@@ -560,15 +574,17 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
     //SNDP_DUMP32("%04X ", data,  cnt > 16?16:cnt);
     
     if(hr_ctx.hr_running) {
-        acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
+        sndp_hr_acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
     }
 
-    if(sndp_mearsuring_get_dump_state(ACC_DUMP_STATE) == 0x01 || 
-        sndp_mearsuring_get_dump_state(HR_DUMP_STATE) == 0x01) {
+    if(sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE) == 0x01 || 
+        sndp_hr_mearsuring_get_dump_state(HR_DUMP_STATE) == 0x01) {
         if(cnt > 0) {
             //report ACC data
                 // HR_TRACE(0, "acc notification, cnt=%d", cnt);
+#if defined(__SNDP_SLEEP_APP__)
             sndp_comm_cmd_sleepapp_report_acc_ntf((int16_t *)data, cnt * 3);
+#endif
             // sndp_comm_cmd_sleepapp_report_acc_ntf_debug((int16_t *)data, cnt * 3);
         }
     }
@@ -589,9 +605,9 @@ void sndp_hr_switch_reading_ppg_raw_data(uint32_t user, bool onoff)
 
     /* 更新user flag */
     if (onoff) {
-        sndp_user_ppg_flag_set(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)user);
+        sndp_hr_user_ppg_flag_set(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)user);
     } else {
-        sndp_user_ppg_flag_clear(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)user);
+        sndp_hr_user_ppg_flag_clear(&hr_ctx.ppg_user_flag, (sensor_ppg_op_user_e)user);
     }
 
     /* 计算修改flag后的期望传感器状态 */
@@ -638,9 +654,9 @@ void sndp_hr_switch_reading_acc_raw_data(uint32_t user, bool onoff)
 
     /* 更新user flag */
     if (onoff) {
-        sndp_user_acc_flag_set(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)user);
+        sndp_hr_user_acc_flag_set(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)user);
     } else {
-        sndp_user_acc_flag_clear(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)user);
+        sndp_hr_user_acc_flag_clear(&hr_ctx.acc_user_flag, (sensor_acc_op_user_e)user);
     }
 
     /* 计算修改flag后的期望传感器状态 */
@@ -673,15 +689,15 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 
     SNDP_TRACE(0, "sndp_hr_mearsuring_start...");
 
-    ppg_raw_data_queue_reset();
+    sndp_hr_ppg_raw_data_queue_reset();
 
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+#if defined(__SNDP_HR_ALGO__)
     dbbeats_initialize_heartrate_data(ppg_sampling_rate, dump_state);
 #endif
 
     hr_measure_time = 0;
     hr_ctx.hr_running = true;
-    sndp_mearsuring_set_dump_state(HR_DUMP_STATE, dump_state);
+    sndp_hr_mearsuring_set_dump_state(HR_DUMP_STATE, dump_state);
     sndp_hr_mearsuring_set_sampling_rate(ppg_sampling_rate);
     if(sndp_dev_wear_is_worn(false) || sndp_call_get_in_out_flag() == 0 ) {
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC, true);
@@ -696,7 +712,7 @@ void sndp_hr_mearsuring_stop(void)
 {
     SNDP_TRACE(0, "sndp_hr_mearsuring_stop...");
     hr_ctx.hr_running = false;
-    sndp_mearsuring_set_dump_state(HR_DUMP_STATE, 0x00);
+    sndp_hr_mearsuring_set_dump_state(HR_DUMP_STATE, 0x00);
     if(sndp_dev_wear_is_worn(false) || sndp_call_get_in_out_flag() == 0) {
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC, false);
         sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG, false);
@@ -779,12 +795,12 @@ void sndp_hr_resume(uint32_t usersuspend)
     
     SNDP_TRACE(0, "hr resume");
     if(sndp_hr_is_reading_ppg_enabled()){
-        ppg_raw_data_queue_reset();
+        sndp_hr_ppg_raw_data_queue_reset();
         /* onoff=false: 清除suspend flag, 恢复后由普通user flag决定PPG传感器开关 */
         sndp_hr_switch_reading_ppg_raw_data(ppg_op_user, false);
     }
     if(sndp_hr_is_reading_acc_enabled()){
-        acc_raw_data_queue_reset();
+        sndp_hr_acc_raw_data_queue_reset();
         /* onoff=false: 清除suspend flag, 恢复后由普通user flag决定ACC传感器开关 */
         sndp_hr_switch_reading_acc_raw_data(acc_op_user, false);
     }
@@ -824,9 +840,13 @@ void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
 // sleep analysis function
 static void sndp_sleep_analysis(void) 
 {
+#if defined(__SNDP_HR_ALGO__)
     SNDP_TRACE(0, "sleep analyse...");
     dbbeats_sleep_data(sleep_app_accel, sleep_screen_status, sleep_sound_state,\
         sleep_stage, &sleep_position, &sound_control, &result_code);
+#else
+    SNDP_TRACE(0, "HR_ALGO disabled: No sleep data");
+#endif
     // sleep_step_14: analysis result
     if (result_code == 1) {
         // SNDP_TRACE(0, "Sleep position: %d\n", sleep_position);
@@ -835,8 +855,10 @@ static void sndp_sleep_analysis(void)
         // sleep_step_16: report data to app via ble.
         // 统一任务线程内直接上报(与HR/PPG/ACC/proximity上报同线程, 共享发送缓冲区无需再切换上下文)
         if(hr_ctx.sleep_running) {
+#if defined(__SNDP_SLEEP_APP__)
             uint16_t position_and_control = (sleep_position & 0xFF) | ((sound_control & 0xFF)<<8);
             sndp_comm_cmd_sleepapp_report_sleep_stage(sleep_stage, position_and_control, result_code);
+#endif
         }
     } else {
         SNDP_TRACE(0, "Error: %d\n", result_code);
@@ -848,10 +870,10 @@ void sndp_sleep_analysis_start(int32_t sleep_control)
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "sndp_sleep_analysis_start...");
     
-    ppg_raw_data_queue_reset();
+    sndp_hr_ppg_raw_data_queue_reset();
     
     // sleep_step_1:算法初始化
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+#if defined(__SNDP_HR_ALGO__)
     dbbeats_initialize_sleep_data(sleep_control);
 #endif
 
@@ -877,8 +899,8 @@ void sndp_ppg_notification_start(uint8_t dump_state)
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "sndp_ppg_notification_start...");
 
-    ppg_raw_data_queue_reset();
-    sndp_mearsuring_set_dump_state(PPG_DUMP_STATE, dump_state);
+    sndp_hr_ppg_raw_data_queue_reset();
+    sndp_hr_mearsuring_set_dump_state(PPG_DUMP_STATE, dump_state);
     sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_PPG, true);
     memset(hr_ppg_raw_data, 0, sizeof(hr_ppg_raw_data));
 }
@@ -886,7 +908,7 @@ void sndp_ppg_notification_start(uint8_t dump_state)
 void sndp_ppg_notification_stop(void)
 {
     SNDP_TRACE(0, "sndp_ppg_notification_stop...");
-    sndp_mearsuring_set_dump_state(PPG_DUMP_STATE, 0x00);
+    sndp_hr_mearsuring_set_dump_state(PPG_DUMP_STATE, 0x00);
     sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_PPG, false);
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
@@ -897,8 +919,8 @@ void sndp_acc_notification_start(uint8_t dump_state)
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "sndp_acc_notification_start...");
 
-    acc_raw_data_queue_reset();
-    sndp_mearsuring_set_dump_state(ACC_DUMP_STATE, dump_state);
+    sndp_hr_acc_raw_data_queue_reset();
+    sndp_hr_mearsuring_set_dump_state(ACC_DUMP_STATE, dump_state);
     sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_ACC, true);
     memset(hr_acc_raw_data, 0, sizeof(hr_acc_raw_data));
 }
@@ -907,7 +929,7 @@ void sndp_acc_notification_stop(void)
 {
     SNDP_TRACE(0, "sndp_acc_notification_stop...");
 
-    sndp_mearsuring_set_dump_state(ACC_DUMP_STATE, 0x00);
+    sndp_hr_mearsuring_set_dump_state(ACC_DUMP_STATE, 0x00);
     sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_ACC, false);
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
@@ -929,12 +951,14 @@ static bool sndp_is_notifi_hr_enabled(void)
 void sndp_hr_ble_disconnected_delay10s_start(void)
 {   
     SNDP_TRACE(0, "running: %d cover_closed: %d", hr_ctx.sleep_running, sndp_dev_cover_is_closed(false));
+ #if defined(__SNDP_SLEEP_APP__)
     if(sndp_dev_cover_is_closed(false)) {
         sndp_sleep_comm_disconnect_timer_handler();
     }else {
         hr_ctx.delay_10S_start = true;
         sndp_delay_exec_start(10000, (uint32_t)sndp_sleep_comm_disconnect_timer_handler, 0, 0, 0);
     }
+#endif
 }
 
 void sndp_hr_ble_connected_delay10s_stop(void)
@@ -942,11 +966,13 @@ void sndp_hr_ble_connected_delay10s_stop(void)
     SNDP_TRACE(0, "Srunning: %d HRrunning: %d", hr_ctx.sleep_running, hr_ctx.hr_running);
     if(hr_ctx.sleep_running){
         hr_ctx.delay_10S_start = false;
+#if defined(__SNDP_SLEEP_APP__)
         sndp_delay_exec_stop((uint32_t)sndp_sleep_comm_cmd_analysis_stop);        
+#endif
     }
 }
 
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+#if defined(__SNDP_HR_ALGO__)
 void sndp_hr_print_log(const char *msg)
 {
     if(msg != NULL) {
@@ -979,13 +1005,13 @@ void sndp_hr_app_init(void)
 
     // 3. 创建统一任务轮询线程(任务信号由IRQ/定时器通过osSignalSet发送, 无需信号量)。
     if (hr_process_thread_tid == NULL)  {
-        hr_process_thread_tid = osThreadCreate(osThread(sndp_sleep_app_process_thread), NULL);
+        hr_process_thread_tid = osThreadCreate(osThread(sndp_hr_sleep_app_process_thread), NULL);
         ASSERT(hr_process_thread_tid != NULL, "%s, line=%d", __func__, __LINE__);
     }
 
     memset(&hr_ctx, 0, sizeof(sndp_hr_ctx_s));
 
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+#if defined(__SNDP_HR_ALGO__)
     SNDP_TRACE(0, "lib_ver:%s", lib_engine_version());
     dbbeats_print_log_cfg(sndp_hr_print_log);
 #endif

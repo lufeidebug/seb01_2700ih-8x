@@ -13,7 +13,7 @@
 #include "sndp_heart_rate.h"
 #include "sndp_comm_cmd.h"
 
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+#if defined(__SNDP_HR_ALGO__)
 #include "sleepsense.h"
 #endif
 
@@ -169,7 +169,7 @@ static void sndp_sleep_role_switch_to_standby(void)
     role_ctx.role = ROLE_SWITCHING;
 
     /* Step 1: ��ȡ dbbeats �㷨��ǰ״̬���� */
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+#if defined(__SNDP_HR_ALGO__)
     dbbeats_get_snapshot(&lib_snapshot);
 
     /* ӳ�䵽����ṹ�� */
@@ -218,11 +218,11 @@ static void sndp_sleep_role_switch_to_active(Algorithm_Snapshot_t *snapshot)
     role_ctx.role = ROLE_SWITCHING;
 
     /* Step 1: �������������㷨 */
-    sndp_hr_mearsuring_start(sndp_hr_mearsuring_get_sampling_rate(), sndp_mearsuring_get_dump_state(HR_DUMP_STATE));
-    sndp_sleep_analysis_start(sndp_get_sleep_control());
+    sndp_hr_mearsuring_start(sndp_hr_mearsuring_get_sampling_rate(), sndp_hr_mearsuring_get_dump_state(HR_DUMP_STATE));
+    sndp_sleep_analysis_start(sndp_hr_get_sleep_control());
 
     /* Step 2: �ָ��㷨״̬���� */
-#if defined(__SNDP_HR_ALGO_SLEEPSENSE__)
+#if defined(__SNDP_HR_ALGO__)
     if (snapshot != NULL && snapshot->size > 0) {
         lib_snapshot.size = snapshot->size;
         if (lib_snapshot.size > SNAPSHOT_DATA_MAX_SIZE) {

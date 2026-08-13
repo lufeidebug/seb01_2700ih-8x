@@ -16,10 +16,6 @@
 #include "sndp_if_platform.h"
 
 #include "sndp_product_test.h"
-#include "sndp_comm_cmd.h"
-#if defined(__SNDP_PSENSOR_JSA1227__)
-#include "sndp_jsa1227.h"
-#endif
 
 /**************************************************************************************************
 * Constant
