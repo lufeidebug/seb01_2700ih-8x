@@ -1499,8 +1499,10 @@ void sndp_sleep_app_report_battery(void)
     sndp_dev_get_box_bat_info(&cradle_bt_info);
     reply_battery.bits.cradle_charging_status = 0;
     reply_battery.bits.cradle_battery_level = cradle_bt_info.bat_per;
-    // COMM_CMD_TRACE(0,"char:%d,lbat:%02x char:%d,rbat:%02x", (uint8_t)sndp_dev_charger_is_charging(false), sndp_dev_get_bat_percentage(false),
-                                            //    (uint8_t)sndp_dev_charger_is_charging(true),sndp_dev_get_bat_percentage(true));
+    // COMM_CMD_TRACE(0,"left:%02x,right:%02x,cradle:%02x", 
+    //                    reply_battery.bits.left_battery_level,
+    //                    reply_battery.bits.right_battery_level, 
+    //                    reply_battery.bits.cradle_battery_level);
     // DUMP8("%02x",&reply_battery,sizeof(reply_battery));                                           
     sleep_app_comm_main_send_cmd_by_id(SLEEP_APP_CMDID_GET_BATTERY_STATUS, sizeof(reply_battery), (uint8_t*)&reply_battery);
 }

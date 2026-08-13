@@ -656,7 +656,10 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
     
     status = inout_status;
     SPUI_TRACE(1, "%s", (SNDP_DEV_IOBOX_IN == inout_status) ? "IN_BOX" : "OUT_BOX");
-
+#if defined(__SNDP_SLEEP_APP__)
+	//Upload battery level once during warehouse‑in and warehouse‑out.
+    sndp_sleep_app_report_battery();
+#endif
     sndp_delay_exec_stop((uint32_t)sndp_ui_inbox_role_switch);
     sndp_delay_exec_stop((uint32_t)sndp_ui_outbox_role_switch);
     
