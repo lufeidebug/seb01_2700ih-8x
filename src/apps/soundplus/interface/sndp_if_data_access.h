@@ -19,7 +19,7 @@ typedef enum {
 	SNDP_DA_FIELD_PPG_CALIB_DATA,
 	SNDP_DA_FIELD_ACC_CALIB_DATA,
 
-#if defined(__SNDP_SLEEP_APP__)   
+#if defined(__SNDP_SLEEP_APP__)
 #if defined(__SNDP_EQ_PARAM_SETTING__)	
 	SNDP_DA_FIELD_EQ_DATA,
 #endif
@@ -66,7 +66,7 @@ typedef struct {
 } sndp_da_field_acc_calib_data_s;
 
 
-#if defined(__SNDP_SLEEP_APP__) 
+#if defined(__SNDP_SLEEP_APP__)
 #if defined(__SNDP_EQ_PARAM_SETTING__)
 typedef struct {
 	uint32_t key;  /* This key must be defined, but it cannot be modified */

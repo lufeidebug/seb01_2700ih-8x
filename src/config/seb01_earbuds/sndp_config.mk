@@ -93,6 +93,20 @@ ifeq ($(SNDP_UI),1)
     KBUILD_CPPFLAGS += -D__SNDP_UI__
 endif
 
+ifeq ($(SNDP_SLEEP_APP),1)
+ifeq ($(SNDP_HEART_RATE_MGR),1)
+    KBUILD_CPPFLAGS += -D__SNDP_HEART_RATE_MGR__
+    export SNDP_HRSENSOR_SUPPORT                := 1
+    export SNDP_HR_ALGO                         := 1
+endif
+    KBUILD_CPPFLAGS += -D__SNDP_SLEEP_APP__
+    #KBUILD_CPPFLAGS += -D__SNDP_GESTURE_MAP__
+    KBUILD_CPPFLAGS += -D__SNDP_EQ_PARAM_SETTING__
+    KBUILD_CPPFLAGS += -D__SNDP_FINDME__
+#     KBUILD_CPPFLAGS += -D__SNDP_SEND_GESTURE__
+#     KBUILD_CPPFLAGS += -D__SNDP_SLEEP_APP_ROLE_SWITCH__
+endif
+
 ifeq ($(SNDP_DEV_THREAD),1)
     KBUILD_CPPFLAGS += -D__SNDP_DEV_THREAD__
 endif
@@ -227,16 +241,6 @@ ifeq ($(SNDP_GSENSOR_SUPPORT),1)
         KBUILD_CPPFLAGS += -D__SNDP_GSENSOR_DA217E__
     endif
 endif
-
-ifeq ($(SNDP_HRSENSOR_SUPPORT),1)
-    KBUILD_CPPFLAGS += -D__SNDP_HRSENSOR_SUPPORT__
-    export SNDP_HRSENSOR_SSH202C                := 0
-
-    ifeq ($(SNDP_HRSENSOR_SSH202C),1)
-        KBUILD_CPPFLAGS += -D__SNDP_HRSENSOR_SSH202C__
-    endif
-endif
-
 
 ifeq ($(SNDP_COMMUNICATION_MGR),1)
     KBUILD_CPPFLAGS += -D__SNDP_COMM_MGR__
@@ -406,15 +410,6 @@ ifeq ($(SNDP_BLE_MODIFY),1)
     KBUILD_CPPFLAGS += -D__SNDP_BLE_MODIFY__
 endif
 
-
-ifeq ($(SNDP_HEART_RATE_MGR),1)
-    KBUILD_CPPFLAGS += -D__SNDP_HEART_RATE_MGR__
-    
-    export SNDP_HRSENSOR_SUPPORT                := 1
-    export SNDP_HR_ALGO                         := 1
-
-endif
-
 ifeq ($(SNDP_HR_ALGO),1)
     KBUILD_CPPFLAGS += -D__SNDP_HR_ALGO__   
 endif
@@ -437,15 +432,6 @@ endif
 
 ifeq ($(SNDP_APP_WHITE_NOISE),1)
     KBUILD_CPPFLAGS += -D__SNDP_APP_WHITE_NOISE__
-endif
-
-ifeq ($(SNDP_SLEEP_APP),1)
-    KBUILD_CPPFLAGS += -D__SNDP_SLEEP_APP__
-    #KBUILD_CPPFLAGS += -D__SNDP_GESTURE_MAP__
-    KBUILD_CPPFLAGS += -D__SNDP_EQ_PARAM_SETTING__
-    KBUILD_CPPFLAGS += -D__SNDP_FINDME__
-#     KBUILD_CPPFLAGS += -D__SNDP_SEND_GESTURE__
-#     KBUILD_CPPFLAGS += -D__SNDP_SLEEP_APP_ROLE_SWITCH__
 endif
 
 ifeq ($(SNDP_BAT_SWITCH_ROLE),1)

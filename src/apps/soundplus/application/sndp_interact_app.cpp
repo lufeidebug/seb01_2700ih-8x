@@ -16,6 +16,7 @@
 #include "sndp_interact_app.h"
 #include "sndp_interact_box.h"
 #include "sndp_heart_rate.h"
+#include "sndp_sensor_service.h"
 #include "hal_aud.h"
 #include "iir_process.h"
 #include "sndp_ui.h"
@@ -52,17 +53,17 @@
 /**************************************************************************************************
 * Variable
 **************************************************************************************************/
-static void sndp_findme_loop_handler(uint8_t onoff);
+
 uint8_t wear_state_update_onoff = 0;
 uint8_t sndp_sleepapp_report_battery_onoff = 0;
 uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
-static void sndp_sleep_app_set_flag_onoff(SNDP_SLEEP_APP_FLAG_NAME flag_name, bool peer, uint8_t onoff, bool sava);
-
 
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
 #if defined(__SNDP_SLEEP_APP__)
+static void sndp_findme_loop_handler(uint8_t onoff);
+static void sndp_sleep_app_set_flag_onoff(SNDP_SLEEP_APP_FLAG_NAME flag_name, bool peer, uint8_t onoff, bool sava);
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
     /*
@@ -303,15 +304,13 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_set_local_proximity(void)
 
 void sndp_comm_cmd_sleepapp_start_proximity(void)
 {
-    sndp_sleep_app_set_flag_onoff(SNDP_PROXIMITY_ONOFF_FLAG, false, 0x01, false);
-    sndp_hr_proximity_tick_enable(true);
-    sndp_comm_cmd_sleepapp_proximity_task();    // 立即执行一次, 与原逻辑一致
+    sndp_sensor_service_start_proximity_local();
+    sndp_comm_cmd_sleepapp_proximity_task();
 }
 
 void sndp_comm_cmd_sleepapp_stop_proximity(void)
 {
-    sndp_sleep_app_set_flag_onoff(SNDP_PROXIMITY_ONOFF_FLAG, false, 0x00, false);
-    sndp_hr_proximity_tick_enable(false);
+    sndp_sensor_service_stop_proximity_local();
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notification(sleep_app_comm_cmd_info_s *cmd_info)
@@ -335,12 +334,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_accelerometer_notifi
     acc_ntf_debug_count = 0;
     COMM_CMD_TRACE(1, "acc notification=%d", onoff);
 
-    if(onoff){
-        sndp_acc_notification_start(0x01);
-    }else{
-        // 始终注销acc_notification user; 若HR仍在运行, apply会保持ACC传感器开启
-        sndp_acc_notification_stop();
-    }
+    sndp_sensor_service_set_acc_notification_local(onoff);
     /* 同步给对耳 */
     sndp_comm_cmd_send_lr_sync_acc_notification(onoff);
     
@@ -866,8 +860,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_ap
         acc_ntf_debug_count = 0;
         ppg_ntf_debug_count = 0;
     }
-    sndp_sleep_app_set_flag_onoff(SNDP_HEARTRATE_ONOFF_FLAG, false, 0x01, false);
-    sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_start, sampling_rate, dump_data, 0);
+    sndp_sensor_service_start_heartrate_local(sampling_rate, dump_data);
     /* 同步给对耳 */
     sndp_comm_cmd_send_lr_sync_start_heartrate(sampling_rate, dump_data);
     return 0;
@@ -876,8 +869,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_ap
 void sndp_sleep_comm_cmd_heartrate_stop(void)
 {
     COMM_CMD_TRACE(0, "heartrate stop");
-    sndp_sleep_app_set_flag_onoff(SNDP_HEARTRATE_ONOFF_FLAG, false, 0x00, false);
-    sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_stop, 0, 0, 0);
+    sndp_sensor_service_stop_heartrate_local();
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app_comm_cmd_info_s *cmd_info)
@@ -894,14 +886,10 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app
 void sndp_sleep_comm_cmd_analysis_start(int32_t sleep_control)
 {
     COMM_CMD_TRACE(0, "sleep analysis start");
-    sndp_sleep_app_set_flag_onoff(SNDP_STAGE_ONOFF_FLAG, false, 0x01, false);
-    sndp_ui_working_mode_sleep_app_set(SNDP_DEV_WORKING_MODE_SLEEP);
-    sndp_hr_set_sleep_control((int32_t)sleep_control);
-    sndp_ui_sleep_anc_mode_on();
+    sndp_sensor_service_enter_sleep_mode_local(sleep_control);
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     sndp_sleep_role_start();
 #endif
-    sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_start, 0, 0, 0);
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_comm_cmd_info_s *cmd_info)
@@ -939,10 +927,10 @@ void sndp_sleep_comm_disconnect_timer_handler(void)
         sndp_sleep_comm_cmd_analysis_stop();
     }
     if(sndp_dev_sleep_app_get_proximity_onoff(false)){
-        sndp_comm_cmd_sleepapp_stop_proximity();
+        sndp_sensor_service_stop_proximity_local();
     }
     if(sndp_dev_sleep_app_get_heartrate_onoff(false)){
-        sndp_hr_mearsuring_stop();
+        sndp_sensor_service_stop_heartrate_local();
     }
     if(sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE)){
         sndp_acc_notification_stop();
@@ -955,13 +943,10 @@ void sndp_sleep_comm_disconnect_timer_handler(void)
 void sndp_sleep_comm_cmd_analysis_stop(void)
 {
     COMM_CMD_TRACE(0, "sleep analysis stop");
-    sndp_sleep_app_set_flag_onoff(SNDP_STAGE_ONOFF_FLAG, false, 0x00, false);
-    sndp_ui_working_mode_sleep_app_set(SNDP_DEV_WORKING_MODE_BT);
-    sndp_ui_sleep_anc_mode_off();
+    sndp_sensor_service_exit_sleep_mode_local();
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     sndp_sleep_role_stop();
 #endif
-    sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_comm_cmd_info_s *cmd_info)
@@ -1001,11 +986,13 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_test(sleep_app_co
         0x03: 3sec    
     */
     uint8_t sensor_type = cmd_info->value[0];
-    uint8_t measurement_duration = cmd_info->value[1];
+    POSSIBLY_UNUSED uint8_t measurement_duration = cmd_info->value[1];
     if(sensor_type == 0x00){
         if(sndp_hr_is_reading_ppg_enabled() || sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE)){
+#if defined(__SNDP_GSENSOR_SUPPORT__)
             sndp_hal_hr_read_samples_rate(sndp_comm_cmd_sleepapp_report_ppg_samples);
             sndp_hal_hr_samples_measurement_start(measurement_duration);
+#endif
         }else{
             cmd_info->value[0] = 0xff; 
             cmd_info->data_len = 0x02;
@@ -1015,8 +1002,10 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_test(sleep_app_co
     else if(sensor_type == 0x01)
     {
         if(sndp_hr_is_reading_acc_enabled() || sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE)){
+#if defined(__SNDP_GSENSOR_SUPPORT__)
             sndp_hal_acc_read_samples_rate(sndp_comm_cmd_sleepapp_report_acc_samples);
             sndp_hal_acc_samples_measurement_start(measurement_duration);
+#endif
         }else{
             cmd_info->value[0] = 0xff; 
             cmd_info->data_len = 0x02;

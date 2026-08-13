@@ -25,6 +25,7 @@
 #include "sndp_if_data_access.h"
 
 #include "sndp_ui.h"
+#include "sndp_sensor_service.h"
 
 #include "sndp_comm_protocol.h"
 #include "sndp_comm_main.h"
@@ -72,6 +73,9 @@
 * Extern
 **************************************************************************************************/
 extern "C" uint8_t sndp_anc_get_calib_result(void);
+
+/* Forward declaration: proximity data reporting (defined in sndp_interact_app.cpp) */
+uint32_t sndp_comm_cmd_sleepapp_proximity_task(void);
 
 
 
@@ -708,13 +712,12 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_Proximity_Notification_ONOFF(sndp_com
     }
 
     uint8_t onoff = cmd_info->data[0];
-    sndp_dev_sleep_app_set_proximity_onoff(false, onoff);
 
     if (onoff == 0x01) {
-        sndp_hr_proximity_tick_enable(true);
-        sndp_comm_cmd_sleepapp_proximity_task();    // 立即执行一次, 与主耳流程一致
+        sndp_sensor_service_start_proximity_local();
+        sndp_comm_cmd_sleepapp_proximity_task();
     } else {
-        sndp_hr_proximity_tick_enable(false);
+        sndp_sensor_service_stop_proximity_local();
     }
 
     return 0;
@@ -736,11 +739,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_start_sleep(sndp_comm_cmd_info_s *cmd
         uint32_t sleep_control = cmd_info->data[0]<<24 | cmd_info->data[1]<<16 | cmd_info->data[2]<<8 | cmd_info->data[3];
         COMM_CMD_TRACE(1, "LR sync start sleep, control=%d", sleep_control);
         /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
-        sndp_dev_sleep_app_set_stage_onoff(false, 0x01);
-        sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_SLEEP);
-        sndp_hr_set_sleep_control((int32_t)sleep_control);
-        sndp_ui_sleep_anc_mode_on();
-        sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_start, 0, 0, 0);
+        sndp_sensor_service_enter_sleep_mode_local(sleep_control);
     }
     return 0;
 }
@@ -772,10 +771,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_stop_sleep(sndp_comm_cmd_info_s *cmd_
 {
     COMM_CMD_TRACE(0, "LR sync stop sleep");
     /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
-    sndp_dev_sleep_app_set_stage_onoff(false, 0x00);
-    sndp_dev_set_working_mode(SNDP_DEV_WORKING_MODE_BT);
-    sndp_ui_sleep_anc_mode_off();
-    sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);
+    sndp_sensor_service_exit_sleep_mode_local();
     return 0;
 }
 
@@ -793,8 +789,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_start_heartrate(sndp_comm_cmd_info_s 
         uint8_t dump_data = cmd_info->data[1];
         COMM_CMD_TRACE(1, "LR sync start heartrate, sampling=%d dump=%d", sampling_rate, dump_data);
         /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
-        sndp_dev_sleep_app_set_heartrate_onoff(false, 0x01);
-        sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_start, sampling_rate, dump_data, 0);
+        sndp_sensor_service_start_heartrate_local(sampling_rate, dump_data);
     }
     return 0;
 }
@@ -809,8 +804,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_stop_heartrate(sndp_comm_cmd_info_s *
 {
     COMM_CMD_TRACE(0, "LR sync stop heartrate");
     /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
-    sndp_dev_sleep_app_set_heartrate_onoff(false, 0x00);
-    sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_stop, 0, 0, 0);
+    sndp_sensor_service_stop_heartrate_local();
     return 0;
 }
 
@@ -826,11 +820,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_ppg_notification(sndp_comm_cmd_info_s
         uint8_t onoff = cmd_info->data[0];
         COMM_CMD_TRACE(1, "LR sync ppg notification, onoff=%d", onoff);
         /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
-        if(onoff) {
-            sndp_ppg_notification_start(0x01);
-        } else {
-            sndp_ppg_notification_stop();
-        }
+        sndp_sensor_service_set_ppg_notification_local(onoff ? true : false);
     }
     return 0;
 }
@@ -847,11 +837,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_acc_notification(sndp_comm_cmd_info_s
         uint8_t onoff = cmd_info->data[0];
         COMM_CMD_TRACE(1, "LR sync acc notification, onoff=%d", onoff);
         /* 直接调用底层逻辑，不通过sync包装避免回环同步 */
-        if(onoff) {
-            sndp_acc_notification_start(0x01);
-        } else {
-            sndp_acc_notification_stop();
-        }
+        sndp_sensor_service_set_acc_notification_local(onoff ? true : false);
     }
     return 0;
 }
@@ -1355,7 +1341,7 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_gsensor(sndp_comm_cmd
    
     return 0;
 }
-
+#endif
 
 void sndp_comm_cmd_read_ppg_callback(int32_t *ppg_data, uint16_t cnt)
 {
@@ -1440,7 +1426,6 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_test_hrsensor(sndp_comm_cm
 
     return 0;
 }
-#endif
 
 POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_recv_pt_query_dev_status(sndp_comm_cmd_info_s *cmd_info)
 {

@@ -274,8 +274,7 @@ static void sndp_hr_ppg_raw_data_queue_reset(void)
     osMutexRelease(ppg_raw_data_queue_mutex_id);
 }
 
-
-static int sndp_hr_acc_raw_data_queue_push_data(int16_t *item, int cnt)
+POSSIBLY_UNUSED static int sndp_hr_acc_raw_data_queue_push_data(int16_t *item, int cnt)
 {
     int ret;
 
@@ -465,8 +464,10 @@ static void sndp_heartrate_algo_task(void)
  */
 static void sndp_hr_sleep_app_process_thread(void const *argument)
 {
+#if defined(__SNDP_GSENSOR_SUPPORT__)
     uint32_t acc_last_poll_ms = 0;
     uint32_t curr_ms;
+#endif
     uint32_t wait_timeout;
     int32_t fired_signals;
     osEvent evt;
@@ -481,8 +482,9 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
         evt = osSignalWait(0, wait_timeout);
 
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
+#if defined(__SNDP_GSENSOR_SUPPORT__)
         curr_ms = TICKS_TO_MS(hal_sys_timer_get());
-
+#endif
         // 超时不携带信号位, 仅用于ACC看门狗
         fired_signals = (evt.status == osEventSignal) ? evt.value.signals : 0;
         // SNDP_TRACE(0, "fired_signals: 0x%08x ppg_queue_len: %d", fired_signals, sndp_hr_ppg_raw_data_queue_get_len());
