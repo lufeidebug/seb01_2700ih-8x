@@ -852,6 +852,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_ppg_auto_led_enable_disa
 }
 
 #if defined(__SNDP_HEART_RATE_MGR__)
+uint8_t sleep_tracking_sync_buff[211];
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_app_comm_cmd_info_s *cmd_info)
 {
     uint8_t sampling_rate = cmd_info->value[0];
@@ -917,7 +918,9 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app
     uint8_t sound_state = cmd_info->value[210];
     sndp_dbbeats_put_sleep_app_data(accel_data_m, screen_status, sound_state);
     /* 同步追踪数据给对耳，运行相同的逻辑 */
-    sndp_comm_cmd_send_lr_sync_sleep_tracking(cmd_info->value, 211);
+    memset(sleep_tracking_sync_buff, 0, sizeof(sleep_tracking_sync_buff));
+    memcpy(sleep_tracking_sync_buff, cmd_info->value, 211);
+    sndp_delay_exec_start(150,(uint32_t)sndp_comm_cmd_send_lr_sync_sleep_tracking, (uint32_t)&sleep_tracking_sync_buff[0], 211, 0);
     return 0;
 }
 

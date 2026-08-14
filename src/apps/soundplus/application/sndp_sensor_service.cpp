@@ -66,8 +66,7 @@ void sndp_sensor_service_set_ppg_notification_local(bool onoff)
     TR_INFO(1, "sensor_svc: ppg_ntf=%d", onoff);
 
     if (onoff) {
-        uint8_t dump_state = sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE);
-        sndp_ppg_notification_start(dump_state ? 1 : 0);
+        sndp_ppg_notification_start(0x01);
     } else {
         sndp_ppg_notification_stop();
     }
@@ -82,8 +81,7 @@ void sndp_sensor_service_set_acc_notification_local(bool onoff)
     TR_INFO(1, "sensor_svc: acc_ntf=%d", onoff);
 
     if (onoff) {
-        uint8_t dump_state = sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE);
-        sndp_acc_notification_start(dump_state ? 1 : 0);
+        sndp_acc_notification_start(0x01);
     } else {
         sndp_acc_notification_stop();
     }

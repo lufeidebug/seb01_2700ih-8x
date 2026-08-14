@@ -488,14 +488,16 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
         // 超时不携带信号位, 仅用于ACC看门狗
         fired_signals = (evt.status == osEventSignal) ? evt.value.signals : 0;
         // SNDP_TRACE(0, "fired_signals: 0x%08x ppg_queue_len: %d", fired_signals, sndp_hr_ppg_raw_data_queue_get_len());
-
+        // SNDP_TRACE(0, "ppg_enabled: %d, ppgpend:%d acc_enabled:%d accpend: %d", 
+        //                                                 sndp_hr_is_reading_ppg_enabled(), 
+        //                                                 sndp_hr_ppg_is_suspend(), 
+        //                                                 sndp_hr_is_reading_acc_enabled(), 
+        //                                                 sndp_hr_acc_is_suspend());
         /********** task1: ppg_task **********/
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
         /* 注意: 绝不能用sndp_hr_is_reading_ppg_enabled()门控! ss_ppg_interrupt_handler除读FIFO外,
            还负责处理佩戴事件(g_proximity_sta, FIFO中断使能的前提)并清除传感器INT引脚;
            若被门控跳过, 边沿触发的GPIO将因INT未清除而永久收不到后续中断 */
-        // SNDP_TRACE(0, "ppg_enabled: %d, ppgpend:%d accpend: %d", sndp_hr_is_reading_ppg_enabled(), 
-        //                                                 sndp_hr_ppg_is_suspend(), sndp_hr_acc_is_suspend());
         if((fired_signals & SENSOR_TASK_SIGNAL_PPG_FIFO)) {
             sndp_hal_hr_ppg_fifo_task();
         }
@@ -572,8 +574,8 @@ static void sndp_report_ppg_raw_data_callback(uint8_t *data, uint16_t cnt)
 #if defined(__SNDP_GSENSOR_SUPPORT__)
 static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16_t cnt)
 {
-    //HR_TRACE(0, "cnt=%d", cnt);
-    //SNDP_DUMP32("%04X ", data,  cnt > 16?16:cnt);
+    // HR_TRACE(0, "acc_read_raw cnt=%d", cnt);
+    // SNDP_DUMP32("%04X ", data,  cnt > 16?16:cnt);
     
     if(hr_ctx.hr_running) {
         sndp_hr_acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
@@ -583,7 +585,7 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
         sndp_hr_mearsuring_get_dump_state(HR_DUMP_STATE) == 0x01) {
         if(cnt > 0) {
             //report ACC data
-                // HR_TRACE(0, "acc notification, cnt=%d", cnt);
+                // HR_TRACE(0, "sleepapp_report_acc, cnt=%d", cnt);
 #if defined(__SNDP_SLEEP_APP__)
             sndp_comm_cmd_sleepapp_report_acc_ntf((int16_t *)data, cnt * 3);
 #endif
