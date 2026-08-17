@@ -1616,15 +1616,18 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
         case SNDP_BT_CONN_ROLE_ROLE_CHANGED:
             break;
         case SNDP_BT_HFP_CALLSETUP_NONE:
-            sndp_sleep_app_resume(SLEEP_APP_OP_USER_BT_CALL);
             break;
         case SNDP_BT_HFP_CALLSETUP_OUTGOING:
-            sndp_sleep_app_suspend(SLEEP_APP_OP_USER_BT_CALL);
             break;
         case SNDP_BT_HFP_CALLSETUP_INCOMING:
-            sndp_sleep_app_suspend(SLEEP_APP_OP_USER_BT_CALL);
             break;
         case SNDP_BT_HFP_CALLSETUP_ALERTING:
+            break;
+        case SNDP_BT_HFP_AUDIO_CONNECTED:
+            sndp_sleep_app_suspend(SLEEP_APP_OP_USER_BT_CALL);
+            break;
+        case SNDP_BT_HFP_AUDIO_DISCONNECTED:
+            sndp_sleep_app_resume(SLEEP_APP_OP_USER_BT_CALL);
             break;
 		default:
 			break;

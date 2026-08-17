@@ -51,6 +51,8 @@ typedef enum {
 	SNDP_BT_HFP_CALLSETUP_OUTGOING          = 25,
 	SNDP_BT_HFP_CALLSETUP_INCOMING          = 26,
 	SNDP_BT_HFP_CALLSETUP_ALERTING          = 27,
+	SNDP_BT_HFP_AUDIO_CONNECTED           = 28,
+	SNDP_BT_HFP_AUDIO_DISCONNECTED        = 29,
 } sndp_bt_conn_status_e;
 
 typedef enum {

@@ -69,7 +69,7 @@ static sndp_hal_wear_status_e ssh401a_wear_status = SNDP_HAL_WEAR_OFF;
 
 
 static multi_heap_handle_t ssh401a_heap;
-static uint8_t ssh401a_heap_buf[64*4 + 3];
+static uint8_t ssh401a_heap_buf[64*4*2 + 3];
 
 static SS_OS_API ssh401a_os_api_config;
 
@@ -234,7 +234,10 @@ void ssh401a_callback_proximity_interrupt(unsigned char is_wearing)
 #if defined(__SNDP_WEAR_DETECT_MGR__)   
     ssh401a_wear_status = is_wearing ? SNDP_HAL_WEAR_ON : SNDP_HAL_WEAR_OFF;
     if(ssh401a_wear_status_changed_cb_ptr) {
+        SSH401A_TRACE(1, "wear_status=%d", ssh401a_wear_status);
         ssh401a_wear_status_changed_cb_ptr(ssh401a_wear_status);
+    }else{
+        SSH401A_TRACE(1, "NULL");
     }
 #endif
 }
