@@ -508,12 +508,16 @@ void sndp_dev_iobox_status_changed_handler(sndp_dev_iobox_status_e status)
         sndp_comm_cmd_send_lr_sync_iobox_status(status);
 #endif
 
-#if 0//defined(__SNDP_COMM_POGOPIN__)			
+#if defined(__SNDP_COMM_POGOPIN__)
+        // 功耗优化: 产测UART模式由 入仓+充电 共同决定.
+        // 出仓或充电 -> CHARGING(复用电非通信低功耗关UART降压; 入仓且不充电 -> COMM_RX开UART等盒子通信
         if(SNDP_DEV_IOBOX_OUT == status) {
-    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
-    	} else {
-    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_RX);
-    	}
+		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
+	} else if(sndp_dev_charger_is_plugin(false)) {
+		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
+	} else {
+		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_RX);
+	}
 #endif
 		
 		if(sndp_dev_iobox_status_changed_cb_ptr) {
@@ -938,12 +942,15 @@ void sndp_dev_charger_plug_status_changed(sndp_hal_charger_plug_status_e status)
     	}
 
 
-#if defined(__SNDP_COMM_POGOPIN__)			
+#if defined(__SNDP_COMM_POGOPIN__)
+        // 功耗优化: 充电必关产测通信; 退出充电且仍在仓内才开通信
         if(charger_plug == SNDP_DEV_CHARGER_PLUG_IN) {
-    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
-    	} else {
-    		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_RX);
-    	}
+		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
+	} else if(!sndp_dev_iobox_is_in_box(false)) {
+		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_CHARGING);
+	} else {
+		sndp_hal_pogopin_comm_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_RX);
+	}
 #endif
 
 

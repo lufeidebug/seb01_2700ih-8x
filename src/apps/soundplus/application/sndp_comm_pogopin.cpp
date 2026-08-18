@@ -53,6 +53,12 @@ int32_t sndp_comm_pogopin_init(void)
 {
 	sndp_hal_pogopin_comm_init();
 	sndp_hal_pogopin_comm_set_data_recv_callback(sndp_comm_pogopin_data_recv);
+
+	/* 功耗优化: 开机按 入仓+充电 状态设定产测UART模式.
+	 * 出仓或充电 -> 低功耗(关UART); 入仓且不充电 -> COMM_RX开UART等盒子通信 */
+	sndp_hal_pogopin_comm_set_mode((sndp_dev_iobox_is_in_box(false) && !sndp_dev_charger_is_plugin(false)) ?
+		SNDP_HAL_POGOPIN_MODE_COMM_RX : SNDP_HAL_POGOPIN_MODE_CHARGING);
+
 	SNDP_COMM_PGP_TRACE(0, "done.");
     return 0;
 }
