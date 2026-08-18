@@ -37,6 +37,9 @@
 **************************************************************************************************/
 #define SNDP_COMM_BLE_SEND_BUF_SIZE			(256)
 
+/* 功耗优化: BLE广播间隔(ms). 待机省电调大(默认160ms); 若手机搜不到再调小*/
+#define SNDP_COMM_BLE_ADV_INTERVAL_MS          (500)
+
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -438,6 +441,12 @@ bool sndp_comm_ble_activity_prepare(ble_adv_activity_t *adv)
     adv_param->connectable = true;
     adv_param->scannable = true;
     adv_param->use_legacy_pdu = true;
+
+    /* 功耗优化: 调大产测BLE广播间隔降低待机功耗
+     * 间隔 可调 */
+    bes_ble_gap_param_set_adv_interval(BLE_ADV_INTERVALREQ_USER_TWS_STM,
+                                       USER_SNDP_BLE,
+                                       SNDP_COMM_BLE_ADV_INTERVAL_MS);
 
     uint8_t* ble_name = (uint8_t *)bt_get_ble_local_name();
     int ble_name_len = strlen((char *)ble_name);

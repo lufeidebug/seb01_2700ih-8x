@@ -1010,11 +1010,17 @@ void bt_drv_rf_sdk_init(void)
     btdrv_rf_customer_config.bt_tx_idx2_pwr = TX_PWR_10DBM;//in dbm
     btdrv_rf_customer_config.bt_tx_idx1_pwr = TX_PWR_6DBM;//in dbm
     btdrv_rf_customer_config.bt_tx_idx0_pwr = TX_PWR_2DBM;//in dbm
-
+#if 0
     btdrv_rf_customer_config.le_tx_idx3_pwr = TX_PWR_14DBM;//in dbm
     btdrv_rf_customer_config.le_tx_idx2_pwr = TX_PWR_10DBM;//in dbm
     btdrv_rf_customer_config.le_tx_idx1_pwr = TX_PWR_6DBM;//in dbm
     btdrv_rf_customer_config.le_tx_idx0_pwr = TX_PWR_2DBM;//in dbm
+#else
+    btdrv_rf_customer_config.le_tx_idx3_pwr = TX_PWR_6DBM;//in dbm
+    btdrv_rf_customer_config.le_tx_idx2_pwr = TX_PWR_3DBM;//in dbm
+    btdrv_rf_customer_config.le_tx_idx1_pwr = TX_PWR_0DBM;//in dbm
+    btdrv_rf_customer_config.le_tx_idx0_pwr = TX_PWR_N2DBM;//in dbm
+#endif //功耗优化，降低ble发射功率
     //init BLE convert table
     btdrv_txpwr_conv_tbl[0] = btdrv_rf_customer_config.le_tx_idx0_pwr;
     btdrv_txpwr_conv_tbl[1] = btdrv_rf_customer_config.le_tx_idx1_pwr;
