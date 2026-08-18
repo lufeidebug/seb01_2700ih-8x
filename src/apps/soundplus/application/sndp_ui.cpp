@@ -467,6 +467,14 @@ static void sndp_sleep_app_suspend(sndp_sleep_app_op_user_e user)
     {
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
         sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_OFF, 0, 0); 
+#else
+        if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
+            sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_suspend, user, 0, 0);
+        }           
+        
+        if(sndp_dev_sleep_app_get_stage_onoff(false)) {
+            sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_analysis_suspend, 0, 0, 0);
+        }
 #endif
     }
     else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
@@ -489,6 +497,14 @@ static void sndp_sleep_app_resume(sndp_sleep_app_op_user_e user)
     {
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
         sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_ON, 0, 0); 
+#else
+        if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
+            sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_resume, user, 0, 0);
+        }            
+        
+        if(sndp_dev_sleep_app_get_stage_onoff(false)) {
+            sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_analysis_resume, 0, 0, 0);
+        }
 #endif
     }
     else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
