@@ -1621,7 +1621,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 		case SNDP_BT_CONN_STATUS_BES_AUD_CONNECTED:
 			break;
 
-    case SNDP_BT_CONN_STATUS_HFP_CALLSETUP_IND:
+        case SNDP_BT_CONN_STATUS_HFP_CALLSETUP_IND:
 			break;
             
 		case SNDP_BT_CONN_STATUS_HFP_RING_IND:
@@ -1632,10 +1632,13 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
         case SNDP_BT_CONN_ROLE_ROLE_CHANGED:
             break;
         case SNDP_BT_HFP_CALLSETUP_NONE:
+            sndp_call_set_in_out_flag(0);
             break;
         case SNDP_BT_HFP_CALLSETUP_OUTGOING:
+            sndp_call_set_in_out_flag(2);
             break;
         case SNDP_BT_HFP_CALLSETUP_INCOMING:
+            sndp_call_set_in_out_flag(1);
             break;
         case SNDP_BT_HFP_CALLSETUP_ALERTING:
             break;

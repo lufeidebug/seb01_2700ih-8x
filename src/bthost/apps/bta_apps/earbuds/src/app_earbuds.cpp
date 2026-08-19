@@ -409,11 +409,15 @@ static void hfp_audio_status_changed_handler(const bt_bdaddr_t *addr, bt_hfp_aud
     TRACE(0, "custom_ui d(%x)hfp_audio %d codec %d reason %d", device_id, state, codec, error_code);
     if(state == BT_HFP_AUDIO_STATE_CONNECTED)
     {
+#if defined(__SNDP_PROJ__)          
         sndp_bt_conn_status_changed(SNDP_BT_HFP_AUDIO_CONNECTED, 0);
+#endif
     }
     else
     {
+#if defined(__SNDP_PROJ__)          
         sndp_bt_conn_status_changed(SNDP_BT_HFP_AUDIO_DISCONNECTED, 0);
+#endif
     }
 }
 
@@ -427,20 +431,23 @@ static void hfp_callsetup_status_changed_handler(const bt_bdaddr_t *address, bt_
     switch(callsetup) {
         case BT_HFP_CALLSETUP_NONE: // No call setup
 #if defined(__SNDP_PROJ__)        
-            sndp_call_set_in_out_flag(0);
+            sndp_bt_conn_status_changed(SNDP_BT_HFP_CALLSETUP_NONE, 0);
 #endif
             break;
         case BT_HFP_CALLSETUP_INCOMING: // Incoming call setup
 #if defined(__SNDP_PROJ__)        
-            sndp_call_set_in_out_flag(1);
+            sndp_bt_conn_status_changed(SNDP_BT_HFP_CALLSETUP_INCOMING, 0);
 #endif
             break;
         case BT_HFP_CALLSETUP_OUTGOING: // Outgoing call setup
 #if defined(__SNDP_PROJ__)        
-            sndp_call_set_in_out_flag(2);
+            sndp_bt_conn_status_changed(SNDP_BT_HFP_CALLSETUP_OUTGOING, 0);
 #endif
             break;
         case BT_HFP_CALLSETUP_ALERTING:  // Call is alerting
+#if defined(__SNDP_PROJ__)  
+            sndp_bt_conn_status_changed(SNDP_BT_HFP_CALLSETUP_ALERTING, 0);
+#endif
             break;
     }
 }
