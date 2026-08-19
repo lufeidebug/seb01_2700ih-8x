@@ -102,62 +102,59 @@ typedef enum {
     COMM_CMDID_LR_SYNC_MOBILE_CONNECTED             = 0x2C, /* desc: 左右耳同步手机已连接状态指令。
                                                              * recv: 0 bytes,
                                                              * rsp : 0 bytes */                                                          
-    
+    COMM_CMDID_LR_SYNC_DISCONNECT_AND_TWS_PAIR      = 0x2D, /* desc: 左右耳同步断开手机连接并进入配对模式指令。
+                                                             * recv: 0 bytes,
+                                                             * rsp : 0 bytes */
                                                              
 #if defined(__SNDP_SLEEP_APP__)
-    COMM_CMDID_LR_SYNC_SLEEP_APP_FLAG                = 0x2D, /* desc: 左右耳同步sleep app flag(eq/anc/sleep_mode/prompt/gesture/splaypause)。
+    COMM_CMDID_LR_SYNC_SLEEP_APP_FLAG               = 0x30, /* desc: 左右耳同步sleep app flag(eq/anc/sleep_mode/prompt/gesture/splaypause)。
                                                              * recv: 3 bytes, flag_name(1) + value(1) + is_save(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x33, /* desc: 左右耳同步手势使能开关指令。
+    COMM_CMDID_LR_SYNC_UPDATE_MAPPING               = 0x31, /* desc: 左右耳同步手势使能开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF = 0x34, /* desc: 左右耳同步 proximity 上报开关。
+    COMM_CMDID_LR_SYNC_Proximity_Notification_ONOFF = 0x32, /* desc: 左右耳同步 proximity 上报开关。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_Proximity_Notification_DATA  = 0x35, /* desc: 左右耳同步 proximity 数据。
+    COMM_CMDID_LR_SYNC_Proximity_Notification_DATA  = 0x33, /* desc: 左右耳同步 proximity 数据。
                                                              * recv: 2 bytes, proximity value(2)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_HEARTRATE_ONOFF              = 0x36, /* desc: 左右耳同步心率开关指令。
+    COMM_CMDID_LR_SYNC_HEARTRATE_ONOFF              = 0x34, /* desc: 左右耳同步心率开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_STAGE_ONOFF                  = 0x37, /* desc: 左右耳同步阶段开关指令。
+    COMM_CMDID_LR_SYNC_STAGE_ONOFF                  = 0x35, /* desc: 左右耳同步阶段开关指令。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_START_SLEEP                   = 0x3B, /* desc: 左右耳同步启动睡眠分析。
+    COMM_CMDID_LR_SYNC_START_SLEEP                  = 0x36, /* desc: 左右耳同步启动睡眠分析。
                                                              * recv: 4 bytes, sleep_control(4)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_SLEEP_TRACKING                = 0x3C, /* desc: 左右耳同步睡眠追踪数据。
+    COMM_CMDID_LR_SYNC_SLEEP_TRACKING               = 0x37, /* desc: 左右耳同步睡眠追踪数据。
                                                              * recv: n bytes, tracking data(n)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_STOP_SLEEP                    = 0x3D, /* desc: 左右耳同步停止睡眠分析。
+    COMM_CMDID_LR_SYNC_STOP_SLEEP                   = 0x38, /* desc: 左右耳同步停止睡眠分析。
                                                              * recv: 0 bytes
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_START_HEARTRATE               = 0x73, /* desc: 左右耳同步启动心率测量。
+    COMM_CMDID_LR_SYNC_START_HEARTRATE              = 0x39, /* desc: 左右耳同步启动心率测量。
                                                              * recv: 2 bytes, sampling_rate(1) + dump_data(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_STOP_HEARTRATE                = 0x74, /* desc: 左右耳同步停止心率测量。
+    COMM_CMDID_LR_SYNC_STOP_HEARTRATE               = 0x3A, /* desc: 左右耳同步停止心率测量。
                                                              * recv: 0 bytes
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_PPG_NOTIFICATION              = 0x75, /* desc: 左右耳同步PPG数据通知开关。
+    COMM_CMDID_LR_SYNC_PPG_NOTIFICATION             = 0x3B, /* desc: 左右耳同步PPG数据通知开关。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_ACC_NOTIFICATION              = 0x76, /* desc: 左右耳同步ACC数据通知开关。
+    COMM_CMDID_LR_SYNC_ACC_NOTIFICATION             = 0x3C, /* desc: 左右耳同步ACC数据通知开关。
                                                              * recv: 1 bytes, onoff(1)
                                                              * rsp : 0 bytes */
-#endif
-    
-#if defined(__SNDP_SLEEP_APP__)
-    COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT               = 0x38, /* desc: 左右耳同步睡眠算法快照。
+    COMM_CMDID_LR_SYNC_SLEEP_SNAPSHOT               = 0x3D, /* desc: 左右耳同步睡眠算法快照。
                                                              * recv: n bytes, snapshot data(2 bytes size + n bytes data)
                                                              * rsp : 0 bytes */
-    COMM_CMDID_LR_SYNC_SLEEP_ROLE_STATUS            = 0x39, /* desc: 左右耳同步睡眠角色状态。
+    COMM_CMDID_LR_SYNC_SLEEP_ROLE_STATUS            = 0x3E, /* desc: 左右耳同步睡眠角色状态。
                                                              * recv: 1 bytes, role status(1)
                                                              * rsp : 0 bytes */                                                    
 #endif
 
-    COMM_CMDID_LR_SYNC_DISCONNECT_AND_TWS_PAIR       = 0x3A, /* desc: 左右耳同步断开手机连接并进入配对模式指令。
-                                                             * recv: 0 bytes,
-                                                             * rsp : 0 bytes */
+    
 
     /****** 生产测试指令. ******/
     COMM_CMDID_PT_SWITCH_TEST_MODE                  = 0x40, /* recv: 1 bytes, mode(1).
