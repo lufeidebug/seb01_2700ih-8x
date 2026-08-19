@@ -8,12 +8,12 @@ extern "C" {
 #endif
 
 
-uint32_t sndp_white_noise_play_start(void);
-uint32_t sndp_white_noise_play_stop(void);
-bool sndp_white_noise_is_running(void);
+bool sndp_white_noise_is_playing(void);
 bool sndp_white_noise_is_turnon(void);
-void sndp_white_noise_turnon_and_play(bool play);
-void sndp_white_noise_turnoff(void);
+void sndp_white_noise_onoff_sync_recv(bool onoff);
+void sndp_white_noise_onoff(bool onoff, bool need_sync);
+void sndp_white_noise_resume(void);
+void sndp_white_noise_pause(void);
 
 
 

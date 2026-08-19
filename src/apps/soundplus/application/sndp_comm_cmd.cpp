@@ -58,6 +58,10 @@
 #include "sndp_hal_acc.h"
 #endif
 
+#if defined(__SNDP_APP_WHITE_NOISE__)                                                             
+#include "sndp_app_white_noise.h"
+#endif
+
 
 /**************************************************************************************************
 * Constant
@@ -932,6 +936,22 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_bt_onoff(sndp_comm_cmd_info_s *cmd_in
     return 0;
 }
 
+
+#if defined(__SNDP_APP_WHITE_NOISE__)        
+uint32_t sndp_comm_cmd_send_lr_white_noise_onoff(uint8_t onoff)
+{
+    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_WHITE_NOISE_ONOFF, &onoff, 1);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_lr_sync_white_noise_onoff(sndp_comm_cmd_info_s *cmd_info)
+{
+    if(cmd_info->data_len == 1) {
+        sndp_white_noise_onoff_sync_recv(cmd_info->data[0] ? true : false);
+    }
+    return 0;
+}
+#endif
 
 
 #if defined(__SNDP_PRODUCT_TEST__)
@@ -2079,7 +2099,10 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_LR_SYNC_CALL_CTRL              , "LR_SYNC_CALL_CTRL"       , sndp_comm_cmd_recv_lr_sync_call_ctrl              },
     { COMM_CMDID_LR_SYNC_ALL_DEV_STATUS         , "LR_SYNC_ALL_DEV_STATUS"  , sndp_comm_cmd_recv_lr_sync_all_dev_status         },
     { COMM_CMDID_LR_SYNC_BT_ONOFF               , "LR_SYNC_BT_ONOFF"        , sndp_comm_cmd_recv_lr_sync_bt_onoff               },
-   
+#if defined(__SNDP_APP_WHITE_NOISE__)                                                             
+    { COMM_CMDID_LR_SYNC_WHITE_NOISE_ONOFF      , "LR_SYNC_WN_ONOFF"        , sndp_comm_cmd_recv_lr_sync_white_noise_onoff      },
+#endif
+
 #if defined(__SNDP_PRODUCT_TEST__)
     /****** 生产测试指令. ******/
 	{ COMM_CMDID_PT_SWITCH_TEST_MODE            , "PT_S_TEST_MODE"          , sndp_comm_cmd_recv_pt_switch_test_mode            },

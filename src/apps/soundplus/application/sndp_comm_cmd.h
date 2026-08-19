@@ -105,7 +105,12 @@ typedef enum {
     COMM_CMDID_LR_SYNC_DISCONNECT_AND_TWS_PAIR      = 0x2D, /* desc: 左右耳同步断开手机连接并进入配对模式指令。
                                                              * recv: 0 bytes,
                                                              * rsp : 0 bytes */
-                                                             
+#if defined(__SNDP_APP_WHITE_NOISE__)                                                             
+    COMM_CMDID_LR_SYNC_WHITE_NOISE_ONOFF            = 0x2E, /* desc: 左右耳同步本地白噪声开发状态指令。
+                                                             * recv: 0 bytes,
+                                                             * rsp : 0 bytes */
+#endif
+
 #if defined(__SNDP_SLEEP_APP__)
     COMM_CMDID_LR_SYNC_SLEEP_APP_FLAG               = 0x30, /* desc: 左右耳同步sleep app flag(eq/anc/sleep_mode/prompt/gesture/splaypause)。
                                                              * recv: 3 bytes, flag_name(1) + value(1) + is_save(1)
@@ -290,6 +295,10 @@ uint32_t sndp_comm_cmd_send_lr_sync_music_ctrl(uint8_t event);
 uint32_t sndp_comm_cmd_send_lr_sync_call_ctrl(uint8_t event);
 uint32_t sndp_comm_cmd_send_lr_sync_all_dev_status(uint8_t *data, uint16_t data_len);
 uint32_t sndp_comm_cmd_send_lr_sync_bt_onoff(uint8_t onoff);
+#if defined(__SNDP_APP_WHITE_NOISE__)        
+uint32_t sndp_comm_cmd_send_lr_white_noise_onoff(uint8_t onoff);
+#endif
+
 #if defined(__SNDP_SLEEP_APP__)
 uint32_t sndp_comm_cmd_send_lr_sync_sleep_snapshot(uint8_t *data, uint16_t data_len);
 uint32_t sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_SLEEP_APP_FLAG_NAME flag_name, uint8_t value, bool is_save);

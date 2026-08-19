@@ -228,6 +228,10 @@ uint8_t dolby_role = -1;
 #endif
 #endif
 
+#if defined(__SNDP_APP_WHITE_NOISE__)
+#include "sndp_app_white_noise.h"
+#endif
+
 
 void(*app_bt_stream_ext_sco_playback)(uint8_t *buf, uint32_t len) = NULL;
 uint32_t (*app_bt_stream_ext_sco_capture)(uint8_t *buf, uint32_t len) = NULL;
@@ -3004,6 +3008,13 @@ static int bt_a2dp_player(enum PLAYER_OPER_T on, enum APP_SYSFREQ_FREQ_T freq)
 #else
         af_set_priority(AF_USER_SBC, osPriorityHigh);
 #endif
+
+#if defined(__SNDP_APP_WHITE_NOISE__)
+        if(sndp_white_noise_is_playing()) {
+            sndp_white_noise_pause();
+        }
+#endif
+
     }
     POSSIBLY_UNUSED uint8_t codec_type = bta_get_curr_a2dp_codec_type();
     POSSIBLY_UNUSED uint8_t nonType = bta_get_curr_a2dp_vender_codec_type();
@@ -4454,6 +4465,12 @@ static int bt_a2dp_player(enum PLAYER_OPER_T on, enum APP_SYSFREQ_FREQ_T freq)
         rms_debug_cnt = 256;
 #endif
     }
+
+#if defined(__SNDP_APP_WHITE_NOISE__)
+    if (on == PLAYER_OPER_STOP) {
+        sndp_call_func_in_app_thread((uint32_t)sndp_white_noise_resume, 0, 0, 0);
+    }
+#endif
 
     a2dp_is_run = (on != PLAYER_OPER_STOP);
     a2dp_audio_status_updated_callback(a2dp_is_run);
@@ -6657,6 +6674,12 @@ static int bt_sco_player(bool on, enum APP_SYSFREQ_FREQ_T freq)
 
     if (on)
     {
+#if defined(__SNDP_APP_WHITE_NOISE__)
+        if(sndp_white_noise_is_playing()) {
+            sndp_white_noise_pause();
+        }
+#endif
+
 #ifdef CODEC_VCM_CHECK
         vcm_sta = 0;
 #endif
@@ -7540,6 +7563,11 @@ static int bt_sco_player(bool on, enum APP_SYSFREQ_FREQ_T freq)
 #endif
         af_set_irq_notification(NULL);
         bt_set_playback_triggered(false);
+
+#if defined(__SNDP_APP_WHITE_NOISE__)
+        sndp_call_func_in_app_thread((uint32_t)sndp_white_noise_resume, 0, 0, 0);
+#endif
+
     }
 
 #if defined(HIGH_EFFICIENCY_TX_PWR_CTRL)

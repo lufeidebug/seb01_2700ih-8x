@@ -13,6 +13,11 @@
 #include "cqueue.h"
 #include "math.h"
 
+#include "sndp_if_common.h"
+#include "sndp_if_device.h"
+#include "sndp_if_platform.h"
+#include "sndp_ui.h"
+#include "sndp_comm_cmd.h"
 #include "sndp_app_white_noise.h"
 
 /**************************************************************************************************
@@ -38,7 +43,7 @@
 #define SNDP_WN_PLAY_STREAM_BUFF_SIZE               ((SNDP_WN_PLAY_FRAME_ALLCH_DLEN) * 2)		//pingpang buff 长度大一样
 #define	SNDP_WN_PLAY_VOLUME                         (TGT_VOLUME_LEVEL_4)
 
-#define SNDP_WN_STREAM_ID                           (AUD_STREAM_ID_2)
+#define SNDP_WN_STREAM_ID                           (AUD_STREAM_ID_4)
 
 
 /**************************************************************************************************
@@ -121,7 +126,7 @@ POSSIBLY_UNUSED uint32_t sndp_white_noise_play_more_data(uint8_t *buf, uint32_t 
     return len;
 }
 
-uint32_t sndp_white_noise_play_start(void) 
+static uint32_t sndp_white_noise_play_start(void) 
 {
 	WN_TRACE(2, "isRun=%d", wn_ctx.is_playback_running);
 	
@@ -136,7 +141,7 @@ uint32_t sndp_white_noise_play_start(void)
 	stream_cfg.sample_rate = SNDP_WN_PLAY_SAMPLE_RATE;
 	stream_cfg.bits = SNDP_WN_PLAY_SAMPLE_BITS;
 	stream_cfg.channel_num = SNDP_WN_PLAY_CHANN_NUMBER;
-	stream_cfg.device = AUD_STREAM_USE_INT_CODEC2;
+	stream_cfg.device = AUD_STREAM_USE_INT_CODEC;
 	stream_cfg.io_path = AUD_OUTPUT_PATH_SPEAKER;
 	stream_cfg.vol = SNDP_WN_PLAY_VOLUME;
 	stream_cfg.handler = sndp_white_noise_play_more_data;
@@ -150,7 +155,7 @@ uint32_t sndp_white_noise_play_start(void)
 	return 0;
 }
 
-uint32_t sndp_white_noise_play_stop(void) 
+static uint32_t sndp_white_noise_play_stop(void) 
 {
 	WN_TRACE(2, "isRun=%d", wn_ctx.is_playback_running);
 	
@@ -167,7 +172,7 @@ uint32_t sndp_white_noise_play_stop(void)
 	return 0;
 }
 
-bool sndp_white_noise_is_running(void)
+bool sndp_white_noise_is_playing(void)
 {
     //WN_TRACE(1, "is_playback_running=%d", wn_ctx.is_playback_running);
     return wn_ctx.is_playback_running;
@@ -179,21 +184,95 @@ bool sndp_white_noise_is_turnon(void)
     return wn_ctx.onoff;
 }
 
-void sndp_white_noise_turnon_and_play(bool play) 
+
+bool sndp_white_noise_can_play(void)
 {
-    WN_TRACE(1, "play=%d", play);
+    if(!sndp_white_noise_is_turnon()) {
+        WN_TRACE(1, "%d, rtn", __LINE__);
+        return false;
+    }
+        
+    if(!sndp_dev_wear_is_worn(false)) {
+        WN_TRACE(1, "%d, rtn", __LINE__);
+        return false;
+    }
+
+    if(sndp_dev_iobox_is_in_box(false)) {
+        WN_TRACE(1, "%d, rtn", __LINE__);
+        return false;
+    }
+
+    if(sndp_dev_cover_is_closed(false)) {
+        WN_TRACE(1, "%d, rtn", __LINE__);
+        return false;
+    }
     
-    wn_ctx.onoff = true;
+    if(sndp_call_is_active()) {
+        WN_TRACE(1, "%d, rtn", __LINE__);
+        return false;
+    }
+
+    if(sndp_music_is_playing()) {
+        WN_TRACE(1, "%d, rtn", __LINE__);
+        return false;
+    }
+
+    if(sndp_ui_is_prompt_playing()) {
+        WN_TRACE(1, "%d, rtn", __LINE__);
+        return false;
+    }
     
-	if(play) {
+    return true;
+}
+
+void sndp_white_noise_onoff_sync_recv(bool onoff) 
+{
+    WN_TRACE(1, "onoff=%d", onoff);
+
+    if(onoff != wn_ctx.onoff) {
+        wn_ctx.onoff = onoff;
+
+        if(onoff) {
+        	if(sndp_white_noise_can_play()) {
+                sndp_white_noise_play_start();
+            }
+        } else {
+            sndp_white_noise_play_stop();
+        }
+    }
+}
+
+void sndp_white_noise_onoff(bool onoff, bool need_sync) 
+{
+    WN_TRACE(1, "onoff=%d", onoff);
+    
+    wn_ctx.onoff = onoff;
+
+#if defined(__SNDP_COMM_MGR__)
+    sndp_comm_cmd_send_lr_white_noise_onoff(onoff);
+#endif
+
+    if(onoff) {
+    	if(sndp_white_noise_can_play()) {
+            sndp_white_noise_play_start();
+        }
+    } else {
+        sndp_white_noise_play_stop();
+    }
+}
+
+void sndp_white_noise_resume(void) 
+{
+    WN_TRACE(1, "...");
+    
+    if(sndp_white_noise_can_play()) {
         sndp_white_noise_play_start();
     }
 }
 
-void sndp_white_noise_turnoff(void) 
+void sndp_white_noise_pause(void) 
 {
 	WN_TRACE(1, ".");
-    wn_ctx.onoff = false;
     sndp_white_noise_play_stop();
 }
 

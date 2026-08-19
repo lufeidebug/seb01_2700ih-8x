@@ -124,6 +124,9 @@ typedef struct {
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     Device_Role_t device_role;
 #endif
+#if defined(__SNDP_APP_WHITE_NOISE__)
+    bool white_noise_onoff;
+#endif
 } sndp_ui_all_dev_sta_s;
 
 
@@ -534,6 +537,11 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
             sndp_ui_wear_off_close_anc();
             sndp_ui_wear_off_disable_gesture();
             sndp_sleep_app_suspend(SLEEP_APP_OP_USER_WEAR);
+#if defined(__SNDP_APP_WHITE_NOISE__)
+            if(sndp_white_noise_is_playing()) {
+                sndp_white_noise_pause();
+            }
+#endif             
 	    }        
 	} else if(remote == true) {
 		// only the master can execute.
@@ -581,15 +589,17 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 		bta_tws_box_event_entry(BTA_TWS_WEAR_DOWN);
 
 	}
+    
 #if defined(__SNDP_SLEEP_APP__)
-        //统计当前耳机佩戴和脱戴次数
-        if(sndp_dev_is_left_earphone()){
-            sndp_comm_cmd_sleepapp_wear_state_update(SNDP_DEV_EARSIDE_LEFT, wear_status);
-        }
-        else if(sndp_dev_is_right_earphone()){
-            sndp_comm_cmd_sleepapp_wear_state_update(SNDP_DEV_EARSIDE_RIGHT, wear_status);
-        }
+    //统计当前耳机佩戴和脱戴次数
+    if(sndp_dev_is_left_earphone()){
+        sndp_comm_cmd_sleepapp_wear_state_update(SNDP_DEV_EARSIDE_LEFT, wear_status);
+    }
+    else if(sndp_dev_is_right_earphone()){
+        sndp_comm_cmd_sleepapp_wear_state_update(SNDP_DEV_EARSIDE_RIGHT, wear_status);
+    }
 #endif
+
 	sndp_ui_wear_action(wear_status, false);
 }
 
@@ -610,7 +620,11 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 
     if(SNDP_DEV_COVER_COLSED == cover_status) {
         sndp_dev_hr_enter_standby_mode();
-        
+
+#if defined(__SNDP_APP_WHITE_NOISE__)
+        sndp_white_noise_onoff(false, false);
+#endif
+
         bta_tws_box_event_entry(BTA_TWS_CLOSE);
         sndp_bt_set_access_mode(SNDP_BT_NOT_ACCESSIBEL);
         bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_BOX, false);
@@ -703,6 +717,12 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         if(sndp_anc_is_on() || sndp_anc_is_transparent()) {
             sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
         } 
+
+#if defined(__SNDP_APP_WHITE_NOISE__)
+        if(sndp_white_noise_is_playing()) {
+            sndp_white_noise_pause();
+        }
+#endif  
 
         sndp_delay_exec_start(300, (uint32_t)sndp_ui_inbox_role_switch, 0, 0, 0);
 
@@ -1284,8 +1304,8 @@ int sndp_ui_prompt_finish_cb(int aud_id)
 
     } else {
 #if defined(__SNDP_APP_WHITE_NOISE__)        
-        if(sndp_white_noise_is_turnon() && sndp_dev_wear_is_worn(false)) {
-            sndp_white_noise_play_start();
+        if(sndp_white_noise_is_turnon()) {
+            sndp_white_noise_resume();
         }      
 #endif        
     }
@@ -1299,8 +1319,8 @@ int sndp_ui_prompt_start_cb(int aud_id)
     sndp_ui_prompt_sta = true;
     
 #if defined(__SNDP_APP_WHITE_NOISE__)
-    if(sndp_white_noise_is_running()) {
-        sndp_white_noise_play_stop();
+    if(sndp_white_noise_is_playing()) {
+        sndp_white_noise_pause();
     }
 #endif
 
@@ -1636,17 +1656,40 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
             break;
         case SNDP_BT_HFP_CALLSETUP_OUTGOING:
             sndp_call_set_in_out_flag(2);
+#if defined(__SNDP_APP_WHITE_NOISE__)
+            if(sndp_white_noise_is_playing()) {
+                sndp_white_noise_pause();
+            }
+#endif            
             break;
         case SNDP_BT_HFP_CALLSETUP_INCOMING:
             sndp_call_set_in_out_flag(1);
+#if defined(__SNDP_APP_WHITE_NOISE__)
+            if(sndp_white_noise_is_playing()) {
+                sndp_white_noise_pause();
+            }
+#endif         
             break;
         case SNDP_BT_HFP_CALLSETUP_ALERTING:
+#if defined(__SNDP_APP_WHITE_NOISE__)
+            if(sndp_white_noise_is_playing()) {
+                sndp_white_noise_pause();
+            }
+#endif            
             break;
         case SNDP_BT_HFP_AUDIO_CONNECTED:
             sndp_sleep_app_suspend(SLEEP_APP_OP_USER_BT_CALL);
+#if defined(__SNDP_APP_WHITE_NOISE__)
+            if(sndp_white_noise_is_playing()) {
+                sndp_white_noise_pause();
+            }
+#endif            
             break;
         case SNDP_BT_HFP_AUDIO_DISCONNECTED:
             sndp_sleep_app_resume(SLEEP_APP_OP_USER_BT_CALL);
+#if defined(__SNDP_APP_WHITE_NOISE__)
+            sndp_call_func_in_app_thread((uint32_t)sndp_white_noise_resume, 0, 0, 0);
+#endif            
             break;
 		default:
 			break;
@@ -1763,6 +1806,10 @@ static void sndp_ui_all_status_sync_send(void)
 #if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
         all_dev_sta.device_role = sndp_sleep_role_get_current();
 #endif
+#if defined(__SNDP_APP_WHITE_NOISE__)
+        all_dev_sta.white_noise_onoff = sndp_white_noise_is_turnon();
+#endif
+
         sndp_comm_cmd_send_lr_sync_all_dev_status((uint8_t *)&all_dev_sta, sizeof(sndp_ui_all_dev_sta_s));
 #endif        
 	}
@@ -1791,6 +1838,10 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
             sndp_sleep_role_set_peer(all_dev_sta.device_role);
 #endif
+#if defined(__SNDP_APP_WHITE_NOISE__)
+            sndp_white_noise_onoff_sync_recv(all_dev_sta.white_noise_onoff);
+#endif
+
         }
 #endif
     }
