@@ -703,6 +703,9 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_open_anc);
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
         sndp_delay_exec_stop((uint32_t)sndp_sleep_role_switch_trigger);
+#else
+        sndp_delay_exec_stop((uint32_t)sndp_hr_resume);
+        sndp_delay_exec_stop((uint32_t)sndp_sleep_analysis_resume);
 #endif
 
         sndp_dev_acc_stop_single_tap_interrupt();
