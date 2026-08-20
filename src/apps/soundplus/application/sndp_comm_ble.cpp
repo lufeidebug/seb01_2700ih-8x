@@ -38,7 +38,7 @@
 #define SNDP_COMM_BLE_SEND_BUF_SIZE			(256)
 
 /* 功耗优化: BLE广播间隔(ms). 待机省电调大(默认160ms); 若手机搜不到再调小*/
-#define SNDP_COMM_BLE_ADV_INTERVAL_MS          (500)
+#define SNDP_COMM_BLE_ADV_INTERVAL_MS          (160)
 
 /**************************************************************************************************
 * Prototype

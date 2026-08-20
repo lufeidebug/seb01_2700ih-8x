@@ -1010,7 +1010,7 @@ void bt_drv_rf_sdk_init(void)
     btdrv_rf_customer_config.bt_tx_idx2_pwr = TX_PWR_10DBM;//in dbm
     btdrv_rf_customer_config.bt_tx_idx1_pwr = TX_PWR_6DBM;//in dbm
     btdrv_rf_customer_config.bt_tx_idx0_pwr = TX_PWR_2DBM;//in dbm
-#if 0
+#if 1
     btdrv_rf_customer_config.le_tx_idx3_pwr = TX_PWR_14DBM;//in dbm
     btdrv_rf_customer_config.le_tx_idx2_pwr = TX_PWR_10DBM;//in dbm
     btdrv_rf_customer_config.le_tx_idx1_pwr = TX_PWR_6DBM;//in dbm
