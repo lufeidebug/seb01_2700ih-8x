@@ -471,6 +471,7 @@ static void sndp_sleep_app_suspend(sndp_sleep_app_op_user_e user)
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
         sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_OFF, 0, 0); 
 #else
+#if defined(__SNDP_HEART_RATE_MGR__)
         if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
             sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_suspend, user, 0, 0);
         }           
@@ -478,6 +479,7 @@ static void sndp_sleep_app_suspend(sndp_sleep_app_op_user_e user)
         if(sndp_dev_sleep_app_get_stage_onoff(false)) {
             sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_analysis_suspend, 0, 0, 0);
         }
+#endif
 #endif
     }
     else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
@@ -501,6 +503,7 @@ static void sndp_sleep_app_resume(sndp_sleep_app_op_user_e user)
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
         sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_ON, 0, 0); 
 #else
+#if defined(__SNDP_HEART_RATE_MGR__)
         if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
             sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_resume, user, 0, 0);
         }            
@@ -508,6 +511,7 @@ static void sndp_sleep_app_resume(sndp_sleep_app_op_user_e user)
         if(sndp_dev_sleep_app_get_stage_onoff(false)) {
             sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_analysis_resume, 0, 0, 0);
         }
+#endif
 #endif
     }
     else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
@@ -704,8 +708,10 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
         sndp_delay_exec_stop((uint32_t)sndp_sleep_role_switch_trigger);
 #else
+#if defined(__SNDP_HEART_RATE_MGR__)
         sndp_delay_exec_stop((uint32_t)sndp_hr_resume);
         sndp_delay_exec_stop((uint32_t)sndp_sleep_analysis_resume);
+#endif
 #endif
 
         sndp_dev_acc_stop_single_tap_interrupt();
@@ -1108,7 +1114,7 @@ static void sndp_ui_bat_role_switch(void)
     sndp_dev_get_bat_info(true, &peer);
     SPUI_TRACE(2, "bat check: local=%d, peer=%d", local.bat_per, peer.bat_per);
 
-    sndp_delay_exec_start(300, (uint32_t)sndp_ui_bat_role_switch_exec, 0, 0, 0);
+    sndp_ui_bat_role_switch_exec();
 }
 #endif
 
@@ -1854,8 +1860,8 @@ void sndp_ui_timing_to_do(void)
 {
 	sndp_ui_dev_status_print();
 
-    sndp_delay_exec_start(100, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
- 	sndp_delay_exec_start(300, (uint32_t)sndp_dev_temperature_measure, 0, 0, 0);
+    sndp_delay_exec_start(10, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
+ 	sndp_delay_exec_start(20, (uint32_t)sndp_dev_temperature_measure, 0, 0, 0);
     sndp_ui_bat_charging_check();
     sndp_ui_bat_lowpwr_check();
 
