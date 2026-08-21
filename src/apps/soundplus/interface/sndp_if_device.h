@@ -462,7 +462,11 @@ uint8_t sndp_dev_sleep_app_set_stage_onoff(bool peer, uint8_t onoff);
 uint8_t sndp_dev_sleep_app_get_stage_onoff(bool peer);
 void sndp_dev_sleep_app_clean_wear_cnt(void);
 #endif
-/************************************************** prompt end **************************************************/
+/************************************************** prompt end ************************************************/
+
+uint16_t sndp_dev_get_anc_total_gain(void);
+bool sndp_dev_set_anc_total_gain(uint16_t gain);
+bool sndp_dev_reset_anc_total_gain(void);
 
 void sndp_dev_init(void);
 

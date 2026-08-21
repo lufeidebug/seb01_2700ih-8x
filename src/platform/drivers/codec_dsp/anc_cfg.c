@@ -50,7 +50,9 @@
 #ifdef AUDIO_ANC_FB_MC
 #include "cmsis.h"
 #endif
-
+#if defined(__SNDP_PROJ__)
+#include "sndp_if_device.h"
+#endif
 #ifdef ANC_COEF_LIST_NUM
 #if (ANC_COEF_LIST_NUM < 1)
 #error "Invalid ANC_COEF_LIST_NUM configuration"
@@ -568,7 +570,16 @@ int anc_select_coef(enum AUD_SAMPRATE_T rate,enum ANC_INDEX index,enum ANC_TYPE_
     if(anc_opened(anc_type))
     {
         hal_sysfreq_req(HAL_SYSFREQ_USER_ANC,HAL_CMU_FREQ_104M);
+#if defined(__SNDP_PROJ__)
+        uint16_t anc_total_gain = sndp_dev_get_anc_total_gain();
+        struct_anc_cfg **sndp_list = (struct_anc_cfg **)list;
+        (*sndp_list[index]).anc_cfg_ff_l.total_gain = anc_total_gain;
+        (*sndp_list[index]).anc_cfg_fb_l.total_gain = anc_total_gain;
+        (*sndp_list[index]).anc_cfg_tt_l.total_gain = anc_total_gain;
+        anc_set_cfg(sndp_list[index],anc_type,anc_gain_delay);
+#else
         anc_set_cfg(list[index],anc_type,anc_gain_delay);
+#endif
         hal_sysfreq_req(HAL_SYSFREQ_USER_ANC,HAL_CMU_FREQ_32K);
 #ifdef AUDIO_ANC_FB_MC
         mc_iir_cfg.anc_cfg_mc_l=(*list[index]).anc_cfg_mc_l;
