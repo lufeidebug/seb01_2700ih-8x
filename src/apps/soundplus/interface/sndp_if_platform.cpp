@@ -295,7 +295,7 @@ void sndp_enter_freeman_pairing(void)
     sndp_pairing_type = SNDP_PAIRING_FREEMAN;
     sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
     bta_tws_box_event_entry(BTA_TWS_OPEN);
-	bta_tws_enable_freeman_mode(true); 
+	//bta_tws_enable_freeman_mode(true); //会导致ble-role-switch死机问题，不使用
     sndp_tws_enable_pairing_mode();
     
 #if defined(__BTIF_AUTOPOWEROFF__)

@@ -208,6 +208,13 @@ void sndp_dev_wear_status_changed_handler(sndp_dev_wear_status_e status)
 	SNDP_IF_TRACE(1, "curr_status=%d, new_status=%d", curr_status, status);
 
 	if(status != SNDP_DEV_WEAR_UNKNOWN) {
+		// Ignore duplicate wear notifications to avoid repeatedly triggering
+		// LR sync and TWS/IBRT consensus transactions.
+		if(curr_status == status) {
+			SNDP_IF_TRACE(1, "ignore duplicate wear status=%d", status);
+			return;
+		}
+
 		sndp_dev_wear_set_status(false, status);
 
  #if defined(__SNDP_COMM_MGR__)        
@@ -635,7 +642,7 @@ void sndp_dev_cover_status_changed_handler(sndp_dev_cover_status_e status)
 		sndp_dev_cover_set_status(false, status);
 
 #if defined(__SNDP_COMM_MGR__)    
-        sndp_comm_cmd_send_lr_sync_wear_status(status);
+        sndp_comm_cmd_send_lr_sync_cover_status(status);
 #endif
 		if(sndp_dev_cover_status_changed_cb_ptr) {
 			sndp_call_func_in_app_thread((uint32_t)sndp_dev_cover_status_changed_cb_ptr, status, 0, 0);
