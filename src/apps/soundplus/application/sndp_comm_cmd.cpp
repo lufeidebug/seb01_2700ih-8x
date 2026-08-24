@@ -1976,6 +1976,9 @@ static uint32_t sndp_comm_cmd_recv_pt_reset_anc_gain(sndp_comm_cmd_info_s *cmd_i
     COMM_CMD_TRACE(1, "reset anc_total_gain=%d", SNDP_DA_ANC_TOTAL_GAIN_DEFAULT);
     if(!sndp_dev_reset_anc_total_gain()) {
         err_code = SNDP_COMM_ERROR_SAVE_FAIL;
+    }else{
+        anc_set_gain(SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,ANC_FEEDFORWARD);
+        anc_set_gain(SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,ANC_TALKTHRU);        
     }
 
     sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
