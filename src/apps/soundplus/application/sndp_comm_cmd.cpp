@@ -1931,13 +1931,17 @@ static uint32_t sndp_comm_cmd_recv_pt_read_dev_color(sndp_comm_cmd_info_s *cmd_i
 
 static uint32_t sndp_comm_cmd_recv_pt_get_anc_gain(sndp_comm_cmd_info_s *cmd_info)
 {
-    uint16_t gain = sndp_dev_get_anc_total_gain();
+    uint16_t gain[SNDP_DA_MIC_GAIN_ID_MAX] = {sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_FFL),
+                         sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_FB),
+                         sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_TT)};
 
-    COMM_CMD_TRACE(1, "anc_total_gain=%d", gain);
+    COMM_CMD_TRACE(1, "ffgain=%d, fbgain=%d, ttgain=%d", gain[0], gain[1], gain[2]);
 
     cmd_info->data_len = 0;
-    cmd_info->data[cmd_info->data_len++] = (uint8_t)((gain >> 8) & 0xFF);
-    cmd_info->data[cmd_info->data_len++] = (uint8_t)(gain & 0xFF);
+    for(int i = 0; i < SNDP_DA_MIC_GAIN_ID_MAX; i++) {
+        cmd_info->data[cmd_info->data_len++] = (uint8_t)((gain[i] >> 8) & 0xFF);
+        cmd_info->data[cmd_info->data_len++] = (uint8_t)(gain[i]);
+    }
     sndp_comm_main_rsp_cmd(cmd_info);
 
     return 0;
@@ -1946,18 +1950,33 @@ static uint32_t sndp_comm_cmd_recv_pt_get_anc_gain(sndp_comm_cmd_info_s *cmd_inf
 static uint32_t sndp_comm_cmd_recv_pt_set_anc_gain(sndp_comm_cmd_info_s *cmd_info)
 {
     uint8_t err_code = SNDP_COMM_ERROR_NONE;
+    uint8_t mic_gain_id = 0;
 
-    if(cmd_info->data_len == 2) {
-        uint16_t gain = (uint16_t)((cmd_info->data[0] << 8) | cmd_info->data[1]);
+    //1 check param
+    if(cmd_info->data_len == 3) {
+        mic_gain_id = cmd_info->data[0];
+        //2 check mic_gain_id range
+        if(mic_gain_id >= SNDP_DA_MIC_GAIN_ID_MAX) {
+            err_code = SNDP_COMM_ERROR_PARAM_OUT_RANG;
+        }
+        uint16_t gain = (uint16_t)((cmd_info->data[1] << 8) | cmd_info->data[2]);
         COMM_CMD_TRACE(1, "set anc_total_gain=%d", gain);
+        //3 check gain range
         if(gain >= SNDP_DA_ANC_TOTAL_GAIN_MAX) {
             err_code = SNDP_COMM_ERROR_PARAM_OUT_RANG;
         }else{
-            if(!sndp_dev_set_anc_total_gain(gain)) {
+            //4 set anc_total_gain to flash
+            if(!sndp_dev_set_anc_total_gain(mic_gain_id, gain)) {
                 err_code = SNDP_COMM_ERROR_SAVE_FAIL;
             }else{
-                anc_set_gain(gain,gain,ANC_FEEDFORWARD);
-                anc_set_gain(gain,gain,ANC_TALKTHRU);
+                //5 set anc_total_gain to ADC
+                if(mic_gain_id == SNDP_DEV_MIC_GAIN_ID_FFL) {
+                    anc_set_gain(gain,gain,ANC_FEEDFORWARD);
+                } else if(mic_gain_id == SNDP_DEV_MIC_GAIN_ID_FB) {
+                    anc_set_gain(gain,gain,ANC_FEEDBACK);
+                } else if(mic_gain_id == SNDP_DEV_MIC_GAIN_ID_TT) {
+                    anc_set_gain(gain,gain,ANC_TALKTHRU);
+                }
             }
         }
     } else {
@@ -1978,7 +1997,8 @@ static uint32_t sndp_comm_cmd_recv_pt_reset_anc_gain(sndp_comm_cmd_info_s *cmd_i
         err_code = SNDP_COMM_ERROR_SAVE_FAIL;
     }else{
         anc_set_gain(SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,ANC_FEEDFORWARD);
-        anc_set_gain(SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,ANC_TALKTHRU);        
+        anc_set_gain(SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,ANC_TALKTHRU);      
+        anc_set_gain(SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,ANC_FEEDBACK);
     }
 
     sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);

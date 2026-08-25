@@ -2200,31 +2200,45 @@ void sndp_dev_init(void)
 
 /************************************************** anc total gain start ************************************************/
 
-uint16_t sndp_dev_get_anc_total_gain(void)
+uint16_t sndp_dev_get_anc_total_gain(uint8_t mic_gain_id)
 {
     sndp_da_field_anc_total_gain_s field_anc_total_gain;
+    bool valid = false;
+
+    if (mic_gain_id >= SNDP_DA_MIC_GAIN_ID_MAX) {
+        return SNDP_DA_ANC_TOTAL_GAIN_DEFAULT;
+    }
 
     memset(&field_anc_total_gain, 0, sizeof(field_anc_total_gain));
-    if(sndp_da_read_field(SNDP_DA_FIELD_ANC_TOTAL_GAIN, &field_anc_total_gain, sizeof(sndp_da_field_anc_total_gain_s), true) == 0) {
-        if(field_anc_total_gain.key != SNDP_DA_PARAM_FIELD_VALID) {
-            field_anc_total_gain.anc_total_gain = SNDP_DA_ANC_TOTAL_GAIN_DEFAULT;
-        }
-    } else {
-        field_anc_total_gain.anc_total_gain = SNDP_DA_ANC_TOTAL_GAIN_DEFAULT;
-    }
-		if(field_anc_total_gain.anc_total_gain >= SNDP_DA_ANC_TOTAL_GAIN_MAX) {
-			field_anc_total_gain.anc_total_gain = SNDP_DA_ANC_TOTAL_GAIN_DEFAULT;
-		}
 
-    return field_anc_total_gain.anc_total_gain;
+    if (sndp_da_read_field(SNDP_DA_FIELD_ANC_TOTAL_GAIN, &field_anc_total_gain,
+                           sizeof(sndp_da_field_anc_total_gain_s), true) == 0 &&
+        field_anc_total_gain.key == SNDP_DA_PARAM_FIELD_VALID) {
+        valid = true;
+        for (uint8_t i = 0; i < SNDP_DA_MIC_GAIN_ID_MAX; i++) {
+            if (field_anc_total_gain.anc_total_gain[i] >= SNDP_DA_ANC_TOTAL_GAIN_MAX) {
+                valid = false;
+                break;
+            }
+        }
+    }
+
+    if (!valid) {
+        for (uint8_t i = 0; i < SNDP_DA_MIC_GAIN_ID_MAX; i++) {
+            field_anc_total_gain.anc_total_gain[i] = SNDP_DA_ANC_TOTAL_GAIN_DEFAULT;
+        }
+    }
+
+    return field_anc_total_gain.anc_total_gain[mic_gain_id];
 }
 
-bool sndp_dev_set_anc_total_gain(uint16_t gain)
+bool sndp_dev_set_anc_total_gain(uint8_t mic_gain_id, uint16_t gain)
 {
     sndp_da_field_anc_total_gain_s field_anc_total_gain;
 
     memset(&field_anc_total_gain, 0, sizeof(field_anc_total_gain));
-    field_anc_total_gain.anc_total_gain = gain;
+		sndp_da_read_field(SNDP_DA_FIELD_ANC_TOTAL_GAIN, &field_anc_total_gain, sizeof(sndp_da_field_anc_total_gain_s), true);
+    field_anc_total_gain.anc_total_gain[mic_gain_id] = gain;
     if(sndp_da_write_field(SNDP_DA_FIELD_ANC_TOTAL_GAIN, &field_anc_total_gain, sizeof(sndp_da_field_anc_total_gain_s), true) != 0) {
         return false;
     }
@@ -2233,7 +2247,15 @@ bool sndp_dev_set_anc_total_gain(uint16_t gain)
 
 bool sndp_dev_reset_anc_total_gain(void)
 {
-    return sndp_dev_set_anc_total_gain(SNDP_DA_ANC_TOTAL_GAIN_DEFAULT);
+	for (size_t i = 0; i < SNDP_DA_MIC_GAIN_ID_MAX; i++)
+	{
+		/* code */
+		if(!sndp_dev_set_anc_total_gain(i, SNDP_DA_ANC_TOTAL_GAIN_DEFAULT)) {
+			return false;
+		}
+	}
+	
+  return true;
 }
 
 /************************************************** anc total gain end ************************************************/

@@ -197,7 +197,11 @@ typedef enum {
 }SNDP_SLEEP_APP_FLAG_NAME;
 #endif
 
-
+typedef enum {
+	SNDP_DEV_MIC_GAIN_ID_FFL = 0,
+	SNDP_DEV_MIC_GAIN_ID_FB = 1,
+	SNDP_DEV_MIC_GAIN_ID_TT = 2,
+} sndp_dev_mic_gain_id_e;
 
 typedef struct {
 	uint8_t fw_ver[4];
@@ -464,8 +468,8 @@ void sndp_dev_sleep_app_clean_wear_cnt(void);
 #endif
 /************************************************** prompt end ************************************************/
 
-uint16_t sndp_dev_get_anc_total_gain(void);
-bool sndp_dev_set_anc_total_gain(uint16_t gain);
+uint16_t sndp_dev_get_anc_total_gain(uint8_t mic_gain_id);
+bool sndp_dev_set_anc_total_gain(uint8_t mic_gain_id, uint16_t gain);
 bool sndp_dev_reset_anc_total_gain(void);
 
 void sndp_dev_init(void);

@@ -571,11 +571,13 @@ int anc_select_coef(enum AUD_SAMPRATE_T rate,enum ANC_INDEX index,enum ANC_TYPE_
     {
         hal_sysfreq_req(HAL_SYSFREQ_USER_ANC,HAL_CMU_FREQ_104M);
 #if defined(__SNDP_PROJ__)
-        uint16_t anc_total_gain = sndp_dev_get_anc_total_gain();
+        uint16_t anc_ff_total_gain = sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_FFL);
+        uint16_t anc_fb_total_gain = sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_FB);
+        uint16_t anc_tt_total_gain = sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_TT);
         struct_anc_cfg **sndp_list = (struct_anc_cfg **)list;
-        (*sndp_list[index]).anc_cfg_ff_l.total_gain = anc_total_gain;
-        (*sndp_list[index]).anc_cfg_fb_l.total_gain = anc_total_gain;
-        (*sndp_list[index]).anc_cfg_tt_l.total_gain = anc_total_gain;
+        (*sndp_list[index]).anc_cfg_ff_l.total_gain = anc_ff_total_gain;
+        (*sndp_list[index]).anc_cfg_fb_l.total_gain = anc_fb_total_gain;
+        (*sndp_list[index]).anc_cfg_tt_l.total_gain = anc_tt_total_gain;
         anc_set_cfg(sndp_list[index],anc_type,anc_gain_delay);
 #else
         anc_set_cfg(list[index],anc_type,anc_gain_delay);

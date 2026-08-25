@@ -13,6 +13,7 @@ extern "C" {
 
 #define SNDP_DA_ANC_TOTAL_GAIN_DEFAULT         (512)
 #define SNDP_DA_ANC_TOTAL_GAIN_MAX             (2048)
+#define SNDP_DA_MIC_GAIN_ID_MAX                (3)
 
 
 typedef enum {
@@ -99,7 +100,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t key;  /* This key must be defined, but it cannot be modified */
-	uint16_t anc_total_gain;  /* default: 512 */
+	uint16_t anc_total_gain[SNDP_DA_MIC_GAIN_ID_MAX];  /* default: 512 */
 } sndp_da_field_anc_total_gain_s;
 
 
