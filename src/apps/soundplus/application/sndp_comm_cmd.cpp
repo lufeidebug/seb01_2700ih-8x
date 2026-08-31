@@ -80,7 +80,6 @@ extern "C" uint8_t sndp_anc_get_calib_result(void);
 
 /* Forward declaration: proximity data reporting (defined in sndp_interact_app.cpp) */
 uint32_t sndp_comm_cmd_sleepapp_proximity_task(void);
-extern "C" int anc_set_gain(int32_t gain_ch_l, int32_t gain_ch_r,enum ANC_TYPE_T anc_type);
 
 
 /**************************************************************************************************
@@ -1931,77 +1930,33 @@ static uint32_t sndp_comm_cmd_recv_pt_read_dev_color(sndp_comm_cmd_info_s *cmd_i
 
 static uint32_t sndp_comm_cmd_recv_pt_get_anc_gain(sndp_comm_cmd_info_s *cmd_info)
 {
-    uint16_t gain[SNDP_DA_MIC_GAIN_ID_MAX] = {sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_FFL),
-                         sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_FB),
-                         sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_TT)};
-
-    COMM_CMD_TRACE(1, "ffgain=%d, fbgain=%d, ttgain=%d", gain[0], gain[1], gain[2]);
+    uint16_t ff, fb;
 
     cmd_info->data_len = 0;
-    for(int i = 0; i < SNDP_DA_MIC_GAIN_ID_MAX; i++) {
-        cmd_info->data[cmd_info->data_len++] = (uint8_t)((gain[i] >> 8) & 0xFF);
-        cmd_info->data[cmd_info->data_len++] = (uint8_t)(gain[i]);
-    }
+
+    /* 组0: ANC 模式默认 gain，1 字节档位标记 0x00 */
+    sndp_dev_get_anc_gain_group(0, &ff, &fb);
+    cmd_info->data[cmd_info->data_len++] = 0x00;
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((ff >> 8) & 0xFF);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(ff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((fb >> 8) & 0xFF);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(fb);
+
+    /* 组1: 通透模式默认 gain，1 字节档位标记 0x01 */
+    sndp_dev_get_anc_gain_group(1, &ff, &fb);
+    cmd_info->data[cmd_info->data_len++] = 0x01;
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((ff >> 8) & 0xFF);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(ff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((fb >> 8) & 0xFF);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(fb);
+
+    COMM_CMD_TRACE(1, "anc_gain[anc]ff=%d fb=%d [trans]ff=%d fb=%d",
+                   cmd_info->data[1] << 8 | cmd_info->data[2],
+                   cmd_info->data[3] << 8 | cmd_info->data[4],
+                   cmd_info->data[6] << 8 | cmd_info->data[7],
+                   cmd_info->data[8] << 8 | cmd_info->data[9]);
+
     sndp_comm_main_rsp_cmd(cmd_info);
-
-    return 0;
-}
-
-static uint32_t sndp_comm_cmd_recv_pt_set_anc_gain(sndp_comm_cmd_info_s *cmd_info)
-{
-    uint8_t err_code = SNDP_COMM_ERROR_NONE;
-    uint8_t mic_gain_id = 0;
-
-    //1 check param
-    if(cmd_info->data_len == 3) {
-        mic_gain_id = cmd_info->data[0];
-        //2 check mic_gain_id range
-        if(mic_gain_id >= SNDP_DA_MIC_GAIN_ID_MAX) {
-            err_code = SNDP_COMM_ERROR_PARAM_OUT_RANG;
-        }
-        uint16_t gain = (uint16_t)((cmd_info->data[1] << 8) | cmd_info->data[2]);
-        COMM_CMD_TRACE(1, "set anc_total_gain=%d", gain);
-        //3 check gain range
-        if(gain >= SNDP_DA_ANC_TOTAL_GAIN_MAX) {
-            err_code = SNDP_COMM_ERROR_PARAM_OUT_RANG;
-        }else{
-            //4 set anc_total_gain to flash
-            if(!sndp_dev_set_anc_total_gain(mic_gain_id, gain)) {
-                err_code = SNDP_COMM_ERROR_SAVE_FAIL;
-            }else{
-                //5 set anc_total_gain to ADC
-                if(mic_gain_id == SNDP_DEV_MIC_GAIN_ID_FFL) {
-                    anc_set_gain(gain,gain,ANC_FEEDFORWARD);
-                } else if(mic_gain_id == SNDP_DEV_MIC_GAIN_ID_FB) {
-                    anc_set_gain(gain,gain,ANC_FEEDBACK);
-                } else if(mic_gain_id == SNDP_DEV_MIC_GAIN_ID_TT) {
-                    anc_set_gain(gain,gain,ANC_TALKTHRU);
-                }
-            }
-        }
-    } else {
-        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
-    }
-
-    sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
-
-    return 0;
-}
-
-static uint32_t sndp_comm_cmd_recv_pt_reset_anc_gain(sndp_comm_cmd_info_s *cmd_info)
-{
-    uint8_t err_code = SNDP_COMM_ERROR_NONE;
-
-    COMM_CMD_TRACE(1, "reset anc_total_gain=%d", SNDP_DA_ANC_TOTAL_GAIN_DEFAULT);
-    if(!sndp_dev_reset_anc_total_gain()) {
-        err_code = SNDP_COMM_ERROR_SAVE_FAIL;
-    }else{
-        anc_set_gain(SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,ANC_FEEDFORWARD);
-        anc_set_gain(SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,ANC_TALKTHRU);      
-        anc_set_gain(SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,SNDP_DA_ANC_TOTAL_GAIN_DEFAULT,ANC_FEEDBACK);
-    }
-
-    sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
 
     return 0;
 }
@@ -2235,8 +2190,6 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_PT_STOP_LOOPBACK               , "PT_E_LOOPBACK"           , sndp_comm_cmd_recv_pt_stop_loopback               },
 #endif
     { COMM_CMDID_PT_GET_ANC_GAIN                , "PT_G_ANC_GAIN"          , sndp_comm_cmd_recv_pt_get_anc_gain                },
-    { COMM_CMDID_PT_SET_ANC_GAIN                , "PT_S_ANC_GAIN"          , sndp_comm_cmd_recv_pt_set_anc_gain                },
-    { COMM_CMDID_PT_RESET_ANC_GAIN              , "PT_R_ANC_GAIN"          , sndp_comm_cmd_recv_pt_reset_anc_gain              },
 #endif
     
 

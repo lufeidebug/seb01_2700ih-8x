@@ -11,10 +11,6 @@ extern "C" {
 
 #define SNDP_DA_BT_NAME_LEN                    (48)    //it must be equal to CLASSIC_BTNAME_LEN
 
-#define SNDP_DA_ANC_TOTAL_GAIN_DEFAULT         (512)
-#define SNDP_DA_ANC_TOTAL_GAIN_MAX             (2048)
-#define SNDP_DA_MIC_GAIN_ID_MAX                (3)
-
 
 typedef enum {
 	SNDP_DA_FIELD_BAT_INFO,
@@ -32,7 +28,6 @@ typedef enum {
 
     SNDP_DA_FIELD_TEST_FLAG,
     SNDP_DA_FIELD_DEV_COLOR,
-    SNDP_DA_FIELD_ANC_TOTAL_GAIN,
 
 } sndp_da_field_id_e;
 
@@ -98,11 +93,6 @@ typedef struct {
 	uint32_t dev_color;
 } sndp_da_field_dev_color_s;
 
-typedef struct {
-	uint32_t key;  /* This key must be defined, but it cannot be modified */
-	uint16_t anc_total_gain[SNDP_DA_MIC_GAIN_ID_MAX];  /* default: 512 */
-} sndp_da_field_anc_total_gain_s;
-
 
 typedef struct {
 	uint32_t offset;
@@ -144,7 +134,6 @@ typedef struct {
     sndp_da_field_acc_calib_data_s  field_acc_calib_data;
     sndp_da_field_test_flag_s field_test_flag;
     sndp_da_field_dev_color_s field_dev_color;
-    sndp_da_field_anc_total_gain_s field_anc_total_gain;
 
     /** Add field above this line. */
     uint32_t data_end;

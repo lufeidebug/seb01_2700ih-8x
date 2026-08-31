@@ -20,6 +20,8 @@ ccflags-y +=  \
     -Iservices/resources \
     -Iservices/activity_manager \
     -Iservices/audio_process \
+    -Iservices/nv_section/aud_section \
+    -Iservices/nv_section/include \
     -Iapps/app_test/apptester \
     -Iapps/factory \
     -Iapps/voice_detector \

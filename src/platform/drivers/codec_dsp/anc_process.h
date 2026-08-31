@@ -190,6 +190,9 @@ int anc_cmd_send_process(uint8_t **pbuf,uint16_t *len);
 
 enum ANC_INDEX anc_get_current_coef_index(void);
 enum AUD_SAMPRATE_T anc_get_current_coef_samplerate(void);
+#if defined(__SNDP_PROJ__)
+int32_t anc_get_coef_total_gain(enum ANC_TYPE_T anc_type, enum ANC_INDEX anc_idx);
+#endif
 int anc_mc_run_stereo(uint8_t *buf, int len,float left_gain,float right_gain,enum AUD_BITS_T sample_bit);
 int anc_mc_run_mono(uint8_t *buf, int len,float left_gain,enum AUD_BITS_T sample_bit);
 void anc_mc_run_init(enum AUD_SAMPRATE_T rate);

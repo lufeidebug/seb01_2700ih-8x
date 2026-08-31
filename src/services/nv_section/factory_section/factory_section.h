@@ -28,6 +28,7 @@ enum {
     NV_ROLE_IBRT_UNKNOWN = 0xff,
 };
 
+#ifndef __section_def_h__
 typedef struct {
     unsigned short magic;
     unsigned short version;
@@ -35,6 +36,7 @@ typedef struct {
     unsigned int reserved0;
     unsigned int reserved1;
 }section_head_t;
+#endif
 
 typedef struct {
     unsigned char device_name[248+1] ALIGN4;

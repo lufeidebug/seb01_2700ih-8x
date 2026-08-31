@@ -197,10 +197,6 @@ static uint16_t sndp_da_calc_backup_struct_checksum(void)
     addr = (uint32_t)&p_param->field_dev_color;
     checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
 
-    addr = (uint32_t)&p_param->field_anc_total_gain;
-    checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
-
-
     //---------------------------------------------------------------------------------
     addr = (uint32_t)&p_param->data_end;
     checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
@@ -395,10 +391,6 @@ static int32_t sndp_da_find_backup_field_info(sndp_da_field_id_e field_id, sndp_
         case SNDP_DA_FIELD_DEV_COLOR:
 			field_info->offset = (uint32_t)&p_param->field_dev_color;
 			field_info->size = sizeof(sndp_da_field_dev_color_s);
-			break;
-        case SNDP_DA_FIELD_ANC_TOTAL_GAIN:
-			field_info->offset = (uint32_t)&p_param->field_anc_total_gain;
-			field_info->size = sizeof(sndp_da_field_anc_total_gain_s);
 			break;
 		default:
 			ret = -1;
@@ -642,5 +634,4 @@ void sndp_da_init(void)
 
 
 #endif	/* __SNDP_PROJ__ */
-
 

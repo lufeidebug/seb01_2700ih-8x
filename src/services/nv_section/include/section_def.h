@@ -22,6 +22,7 @@
 extern "C" {
 #endif
 
+#ifndef __FACTORY_SECTIONS_H__
 typedef struct {
     uint16_t magic;
     uint16_t version;
@@ -29,6 +30,7 @@ typedef struct {
     uint32_t reserved0;
     uint32_t reserved1;
 } section_head_t;
+#endif
 
 #ifdef __cplusplus
 }

@@ -297,7 +297,7 @@ void sndp_enter_freeman_pairing(void)
     bta_tws_box_event_entry(BTA_TWS_OPEN);
 	//bta_tws_enable_freeman_mode(true); //会导致ble-role-switch死机问题，不使用
     sndp_tws_enable_pairing_mode();
-    
+    bta_tws_enable_access_mode(true);
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
     app_start_10_second_timer(APP_PAIR_TIMER_ID);   //5minute pairing

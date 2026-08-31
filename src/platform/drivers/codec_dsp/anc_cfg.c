@@ -50,9 +50,6 @@
 #ifdef AUDIO_ANC_FB_MC
 #include "cmsis.h"
 #endif
-#if defined(__SNDP_PROJ__)
-#include "sndp_if_device.h"
-#endif
 #ifdef ANC_COEF_LIST_NUM
 #if (ANC_COEF_LIST_NUM < 1)
 #error "Invalid ANC_COEF_LIST_NUM configuration"
@@ -570,18 +567,9 @@ int anc_select_coef(enum AUD_SAMPRATE_T rate,enum ANC_INDEX index,enum ANC_TYPE_
     if(anc_opened(anc_type))
     {
         hal_sysfreq_req(HAL_SYSFREQ_USER_ANC,HAL_CMU_FREQ_104M);
-#if defined(__SNDP_PROJ__)
-        uint16_t anc_ff_total_gain = sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_FFL);
-        uint16_t anc_fb_total_gain = sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_FB);
-        uint16_t anc_tt_total_gain = sndp_dev_get_anc_total_gain(SNDP_DEV_MIC_GAIN_ID_TT);
-        struct_anc_cfg **sndp_list = (struct_anc_cfg **)list;
-        (*sndp_list[index]).anc_cfg_ff_l.total_gain = anc_ff_total_gain;
-        (*sndp_list[index]).anc_cfg_fb_l.total_gain = anc_fb_total_gain;
-        (*sndp_list[index]).anc_cfg_tt_l.total_gain = anc_tt_total_gain;
-        anc_set_cfg(sndp_list[index],anc_type,anc_gain_delay);
-#else
+        //anc set cfg
         anc_set_cfg(list[index],anc_type,anc_gain_delay);
-#endif
+
         hal_sysfreq_req(HAL_SYSFREQ_USER_ANC,HAL_CMU_FREQ_32K);
 #ifdef AUDIO_ANC_FB_MC
         mc_iir_cfg.anc_cfg_mc_l=(*list[index]).anc_cfg_mc_l;
@@ -606,6 +594,40 @@ enum AUD_SAMPRATE_T anc_get_current_coef_samplerate(void)
 {
     return cur_coef_samprate;
 }
+
+#if defined(__SNDP_PROJ__)
+
+int32_t anc_get_coef_total_gain(enum ANC_TYPE_T anc_type, enum ANC_INDEX anc_idx)
+{
+    const struct_anc_cfg *cfg;
+
+    if (anc_idx >= ANC_COEF_LIST_NUM)
+        return -1;
+    //让anc加载pc tool burn的参数配置
+    anc_load_cfg();
+
+#ifdef __AUDIO_RESAMPLE__
+    cfg = anc_coef_list_50p7k[anc_idx];
+#else
+    cfg = anc_coef_list_48k[anc_idx];
+#endif
+    if (cfg == NULL)
+        return -1;
+
+    switch (anc_type) {
+        case ANC_FEEDFORWARD:
+            return cfg->anc_cfg_ff_l.total_gain;
+        case ANC_FEEDBACK:
+            return cfg->anc_cfg_fb_l.total_gain;
+#if (AUD_SECTION_STRUCT_VERSION != 1)
+        case ANC_TALKTHRU:
+            return cfg->anc_cfg_tt_l.total_gain;
+#endif
+        default:
+            return -1;
+    }
+}
+#endif
 
 #ifdef AUDIO_ANC_FB_MC
 
@@ -2946,12 +2968,5 @@ int anc_cmd_send_process(uint8_t **pbuf,uint16_t *len)
     return 0;
 }
 #endif
-
-
-
-
-
-
-
 
 

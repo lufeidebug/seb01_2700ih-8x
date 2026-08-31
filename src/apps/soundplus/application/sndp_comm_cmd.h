@@ -265,11 +265,7 @@ typedef enum {
     COMM_CMDID_PT_STOP_LOOPBACK                     = 0x72,	/* recv: 0 bytes.
                                                             rsp: 1 byte, error code(1). */
     COMM_CMDID_PT_GET_ANC_GAIN                     = 0x73,	/* recv: 0 bytes.
-                                                            rsp: 3 bytes, error code(1) + gain_hi(1) + gain_lo(1). */
-    COMM_CMDID_PT_SET_ANC_GAIN                     = 0x74,	/* recv: 2 bytes, gain_hi(1) + gain_lo(1).
-                                                            rsp: 1 byte, error code(1). */
-    COMM_CMDID_PT_RESET_ANC_GAIN                   = 0x75,	/* recv: 0 bytes.
-                                                            rsp: 1 byte, error code(1). */
+                                                            rsp: 10 bytes, tag(1) + ff_gain(2) + fb_gain(2), repeated for 2 groups. */
     /***** 与APP交互指令 *****/
     COMM_CMDID_APP_QUERY_DEV_INFO                   = 0x81,
 	COMM_CMDID_APP_QUERY_DEV_STATUS                 = 0x82,
