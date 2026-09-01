@@ -87,6 +87,7 @@ export SNDP_BAT_SWITCH_ROLE                     := 1
 export SNDP_PROMPT_TEST                         := 1
 export SNDP_ANC_MODIFY                          := 1
 export SNDP_DAC_ZERO_CROSSING_MUTE              := 1
+export SNDP_RF_TEST                             := 0
 
 
 ifeq ($(SNDP_UI),1)
@@ -400,7 +401,6 @@ ifeq ($(SNDP_TEST_RF_DUT),1)
     export FORCE_SIGNALINGMODE                  := 1
 endif
 
-
 ifeq ($(SNDP_CRASH_REBOOT),1)
     KBUILD_CPPFLAGS += -D__SNDP_CRASH_REBOOT__
     export CRASH_REBOOT                         := 1
@@ -450,6 +450,20 @@ endif
 ifeq ($(SNDP_DAC_ZERO_CROSSING_MUTE),1)
 export DAC_STOP_WITH_ZERO_CROSSING_MUTE := 1
 endif
+
+
+ifeq ($(SNDP_RF_TEST),1)
+    KBUILD_CPPFLAGS += -D__SNDP_RF_TEST__
+
+    export SNDP_RF_DESENCE_TEST := 1
+    ifeq ($(SNDP_RF_DESENCE_TEST),1)
+        KBUILD_CPPFLAGS += -D__SNDP_RF_DESENCE_TEST__
+    endif
+    
+endif
+
+
+
 endif
 # SNDP_PROJ Total Control
 

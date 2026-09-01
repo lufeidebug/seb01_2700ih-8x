@@ -34,7 +34,7 @@
 
 #if defined(__SNDP_PRODUCT_TEST__)
 #include "sndp_product_test.h"
-#define COMM_CMDID_IS_PT_CMD(id)  ((id) >= COMM_CMDID_PT_SWITCH_TEST_MODE && (id) <= COMM_CMDID_PT_CLICK_TEST_REPORT)
+#define COMM_CMDID_IS_PT_CMD(id)  ((id) >= COMM_CMDID_PT_SWITCH_TEST_MODE && (id) <= COMM_CMDID_PT_CMD_END)
 #endif
 
 #if defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)
@@ -60,6 +60,10 @@
 
 #if defined(__SNDP_APP_WHITE_NOISE__)                                                             
 #include "sndp_app_white_noise.h"
+#endif
+
+#if defined(__SNDP_RF_TEST__)
+#include "sndp_rf_test.h"
 #endif
 
 
@@ -2101,6 +2105,51 @@ static uint32_t sndp_comm_cmd_recv_app_query_dev_status(sndp_comm_cmd_info_s *cm
 }
 
 
+#if defined(__SNDP_RF_DESENCE_TEST__)
+static uint32_t sndp_comm_cmd_recv_pt_desence_test_switch_spk(sndp_comm_cmd_info_s *cmd_info)
+{
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+    
+    if(cmd_info->data_len == 1) {
+        sndp_rf_desece_test_playback_onoff(cmd_info->data[0]);
+
+    } else {
+        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+    }
+    
+    sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
+    return 0;
+}
+
+extern "C" void ss_ppg_force_switch_ppg(uint8_t onoff);
+
+static uint32_t sndp_comm_cmd_recv_pt_desence_test_switch_ppg(sndp_comm_cmd_info_s *cmd_info)
+{
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+    
+    if(cmd_info->data_len == 1) {
+        
+#if defined(__SNDP_HEART_RATE_MGR__)        
+        if(cmd_info->data[0]) {
+            //sndp_hr_mearsuring_start(1, 0);
+            ss_ppg_force_switch_ppg(1);
+        } else {
+            //sndp_hr_mearsuring_stop();
+            ss_ppg_force_switch_ppg(0);
+        }
+#endif        
+
+    } else {
+        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+    }
+    
+    sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
+    return 0;
+}
+
+#endif
+
+
 static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     /****** 与充电仓交互指令 ******/
 	{ COMM_CMDID_EB_HANDSHAKE                   , "EB_HANDSHAKE"            , sndp_comm_cmd_recv_eb_handshake                   },
@@ -2220,6 +2269,12 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_LR_SYNC_SLEEP_ROLE_STATUS      , "LR_SYNC_SLEEP_ROLE_STATUS"   , sndp_comm_cmd_recv_lr_sync_sleep_role_status      },
 #endif
 #endif
+
+#if defined(__SNDP_RF_DESENCE_TEST__)
+    { COMM_CMDID_PT_DESENCE_TEST_SWITCH_SPK     , "PT_DESENCE_S_SPK"        , sndp_comm_cmd_recv_pt_desence_test_switch_spk         },
+    { COMM_CMDID_PT_DESENCE_TEST_SWITCH_PPG     , "PT_DESENCE_S_PPG"        , sndp_comm_cmd_recv_pt_desence_test_switch_ppg         },
+#endif
+
 };
 
 static const int32_t sndp_comm_cmd_hdlr_cnt = sizeof(sndp_comm_cmd_hdlr_list) / sizeof(sndp_comm_cmd_hdlr_list[0]);
@@ -2241,6 +2296,11 @@ int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd)
         && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_QUERY_TEST_MODE
         && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_QUERY_FW_VER
         && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_ENTER_DUT
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_EXIT_DUT
+#if defined(__SNDP_RF_DESENCE_TEST__)
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_DESENCE_TEST_SWITCH_SPK
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_DESENCE_TEST_SWITCH_PPG
+#endif        
         && sndp_comm_exec_cmd.path != SNDP_COMM_PATH_TRACE_UART) {
         if(!sndp_pt_is_in_test_mode()) {
             COMM_CMD_TRACE(1, "cmd(0x%02X) rejected, not in test mode", sndp_comm_exec_cmd.cmd_id);

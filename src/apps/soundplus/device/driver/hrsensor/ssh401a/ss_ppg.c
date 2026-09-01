@@ -840,3 +840,19 @@ static int clear_fifo(void)
     return ss_ppg_clear_fifo();
 }
 
+void ss_ppg_force_switch_ppg(uint8_t onoff)
+{
+    if(onoff) {
+        ss_ppg_operation_mode(PROX_PPG_0);
+        ss_ppg_clear_fifo();
+        ss_ppg_led_config(SEQ1, LED_GREEN);
+        ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 1);
+        ss_ppg_start_measurement();
+    } else {
+        ss_ppg_led_config(SEQ1, LED_OFF);
+        ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 0);
+        ss_ppg_operation_mode(PROX);
+        ss_ppg_stop_measurement();
+    }
+}
+

@@ -264,8 +264,18 @@ typedef enum {
                                                             rsp: 1 byte, error code(1). */
     COMM_CMDID_PT_STOP_LOOPBACK                     = 0x72,	/* recv: 0 bytes.
                                                             rsp: 1 byte, error code(1). */
-    COMM_CMDID_PT_GET_ANC_GAIN                     = 0x73,	/* recv: 0 bytes.
+    COMM_CMDID_PT_GET_ANC_GAIN                      = 0x73,	/* recv: 0 bytes.
                                                             rsp: 10 bytes, tag(1) + ff_gain(2) + fb_gain(2), repeated for 2 groups. */
+
+#if defined(__SNDP_RF_DESENCE_TEST__)
+    COMM_CMDID_PT_DESENCE_TEST_SWITCH_SPK           = 0x74,	/* recv: 1 bytes, onoff.
+                                                                rsp: 1 byte, error code(1). */
+    COMM_CMDID_PT_DESENCE_TEST_SWITCH_PPG           = 0x75,	/* recv: 1 bytes, onoff.
+                                                                rsp: 1 byte, error code(1). */
+#endif
+
+    COMM_CMDID_PT_CMD_END                           = 0x7F,
+
     /***** 与APP交互指令 *****/
     COMM_CMDID_APP_QUERY_DEV_INFO                   = 0x81,
 	COMM_CMDID_APP_QUERY_DEV_STATUS                 = 0x82,
