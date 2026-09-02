@@ -38,6 +38,12 @@ static sndp_hal_temperature_measure_callback p_sndp_hal_ntc_measure_cb;
 static sndp_ntc_ctx_s sndp_ntc_ctx;
 
 static const sndp_ntc_temp_table_s sndp_ntc_temp_table[] = {
+	
+	{-20, 1135000},
+	{-19, 1068000},
+	{-18, 1004000},
+	{-17, 945000},
+	{-16, 889600},
 	{-15, 837800},
 	{-10, 624100},
     { -5, 469100},
@@ -97,6 +103,10 @@ static const sndp_ntc_temp_table_s sndp_ntc_temp_table[] = {
     { 49,  34600},
 	{ 50,  33190},
 	{ 55,  27090},
+	{ 56,  26030},
+	{ 57,  25010},
+	{ 58,  24040},
+	{ 59,  23110},
 	{ 60,  22220},
 	{ 99,	0},
 };

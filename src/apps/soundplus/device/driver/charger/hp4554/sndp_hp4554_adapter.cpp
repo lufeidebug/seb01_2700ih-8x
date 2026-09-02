@@ -140,7 +140,11 @@ int32_t sndp_hp4554_set_charging_current(sndp_hal_charging_current_e charging_cu
                 hal_gpio_pin_clr((enum HAL_GPIO_PIN_T)app_charging_quick_pin_cfg.pin);
             }
 			break;
-		case SNDP_HAL_CHARGING_CURRENT_SLOW:
+            
+		case SNDP_HAL_CHARGING_CURRENT_0P2C:
+            break;
+            
+        case SNDP_HAL_CHARGING_CURRENT_0P5C:
             if (app_charging_status_pin_cfg.pin == HAL_IOMUX_PIN_NUM){
                 hal_gpio_pin_clr((enum HAL_GPIO_PIN_T)app_charging_enable_pin_cfg.pin);
             }
@@ -150,7 +154,7 @@ int32_t sndp_hp4554_set_charging_current(sndp_hal_charging_current_e charging_cu
             }
            
 			break;
-		case SNDP_HAL_CHARGING_CURRENT_HIGH:
+		case SNDP_HAL_CHARGING_CURRENT_1C:
             if (app_charging_status_pin_cfg.pin == HAL_IOMUX_PIN_NUM){
                 hal_gpio_pin_clr((enum HAL_GPIO_PIN_T)app_charging_enable_pin_cfg.pin);
             }
@@ -159,13 +163,7 @@ int32_t sndp_hp4554_set_charging_current(sndp_hal_charging_current_e charging_cu
                 hal_gpio_pin_set((enum HAL_GPIO_PIN_T)app_charging_quick_pin_cfg.pin);
             }
 			break;
-
-		case SNDP_HAL_CHARGING_CURRENT_HALF:
-			break;
-			
-		case SNDP_HAL_CHARGING_CURRENT_1C:
-			break;
-			
+            
 		case SNDP_HAL_CHARGING_CURRENT_2C:
 			break;
 			

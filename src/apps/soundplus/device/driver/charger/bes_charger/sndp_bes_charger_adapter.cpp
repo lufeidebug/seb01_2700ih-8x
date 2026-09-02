@@ -167,10 +167,10 @@ int32_t sndp_bes_charger_init(void)
         charge_cfg.rechg_en, 
         charge_cfg.chg_en);
 
-    charge_cfg.prechg_volt = CHARGER_CHARGE_PRECHARGE_VOLTAGE_2800MV;
-    charge_cfg.prechg_current = CHARGER_CHARGE_PRECHARGE_CURRENT_10MA;
+    charge_cfg.prechg_volt = CHARGER_CHARGE_PRECHARGE_VOLTAGE_3000MV;
+    charge_cfg.prechg_current = CHARGER_CHARGE_PRECHARGE_CURRENT_8MA;
     charge_cfg.cc_current = CHARGER_CHARGE_CONSTANT_CURRENT_60MA;
-    charge_cfg.stop_current = CHARGER_CHARGE_STOP_CURRENT_4MA;
+    charge_cfg.stop_current = CHARGER_CHARGE_STOP_CURRENT_6MA;
     charge_cfg.cv_volt = CHARGER_CHARGE_CONSTANT_VOLTAGE_4400MV;
     charge_cfg.rechg_volt = CHARGER_CHARGE_RECHARGE_VOLTAGE_150MV;
     charge_cfg.rechg_en = false;
@@ -214,17 +214,50 @@ int32_t sndp_bes_charger_init(void)
 
 int32_t sndp_bes_charger_set_charging_current(sndp_hal_charging_current_e charging_current)
 {
+    struct CHARGER_CHARGE_MODULE_CFG_T charge_cfg;
+
     BESCHG_TRACE(0, "chg_c=%d", charging_current);
+
+    charger_charge_module_cfg_get(&charge_cfg);
 
 	switch(charging_current){
 		case SNDP_HAL_CHARGING_CURRENT_ZERO:
-            charger_charge_disable();
 			break;
+
+        case SNDP_HAL_CHARGING_CURRENT_0P2C: //20mA
+            charge_cfg.cc_current = CHARGER_CHARGE_CONSTANT_CURRENT_20MA;
+            break;
+        
+        case SNDP_HAL_CHARGING_CURRENT_0P5C: //20mA
+            charge_cfg.cc_current = CHARGER_CHARGE_CONSTANT_CURRENT_20MA;
+            break;
+         
+        case SNDP_HAL_CHARGING_CURRENT_1C: //40mA
+            charge_cfg.cc_current = CHARGER_CHARGE_CONSTANT_CURRENT_40MA;
+            break;
+
+        case SNDP_HAL_CHARGING_CURRENT_2C: //60mA
+            charge_cfg.cc_current = CHARGER_CHARGE_CONSTANT_CURRENT_60MA;
+            break;
+            
+       case SNDP_HAL_CHARGING_CURRENT_3C: //60mA
+            charge_cfg.cc_current = CHARGER_CHARGE_CONSTANT_CURRENT_60MA;
+            break;
     
 		default:
-            charger_charge_enable();
 			break;
 	}
+
+    BESCHG_TRACE(0, "set cc_idx=%d (0:20mA, 1:40mA, 2:60mA)",
+        charge_cfg.cc_current);
+
+    if(charging_current == SNDP_HAL_CHARGING_CURRENT_ZERO) {
+        charger_charge_disable();
+    } else {
+        charger_charge_module_cfg_set(&charge_cfg);
+        charger_charge_disable();
+        charger_charge_enable();
+    }
     
 	return SNDP_HAL_RET_OK;
 }

@@ -77,6 +77,16 @@ typedef enum {
 	SNDP_DEV_CHARGER_PLUG_UNKNOWN,
 } sndp_dev_charger_plug_e;
 
+typedef enum {
+	SNDP_DEV_CHARGING_CURRENT_ZERO,
+	SNDP_DEV_CHARGING_CURRENT_0P2C,
+	SNDP_DEV_CHARGING_CURRENT_0P5C,
+	SNDP_DEV_CHARGING_CURRENT_1C,
+	SNDP_DEV_CHARGING_CURRENT_2C,
+	SNDP_DEV_CHARGING_CURRENT_3C,
+	SNDP_DEV_CHARGING_CURRENT_UNKNOWN,
+} sndp_dev_charging_current_e;
+
 
 typedef enum {
 	SNDP_DEV_KEY_CODE_NONE,
@@ -350,7 +360,7 @@ bool sndp_dev_charger_is_charging(bool peer);
 bool sndp_dev_charger_is_charging_full(bool peer);
 void sndp_dev_charger_set_charging_status(bool peer, sndp_dev_charging_status_e charging_status);
 sndp_dev_charging_status_e sndp_dev_charger_get_charging_status(bool peer);
-void sndp_dev_charger_set_charging_current(void);
+void sndp_dev_charger_set_charging_current(uint8_t current);
 void sndp_dev_charger_check_curr_status(void);
 bool sndp_dev_charger_is_charging_enabled(void);
 void sndp_dev_charger_init(void);

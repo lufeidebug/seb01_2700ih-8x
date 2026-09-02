@@ -82,8 +82,8 @@
 #define SPUI_CHARGIN_TEMPERATURE_HIGH			(45)	
 #define SPUI_CHARGIN_TEMPERATURE_LOW			(0)
 
-#define SPUI_WORKING_TEMPERATURE_HIGH			(50)	
-#define SPUI_WORKING_TEMPERATURE_LOW			(-10)
+#define SPUI_WORKING_TEMPERATURE_HIGH			(58)	
+#define SPUI_WORKING_TEMPERATURE_LOW			(-18)
 #define SPUI_TEMPERATURE_ABNORMAL_DURATION		(30)	//seconds
 
 #define SPUI_CLOSE_DISCHARGE_MAX				(60*1)		//seconds
@@ -149,7 +149,6 @@ static void sndp_sleep_app_suspend(sndp_sleep_app_op_user_e user);
 static sndp_ui_ctx_s sndp_ui_ctx;
 
 static sndp_ui_pairing_type_e sndp_ui_pairing_type = SNDP_UI_PAIRING_NONE;  //0:none, 1:tws pairing, 2:freeman pairing
-
 
 /**************************************************************************************************
 * Function
@@ -1362,7 +1361,7 @@ static void sndp_ui_bat_charging_check(void)
 
 		//SPUI_TRACE(2, "charging_time=%d, charging_full_time=%d", sndp_ui_ctx.charging_time, sndp_ui_ctx.charging_full_time);
 		
-		sndp_dev_charger_set_charging_current();
+		//sndp_dev_charger_set_charging_current();
 	}else {
 		if(sndp_dev_cover_is_closed(false)) {
 			sndp_ui_ctx.close_discharge_time += 10;
@@ -1470,16 +1469,45 @@ static void sndp_ui_temperature_measure_callback(int16_t temperature)
 {
 	SPUI_TRACE(1, "T=%d", temperature);
 
-    if(sndp_dev_charger_is_plugin(false)) {
-        if(temperature < SPUI_CHARGIN_TEMPERATURE_LOW  || temperature > SPUI_CHARGIN_TEMPERATURE_HIGH) {
-            sndp_call_func_in_app_thread((uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_TEMPERATURE, 0, 0);
-    	} 
+	bool chg_plug = sndp_dev_charger_is_plugin(false);
+
+    if(chg_plug) {
+        sndp_dev_bat_info_s bat_info;
+        sndp_dev_get_bat_info(false, &bat_info);
+
+        if(temperature <= -18  || temperature >= 60) {
+            sndp_dev_charger_set_charging_current(SNDP_DEV_CHARGING_CURRENT_ZERO);
+    	} else if(temperature < 0 || temperature >= 45) {
+            sndp_dev_charger_set_charging_current(SNDP_DEV_CHARGING_CURRENT_ZERO);
+            
+    	} else {
+            if(bat_info.valid) {
+                if(bat_info.bat_volt < 3000) {
+                    sndp_dev_charger_set_charging_current(SNDP_DEV_CHARGING_CURRENT_0P2C);
+                } else if(bat_info.bat_volt < 4200) {
+                    if(temperature >= 0  && temperature < 10) {
+                        sndp_dev_charger_set_charging_current(SNDP_DEV_CHARGING_CURRENT_0P5C);
+                	} else if(temperature >= 10  && temperature < 15) {
+                        sndp_dev_charger_set_charging_current(SNDP_DEV_CHARGING_CURRENT_1C);
+                	} else if(temperature >= 15  && temperature < 45) {
+                        sndp_dev_charger_set_charging_current(SNDP_DEV_CHARGING_CURRENT_2C);
+                	}
+                } else {
+                    //恒压充电，电流会逐步减小；若此前因高温禁充切到(ZERO)，需重新使能充电器
+                    sndp_dev_charger_set_charging_current(SNDP_DEV_CHARGING_CURRENT_2C);
+                }
+
+            } else {
+                sndp_dev_charger_set_charging_current(SNDP_DEV_CHARGING_CURRENT_0P5C);
+            }
+    	}
+
     } else {
         if(temperature < SPUI_WORKING_TEMPERATURE_LOW || temperature > SPUI_WORKING_TEMPERATURE_HIGH) {
     		sndp_ui_ctx.temperature_exp_shutdown_time += SPUI_TIME_TODO_INTERVAL;
 
     		if(sndp_ui_ctx.temperature_exp_shutdown_time >= SPUI_TEMPERATURE_ABNORMAL_DURATION) {
-    			sndp_call_func_in_app_thread((uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_TEMPERATURE, 0, 0);
+    			sndp_call_func_in_app_thread((uint32_t)sndp_enter_shipmode, 0, 0, 0);
     		}
     	} else {
     		sndp_ui_ctx.temperature_exp_shutdown_time = 0;

@@ -795,30 +795,15 @@ sndp_dev_charging_status_e sndp_dev_charger_get_charging_status(bool peer)
 	return (peer) ? (sndp_dev_ctx.peer.charging_status) : (sndp_dev_ctx.local.charging_status);
 }
 
-void sndp_dev_charger_set_charging_current(void)
+void sndp_dev_charger_set_charging_current(uint8_t current)
 {
 #if defined(__SNDP_CHARGER_MGR__)	
-	static sndp_hal_charging_current_e curr_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
-	sndp_hal_charging_current_e set_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
-	
-	if(sndp_dev_charger_is_plugin(false)) {
-		uint8_t temp = sndp_dev_temperature_get_temperature(false);
-		if(temp < 0)
-			set_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
-		else if(temp < 15)
-			set_current = SNDP_HAL_CHARGING_CURRENT_HALF;
-		else if(temp <= 45)
-			set_current = SNDP_HAL_CHARGING_CURRENT_1C;
-		else
-			set_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
-	} else {
-		set_current = SNDP_HAL_CHARGING_CURRENT_ZERO;
-	}
+	static uint8_t curr_current = SNDP_HAL_CHARGING_CURRENT_UNKNOWN;
 
 	/* Avoid dupicate settings */
-	if(set_current != curr_current) {
-		curr_current = set_current;
-		sndp_hal_charger_set_charging_current(set_current);
+	if(current != curr_current) {
+		curr_current = current;
+		sndp_hal_charger_set_charging_current((sndp_hal_charging_current_e)current);
 	}
 #endif	
 }
