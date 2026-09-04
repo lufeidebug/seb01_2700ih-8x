@@ -88,7 +88,7 @@
 * Variable
 **************************************************************************************************/
 static da217e_drv_if_s da217e_drv_if;
-static uint8_t da217e_tap_cnt = 0;
+static volatile uint8_t da217e_tap_cnt = 0;
 
 static void da217_tap_timer_handler(void const *param);
 osTimerDef(DA217_TAP_TIMER, da217_tap_timer_handler);
