@@ -130,7 +130,6 @@ static sndp_dev_wear_status_changed_cb sndp_dev_wear_status_changed_cb_prt = NUL
 static sndp_dev_gesture_event_cb sndp_dev_gesture_event_cb_ptr = NULL;
 static sndp_dev_charger_plug_cb sndp_dev_charger_plug_cb_ptr = NULL;
 
-static const char *sndp_dev_dev_model_name = "EAGLEPLUS\0";    //SNDP_BT_NAME;
 #if defined(__SNDP_SLEEP_APP__)
  static sndp_da_field_sleep_app_data_s sleep_app_data_global;
  static sndp_sleep_app_flag sleep_flag_run;
@@ -415,6 +414,10 @@ bool sndp_dev_gesture_mapper_update_mapping(bool peer, sndp_dev_gesture_type_t g
 
 uint8_t sndp_dev_gesture_mapper_get_function(bool peer, sndp_dev_gesture_type_t gesture)
 {
+    if (gesture >= SNDP_DEV_GESTURE_MAX) {
+        return 0;
+    }
+    
 	for(int i = 0; i<SNDP_FUNC_MAX; i++){
 		if(peer){
 			if(sndp_dev_gesture_func_table[i] == sndp_dev_ctx.peer.gesture_mapper.ear_mapping_table.func_table[gesture]){
@@ -959,7 +962,7 @@ void sndp_dev_charger_plug_status_changed(sndp_hal_charger_plug_status_e status)
                 sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_COLSED);
             }
         #else
-            sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_OPENED);dddd
+            sndp_dev_cover_status_changed_handler(SNDP_DEV_COVER_OPENED);
         #endif
         }
 #endif        
@@ -1134,7 +1137,7 @@ void sndp_dev_bat_pwr_init(void)
 	SNDP_IF_TRACE_ENTER();
 
 #if defined(__SNDP_BATTERY_MGR__)	
-	sndp_hal_battery_init((sndp_hal_bat_charging_status_e)sndp_dev_charger_is_charging(false), sndp_dev_get_bat_percentage(false));
+	sndp_hal_battery_init((sndp_hal_bat_charging_status_e)sndp_dev_charger_get_charging_status(false), sndp_dev_get_bat_percentage(false));
 	sndp_hal_battery_set_measure_callback(sndp_dev_bat_pwr_measure_callback);
 #endif	
 }
@@ -1371,7 +1374,7 @@ char *sndp_dev_get_bt_name(void)
     uint8_t len;
 
     memset(&field_bt_name, 0, sizeof(sndp_da_field_bt_name_s));
-    if(sndp_da_read_field_data_from_running_param(SNDP_DA_FIELD_BT_NAME, &field_bt_name, sizeof(sndp_da_field_bt_name_s)) == 0) {
+    if(sndp_da_read_field(SNDP_DA_FIELD_BT_NAME, &field_bt_name, sizeof(sndp_da_field_bt_name_s)) == 0) {
         if(field_bt_name.key == SNDP_DA_PARAM_FIELD_VALID) {
             if(field_bt_name.len > SNDP_DA_BT_NAME_LEN)
                 len = SNDP_DA_BT_NAME_LEN;
@@ -1409,9 +1412,9 @@ bool sndp_dev_modify_bt_name(uint8_t *name , uint16_t len)
     memset(&field_bt_name, 0, sizeof(sndp_da_field_bt_name_s));
     field_bt_name.len = len;
     memcpy(field_bt_name.name, name, len);
-    if(sndp_da_write_field_data_to_running_param(SNDP_DA_FIELD_BT_NAME, &field_bt_name, sizeof(sndp_da_field_bt_name_s), true) == 0) {
+    if(sndp_da_write_field(SNDP_DA_FIELD_BT_NAME, &field_bt_name, sizeof(sndp_da_field_bt_name_s), true) == 0) {
         memset(&field_bt_name, 0, sizeof(sndp_da_field_bt_name_s));
-        if(sndp_da_read_field_data_from_backup_param(SNDP_DA_FIELD_BT_NAME, &field_bt_name, sizeof(sndp_da_field_bt_name_s), true) == 0) {
+        if(sndp_da_read_field(SNDP_DA_FIELD_BT_NAME, &field_bt_name, sizeof(sndp_da_field_bt_name_s), true) == 0) {
             if((len == field_bt_name.len) && (memcmp(name, field_bt_name.name, len) == 0)) {
                 SNDP_IF_TRACE(0, "bt name saved successfully.");
                 return true;
@@ -1424,12 +1427,12 @@ bool sndp_dev_modify_bt_name(uint8_t *name , uint16_t len)
 #else
 char *sndp_dev_get_bt_name(void)
 {
-		char *bt_name;
+    char *bt_name;
 
-		bt_name = (char *)factory_section_get_bt_name();
+    bt_name = (char *)factory_section_get_bt_name();
 
-		SNDP_IF_TRACE(1, "bt_name=%s", bt_name);
-		return bt_name;
+    SNDP_IF_TRACE(1, "bt_name=%s", bt_name);
+    return bt_name;
 }
 #endif
 
@@ -1486,7 +1489,7 @@ bool sndp_dev_save_dev_sn(uint8_t *sn, uint16_t sn_len)
     if(sn_len > SNDP_DEV_DEV_SN_LEN)
         return false;
 
-    SNDP_IF_TRACE(2, "sn_len=%d, sn:%s", sn_len, sn);
+    SNDP_IF_TRACE(2, "sn_len=%d, sn:%.*s", sn_len, sn_len, sn);
 
     memset(&field_sn.sn, 0, SNDP_DEV_DEV_SN_LEN);
     strncpy((char *)field_sn.sn, (char *)sn, sn_len);
@@ -1578,11 +1581,6 @@ void sndp_dev_clear_device_info(bool peer)
 	param->wear_status = SNDP_DEV_WEAR_UNKNOWN;
 	param->inout_status = SNDP_DEV_IOBOX_UNKNOWN;
 	
-}
-
-char *sndp_dev_get_dev_model_name(void)
-{
-    return (char *)sndp_dev_dev_model_name;
 }
 
 
@@ -1781,24 +1779,24 @@ void sndp_dev_sleep_app_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_dat
 		sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff = onoff;
 	}	
 	
-
-		sleep_flag_run.sleep_prompt_onoff = onoff;
-		if(sava_data)
-		{
-			sleep_flag_flash.sleep_prompt_onoff = onoff;
-			sndp_save_app_flag_to_flash();
-		}
-		SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff, sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff);
+	sleep_flag_run.sleep_prompt_onoff = onoff;
+	if(sava_data)
+	{
+		sleep_flag_flash.sleep_prompt_onoff = onoff;
+		sndp_save_app_flag_to_flash();
+	}
+	SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff, sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff);
 }
 
 bool sndp_dev_sleep_app_get_prompt_onoff(bool peer)
 {
+    //SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff, sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff);
+    
 	if(peer)
 		return sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff;
 	else
 		return sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff;
-	
-		SNDP_IF_TRACE(0, "local=%d peer=%d", sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff, sndp_dev_ctx.peer.sleep_app_flag.sleep_prompt_onoff);
+
 }
 
 /************************************************** prompt end **************************************************/
@@ -1806,6 +1804,7 @@ bool sndp_dev_sleep_app_get_prompt_onoff(bool peer)
 void sndp_dev_sleep_app_set_eq_index(bool peer, uint8_t index, bool save_data)
 {
 	SNDP_IF_TRACE(1, "index=%d", index);
+    
 	if(index > SNDP_EQ_MODE_RELAXED && index != SNDP_EQ_MODE_CUSTOM_MODE) 
 	{
 		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
@@ -2199,4 +2198,5 @@ void sndp_dev_get_anc_gain_group(uint8_t group, uint16_t *ff, uint16_t *fb)
 
 /************************************************** anc total gain end ************************************************/
 
-#endif	/* __SNDP_UI__ */
+#endif	/* __SNDP_PROJ__ */
+

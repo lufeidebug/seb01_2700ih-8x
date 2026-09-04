@@ -346,8 +346,11 @@ void sndp_start_tws_pairing(void)
 bool sndp_is_left_right_bound(void)
 {
     struct nvrecord_env_t *nvrecord_env;
-    nv_record_env_get(&nvrecord_env);
 
+    if(nv_record_env_get(&nvrecord_env)) {
+        return false;
+    }
+    
     SNDP_IF_TRACE(1, "nvrecord_env mode=%d", nvrecord_env->ibrt_mode.mode);
     if(nvrecord_env->ibrt_mode.mode != IBRT_UNKNOW) {
         return true;
@@ -587,7 +590,10 @@ uint8_t *sndp_get_nvrecord_bt_peer_address(void)
 {
     struct nvrecord_env_t *nvrecord_env;
     
-    nv_record_env_get(&nvrecord_env);
+    if(nv_record_env_get(&nvrecord_env)) {
+        return NULL;
+    }
+    
     return nvrecord_env->ibrt_mode.record.bdAddr.address;
 }
 
@@ -596,7 +602,10 @@ void sndp_ibrt_reconfig_save_to_nvrecord(void *config)
     struct nvrecord_env_t *nvrecord_env = NULL;
     ibrt_config_t *ibrt_config = (ibrt_config_t *)config;
     
-    nv_record_env_get(&nvrecord_env);
+    if(nv_record_env_get(&nvrecord_env)) {
+        return;
+    }
+    
     memset((uint8_t *)&(nvrecord_env->ibrt_mode), 0xff, sizeof(nvrecord_env->ibrt_mode));
     nv_record_env_set(nvrecord_env);
 
@@ -620,7 +629,11 @@ void sndp_ibrt_nvrecord_config_load(void *config)
 
     factory_section_original_btaddr_get(local_addr);
     
-    nv_record_env_get(&nvrecord_env);
+    if(nv_record_env_get(&nvrecord_env)) {
+        SNDP_IF_TRACE(0, "nvrecord_env invalid");
+        return;
+    }
+    
     SNDP_IF_TRACE(1, "nvrecord_env mode=%d", nvrecord_env->ibrt_mode.mode);
     SNDP_IF_TRACE(0, "pair_addr: %02X %02X %02X %02X %02X %02X", 
 	        nvrecord_env->ibrt_mode.record.bdAddr.address[0],
@@ -842,6 +855,10 @@ void sndp_disconnect_mobile_link(uint8_t *mobile_addr)
 {
 	bt_bdaddr_t bt_addr;
 
+    if(mobile_addr == NULL) {
+        return;
+    }
+    
 	memcpy(bt_addr.address, mobile_addr, 6);
     app_tws_ibrt_disconnect_mobile(&bt_addr);
 }
@@ -1058,7 +1075,7 @@ void sndp_profile_state_change_ind(uint32_t profile, uint8_t connected)
 
 
 /******************************************* Musci Contrl Interface ****************************************/
-uint8_t sndp_music_get_avrcp_palyback_status(void)
+uint8_t sndp_music_get_avrcp_playback_status(void)
 {
 	uint8_t ret = BTIF_AVRCP_MEDIA_ERROR;
 	uint8_t a2dp_device = app_bt_audio_get_curr_a2dp_device();
@@ -1100,7 +1117,7 @@ bool sndp_music_is_playing(void)
 	bool ret = false;
 #if 0
 	if(bt_media_cur_is_bt_stream_music() 
-        && (sndp_music_get_avrcp_palyback_status() == BTIF_AVRCP_MEDIA_PLAYING)) {
+        && (sndp_music_get_avrcp_playback_status() == BTIF_AVRCP_MEDIA_PLAYING)) {
 		ret = true;
     }
 #else
@@ -1386,7 +1403,7 @@ void sndp_call_ctrl(sndp_call_ctrl_event_e event)
 }
 
 
-uint8_t sndp_get_hfp_volume(void)
+uint8_t sndp_get_call_volume(void)
 {
     return hfp_volume_local_get((enum BT_DEVICE_ID_T)app_bt_audio_get_curr_hfp_device());
 }
@@ -1476,7 +1493,7 @@ bool sndp_check_crc(uint8_t *data_ptr, uint32_t flash_crc, uint32_t data_len)
 	uint32_t check_crc = 0;
 
 	check_crc = sndp_calc_crc(data_ptr, data_len);
-SNDP_IF_TRACE(2, "check_crc=0x%08x flash_crc=0x%08x", check_crc, flash_crc);	
+    SNDP_IF_TRACE(2, "check_crc=0x%08x flash_crc=0x%08x", check_crc, flash_crc);	
 	if(check_crc == flash_crc)
 	{
 		return true;
@@ -1711,9 +1728,10 @@ int sndp_language_switch_handler(int new_lan)
     media_PlayAudio(AUD_ID_LANGUAGE_SWITCH, 0);
     
     struct nvrecord_env_t *nvrecord_env;
-    nv_record_env_get(&nvrecord_env);
-    nvrecord_env->media_language.language = new_lan;
-    nv_record_env_set(nvrecord_env);
+    if(nv_record_env_get(&nvrecord_env) == 0) {
+        nvrecord_env->media_language.language = new_lan;
+        nv_record_env_set(nvrecord_env);
+    }
 #endif
 
     return 0;

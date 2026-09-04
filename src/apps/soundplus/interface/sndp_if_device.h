@@ -422,7 +422,6 @@ uint8_t *sndp_dev_get_dev_sn(void);
 bool sndp_dev_save_dev_sn(uint8_t *sn, uint16_t sn_len);
 void sndp_dev_init_device_info(void);
 void sndp_dev_clear_device_info(bool peer);
-char *sndp_dev_get_dev_model_name(void);
 
 /************************************************** Device Info End **************************************************/
 

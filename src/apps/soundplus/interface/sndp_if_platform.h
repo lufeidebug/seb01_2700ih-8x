@@ -219,6 +219,7 @@ void sndp_bt_conn_status_changed(sndp_bt_conn_status_e conn_status, uint8_t reas
 void sndp_global_handler_ind(uint8_t link_type, uint8_t evt_type, uint8_t status);
 void sndp_profile_state_change_ind(uint32_t profile, uint8_t connected);
 
+uint8_t sndp_music_get_avrcp_playback_status(void);
 bool sndp_music_is_playing(void);
 void sndp_music_ctrl(sndp_music_ctrl_event_e event);
 uint8_t sndp_get_a2dp_volume(void);

@@ -245,8 +245,10 @@ static int sndp_app_module_handle_process(APP_MESSAGE_BODY *msg_body)
 {
 	switch(msg_body->message_id) {
 		case SNDP_COMIF_MSGID_FUNC_CALL:
-			((sndp_call_func_ptr)(msg_body->message_ptr))(msg_body->message_Param0, msg_body->message_Param1, msg_body->message_Param2);
-			break;
+            if(msg_body->message_ptr != 0) {
+			    ((sndp_call_func_ptr)(msg_body->message_ptr))(msg_body->message_Param0, msg_body->message_Param1, msg_body->message_Param2);
+            }
+            break;
 	}
 
 	return 0;

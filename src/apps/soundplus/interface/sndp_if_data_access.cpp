@@ -68,8 +68,8 @@ typedef struct {
 /**************************************************************************************************
 * Extern
 **************************************************************************************************/
-static void sndp_da_wirte_param_to_flash(sndp_da_access_info_s *info);
-static void sndp_da_read_param_from_flash(sndp_da_access_info_s *info);
+static int32_t sndp_da_wirte_param_to_flash(sndp_da_access_info_s *info);
+static int32_t sndp_da_read_param_from_flash(sndp_da_access_info_s *info);
 
 
 /**************************************************************************************************
@@ -277,7 +277,7 @@ static bool sndp_da_check_running_data_validity(sndp_da_access_info_s *info)
 
 POSSIBLY_UNUSED static bool sndp_da_check_backup_data_validity(sndp_da_access_info_s *info)
 {
-    sndp_da_running_param_s *param;
+    sndp_da_backup_param_s *param;
     uint32_t struct_checksum;
     uint32_t data_checksum;
     
@@ -286,7 +286,7 @@ POSSIBLY_UNUSED static bool sndp_da_check_backup_data_validity(sndp_da_access_in
         return false;
     }
 
-    param = (sndp_da_running_param_s *)info->param_buf;
+    param = (sndp_da_backup_param_s *)info->param_buf;
     if(param == NULL) {
         SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
         return false;
@@ -406,16 +406,16 @@ static int32_t sndp_da_find_backup_field_info(sndp_da_field_id_e field_id, sndp_
 }
 
 
-static void sndp_da_wirte_param_to_flash(sndp_da_access_info_s *info)
+static int32_t sndp_da_wirte_param_to_flash(sndp_da_access_info_s *info)
 {
 	if(!sndp_da_ctx.inited) {
 		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
-		return;
+		return -1;
 	}
 
     if(info == NULL) {
         SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
-        return;
+        return -2;
     }
 
 	SNDP_IF_TRACE(1, "addr=%d, size=%d", info->section_offset, info->param_size);
@@ -433,19 +433,19 @@ static void sndp_da_wirte_param_to_flash(sndp_da_access_info_s *info)
     			false);
 	
     app_flash_flush_pending_op((enum NORFLASH_API_MODULE_ID_T)sndp_da_ctx.section_mod_id, NORFLASH_API_ALL);
-    
+    return 0;
 }
 
-static void sndp_da_read_param_from_flash(sndp_da_access_info_s *info)
+static int32_t sndp_da_read_param_from_flash(sndp_da_access_info_s *info)
 {
     if(!sndp_da_ctx.inited) {
 		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
-		return;
+		return -1;
 	}
 
     if(info == NULL) {
         SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
-        return;
+        return -2;
     }
 
     SNDP_IF_TRACE(1, "addr=%d, size=%d", info->section_offset, info->param_size);
@@ -455,7 +455,7 @@ static void sndp_da_read_param_from_flash(sndp_da_access_info_s *info)
                    (uint8_t *)info->param_buf,
                    info->param_size);
 
-   
+    return 0;
 }
 
 
@@ -476,7 +476,7 @@ static int32_t sndp_da_write_field_data(sndp_da_access_info_s *access_info, sndp
 		return -1;
 	}
 
-	if(data_size > field_info.size) {
+	if(data_size < 4 || data_size > field_info.size) {
         SNDP_IF_TRACE(0, "data_size(%d) > field_size(%d), rtn", data_size, field_info.size);
 		return -3;
 	}
@@ -526,6 +526,11 @@ static int32_t sndp_da_read_field_data(sndp_da_access_info_s *access_info, sndp_
 int32_t sndp_da_write_field(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool save_to_flash)
 {
     sndp_da_field_info_s field_info;
+
+    if(!sndp_da_ctx.inited) {
+		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+		return -4;
+	}
     
     if(sndp_da_ctx.running_access_info.find_field_info(field_id, &field_info) == 0) {
 	    return sndp_da_write_field_data(&sndp_da_ctx.running_access_info, 
@@ -541,6 +546,11 @@ int32_t sndp_da_write_field(sndp_da_field_id_e field_id, void *field_data, uint1
 int32_t sndp_da_read_field(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool read_from_flash)
 {
     sndp_da_field_info_s field_info;
+
+    if(!sndp_da_ctx.inited) {
+		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+		return -4;
+	}
     
     if(sndp_da_ctx.running_access_info.find_field_info(field_id, &field_info) == 0) {
 	    return sndp_da_read_field_data(&sndp_da_ctx.running_access_info, 

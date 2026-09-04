@@ -144,7 +144,10 @@ static void sndp_dev_thread(void const *argument)
 
 bool sndp_dev_thread_is_module_registered(sndp_dev_thread_modual_id_e mod_id)
 {
-    return sndp_dev_thread_mod_handler[mod_id];
+    if (mod_id >= SNDP_DEV_THREAD_MODUAL_NUM)
+        return false;
+    
+    return (sndp_dev_thread_mod_handler[mod_id] != NULL);
 }
 
 int sndp_dev_thread_set_threadhandle(sndp_dev_thread_modual_id_e mod_id, sndp_dev_thread_modual_handler_t handler)
