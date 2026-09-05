@@ -187,7 +187,7 @@ static uint32_t sndp_comm_cmd_recv_eb_freeman_pairing(sndp_comm_cmd_info_s *cmd_
     if(err_code == SNDP_COMM_ERROR_NONE) {
 
         if(!sndp_is_tws_link_connected()) {
-            sndp_call_func_in_app_thread((uint32_t)sndp_enter_freeman_pairing, 0, 0, 0);
+            sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
         } else {
             sndp_call_func_in_app_thread((uint32_t)sndp_tws_enter_mobile_pairing_after_mobile_disconnect, 0, 0, 0);
         }
@@ -1021,6 +1021,11 @@ static uint32_t sndp_comm_cmd_recv_pt_single_pairing(sndp_comm_cmd_info_s *cmd_i
 {
     uint8_t path = cmd_info->path;
     COMM_CMD_TRACE(0, " path=%d", path);
+    /* 蓝牙栈尚未初始化完成，直接返回错误，不进入配对流程 */
+    if(!app_is_stack_ready()) {
+        sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_BT_NOT_INIT_DONE);
+        return 0;
+    }
 	sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NONE);
 	if(sndp_is_tws_link_connected()) {
         if(path == SNDP_COMM_PATH_SPP) {
@@ -1031,7 +1036,7 @@ static uint32_t sndp_comm_cmd_recv_pt_single_pairing(sndp_comm_cmd_info_s *cmd_i
             sndp_call_func_in_app_thread((uint32_t)sndp_tws_enter_mobile_pairing_after_mobile_disconnect, 0, 0, 0);
         }
     } else {
-        sndp_call_func_in_app_thread((uint32_t)sndp_enter_freeman_pairing, 0, 0, 0);
+        sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
     }
 
 	return 0;

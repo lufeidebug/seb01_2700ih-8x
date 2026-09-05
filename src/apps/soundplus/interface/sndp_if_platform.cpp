@@ -286,22 +286,58 @@ void sndp_tws_enable_pairing_mode(void)
     bta_tws_enable_pairing_mode(true);
 }
 
+static void sndp_freeman_pairing_stop_page(void)
+{
+    bta_tws_block_page(true);
+    bta_tws_clear_tws_page();
+    bta_tws_clear_all_device_page();
+}
+
+static void sndp_freeman_pairing_enable_scan(void)
+{
+    if (sndp_pairing_type != SNDP_PAIRING_FREEMAN ||
+        sndp_pairing_status != SNDP_PAIR_STA_PAIRING) {
+        return;
+    }
+
+    /* OPEN/回连的异步 page 可能晚于首次 stop_page，配对期间持续清掉 */
+    sndp_freeman_pairing_stop_page();
+    /* 周期补 scan 时不要先 disable，避免可见窗口被关掉 */
+    bta_tws_enable_pairing_mode(true);
+    bta_tws_enable_access_mode(true);
+    sndp_delay_exec_start(1000, (uint32_t)sndp_freeman_pairing_enable_scan, 0, 0, 0);
+}
+
+static void sndp_freeman_pairing_stop_scan_retry(void)
+{
+    sndp_delay_exec_stop((uint32_t)sndp_freeman_pairing_enable_scan);
+}
+
 void sndp_enter_freeman_pairing(void)
 {
-    SNDP_IF_TRACE(0, "...");
+    /* 守卫：200ms 延迟回调执行时，若期间已切换到 TWS 配对/其他状态，
+     * 丢弃本次旧回调，避免把新状态覆盖回 FREEMAN。 */
+    if (sndp_pairing_type != SNDP_PAIRING_FREEMAN ||
+        sndp_pairing_status != SNDP_PAIR_STA_PAIRING) {
+        return;
+    }
 
-	sndp_disconnect_all_mobile_link();
+    SNDP_IF_TRACE(0, "...");
 
     sndp_pairing_type = SNDP_PAIRING_FREEMAN;
     sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
+    /* 开盖状态需要 OPEN；它会重新排队回连 page，后面必须再 stop_page */
     bta_tws_box_event_entry(BTA_TWS_OPEN);
 	//bta_tws_enable_freeman_mode(true); //会导致ble-role-switch死机问题，不使用
+    sndp_freeman_pairing_stop_page();
     sndp_tws_enable_pairing_mode();
-    bta_tws_enable_access_mode(true);
+    sndp_freeman_pairing_enable_scan();
+    /* 先 200ms 补一次，避开 page cancel 后的 0x0C；之后由 enable_scan 每 1s 兜底 */
+    sndp_delay_exec_start(200, (uint32_t)sndp_freeman_pairing_enable_scan, 0, 0, 0);
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
     app_start_10_second_timer(APP_PAIR_TIMER_ID);   //5minute pairing
-#endif    
+#endif
 }
 
 void sndp_start_freeman_pairing(void)
@@ -312,13 +348,15 @@ void sndp_start_freeman_pairing(void)
     sndp_pairing_status = SNDP_PAIR_STA_PAIRING;
     
     //sndp_clear_mobile_pairing_list();
+    /* delay 前先停掉开机回连 page，避免 200ms 窗口里发出 Create Connection */
+    sndp_freeman_pairing_stop_page();
 	sndp_disconnect_all_mobile_link();
     
 #if 0//defined(__SNDP_REBOOT_FORCE_PAIRING__)
 	osDelay(100);
 	sndp_pmu_reboot(HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT);
 #else
-    sndp_enter_freeman_pairing();
+    sndp_delay_exec_start(200, (uint32_t)sndp_enter_freeman_pairing, 0, 0, 0);
 #endif    
 
 }
@@ -332,7 +370,11 @@ void sndp_start_tws_pairing(void)
     
     sndp_disconnect_all_mobile_link();
     sndp_clear_mobile_pairing_list();
-    
+
+    /* 双耳配对需要主动 page 对耳，先解除 freeman 配对残留的 block */
+    sndp_freeman_pairing_stop_scan_retry();
+    bta_tws_block_page(false);
+
 #if defined(__SNDP_REBOOT_FORCE_PAIRING__)
 	osDelay(100);
 	sndp_pmu_reboot(HAL_SW_BOOTMODE_CUSTOM_OP2_AFTER_REBOOT);
@@ -377,6 +419,11 @@ void sndp_mobile_reconnect_timeout(void)
 void sndp_mobile_reconnect_sccessful(void)
 {
     SNDP_IF_TRACE(0, ".");
+    sndp_pairing_status = SNDP_PAIR_STA_SUCCESS;
+    sndp_pairing_type = SNDP_PAIRING_NONE;
+    sndp_freeman_pairing_stop_scan_retry();
+    bta_tws_block_page(false);   // 回连成功，恢复主动回连能力
+
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
     app_stop_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
@@ -427,6 +474,9 @@ void sndp_mobile_pairing_timeout(void)
         && sndp_is_master_mobile_link_connected()) {
         SNDP_IF_TRACE(0, "peer already connected, skip shutdown");
         sndp_pairing_status = SNDP_PAIR_STA_SUCCESS;
+        sndp_pairing_type = SNDP_PAIRING_NONE;
+        sndp_freeman_pairing_stop_scan_retry();
+		
         app_stop_10_second_timer(APP_PAIR_TIMER_ID);
         app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
         return;
@@ -454,6 +504,8 @@ void sndp_mobile_pairing_timeout(void)
 #endif
 
     sndp_pairing_status = SNDP_PAIR_STA_TIMEOUT;
+    sndp_pairing_type = SNDP_PAIRING_NONE;
+    sndp_freeman_pairing_stop_scan_retry();
     app_stop_10_second_timer(APP_PAIR_TIMER_ID);
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
 	// 主耳连接设备断开后，超时关机，从耳同步也关机
@@ -479,6 +531,9 @@ void sndp_mobile_pairing_sccessful(void)
 {
     SNDP_IF_TRACE(0, ".");
     sndp_pairing_status = SNDP_PAIR_STA_SUCCESS;
+    sndp_pairing_type = SNDP_PAIRING_NONE;
+    sndp_freeman_pairing_stop_scan_retry();
+    bta_tws_block_page(false);   // 配对成功，恢复主动回连能力
 
 #if defined(__SNDP_PRODUCT_TEST__)
     pt_pair_timeout_cnt = 0;

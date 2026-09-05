@@ -1486,6 +1486,8 @@ bool sndp_dev_save_dev_sn(uint8_t *sn, uint16_t sn_len)
     
 	if(sn == NULL)
 		return false;
+    if(sn_len == 0)
+        return false;
     if(sn_len > SNDP_DEV_DEV_SN_LEN)
         return false;
 
@@ -1496,7 +1498,7 @@ bool sndp_dev_save_dev_sn(uint8_t *sn, uint16_t sn_len)
     if(sndp_da_write_field(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
         memset(&field_sn, 0, sizeof(sndp_da_field_sn_s));
         if(sndp_da_read_field(SNDP_DA_FIELD_SN, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
-            if(memcmp(sn, field_sn.sn, SNDP_DEV_DEV_SN_LEN) == 0) {
+            if(memcmp(sn, field_sn.sn, sn_len) == 0) {
                 SNDP_IF_TRACE(0, "sn saved successfully.");
                 return true;
             }

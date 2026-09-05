@@ -1533,18 +1533,21 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 
             if(sndp_dev_cover_is_opened(false)) {
 #if 1
-    			if(reason == 0x08) { 
-    		        //other reason, shutdown time is set to 15 minutes
-                    sndp_enter_mobile_reconnect();
-    			} else { 
-    				//REMOTE_USER_TERMINATED   
-                    if(sndp_is_tws_link_connected()) {
-                        sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
-                    } else {
-                        sndp_call_func_in_app_thread((uint32_t)sndp_enter_freeman_pairing, 0, 0, 0);
+                if(SNDP_PAIRING_FREEMAN != sndp_get_pairing_type())
+                {
+                    if(reason == 0x08) { 
+                        //other reason, shutdown time is set to 15 minutes
+                        sndp_enter_mobile_reconnect();
+                    } else { 
+                        //REMOTE_USER_TERMINATED   
+                        if(sndp_is_tws_link_connected()) {
+                            sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+                        } else {
+                            sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
+                        }
+                        
                     }
-    				    
-    			}
+                }
 #else
                 sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
 #endif
@@ -1745,7 +1748,7 @@ static void sndp_ui_bt_event_exec_after_power_on(void)
         SPUI_TRACE(0, "force freeman pairing");
 
         sndp_ui_pairing_type_set(SNDP_UI_PAIRING_NONE);
-        sndp_enter_freeman_pairing();
+        sndp_start_freeman_pairing();
         sndp_delay_exec_start(100, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
        
     } else if (sndp_ui_pairing_type_is(SNDP_UI_PAIRING_TWS)) {
