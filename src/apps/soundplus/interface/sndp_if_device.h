@@ -420,6 +420,8 @@ char *sndp_dev_get_bt_name(void);
 bool sndp_dev_modify_bt_name(uint8_t *name , uint16_t len);
 uint8_t *sndp_dev_get_dev_sn(void);
 bool sndp_dev_save_dev_sn(uint8_t *sn, uint16_t sn_len);
+uint8_t *sndp_dev_get_dev_sn2(void);
+bool sndp_dev_save_dev_sn2(uint8_t *sn, uint16_t sn_len);
 void sndp_dev_init_device_info(void);
 void sndp_dev_clear_device_info(bool peer);
 

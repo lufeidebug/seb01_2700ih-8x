@@ -28,6 +28,7 @@ typedef enum {
 
     SNDP_DA_FIELD_TEST_FLAG,
     SNDP_DA_FIELD_DEV_COLOR,
+    SNDP_DA_FIELD_SN2,
 
 } sndp_da_field_id_e;
 
@@ -133,7 +134,8 @@ typedef struct {
 	sndp_da_field_ppg_calib_data_s  field_ppg_calib_data;
     sndp_da_field_acc_calib_data_s  field_acc_calib_data;
     sndp_da_field_test_flag_s field_test_flag;
-    sndp_da_field_dev_color_s field_dev_color;
+	sndp_da_field_dev_color_s field_dev_color;
+	sndp_da_field_sn_s field_sn2;
 
     /** Add field above this line. */
     uint32_t data_end;

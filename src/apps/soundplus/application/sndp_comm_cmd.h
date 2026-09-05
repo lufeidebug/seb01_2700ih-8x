@@ -274,6 +274,11 @@ typedef enum {
                                                                 rsp: 1 byte, error code(1). */
 #endif
 
+    COMM_CMDID_PT_READ_DEV_SN2                       = 0x76, /* recv: 0 bytes.
+                                                            rsp: 21 bytes, error code(1) + sn(20). */
+    COMM_CMDID_PT_WRITE_DEV_SN2                      = 0x77, /* recv: <=20 bytes.
+                                                            rsp: 2 bytes, error code(1) + result(1). */
+
     COMM_CMDID_PT_CMD_END                           = 0x7F,
 
     /***** 与APP交互指令 *****/
