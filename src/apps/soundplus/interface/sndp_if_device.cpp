@@ -1719,8 +1719,6 @@ void sndp_dev_hr_init(void)
 	sndp_hal_hr_init();
 #if defined(__SNDP_HEART_RATE_MGR__)
 	sndp_hal_hr_set_fifo_ready_callback(sndp_hr_notify_ppg_fifo_ready);
-#else
-	sndp_hal_hr_set_fifo_ready_callback(sndp_hal_hr_ppg_fifo_task_ready_callback);
 #endif
 #endif
 }

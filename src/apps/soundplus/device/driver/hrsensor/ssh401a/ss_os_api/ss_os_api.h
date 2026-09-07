@@ -147,7 +147,7 @@ int os_api_print_log(const char *format, ...);
  * @see ss_os_api_config()
  * @see ss_ppg_operation_mode()
  * @see ss_ppg_proximity_threshold()
- * @see ss_ppg_interrupt_handler()
+ * @see ss_ppg_proximity_interrupt_handler()
  */
 void os_api_callback_proximity(unsigned char is_wearing);
 

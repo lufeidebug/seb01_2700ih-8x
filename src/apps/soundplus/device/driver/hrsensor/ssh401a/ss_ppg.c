@@ -32,6 +32,7 @@ static unsigned short g_selected_sps = 32;
 static Sensor g_target_sensor;
 static unsigned char g_fifo_onoff = 0;
 static unsigned char g_proximity_sta = 0;
+static OperationMode g_current_op_mode = PROX;
 static SS_PPG ppg_buf[64];
 static unsigned int g_ppg_samples_count = 0;
 static unsigned int g_ppg_read_samples_count = 0;
@@ -389,7 +390,16 @@ int ss_ppg_operation_mode(OperationMode op_mode)
     val = val & ~0x70; //MODE bit mask
     val |= (unsigned char)op_mode << 4;
 
-    return os_api_i2c_write_byte(REG_MEASUREMENT, val);
+    ret = os_api_i2c_write_byte(REG_MEASUREMENT, val);
+    if (ret == SS_SUCCESS) {
+        g_current_op_mode = op_mode;
+    }
+    return ret;
+}
+
+OperationMode ss_ppg_get_operation_mode(void)
+{
+    return g_current_op_mode;
 }
 
 int ss_ppg_led_config(Seq seq, Led led)
@@ -569,16 +579,18 @@ void ss_ppg__start_acc_samples_measurement(int duration_s)
     // os_api_print_log("PPG Samples Measurement Started %d\r\n", duration_s);
 }
 
-void ss_ppg_interrupt_handler(void)
+/**
+ * @brief 处理PROX中断(应在GPIO IRQ上下文调用): 读取中断状态寄存器, 处理佩戴/摘下事件,
+ *        并将佩戴状态通过 os_api_callback_proximity 上报给上层.
+ * @return true  - FIFO_FULL中断同时挂起, 调用方需通知线程读取FIFO(INT引脚留待线程清除)
+ * @return false - 仅有PROX中断(或无有效中断), 已在本函数内清除INT引脚
+ */
+bool ss_ppg_proximity_interrupt_handler(void)
 {
-    unsigned char fifo_count = 0;
-    unsigned char read_len = 0;
-    unsigned char* fifo_data = (void*)0;
     unsigned char int_status = 0;
-    //POSSIBLY_UNUSED SS_PPG* ppg_buf;
-    
+
     ss_ppg_read_interrupt_status(&int_status);
-   
+
     if ((int_status & INT_STAT_PROX_HIGH) == INT_STAT_PROX_HIGH)
     {
         //Wearing Earbuds
@@ -596,7 +608,121 @@ void ss_ppg_interrupt_handler(void)
         //Removing Earbuds
         g_proximity_sta = 0;
         os_api_callback_proximity(0);
-        
+
+        ss_ppg_led_config(SEQ1, LED_OFF);
+        ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 0);
+    }
+
+    if ((int_status & INT_STAT_FIFO_FULL) != INT_STAT_FIFO_FULL)
+    {
+        os_api_print_log("PROX Interrupt Handler: %d\r\n", int_status);
+        ss_ppg_interrupt_clear();
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * @brief 处理FIFO_FULL中断(应在任务线程上下文调用): 读取FIFO数据, 解析并上报, 清除INT引脚.
+ */
+void ss_ppg_fifo_interrupt_handler(void)
+{
+    unsigned char fifo_count = 0;
+    unsigned char read_len = 0;
+    unsigned char* fifo_data = (void*)0;
+
+    ss_ppg_read_fifo_count(&fifo_count);
+
+    if (fifo_count == 0)
+    {
+        ss_ppg_interrupt_clear();
+        return;
+    }
+
+    read_len = sizeof(unsigned char) * fifo_count * 3;
+    fifo_data = (unsigned char*)os_api_malloc(read_len);
+
+    ss_ppg_read_fifo(read_len, fifo_data);
+
+    ss_ppg_fifo_parse(fifo_data, read_len);
+
+    os_api_print_log("FIFO_FULL Interrupt Handler: %d\r\n", read_len);
+    //notify PPG data
+    int data_count = ss_ppg_mem_get_fifo_data_count();
+
+    if (data_count > 0)
+    {
+        ss_ppg_interrupt_clear();
+
+        if(data_count > 64) {
+            data_count = 64;
+        }
+
+        for (int idx=0; idx < data_count; idx++)
+        {
+            SS_PPG* ppg_data = ss_ppg_mem_fifo_data_pop();
+            memcpy(&ppg_buf[idx], ppg_data, sizeof(SS_PPG));
+        }
+
+
+        if(g_ppg_samples_measurement_started)
+        {
+            g_ppg_read_samples_count++;
+            g_ppg_samples_count += data_count;
+            if(g_ppg_read_samples_count == 1){
+                g_ppg_samples_count = 0; // Reset sample count for new interval
+                g_ppg_start_time = TICKS_TO_MS(hal_sys_timer_get());
+            }else if(g_ppg_read_samples_count == g_ppg_samples_duration){
+                g_ppg_end_time = TICKS_TO_MS(hal_sys_timer_get());
+                g_ppg_sample_rate = (float)g_ppg_samples_count / ((float)(g_ppg_end_time - g_ppg_start_time)/1000.0);
+                os_api_callback_ppg_read_samplerate((uint16_t)(g_ppg_sample_rate*100));
+                // os_api_print_log("PPG Rate: %d Hz %d sps:%d\r\n", (int)(g_ppg_sample_rate*100),(g_ppg_end_time - g_ppg_start_time), g_ppg_samples_count);
+                g_ppg_read_samples_count = 0;
+                g_ppg_samples_count = 0;
+                g_ppg_samples_measurement_started = false;
+            }
+
+        }
+        os_api_callback_ppg_data(ppg_buf, data_count);
+        os_api_callback_report_ppg_raw_data(fifo_data, read_len);
+    }
+
+    os_api_free(fifo_data);
+}
+
+/**
+ * @brief Combined interrupt handler for mixed mode (PROX_PPG_0 / PROX_PPG_1).
+ *        Handles both PROX and FIFO_FULL in one pass within a single thread context.
+ *        Should be called from the FIFO task thread when notified by the IRQ handler.
+ */
+void ss_ppg_interrupt_handler(void)
+{
+    unsigned char fifo_count = 0;
+    unsigned char read_len = 0;
+    unsigned char* fifo_data = (void*)0;
+    unsigned char int_status = 0;
+
+    ss_ppg_read_interrupt_status(&int_status);
+
+    if ((int_status & INT_STAT_PROX_HIGH) == INT_STAT_PROX_HIGH)
+    {
+        //Wearing Earbuds
+        g_proximity_sta = 1;
+        os_api_callback_proximity(1);
+
+        if(g_fifo_onoff) {
+            ss_ppg_clear_fifo();
+            ss_ppg_led_config(SEQ1, LED_GREEN);
+            ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 1);
+        }
+    }
+    else if ((int_status & INT_STAT_PROX_LOW) == INT_STAT_PROX_LOW)
+    {
+        //Removing Earbuds
+        g_proximity_sta = 0;
+        os_api_callback_proximity(0);
+
         ss_ppg_led_config(SEQ1, LED_OFF);
         ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 0);
     }
@@ -657,7 +783,7 @@ void ss_ppg_interrupt_handler(void)
                 g_ppg_samples_count = 0;
                 g_ppg_samples_measurement_started = false;
             }
-            
+
         }
         os_api_callback_ppg_data(ppg_buf, data_count);
         os_api_callback_report_ppg_raw_data(fifo_data, read_len);

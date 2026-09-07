@@ -163,7 +163,6 @@ int32_t sndp_hal_hr_samples_measurement_start(int duration_s);
 int32_t sndp_hal_hr_read_samples_rate(sndp_hal_hr_ppg_samples_callback callback);
 int32_t sndp_hal_hr_ppg_fifo_task(void);
 int32_t sndp_hal_hr_set_fifo_ready_callback(sndp_hal_hr_fifo_ready_callback callback);
-void sndp_hal_hr_ppg_fifo_task_ready_callback(void);
 #ifdef __cplusplus
 }
 #endif

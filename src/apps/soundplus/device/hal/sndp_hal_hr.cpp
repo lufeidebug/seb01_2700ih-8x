@@ -186,11 +186,6 @@ int32_t sndp_hal_hr_ppg_fifo_task(void)
 	return SNDP_HAL_RET_FAIL;
 }
 
-void sndp_hal_hr_ppg_fifo_task_ready_callback(void)
-{
-	sndp_hal_hr_ppg_fifo_task();
-}
-
 int32_t sndp_hal_hr_set_fifo_ready_callback(sndp_hal_hr_fifo_ready_callback callback)
 {
 	if((p_hal_hr != NULL) && (p_hal_hr->set_fifo_ready_callback != NULL))

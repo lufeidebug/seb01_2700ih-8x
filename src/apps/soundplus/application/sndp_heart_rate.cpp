@@ -495,9 +495,11 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
         //                                                 sndp_hr_acc_is_suspend());
         /********** task1: ppg_task **********/
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
-        /* 注意: 绝不能用sndp_hr_is_reading_ppg_enabled()门控! ss_ppg_interrupt_handler除读FIFO外,
-           还负责处理佩戴事件(g_proximity_sta, FIFO中断使能的前提)并清除传感器INT引脚;
-           若被门控跳过, 边沿触发的GPIO将因INT未清除而永久收不到后续中断 */
+        /* 注意: 绝不能用sndp_hr_is_reading_ppg_enabled()门控! 中断处理按operation_mode分支:
+           - PROX模式: IRQ仅通知app线程(ssh401a_proximity_task), 本task不被唤醒
+           - 混合模式(PROX_PPG_0): IRQ通知本task, 调原始ss_ppg_interrupt_handler一次处理PROX+FIFO
+           - 纯FIFO(预留): IRQ通知本task, 调ss_ppg_fifo_interrupt_handler
+           若被门控跳过, INT未清除将导致边沿触发的GPIO永久收不到后续中断 */
         if((fired_signals & SENSOR_TASK_SIGNAL_PPG_FIFO)) {
             sndp_hal_hr_ppg_fifo_task();
         }

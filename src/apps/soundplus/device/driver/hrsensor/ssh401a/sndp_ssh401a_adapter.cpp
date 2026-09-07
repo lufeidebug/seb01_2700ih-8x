@@ -82,7 +82,16 @@ static int32_t ssh401a_ppg_data[64];
 **************************************************************************************************/
 int32_t ssh401a_ppg_fifo_task(void)
 {
-    ss_ppg_interrupt_handler();
+    /* Branch by cached operation mode (RAM read, thread-safe):
+     * - Mixed mode (PROX_PPG_0/1): original combined handler, PROX+FIFO in one pass
+     * - Pure PPG FIFO (PPG_x): split FIFO-only handler
+     * - Pure PROX: should not reach here (IRQ only notifies app thread in PROX mode) */
+    OperationMode mode = ss_ppg_get_operation_mode();
+    if (mode == PROX_PPG_0 || mode == PROX_PPG_1) {
+        ss_ppg_interrupt_handler();
+    } else {
+        ss_ppg_fifo_interrupt_handler();
+    }
     return SNDP_HAL_RET_OK;
 }
 
@@ -313,11 +322,31 @@ int32_t ssh401a_read_samples_rate(sndp_hal_hr_ppg_samples_callback callback)
     return SNDP_HAL_RET_OK;
 }
 // static int ssh401_irq_cnt = 0;
+/* app线程上下文执行: 仅处理PROX中断(读佩戴状态/上报/清INT).
+ * 由ssh401a_irq_handler通过sndp_call_func_in_app_thread投递, 在app线程中执行(可安全调用I2C).
+ * FIFO_FULL中断由sndp_hr_sleep_app_process_thread独立处理, 本函数忽略其返回值. */
+static void ssh401a_proximity_task(uint32_t p0, uint32_t p1, uint32_t p2)
+{
+    /* 处理PROX中断; 若FIFO_FULL同时挂起, 由FIFO线程自行处理, 此处忽略返回值.
+     * 无FIFO时本函数内部清INT; 有FIFO时不清INT(留给FIFO线程读完FIFO后清). */
+    (void)ss_ppg_proximity_interrupt_handler();
+}
+
 static void ssh401a_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
-    if(ssh401a_hr_fifo_ready_ptr){
-        // SSH401A_TRACE(1, "irq_handler");
-        ssh401a_hr_fifo_ready_ptr();
+    /* GPIO IRQ上下文禁止执行I2C操作, 仅做mailbox/signal投递.
+     * 按缓存的operation_mode(RAM读取, IRQ安全)分支:
+     * - PROX: 仅通知app线程处理佩戴状态
+     * - PPG_x(纯FIFO): 仅通知FIFO线程读FIFO数据 (预留, 当前未使用)
+     * - PROX_PPG_0/1(混合): 通知FIFO线程, 由原始ss_ppg_interrupt_handler一次处理PROX+FIFO */
+    OperationMode mode = ss_ppg_get_operation_mode();
+
+    if (mode == PROX) {
+        sndp_call_func_in_app_thread((uint32_t)ssh401a_proximity_task, 0, 0, 0);
+    } else {
+        if(ssh401a_hr_fifo_ready_ptr){
+            ssh401a_hr_fifo_ready_ptr();
+        }
     }
 }
 
