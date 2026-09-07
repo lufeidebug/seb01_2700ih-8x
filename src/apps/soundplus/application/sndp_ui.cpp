@@ -583,7 +583,9 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 		sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_play_tone, 0, 0, 0);
 
 	} else {
-        sndp_dev_acc_stop_single_tap_interrupt();
+        if(!sndp_pt_click_test_is_opened()) {
+            sndp_dev_acc_stop_single_tap_interrupt();
+        }
         sndp_dev_hr_switch_operation_mode(SNDP_DEV_HR_PROX);
         
         sndp_ui_ctx.gesture_en = false;
@@ -713,7 +715,9 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
 #endif
 #endif
 
-        sndp_dev_acc_stop_single_tap_interrupt();
+        if(!sndp_pt_click_test_is_opened()) {
+            sndp_dev_acc_stop_single_tap_interrupt();
+        }
 
         sndp_dev_hr_switch_operation_mode(SNDP_DEV_HR_PROX);
         sndp_dev_hr_enter_standby_mode();
@@ -994,12 +998,12 @@ static void sndp_ui_gesture_event_generated(sndp_dev_gesture_event_e gesture_eve
         sndp_comm_cmd_send_pt_click_test_report((uint8_t)(gesture_event - SNDP_DEV_GESTURE_EVENT_1_CLICK + 1));
     }
     
-    if(!sndp_dev_wear_is_worn(false)) {
+    if(!(sndp_dev_wear_is_worn(false) || sndp_pt_click_test_is_opened())) {
         SPUI_TRACE(0, "not worn, rtn");
         return;
     }
 
-    if(!sndp_ui_ctx.gesture_en) {
+    if(!(sndp_ui_ctx.gesture_en || sndp_pt_click_test_is_opened())) {
         SPUI_TRACE(0, "not reaching 2s after wearing, rtn");
         return;
     }
