@@ -524,13 +524,25 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
         if((fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) && !sndp_hr_acc_is_suspend() &&
            (hr_ctx.hr_running) && !sndp_hr_ppg_is_suspend() &&
            (sndp_hr_ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES)) {
-            sndp_heartrate_algo_task();
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+            /* Secondary(STANDBY)不执行心率算法, 只Primary(ACTIVE)执行 */
+            if(sndp_sleep_role_is_active())
+#endif
+            {
+                sndp_heartrate_algo_task();
+            }
         }
 
         /********** task4: sleep_analysis_task **********/
         if(hr_ctx.sleep_running && hr_ctx.sleep_tracking) {
             hr_ctx.sleep_tracking = false;
-            sndp_sleep_analysis();
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+            /* Secondary(STANDBY)不执行睡眠分析, 只Primary(ACTIVE)执行 */
+            if(sndp_sleep_role_is_active())
+#endif
+            {
+                sndp_sleep_analysis();
+            }
         }
 
         /********** task5: proximity_task **********/
@@ -576,9 +588,9 @@ static void sndp_report_ppg_raw_data_callback(uint8_t *data, uint16_t cnt)
 #if defined(__SNDP_GSENSOR_SUPPORT__)
 static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16_t cnt)
 {
-    // HR_TRACE(0, "acc_read_raw cnt=%d", cnt);
-    // SNDP_DUMP32("%04X ", data,  cnt > 16?16:cnt);
-    
+    HR_TRACE(0, "acc_read_raw cnt=%d", cnt);
+    SNDP_DUMP32("%04X ", data,  cnt > 16?16:cnt);
+
     if(hr_ctx.hr_running) {
         sndp_hr_acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
     }
@@ -691,6 +703,21 @@ void sndp_hr_switch_reading_acc_raw_data(uint32_t user, bool onoff)
 
 void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 {
+    /* Flag: both Primary and Secondary set these (keep state consistent) */
+    hr_ctx.hr_running = true;
+    hr_measure_time = 0;
+    sndp_hr_mearsuring_set_dump_state(HR_DUMP_STATE, dump_state);
+    sndp_hr_mearsuring_set_sampling_rate(ppg_sampling_rate);
+
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    /* Secondary: flag set, skip sensor/algo execution */
+    if(!sndp_sleep_role_is_active()) {
+        SNDP_TRACE(0, "Secondary: hr_start flag only");
+        return;
+    }
+#endif
+
+    /* Execution: Primary only */
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
 
     SNDP_TRACE(0, "sndp_hr_mearsuring_start...");
@@ -701,10 +728,6 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
     dbbeats_initialize_heartrate_data(ppg_sampling_rate, dump_state);
 #endif
 
-    hr_measure_time = 0;
-    hr_ctx.hr_running = true;
-    sndp_hr_mearsuring_set_dump_state(HR_DUMP_STATE, dump_state);
-    sndp_hr_mearsuring_set_sampling_rate(ppg_sampling_rate);
     if(sndp_dev_wear_is_worn(false) || sndp_call_get_in_out_flag() == 0 ) {
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC, true);
         sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG, true);
@@ -717,8 +740,20 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 void sndp_hr_mearsuring_stop(void)
 {
     SNDP_TRACE(0, "sndp_hr_mearsuring_stop...");
+
+    /* Flag: both Primary and Secondary clear these (keep state consistent) */
     hr_ctx.hr_running = false;
     sndp_hr_mearsuring_set_dump_state(HR_DUMP_STATE, 0x00);
+
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    /* Secondary: flag cleared, skip sensor close */
+    if(!sndp_sleep_role_is_active()) {
+        SNDP_TRACE(0, "Secondary: hr_stop flag only");
+        return;
+    }
+#endif
+
+    /* Execution: Primary only */
     if(sndp_dev_wear_is_worn(false) || sndp_call_get_in_out_flag() == 0) {
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC, false);
         sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG, false);
@@ -836,7 +871,15 @@ void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
     memcpy(sleep_screen_status, screen_status, sizeof(sleep_screen_status));
     sleep_sound_state = sound_state;
 
+    /* Flag: both Primary and Secondary set this (keep state consistent) */
     hr_ctx.sleep_tracking = true;
+
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    /* Secondary: data stored + flag set, skip thread wakeup (no algo execution) */
+    if(!sndp_sleep_role_is_active()) {
+        return;
+    }
+#endif
 
     // 通知统一任务线程立即处理(否则要等下一次传感器IRQ唤醒)
     if(hr_process_thread_tid) {
@@ -873,29 +916,47 @@ static void sndp_sleep_analysis(void)
 
 void sndp_sleep_analysis_start(int32_t sleep_control)
 {
+    /* Flag: both Primary and Secondary set these (keep state consistent) */
+    hr_ctx.sleep_running = true;
+    hr_ctx.sleep_tracking = false;
+
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    /* Secondary: flag set, skip algo execution */
+    if(!sndp_sleep_role_is_active()) {
+        SNDP_TRACE(0, "Secondary: sleep_start flag only");
+        return;
+    }
+#endif
+
+    /* Execution: Primary only */
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "sndp_sleep_analysis_start...");
-    
+
     sndp_hr_ppg_raw_data_queue_reset();
-    
+
     // sleep_step_1:算法初始化
 #if defined(__SNDP_HR_ALGO__)
     dbbeats_initialize_sleep_data(sleep_control);
 #endif
-
-    // sleep_analysis不持有传感器, 仅记录sleep标志, 不触碰hr_running及其他flag
-    hr_ctx.sleep_running = true;
-    hr_ctx.sleep_tracking = false;
 }
 
 void sndp_sleep_analysis_stop(void)
 {
     SNDP_TRACE(0, "sndp_sleep_analysis_stop...");
 
-    // hr_setp_17: 停止处理(仅清除sleep标志, 不触碰hr_running及传感器)
+    /* Flag: both Primary and Secondary clear these (keep state consistent) */
     hr_ctx.sleep_running = false;
     hr_ctx.sleep_tracking = false;
 
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    /* Secondary: flag cleared, skip execution */
+    if(!sndp_sleep_role_is_active()) {
+        SNDP_TRACE(0, "Secondary: sleep_stop flag only");
+        return;
+    }
+#endif
+
+    /* Execution: Primary only */
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
 }

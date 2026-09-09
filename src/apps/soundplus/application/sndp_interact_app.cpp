@@ -24,6 +24,10 @@
 #include "sleepsense.h"
 #endif
 
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+#include "sndp_sleep_role_switch.h"
+#endif
+
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
 #include "sndp_hal_hr.h"
 #endif
@@ -861,9 +865,12 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_ap
         acc_ntf_debug_count = 0;
         ppg_ntf_debug_count = 0;
     }
+    /* Both ears call this: function internally gates by role (Primary executes, Secondary sets flag only) */
     sndp_sensor_service_start_heartrate_local(sampling_rate, dump_data);
-    /* 同步给对耳 */
+#if !defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    /* TWS sync to peer (GATT dual-send mode does not need this) */
     sndp_comm_cmd_send_lr_sync_start_heartrate(sampling_rate, dump_data);
+#endif
     return 0;
 }
 
@@ -877,9 +884,11 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app
 {
     cmd_info->data_len = 0x02;
     cmd_info->value[0] = 0; // success
+    /* Both ears call this: function internally gates by role */
     sndp_sleep_comm_cmd_heartrate_stop();
-    /* 同步给对耳 */
+#if !defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     sndp_comm_cmd_send_lr_sync_stop_heartrate();
+#endif
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }
@@ -899,9 +908,12 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_co
     DUMP8("0x%02x ", cmd_info->value, 4);
     COMM_CMD_TRACE(1, "sleep control=%d wear state=%d", sleep_control, sndp_dev_wear_is_worn(false));
     if(sndp_dev_wear_is_worn(false)){
+        /* Both ears call this: function internally gates by role */
         sndp_sleep_comm_cmd_analysis_start(sleep_control);
-        /* 同步给对耳，两耳同时运行睡眠分析 */
+#if !defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+        /* TWS sync to peer (GATT dual-send mode does not need this) */
         sndp_comm_cmd_send_lr_sync_start_sleep(sleep_control);
+#endif
         cmd_info->value[0] = 0; // success
     } else {
         cmd_info->value[0] = 0x01; // fail
@@ -916,11 +928,14 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app
     int16_t *accel_data_m = (int16_t*)&cmd_info->value[0];
     uint8_t *screen_status = &cmd_info->value[180];
     uint8_t sound_state = cmd_info->value[210];
+    /* Both ears call this: function internally gates by role (Primary executes algo, Secondary stores data+flag) */
     sndp_dbbeats_put_sleep_app_data(accel_data_m, screen_status, sound_state);
-    /* 同步追踪数据给对耳，运行相同的逻辑 */
+#if !defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    /* TWS sync to peer (GATT dual-send mode does not need this) */
     memset(sleep_tracking_sync_buff, 0, sizeof(sleep_tracking_sync_buff));
     memcpy(sleep_tracking_sync_buff, cmd_info->value, 211);
     sndp_delay_exec_start(150,(uint32_t)sndp_comm_cmd_send_lr_sync_sleep_tracking, (uint32_t)&sleep_tracking_sync_buff[0], 211, 0);
+#endif
     return 0;
 }
 
@@ -956,9 +971,11 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_com
 {
     cmd_info->data_len = 0x02;
     cmd_info->value[0] = 0; // success
+    /* Both ears call this: function internally gates by role */
     sndp_sleep_comm_cmd_analysis_stop();
-    /* 同步给对耳，两耳同时停止睡眠分析 */
+#if !defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     sndp_comm_cmd_send_lr_sync_stop_sleep();
+#endif
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
 }

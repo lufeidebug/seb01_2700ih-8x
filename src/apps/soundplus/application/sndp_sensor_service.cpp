@@ -9,6 +9,10 @@
 #include "sndp_heart_rate.h"
 #include "sndp_ui.h"
 
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+#include "sndp_sleep_role_switch.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -117,11 +121,23 @@ void sndp_sensor_service_enter_sleep_mode_local(int32_t sleep_control)
 #if defined(__SNDP_SLEEP_APP__)
     TR_INFO(1, "sensor_svc: enter_sleep ctrl=%d", sleep_control);
 
+    /* Flag: both Primary and Secondary set these (keep state consistent) */
     sndp_dev_sleep_app_set_stage_onoff(false, 0x01);
     sndp_ui_working_mode_sleep_app_set(SNDP_DEV_WORKING_MODE_SLEEP);
-
 #if defined(__SNDP_HEART_RATE_MGR__)
     sndp_hr_set_sleep_control(sleep_control);
+#endif
+
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    /* Secondary: flag set, skip algo/sensor execution */
+    if(!sndp_sleep_role_is_active()) {
+        TR_INFO(0, "Secondary: enter_sleep flag only");
+        return;
+    }
+#endif
+
+    /* Execution: Primary only */
+#if defined(__SNDP_HEART_RATE_MGR__)
     sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_start, 0, 0, 0);
 #endif
     sndp_ui_sleep_anc_mode_on();
@@ -131,10 +147,21 @@ void sndp_sensor_service_enter_sleep_mode_local(int32_t sleep_control)
 void sndp_sensor_service_exit_sleep_mode_local(void)
 {
 #if defined(__SNDP_SLEEP_APP__)
-    TR_INFO(1, "sensor_svc: exit_sleep");
+    TR_INFO(0, "sensor_svc: exit_sleep");
 
+    /* Flag: both Primary and Secondary set these (keep state consistent) */
     sndp_dev_sleep_app_set_stage_onoff(false, 0x00);
     sndp_ui_working_mode_sleep_app_set(SNDP_DEV_WORKING_MODE_BT);
+
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    /* Secondary: flag set, skip execution */
+    if(!sndp_sleep_role_is_active()) {
+        TR_INFO(0, "Secondary: exit_sleep flag only");
+        return;
+    }
+#endif
+
+    /* Execution: Primary only */
     sndp_ui_sleep_anc_mode_off();
 #if defined(__SNDP_HEART_RATE_MGR__)
     sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);

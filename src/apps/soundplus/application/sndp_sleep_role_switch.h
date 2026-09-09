@@ -11,103 +11,102 @@ extern "C" {
 #endif
 
 /**************************************************************************************************
- * ��ɫ״̬������
- * TWS˯�߼��
+ * Role state enum
  **************************************************************************************************/
 
 typedef enum {
-    ROLE_IDLE           = 0,    /* ��ʼ̬����δȷ����ɫ */
-    ROLE_ACTIVE         = 1,    /* �豸�����У��ɼ�PPG/ACC���ݣ�BLE����APP��ִ���㷨 */
-    ROLE_STANDBY        = 2,    /* �豸�������رմ��������㷨�����͹��� */
-    ROLE_SWITCHING      = 3,    /* �л��У��ؼ�����̬����ֹ�ظ����� */
+    ROLE_IDLE           = 0,    /* Initial state, role not yet determined */
+    ROLE_ACTIVE         = 1,    /* Primary: running PPG/ACC, executing algo, reporting to App */
+    ROLE_STANDBY        = 2,    /* Secondary: sensors closed, algo stopped, low power */
+    ROLE_SWITCHING      = 3,    /* Switching: critical transitional state */
 } Device_Role_t;
 
 /**
- * @brief �㷨���սṹ�壨����TWS���䣩
- * ���� SleepSense ��� struct Snapshot������ʵ�����ݲ���
+ * @brief Algorithm snapshot struct (for TWS transfer)
  */
-#define SNDP_SLEEP_SNAPSHOT_DATA_SIZE   213   /* �� SNAPSHOT_PAYLOAD_SIZE һ�� */
+#define SNDP_SLEEP_SNAPSHOT_DATA_SIZE   213
 
 typedef struct {
-    uint16_t size;                                  /* ʵ�����ݳ��� */
-    uint8_t  data[SNDP_SLEEP_SNAPSHOT_DATA_SIZE];   /* �㷨״̬�������� */
+    uint16_t size;
+    uint8_t  data[SNDP_SLEEP_SNAPSHOT_DATA_SIZE];
 } Algorithm_Snapshot_t;
 
 /**
- * @brief ��ɫ�л�����ԭ��
+ * @brief Role switch trigger reason
  */
 typedef enum {
-    ROLE_SWITCH_REASON_WEAR_OFF     = 0,    /* Master ���䴥�� */
-    ROLE_SWITCH_REASON_WEAR_ON      = 1,    /* Master ���ϴ��� */
-    ROLE_SWITCH_REASON_LOW_BATTERY  = 2,    /* Master �͵紥�� */
-    ROLE_SWITCH_REASON_APP_FORCE    = 3,    /* APP ǿ���л�ָ�� */
+    ROLE_SWITCH_REASON_WEAR_OFF     = 0,    /* Primary ear removed */
+    ROLE_SWITCH_REASON_WEAR_ON      = 1,    /* Primary ear put on */
+    ROLE_SWITCH_REASON_LOW_BATTERY  = 2,    /* Low battery trigger */
+    ROLE_SWITCH_REASON_APP_FORCE    = 3,    /* App force switch */
 } Role_Switch_Reason_t;
 
 /**
- * @brief ��ȡ��ǰ�豸��ɫ
- * @return Device_Role_t ��ǰ��ɫ
+ * @brief Get current device role
  */
 Device_Role_t sndp_sleep_role_get_current(void);
 
 /**
- * @brief �жϵ�ǰ�豸�Ƿ�Ϊ Master
- * @return true=Master, false=��Master
+ * @brief Check if current device is Primary (ROLE_ACTIVE)
  */
 bool sndp_sleep_role_is_active(void);
 
 /**
- * @brief �жϵ�ǰ�豸�Ƿ�Ϊ Slave
- * @return true=Slave, false=��Slave
+ * @brief Check if current device is Secondary (ROLE_STANDBY)
  */
 bool sndp_sleep_role_is_standby(void);
 
 /**
- * @brief ����Ƿ����л�����̬
- * @return true=�����л���
+ * @brief Check if role switch is in progress (ROLE_SWITCHING)
  */
 bool sndp_sleep_role_is_switching(void);
 
 /**
- * @brief ģ���ʼ��
- * ����ʱ���ã�����TWS�����Ϣȷ����ʼ��ɫ
+ * @brief Module init
  */
 void sndp_sleep_role_switch_init(void);
 
 /**
- * @brief ������ɫ�л���Master����ã�
- * @param reason �л�����ԭ��
- * 
- * ִ�����̣�
- * 1. ��� ROLE_SWITCHING
- * 2. ֹͣ�㷨����ȡ dbbeats ����
- * 3. ͨ�� TWS ��·���Ϳ��յ��Բ�
- * 4. �رմ�����������Ϊ Slave
+ * @brief Trigger role switch (called by Primary)
+ *
+ * Flow:
+ * 1. Set ROLE_SWITCHING
+ * 2. Send ROLE_SWITCHING to peer (= REQUEST)
+ * 3. Wait for ACK/NACK from peer
  */
 void sndp_sleep_role_switch_trigger(Role_Switch_Reason_t reason);
 
 /**
- * @brief �������յ��Ľ�ɫ�л����գ�Slave����ã�
- * @param snapshot �㷨��������ָ��
- * @param len      �������ݳ���
- * 
- * ִ�����̣�
- * 1. ������������
- * 2. ���� dbbeats_set_snapshot �ָ��㷨״̬
- * 3. ����������
- * 4. ���³�ʼ���㷨������
- * 5. ����Ϊ Master
+ * @brief Receive snapshot from peer (called by new Primary)
+ *
+ * Restores algo state, opens sensors, becomes ROLE_ACTIVE
  */
 void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot, uint16_t len);
 
 /**
- * @brief ������ɫ�л�����������շ����ã�
- * ���յ��Բ෢���Ľ�ɫ�л�����ʱ����
+ * @brief Handle peer role status update (called by comm_cmd recv handler).
+ *
+ * Reuses role value to implement REQUEST/ACK/NACK protocol:
+ *   ROLE_SWITCHING received -> peer wants to switch (REQUEST) -> call on_request
+ *   ROLE_ACTIVE received    -> peer became Primary (ACK) -> migrate snapshot, become STANDBY
+ *   ROLE_IDLE received       -> peer can't take over (NACK) -> suspend both
+ *   ROLE_STANDBY received    -> peer became Secondary -> update state only
+ *
+ * @param peer_role  Role value received from peer via LR_SYNC_SLEEP_ROLE_STATUS
+ */
+void sndp_sleep_role_switch_on_peer_status(Device_Role_t peer_role);
+
+/**
+ * @brief Handle role switch request from peer (Secondary side).
+ *
+ * Called when peer sends ROLE_SWITCHING (= REQUEST).
+ * If this ear is worn -> send ACK (ROLE_ACTIVE), wait for snapshot.
+ * If this ear is also removed -> send NACK (ROLE_IDLE), suspend.
  */
 void sndp_sleep_role_switch_on_request(void);
 
 /**
- * @brief �쳣�������Բ���������ʱ�ĳ�ͻ���
- * �����ǰ����Master���ܾ�ԭMaster���½ӹ�
+ * @brief Handle conflict (both ears think they're Primary).
  */
 void sndp_sleep_role_switch_handle_conflict(void);
 
@@ -120,5 +119,5 @@ void sndp_sleep_role_set_peer(Device_Role_t role);
 }
 #endif
 
-#endif /* __SNDP_SLEEP_APP__ && __SNDP_HEART_RATE_MGR__ */
+#endif /* __SNDP_SLEEP_APP_ROLE_SWITCH__ */
 #endif /* __SNDP_SLEEP_ROLE_SWITCH_H__ */

@@ -48,6 +48,7 @@
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
 #include "sndp_sleep_role_switch.h"
+#include "sndp_interact_app.h"
 #endif
 
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
@@ -904,7 +905,8 @@ uint32_t sndp_comm_cmd_send_lr_sync_sleep_role_status(uint8_t status)
 static uint32_t sndp_comm_cmd_recv_lr_sync_sleep_role_status(sndp_comm_cmd_info_s *cmd_info)
 {
     if(cmd_info->data_len == 1) {
-        sndp_sleep_role_set_peer((Device_Role_t)cmd_info->data[0]);
+        /* Trigger role switch state machine (REQUEST/ACK/NACK) instead of just set_peer */
+        sndp_sleep_role_switch_on_peer_status((Device_Role_t)cmd_info->data[0]);
     }
     return 0;
 }
