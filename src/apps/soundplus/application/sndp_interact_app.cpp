@@ -1700,7 +1700,7 @@ static void sndp_sleep_app_set_flag_onoff(SNDP_SLEEP_APP_FLAG_NAME flag_name, bo
         break;
     case SNDP_PROXIMITY_DATA:
         sndp_dev_sleep_app_set_proximity_data(peer, onoff);
-        sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(onoff);
+        sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA((unsigned short)onoff);
         break;
     case SNDP_STAGE_ONOFF_FLAG:
         sndp_dev_sleep_app_set_stage_onoff(peer, onoff);
