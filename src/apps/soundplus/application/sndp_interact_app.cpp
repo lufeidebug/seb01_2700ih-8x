@@ -897,9 +897,6 @@ void sndp_sleep_comm_cmd_analysis_start(int32_t sleep_control)
 {
     COMM_CMD_TRACE(0, "sleep analysis start");
     sndp_sensor_service_enter_sleep_mode_local(sleep_control);
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    sndp_sleep_role_start();
-#endif
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_comm_cmd_info_s *cmd_info)
@@ -1350,11 +1347,12 @@ uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
 }
 
 /**
- * @brief   proximity周期任务: 由统一任务线程每1秒tick调用一次, 左右耳运行完全相同的流程
- *          1. 读取本地proximity并缓存
- *          2. TWS连接时: 转发本地值给对耳(对耳收到后缓存并触发上报)
- *             单耳时: 直接上报手机
- *          注: 上报动作两侧都会执行, 仅BLE连接手机的一侧实际发出数据
+ * @brief   proximity周期任务: 由统一任务线程每1秒tick调用一次
+ *          1. 读取本地proximity并缓存 (两耳都做)
+ *          2. TWS连接: 转发本地值给对耳 (两耳都做, 使主耳持有双耳数据)
+ *          3. 上报手机:
+ *             - GATT双发(ROLE_SWITCH): 仅Primary(ACTIVE)上报, Secondary只读不汇报
+ *             - 传统TWS: 单耳BLE直连时上报
  */
 uint32_t sndp_comm_cmd_sleepapp_proximity_task(void)
 {
@@ -1362,20 +1360,30 @@ uint32_t sndp_comm_cmd_sleepapp_proximity_task(void)
         return 0;
     }
 
-    /* 1. 读取本地proximity并缓存 */
+    /* 1. 读取本地proximity并缓存 (两耳都做) */
     unsigned short proximity_value_local = 0;
 
     sndp_dev_hr_read_proximity_value(&proximity_value_local);
     sndp_dev_sleep_app_set_proximity_data(false, proximity_value_local);
 
+    /* 2. TWS连接: 转发本地值给对耳 (两耳都做, 保留) */
     if (sndp_is_tws_link_connected()) {
-        /* 2. TWS连接: 转发本地值给对耳, 使对耳也持有双耳数据 */
         sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(proximity_value_local);
-    } else if (sndp_comm_ble_is_connected()) {
-        /* 3. 单耳直连手机: 直接上报 */
+    }
+
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    /* 3a. GATT双发: 两耳都连着app, 仅Primary(ACTIVE)上报; Secondary只读不汇报 */
+    if (sndp_sleep_role_is_active() && sndp_comm_ble_is_connected()) {
         sndp_dev_sleep_app_set_proximity_data(true, 0);
         sndp_comm_cmd_sleepapp_report_proximity_to_app();
     }
+#else
+    /* 3b. 传统TWS: 单耳BLE直连手机时直接上报 */
+    if (!sndp_is_tws_link_connected() && sndp_comm_ble_is_connected()) {
+        sndp_dev_sleep_app_set_proximity_data(true, 0);
+        sndp_comm_cmd_sleepapp_report_proximity_to_app();
+    }
+#endif
     return 0;
 }
 #endif 
@@ -1638,11 +1646,18 @@ int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
     }
 
     COMM_CMD_TRACE(2,"BLE CON: %d, slave mode:%d", sndp_comm_ble_is_connected(), sndp_is_tws_slave_mode());
-    // if(!sndp_comm_ble_is_connected()) {
-        // if(sndp_is_tws_slave_mode()) {
-        //     return -1;
-        // }
-    // }
+
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+    /* GATT-over-BR/EDR: Secondary does not execute any App command.
+     * State is synchronized via snapshot migration on role switch + TWS sync.
+     * 例外: GET_PROXIMITY_NOTIFICATION 两耳都执行 — Secondary 需要周期读 proximity
+     * 数值并 TWS 转发给 Primary(佩戴监测), tick 必须跟随 app 命令开/关. */
+    if(!sndp_sleep_role_is_active() &&
+       cmd->cmd != SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION) {
+        COMM_CMD_TRACE(1, "Secondary: skip cmd 0x%02x", cmd->cmd);
+        return 0;
+    }
+#endif
 
     memcpy(&sndp_sleep_app_comm_exec_cmd, cmd, sizeof(sleep_app_comm_cmd_info_s));
     for(uint32_t i = 0; i < sndp_sleep_app_comm_cmd_hdlr_cnt; i++) {

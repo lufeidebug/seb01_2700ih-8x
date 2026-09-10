@@ -12,6 +12,7 @@
 #include "sndp_sleep_role_switch.h"
 #include "sndp_heart_rate.h"
 #include "sndp_comm_cmd.h"
+#include "sndp_sensor_service.h"
 #include "sndp_interact_app.h"
 #if defined(__SNDP_HR_ALGO__)
 #include "sleepsense.h"
@@ -48,6 +49,11 @@ Device_Role_t sndp_sleep_role_get_current(void)
 bool sndp_sleep_role_is_active(void)
 {
     return (role_ctx.role == ROLE_ACTIVE);
+}
+
+bool sndp_sleep_role_data_plane_active(void)
+{
+    return (role_ctx.role == ROLE_ACTIVE || role_ctx.role == ROLE_SWITCHING);
 }
 
 bool sndp_sleep_role_is_standby(void)
@@ -214,46 +220,178 @@ void sndp_sleep_role_switch_on_request(void)
 }
 
 /**************************************************************************************************
+ * Stream migration payload (reuses LR_SYNC_SLEEP_SNAPSHOT channel)
+ *
+ * Layout:
+ *  [0]      hr_running
+ *  [1]      sleep_running (stage onoff)
+ *  [2]      sampling_rate
+ *  [3]      hr_dump_state  (HR_DUMP_STATE)
+ *  [4]      ppg_notif_on   (PPG_DUMP_STATE)
+ *  [5]      acc_notif_on   (ACC_DUMP_STATE)
+ *  [6]      proximity_on
+ *  [7..10]  sleep_control (int32 LE)
+ *  [11..12] algo_snap_size (uint16 LE)
+ *  [13..]   algo snapshot data
+ **************************************************************************************************/
+#define ROLE_MIG_HEADER_SIZE     13
+#define ROLE_MIG_SNAPSHOT_MAX    256
+#define ROLE_MIG_BUF_SIZE        (ROLE_MIG_HEADER_SIZE + ROLE_MIG_SNAPSHOT_MAX)
+
+/**************************************************************************************************
+ * Old Primary side: stop all running streams (HR + sleep + PPG/ACC/proximity uploads).
+ * Called while role == SWITCHING, so data-plane gate allows the sensor close ops.
+ **************************************************************************************************/
+static void sndp_sleep_role_stop_all_streams(void)
+{
+    /* Raw-data upload streams first (release PPG/ACC notification users) */
+    if(sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE)) {
+        sndp_ppg_notification_stop();
+    }
+    if(sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE)) {
+        sndp_acc_notification_stop();
+    }
+    /* proximity 不随角色切换关闭: STANDBY耳也需要周期读+TWS转发给Primary,
+       tick 保持运行, 仅"上报app"由 task5 内 is_active 门控.
+       (sleep_comm_execute_cmd_hdlr 对 GET_PROXIMITY_NOTIFICATION 放行,
+        Secondary 也能通过 app 命令开/关 tick) */
+    /* HR measurement + sleep analysis (release HR users, close sensors) */
+    sndp_hr_mearsuring_stop();
+    sndp_sleep_analysis_stop();
+}
+
+/**************************************************************************************************
+ * Old Primary side: capture all stream state + algo snapshot into migration buffer.
+ **************************************************************************************************/
+static void sndp_sleep_role_build_migration(uint8_t *buf, uint16_t *out_len)
+{
+    uint16_t idx = 0;
+
+    buf[idx++] = sndp_hr_running_state() ? 1 : 0;
+    buf[idx++] = sndp_dev_sleep_app_get_stage_onoff(false) ? 1 : 0;
+    buf[idx++] = sndp_hr_mearsuring_get_sampling_rate();
+    buf[idx++] = sndp_hr_mearsuring_get_dump_state(HR_DUMP_STATE);
+    buf[idx++] = sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE);
+    buf[idx++] = sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE);
+    buf[idx++] = sndp_dev_sleep_app_get_proximity_onoff(false) ? 1 : 0;
+
+    int32_t sleep_ctrl = sndp_hr_get_sleep_control();
+    buf[idx++] = (uint8_t)(sleep_ctrl & 0xFF);
+    buf[idx++] = (uint8_t)((sleep_ctrl >> 8) & 0xFF);
+    buf[idx++] = (uint8_t)((sleep_ctrl >> 16) & 0xFF);
+    buf[idx++] = (uint8_t)((sleep_ctrl >> 24) & 0xFF);
+
+    uint16_t snap_size = 0;
+    buf[idx++] = 0; /* snap size low placeholder */
+    buf[idx++] = 0; /* snap size high placeholder */
+
+#if defined(__SNDP_HR_ALGO__)
+    struct Snapshot lib_snapshot;
+    dbbeats_get_snapshot(&lib_snapshot);
+    snap_size = lib_snapshot.size;
+    if(snap_size > ROLE_MIG_SNAPSHOT_MAX) {
+        snap_size = ROLE_MIG_SNAPSHOT_MAX;
+    }
+    memcpy(&buf[idx], lib_snapshot.data, snap_size);
+#endif
+    idx += snap_size;
+
+    /* backfill snapshot size at [11..12] */
+    buf[11] = (uint8_t)(snap_size & 0xFF);
+    buf[12] = (uint8_t)((snap_size >> 8) & 0xFF);
+
+    *out_len = idx;
+}
+
+/**************************************************************************************************
+ * New Primary side: restore all streams + algo snapshot from migration buffer.
+ * Called while role == SWITCHING, so data-plane gate allows sensor open ops.
+ **************************************************************************************************/
+static void sndp_sleep_role_restore_streams(const uint8_t *buf, uint16_t len)
+{
+    if(len < ROLE_MIG_HEADER_SIZE) {
+        ROLE_TRACE(0, "migration too short: %d", len);
+        return;
+    }
+
+    uint16_t idx = 0;
+    uint8_t hr_running = buf[idx++];
+    uint8_t sleep_run  = buf[idx++];
+    uint8_t samp_rate  = buf[idx++];
+    uint8_t hr_dump    = buf[idx++];
+    uint8_t ppg_notif  = buf[idx++];
+    uint8_t acc_notif  = buf[idx++];
+    uint8_t prox_on    = buf[idx++];
+    int32_t sleep_ctrl = (int32_t)buf[idx] | ((int32_t)buf[idx+1] << 8) |
+                         ((int32_t)buf[idx+2] << 16) | ((int32_t)buf[idx+3] << 24);
+    idx += 4;
+    uint16_t snap_size = (uint16_t)buf[idx] | ((uint16_t)buf[idx+1] << 8);
+    idx += 2;
+
+    ROLE_TRACE(1, "restore: hr=%d sleep=%d ppgN=%d accN=%d prox=%d",
+               hr_running, sleep_run, ppg_notif, acc_notif, prox_on);
+
+    /* 1. HR measurement: opens PPG+ACC with HR users + init HR algo */
+    if(hr_running) {
+        sndp_hr_mearsuring_start((int8_t)samp_rate, hr_dump);
+    }
+    /* 2. Raw-data upload streams: open PPG/ACC notification users */
+    if(ppg_notif) {
+        sndp_ppg_notification_start(0x01);
+    }
+    if(acc_notif) {
+        sndp_acc_notification_start(0x01);
+    }
+    /* 3. Proximity reporting */
+    if(prox_on) {
+        sndp_sensor_service_start_proximity_local();
+    }
+    /* 4. Sleep analysis: init sleep algo */
+    if(sleep_run) {
+        sndp_sleep_analysis_start(sleep_ctrl);
+    }
+
+    /* 5. Restore algorithm state from snapshot */
+#if defined(__SNDP_HR_ALGO__)
+    if(snap_size > 0 && (uint32_t)(idx + snap_size) <= len) {
+        struct Snapshot lib_snapshot;
+        lib_snapshot.size = snap_size;
+        memcpy(lib_snapshot.data, &buf[idx], snap_size);
+        dbbeats_set_snapshot(&lib_snapshot);
+        ROLE_TRACE(0, "algo snapshot restored size=%d", snap_size);
+    }
+#endif
+}
+
+/**************************************************************************************************
  * Old Primary side: handle ACK (peer sends ROLE_ACTIVE back)
  *
- * Stop algo, get snapshot, send snapshot, become STANDBY
+ * Stop all streams, build migration payload (5 streams + algo snapshot), send it,
+ * then become STANDBY.
  **************************************************************************************************/
 static void sndp_sleep_role_handle_ack(void)
 {
-    Algorithm_Snapshot_t snapshot;
-    struct Snapshot lib_snapshot;
+    ROLE_TRACE(0, "ACK received from peer, migrating streams...");
 
-    ROLE_TRACE(0, "ACK received from peer, migrating algo state...");
-
-    /* Step 1: Stop algo and sensors on old Primary */
-    sndp_sleep_analysis_stop();
-    sndp_hr_mearsuring_stop();
-
-    /* Step 2: Get algorithm snapshot */
-#if defined(__SNDP_HR_ALGO__)
-    dbbeats_get_snapshot(&lib_snapshot);
-
-    snapshot.size = lib_snapshot.size;
-    if (snapshot.size > SNDP_SLEEP_SNAPSHOT_DATA_SIZE) {
-        snapshot.size = SNDP_SLEEP_SNAPSHOT_DATA_SIZE;
-    }
-    memcpy(snapshot.data, lib_snapshot.data, snapshot.size);
-#else
-    memset(&snapshot, 0, sizeof(snapshot));
-#endif
-
-    /* Step 3: Send snapshot to new Primary */
+    /* Step 1: Build migration payload FIRST, while streams/flags/algo are still live
+     * (stop_all_streams below clears hr_running/dump_state/proximity_onoff/stage_onoff
+     *  and the algo state, so they must be captured before stopping). */
 #if defined(__SNDP_COMM_MGR__)
-    uint8_t send_buf[sizeof(Algorithm_Snapshot_t) + 2];
-    send_buf[0] = (uint8_t)(snapshot.size & 0xFF);
-    send_buf[1] = (uint8_t)((snapshot.size >> 8) & 0xFF);
-    memcpy(&send_buf[2], snapshot.data, snapshot.size);
-
-    sndp_comm_cmd_send_lr_sync_sleep_snapshot(send_buf, snapshot.size + 2);
-    ROLE_TRACE(0, "Snapshot sent, size=%d", snapshot.size);
+    uint8_t send_buf[ROLE_MIG_BUF_SIZE];
+    uint16_t send_len = 0;
+    sndp_sleep_role_build_migration(send_buf, &send_len);
 #endif
 
-    /* Step 4: Become STANDBY (Secondary: log only) */
+    /* Step 2: Stop all running streams on old Primary (role still SWITCHING => ops execute) */
+    sndp_sleep_role_stop_all_streams();
+
+    /* Step 3: Send migration payload to new Primary */
+#if defined(__SNDP_COMM_MGR__)
+    sndp_comm_cmd_send_lr_sync_sleep_snapshot(send_buf, send_len);
+    ROLE_TRACE(0, "migration sent len=%d", send_len);
+#endif
+
+    /* Step 4: Become STANDBY (Secondary: sensors closed, log only) */
     role_ctx.role = ROLE_STANDBY;
     sndp_comm_cmd_send_lr_sync_sleep_role_status(ROLE_STANDBY);
     ROLE_TRACE(0, "Switched to STANDBY");
@@ -301,9 +439,13 @@ void sndp_sleep_role_switch_on_peer_status(Device_Role_t peer_role)
         break;
 
     case ROLE_ACTIVE:
-        /* Peer became Primary (ACK) -> I should stop algo, send snapshot, become STANDBY */
         if (role_ctx.role == ROLE_SWITCHING) {
+            /* ACK during a switch -> old Primary migrates streams to peer */
             sndp_sleep_role_handle_ack();
+        } else if (role_ctx.role == ROLE_IDLE) {
+            /* Initial assignment: peer became Primary on mobile connect -> I'm Secondary */
+            role_ctx.role = ROLE_STANDBY;
+            ROLE_TRACE(0, "initial: peer ACTIVE, I become STANDBY");
         }
         break;
 
@@ -325,40 +467,23 @@ void sndp_sleep_role_switch_on_peer_status(Device_Role_t peer_role)
 }
 
 /**************************************************************************************************
- * New Primary side: receive snapshot from old Primary
+ * New Primary side: receive migration snapshot from old Primary
  *
- * Open sensors, restore snapshot, initialize algo, become ROLE_ACTIVE
+ * Restore all streams (HR/sleep/PPG/ACC/proximity uploads) + algo snapshot, then
+ * become ROLE_ACTIVE. Called while role == SWITCHING, so data-plane gate allows
+ * the sensor open ops.
  **************************************************************************************************/
 void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot_data, uint16_t len)
 {
-    Algorithm_Snapshot_t snapshot;
-    struct Snapshot lib_snapshot;
-
     if (!role_ctx.initialized) {
         ROLE_TRACE(0, "Not initialized, rtn");
         return;
     }
 
-    if (snapshot_data == NULL || len < 2) {
-        ROLE_TRACE(0, "Invalid snapshot data, rtn");
+    if (snapshot_data == NULL || len < ROLE_MIG_HEADER_SIZE) {
+        ROLE_TRACE(0, "Invalid migration data (len=%d), rtn", len);
         return;
     }
-
-    /* Parse: first 2 bytes = size, rest = data */
-    snapshot.size = (uint16_t)snapshot_data[0] | ((uint16_t)snapshot_data[1] << 8);
-    if (snapshot.size > SNDP_SLEEP_SNAPSHOT_DATA_SIZE) {
-        snapshot.size = SNDP_SLEEP_SNAPSHOT_DATA_SIZE;
-    }
-
-    uint16_t data_offset = 2;
-    uint16_t copy_len = (len > data_offset) ? (len - data_offset) : 0;
-    if (copy_len > snapshot.size) {
-        copy_len = snapshot.size;
-    }
-    memset(snapshot.data, 0, sizeof(snapshot.data));
-    memcpy(snapshot.data, &snapshot_data[data_offset], copy_len);
-
-    ROLE_TRACE(0, "Snapshot received, size=%d, copy_len=%d", snapshot.size, copy_len);
 
     /* Must be in SWITCHING state (sent ACK, waiting for snapshot) */
     if (role_ctx.role != ROLE_SWITCHING) {
@@ -366,29 +491,10 @@ void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot_data, uint16_t len)
         return;
     }
 
-    /* Step 1: Start sensors and algo */
-    sndp_hr_mearsuring_start(sndp_hr_mearsuring_get_sampling_rate(), sndp_hr_mearsuring_get_dump_state(HR_DUMP_STATE));
-    sndp_sleep_analysis_start(sndp_hr_get_sleep_control());
+    /* Restore streams + algo snapshot (role still SWITCHING => start ops execute) */
+    sndp_sleep_role_restore_streams(snapshot_data, len);
 
-    /* Step 2: Restore algorithm state from snapshot */
-#if defined(__SNDP_HR_ALGO__)
-    if (snapshot.size > 0) {
-        lib_snapshot.size = snapshot.size;
-        if (lib_snapshot.size > SNAPSHOT_DATA_MAX_SIZE) {
-            lib_snapshot.size = SNAPSHOT_DATA_MAX_SIZE;
-        }
-        memcpy(lib_snapshot.data, snapshot.data, lib_snapshot.size);
-        dbbeats_set_snapshot(&lib_snapshot);
-        ROLE_TRACE(0, "Snapshot restored, size=%d", lib_snapshot.size);
-    }
-#endif
-
-    /* Step 3: Re-initialize algo (per flowchart: initialize_heartrate_data + initialize_sleep_data) */
-    /* Note: sndp_hr_mearsuring_start and sndp_sleep_analysis_start above already call
-     * dbbeats_initialize_heartrate_data and dbbeats_initialize_sleep_data internally.
-     * The flowchart shows these as explicit steps, but they are encapsulated in those functions. */
-
-    /* Step 4: Become ROLE_ACTIVE (new Primary) */
+    /* Become ROLE_ACTIVE (new Primary) */
     role_ctx.role = ROLE_ACTIVE;
     sndp_comm_cmd_send_lr_sync_sleep_role_status(ROLE_ACTIVE);
     ROLE_TRACE(0, "Switched to ACTIVE (new Primary)");

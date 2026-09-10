@@ -99,6 +99,9 @@ void sndp_sensor_service_start_proximity_local(void)
 #if defined(__SNDP_HEART_RATE_MGR__)
     TR_INFO(1, "sensor_svc: start_proximity");
 
+    /* proximity特殊: flag + tick在两耳都执行(不走data_plane门控)。
+       Secondary(STANDBY)也要周期读proximity数值并TWS转发给主耳(佩戴监测),
+       仅"上报app"在task5内用is_active门控。佩戴事件检测走GPIO中断,两耳始终有效。 */
     sndp_dev_sleep_app_set_proximity_onoff(false, 0x01);
     sndp_hr_proximity_tick_enable(true);
 #endif
@@ -109,6 +112,7 @@ void sndp_sensor_service_stop_proximity_local(void)
 #if defined(__SNDP_HEART_RATE_MGR__)
     TR_INFO(1, "sensor_svc: stop_proximity");
 
+    /* 两耳都清flag并停tick(同上, proximity不走data_plane门控) */
     sndp_dev_sleep_app_set_proximity_onoff(false, 0x00);
     sndp_hr_proximity_tick_enable(false);
 #endif
@@ -129,14 +133,15 @@ void sndp_sensor_service_enter_sleep_mode_local(int32_t sleep_control)
 #endif
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* Secondary: flag set, skip algo/sensor execution */
-    if(!sndp_sleep_role_is_active()) {
+    /* 数据面门控: STANDBY/IDLE只设flag; ACTIVE/SWITCHING真正启动睡眠分析+ANC
+       (SWITCHING: 新主接管时需启动) */
+    if(!sndp_sleep_role_data_plane_active()) {
         TR_INFO(0, "Secondary: enter_sleep flag only");
         return;
     }
 #endif
 
-    /* Execution: Primary only */
+    /* Execution: data-plane active */
 #if defined(__SNDP_HEART_RATE_MGR__)
     sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_start, 0, 0, 0);
 #endif
@@ -154,14 +159,14 @@ void sndp_sensor_service_exit_sleep_mode_local(void)
     sndp_ui_working_mode_sleep_app_set(SNDP_DEV_WORKING_MODE_BT);
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* Secondary: flag set, skip execution */
-    if(!sndp_sleep_role_is_active()) {
+    /* 数据面门控: STANDBY/IDLE只清flag; ACTIVE/SWITCHING真正关睡眠分析+ANC */
+    if(!sndp_sleep_role_data_plane_active()) {
         TR_INFO(0, "Secondary: exit_sleep flag only");
         return;
     }
 #endif
 
-    /* Execution: Primary only */
+    /* Execution: data-plane active */
     sndp_ui_sleep_anc_mode_off();
 #if defined(__SNDP_HEART_RATE_MGR__)
     sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);

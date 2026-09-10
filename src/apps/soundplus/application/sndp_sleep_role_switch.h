@@ -48,8 +48,22 @@ Device_Role_t sndp_sleep_role_get_current(void);
 
 /**
  * @brief Check if current device is Primary (ROLE_ACTIVE)
+ *
+ * Command-plane gate: App command dispatch + proximity report to app.
+ * Only the steady-state Primary may execute/report.
  */
 bool sndp_sleep_role_is_active(void);
+
+/**
+ * @brief Check if the data plane (sensors/algo/FIFO tasks) should be running.
+ *
+ * Data-plane gate: sensor on/off, algo execute, FIFO tasks (PPG/ACC/HR/sleep).
+ * Returns true for ROLE_ACTIVE (steady Primary) AND ROLE_SWITCHING (migration
+ * in progress: old Primary is stopping streams while new Primary is starting
+ * them, so hardware sensor ops must be allowed in both).
+ * Returns false for ROLE_STANDBY / ROLE_IDLE.
+ */
+bool sndp_sleep_role_data_plane_active(void);
 
 /**
  * @brief Check if current device is Secondary (ROLE_STANDBY)

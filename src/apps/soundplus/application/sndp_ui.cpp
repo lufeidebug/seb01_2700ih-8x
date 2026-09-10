@@ -1571,6 +1571,16 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 				sndp_comm_cmd_send_lr_sync_mobile_connected();
 			}
 
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+            /* GATT-over-BR/EDR: 手机连接成功时确定角色.
+             * - 单耳 / TWS主耳: 成为Primary(ACTIVE)并广播ROLE_ACTIVE
+             * - TWS从耳: 不主动start, 等收到主耳ROLE_ACTIVE后自降STANDBY
+             *   (见 sndp_sleep_role_switch_on_peer_status 的 IDLE->STANDBY 分支) */
+            if(sndp_is_tws_master_mode()) {
+                sndp_sleep_role_start();
+            }
+#endif
+
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
                 sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
 #endif
