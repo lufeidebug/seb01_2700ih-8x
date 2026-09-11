@@ -108,6 +108,13 @@ uint8_t sndp_pt_read_hall_status(void)
 void sndp_pt_switch_click_test(uint8_t onoff)
 {
     pt_ctx.click_test_en = onoff ? true : false;
+
+    //产测可能未佩戴，强制开/关 gsensor tap 中断，保证敲击能产生手势事件
+    if(pt_ctx.click_test_en) {
+        sndp_dev_acc_start_single_tap_interrupt();
+    } else {
+        sndp_dev_acc_stop_single_tap_interrupt();
+    }
 }
 
 bool sndp_pt_click_test_is_opened(void)

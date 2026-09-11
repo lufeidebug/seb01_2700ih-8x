@@ -182,9 +182,9 @@ int32_t da217e_read_acc_data(int16_t *x, int16_t *y, int16_t *z)
 	ret |= da217e_reg_read(DA217E_REG_ACC_Z_MSB, &tmp_data[5]);
  #endif
 	
-    *x = ((int16_t)(tmp_data[1] << 8 | tmp_data[0]))>> 3;
-    *y = ((int16_t)(tmp_data[3] << 8 | tmp_data[2]))>> 3;
-    *z = ((int16_t)(tmp_data[5] << 8 | tmp_data[4]))>> 3;	
+    *x = ((int16_t)(tmp_data[1] << 8 | tmp_data[0]))>> 2;
+    *y = ((int16_t)(tmp_data[3] << 8 | tmp_data[2]))>> 2;
+    *z = ((int16_t)(tmp_data[5] << 8 | tmp_data[4]))>> 2;	
 	
     return ret;
 }
@@ -220,7 +220,7 @@ int32_t da217e_open_single_tap_interrupt(uint8_t th)
 {
 	int32_t ret = 0;
 
-	ret |= da217e_reg_write(DA217E_REG_TAP_DUR, 0x00); //0x00¸ÄÎª00ºó£¬½â¾öÈý»÷Ê±Ö»´¥·¢Á½´ÎÖÐ¶ÏµÄÎÊÌâ¡£
+	ret |= da217e_reg_write(DA217E_REG_TAP_DUR, 0x00); //0x00ï¿½ï¿½Îª00ï¿½ó£¬½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶Ïµï¿½ï¿½ï¿½ï¿½â¡£
 	ret |= da217e_reg_write(DA217E_REG_TAP_THS, th); //0x05-0x1f
 	ret |= da217e_reg_write(DA217E_REG_INT_MAP1, 0x20);
 	ret |= da217e_reg_write(DA217E_REG_INT_LATCH, 0xEE);  //latch 100ms
