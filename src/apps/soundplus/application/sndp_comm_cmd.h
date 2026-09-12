@@ -270,9 +270,10 @@ typedef enum {
 #if defined(__SNDP_RF_DESENCE_TEST__)
     COMM_CMDID_PT_DESENCE_TEST_SWITCH_SPK           = 0x74,	/* recv: 1 bytes, onoff.
                                                                 rsp: 1 byte, error code(1). */
+#endif
     COMM_CMDID_PT_DESENCE_TEST_SWITCH_PPG           = 0x75,	/* recv: 1 bytes, onoff.
                                                                 rsp: 1 byte, error code(1). */
-#endif
+
 
     COMM_CMDID_PT_READ_DEV_SN2                       = 0x76, /* recv: 0 bytes.
                                                             rsp: 21 bytes, error code(1) + sn(20). */

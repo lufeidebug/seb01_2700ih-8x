@@ -41,6 +41,8 @@ static unsigned int g_ppg_start_time = 0;
 static unsigned int g_ppg_end_time = 0;
 static bool g_ppg_samples_measurement_started = false;
 static uint32_t g_ppg_samples_duration = 0;
+static bool g_ppg_force_open = false;
+
 
 static const float g_led_range_list[] = {
     CURRENT_RANGE_16_7,
@@ -383,6 +385,8 @@ int ss_ppg_operation_mode(OperationMode op_mode)
     int ret = 0;
     unsigned char val = 0;
 
+    os_api_print_log("ss_ppg_operation_mode, op_mode=%d\r\n", op_mode);
+    
     ret = os_api_i2c_read_byte(REG_MEASUREMENT, &val);
     if (ret != SS_SUCCESS)
         return ret;
@@ -408,6 +412,8 @@ int ss_ppg_led_config(Seq seq, Led led)
     unsigned char mask = 0;
     int ret = 0;
 
+    os_api_print_log("ss_ppg_led_config, seq=%d, led=%d\r\n", seq, led);
+    
     ret = os_api_i2c_read_byte(REG_SEQ_LED_SEL, &val);
     if (ret < 0)
         return ret;
@@ -591,26 +597,30 @@ bool ss_ppg_proximity_interrupt_handler(void)
 
     ss_ppg_read_interrupt_status(&int_status);
 
-    if ((int_status & INT_STAT_PROX_HIGH) == INT_STAT_PROX_HIGH)
-    {
-        //Wearing Earbuds
-        g_proximity_sta = 1;
-        os_api_callback_proximity(1);
+    if(g_ppg_force_open) {
+        //do nothing
+    } else {
+        if ((int_status & INT_STAT_PROX_HIGH) == INT_STAT_PROX_HIGH)
+        {
+            //Wearing Earbuds
+            g_proximity_sta = 1;
+            os_api_callback_proximity(1);
 
-        if(g_fifo_onoff) {
-            ss_ppg_clear_fifo();
-            ss_ppg_led_config(SEQ1, LED_GREEN);
-            ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 1);
+            if(g_fifo_onoff) {
+                ss_ppg_clear_fifo();
+                ss_ppg_led_config(SEQ1, LED_GREEN);
+                ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 1);
+            }
         }
-    }
-    else if ((int_status & INT_STAT_PROX_LOW) == INT_STAT_PROX_LOW)
-    {
-        //Removing Earbuds
-        g_proximity_sta = 0;
-        os_api_callback_proximity(0);
+        else if ((int_status & INT_STAT_PROX_LOW) == INT_STAT_PROX_LOW)
+        {
+            //Removing Earbuds
+            g_proximity_sta = 0;
+            os_api_callback_proximity(0);
 
-        ss_ppg_led_config(SEQ1, LED_OFF);
-        ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 0);
+            ss_ppg_led_config(SEQ1, LED_OFF);
+            ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 0);
+        }
     }
 
     if ((int_status & INT_STAT_FIFO_FULL) != INT_STAT_FIFO_FULL)
@@ -705,26 +715,33 @@ void ss_ppg_interrupt_handler(void)
 
     ss_ppg_read_interrupt_status(&int_status);
 
-    if ((int_status & INT_STAT_PROX_HIGH) == INT_STAT_PROX_HIGH)
-    {
-        //Wearing Earbuds
-        g_proximity_sta = 1;
-        os_api_callback_proximity(1);
+    if(g_ppg_force_open) {
+        //do nothing
+        os_api_print_log("ss_ppg_interrupt_handler: do nothing\r\n");
+    } else {
+    
+        if ((int_status & INT_STAT_PROX_HIGH) == INT_STAT_PROX_HIGH)
+        {
+            //Wearing Earbuds
+            g_proximity_sta = 1;
+            os_api_callback_proximity(1);
+            if(g_fifo_onoff) {
+                ss_ppg_clear_fifo();
+                ss_ppg_led_config(SEQ1, LED_GREEN);
+                ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 1);
+            }
 
-        if(g_fifo_onoff) {
-            ss_ppg_clear_fifo();
-            ss_ppg_led_config(SEQ1, LED_GREEN);
-            ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 1);
         }
-    }
-    else if ((int_status & INT_STAT_PROX_LOW) == INT_STAT_PROX_LOW)
-    {
-        //Removing Earbuds
-        g_proximity_sta = 0;
-        os_api_callback_proximity(0);
-
-        ss_ppg_led_config(SEQ1, LED_OFF);
-        ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 0);
+        else if ((int_status & INT_STAT_PROX_LOW) == INT_STAT_PROX_LOW)
+        {
+            //Removing Earbuds
+            g_proximity_sta = 0;
+            os_api_callback_proximity(0);
+            
+            ss_ppg_led_config(SEQ1, LED_OFF);
+            ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 0);
+        }
+        
     }
 
     if ((int_status & INT_STAT_FIFO_FULL) != INT_STAT_FIFO_FULL)
@@ -969,16 +986,23 @@ static int clear_fifo(void)
 void ss_ppg_force_switch_ppg(uint8_t onoff)
 {
     if(onoff) {
+        os_api_print_log("ss_ppg_force_switch_ppg: on\r\n");
+        g_ppg_force_open = true;
+        g_fifo_onoff = 1;
         ss_ppg_operation_mode(PROX_PPG_0);
         ss_ppg_clear_fifo();
         ss_ppg_led_config(SEQ1, LED_GREEN);
         ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 1);
+        ss_ppg_interrupt_setting(PROX_INT_EN, 0);
         ss_ppg_start_measurement();
     } else {
+        os_api_print_log("ss_ppg_force_switch_ppg: off\r\n");
+        g_ppg_force_open = false;
+        g_fifo_onoff = 0;
         ss_ppg_led_config(SEQ1, LED_OFF);
         ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 0);
+        ss_ppg_interrupt_setting(PROX_INT_EN, 1);
         ss_ppg_operation_mode(PROX);
         ss_ppg_stop_measurement();
     }
 }
-

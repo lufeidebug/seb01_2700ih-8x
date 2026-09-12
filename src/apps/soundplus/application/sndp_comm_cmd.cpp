@@ -2150,6 +2150,8 @@ static uint32_t sndp_comm_cmd_recv_pt_desence_test_switch_spk(sndp_comm_cmd_info
     return 0;
 }
 
+#endif
+
 extern "C" void ss_ppg_force_switch_ppg(uint8_t onoff);
 
 static uint32_t sndp_comm_cmd_recv_pt_desence_test_switch_ppg(sndp_comm_cmd_info_s *cmd_info)
@@ -2176,7 +2178,6 @@ static uint32_t sndp_comm_cmd_recv_pt_desence_test_switch_ppg(sndp_comm_cmd_info
     return 0;
 }
 
-#endif
 
 
 static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
@@ -2303,8 +2304,8 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
 
 #if defined(__SNDP_RF_DESENCE_TEST__)
     { COMM_CMDID_PT_DESENCE_TEST_SWITCH_SPK     , "PT_DESENCE_S_SPK"        , sndp_comm_cmd_recv_pt_desence_test_switch_spk         },
-    { COMM_CMDID_PT_DESENCE_TEST_SWITCH_PPG     , "PT_DESENCE_S_PPG"        , sndp_comm_cmd_recv_pt_desence_test_switch_ppg         },
 #endif
+    { COMM_CMDID_PT_DESENCE_TEST_SWITCH_PPG     , "PT_DESENCE_S_PPG"        , sndp_comm_cmd_recv_pt_desence_test_switch_ppg         },
 
 };
 
