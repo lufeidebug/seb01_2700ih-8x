@@ -994,7 +994,7 @@ void ss_ppg_force_switch_ppg(uint8_t onoff)
         ss_ppg_led_config(SEQ1, LED_GREEN);
         ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 1);
         ss_ppg_interrupt_setting(PROX_INT_EN, 0);
-        ss_ppg_start_measurement();
+        //ss_ppg_start_measurement();
     } else {
         os_api_print_log("ss_ppg_force_switch_ppg: off\r\n");
         g_ppg_force_open = false;
@@ -1003,6 +1003,6 @@ void ss_ppg_force_switch_ppg(uint8_t onoff)
         ss_ppg_interrupt_setting(A_FIFO_FULL_EN, 0);
         ss_ppg_interrupt_setting(PROX_INT_EN, 1);
         ss_ppg_operation_mode(PROX);
-        ss_ppg_stop_measurement();
+        //ss_ppg_stop_measurement();
     }
 }
