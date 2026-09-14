@@ -129,6 +129,34 @@ void sndp_acc_notification_start(uint8_t dump_state);
  */
 void sndp_acc_notification_stop(void);
 
+/**
+ * @brief       Suspend PPG notifiycation (pause raw data stream, keep dump_state).
+ *              usersuspend: 0 is wear suspend, 1 is bt call suspend
+ * @return      void
+ */
+void sndp_ppg_notification_suspend(uint32_t usersuspend);
+
+/**
+ * @brief       Resume PPG notifiycation (resume raw data stream, keep dump_state).
+ *              usersuspend: 0 is wear suspend, 1 is bt call suspend
+ * @return      void
+ */
+void sndp_ppg_notification_resume(uint32_t usersuspend);
+
+/**
+ * @brief       Suspend ACC notifiycation (pause raw data stream, keep dump_state).
+ *              usersuspend: 0 is wear suspend, 1 is bt call suspend
+ * @return      void
+ */
+void sndp_acc_notification_suspend(uint32_t usersuspend);
+
+/**
+ * @brief       Resume ACC notifiycation (resume raw data stream, keep dump_state).
+ *              usersuspend: 0 is wear suspend, 1 is bt call suspend
+ * @return      void
+ */
+void sndp_acc_notification_resume(uint32_t usersuspend);
+
 
 /**
  * @brief       Heartrate app init.

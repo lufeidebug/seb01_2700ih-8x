@@ -66,6 +66,23 @@ void sndp_ui_init(void);
 void sndp_ui_working_mode_sleep_app_set(sndp_dev_working_mode_e mode);
 void sndp_ui_sleep_anc_mode_on(void);
 void sndp_ui_sleep_anc_mode_off(void);
+
+/**
+ * Sleep app suspend/resume user type.
+ * - WEAR:         wear on/off event, only suspend/resume when TWS not connected
+ * - BT_CALL:      BT call event, always suspend/resume regardless of TWS
+ * - ROLE_SWITCH:  TWS role switch, only suspend/resume when TWS connected
+ */
+typedef enum {
+    SLEEP_APP_OP_USER_WEAR        = 0,
+    SLEEP_APP_OP_USER_BT_CALL     = 1,
+    SLEEP_APP_OP_USER_ROLE_SWITCH = 2,
+    SLEEP_APP_OP_USER_MAX,
+} sndp_sleep_app_op_user_e;
+
+void sndp_sleep_app_suspend(sndp_sleep_app_op_user_e user);
+void sndp_sleep_app_resume(sndp_sleep_app_op_user_e user);
+
 #ifdef __cplusplus
 	}
 #endif

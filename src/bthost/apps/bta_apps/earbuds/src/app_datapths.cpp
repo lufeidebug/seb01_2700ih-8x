@@ -509,6 +509,19 @@ void app_datapaths_deinit(void)
     app_dp_server_env.is_initilized = false;
 }
 
+uint16_t app_datapath_server_get_connhdl(void)
+{
+    for (uint8_t idx = 0; idx < APP_DATAPATHS_CONN_MAX; idx++)
+    {
+        if (app_dp_server_env.con_info[idx].connectionHandle != BT_INVALID_HANDLE)
+        {
+            return app_dp_server_env.con_info[idx].connectionHandle;
+        }
+    }
+
+    return BT_INVALID_HANDLE;
+}
+
 void app_datapath_server_send_data_via_notification(uint16_t connhdl, uint8_t *data, uint32_t len)
 {
     bt_gatt_char_notify_t val_ntf =
@@ -519,7 +532,24 @@ void app_datapath_server_send_data_via_notification(uint16_t connhdl, uint8_t *d
         .dummy = (uint32_t *)(uint32_t)data[0],
     };
 
-    bta_gatts_send_character_value(connhdl, true, &val_ntf, data, (uint16_t)len);
+    if (connhdl == BT_INVALID_HANDLE)
+    {
+        // Fallback to the handle recorded by the service (GATT over BR/EDR bearer)
+        connhdl = app_datapath_server_get_connhdl();
+    }
+
+    if (connhdl == BT_INVALID_HANDLE)
+    {
+        TRACE(0, "[DP] no valid connhdl, drop");
+        return;
+    }
+
+    int ret = bta_gatts_send_character_value(connhdl, true, &val_ntf, data, (uint16_t)len);
+    if(ret != 0) {
+        TRACE(1, "app_notification failed, ret:%d connhdl:%d", ret, connhdl);
+    }else{
+        TRACE(1, "app_notification success, connhdl:%d", connhdl);
+    }
 }
 
 void app_datapath_server_send_data_via_indication(uint16_t connhdl, uint8_t *data, uint32_t len)

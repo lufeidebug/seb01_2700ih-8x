@@ -136,13 +136,6 @@ typedef struct {
 static void sndp_ui_all_status_sync_send(void);
 static void sndp_ui_bt_event_exec_after_power_on(void);
 
-typedef enum {
-    SLEEP_APP_OP_USER_WEAR = 0,
-    SLEEP_APP_OP_USER_BT_CALL = 1,
-    SLEEP_APP_OP_USER_MAX,
-}sndp_sleep_app_op_user_e;
-static void sndp_sleep_app_resume(sndp_sleep_app_op_user_e user);
-static void sndp_sleep_app_suspend(sndp_sleep_app_op_user_e user);
 /**************************************************************************************************
 * Variable
 **************************************************************************************************/
@@ -457,68 +450,110 @@ static void sndp_ui_wear_on_play_tone(void)
 
 }
 
-static void sndp_sleep_app_suspend(sndp_sleep_app_op_user_e user)
+void sndp_sleep_app_suspend(sndp_sleep_app_op_user_e user)
 {
     POSSIBLY_UNUSED uint16_t delay_time = 1000;
     SPUI_TRACE(0, "user=0x%x", user);
 
     if(user == SLEEP_APP_OP_USER_BT_CALL){
         delay_time = 1;
+    } else if(user == SLEEP_APP_OP_USER_ROLE_SWITCH){
+        delay_time = 0;
     }
-    if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP))
-    {
+
+    /* TWS check:
+     * - WEAR:        only suspend when TWS not connected (TWS connected → handled by role switch)
+     * - BT_CALL:     always suspend regardless of TWS
+     * - ROLE_SWITCH: only suspend when TWS connected (role switch happens during TWS) */
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-        sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_OFF, 0, 0); 
-#else
+    if(user == SLEEP_APP_OP_USER_WEAR && sndp_is_tws_link_connected() && sndp_dev_wear_is_worn(true)) {
+        SPUI_TRACE(0, "WEAR + TWS connected, skip suspend (handled by role switch)");
+        return;
+    }
+    if(user == SLEEP_APP_OP_USER_ROLE_SWITCH && !sndp_is_tws_link_connected()) {
+        SPUI_TRACE(0, "ROLE_SWITCH + TWS not connected, skip suspend");
+        return;
+    }
+#endif
 #if defined(__SNDP_HEART_RATE_MGR__)
         if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
+            SPUI_TRACE(0, "suspend hr");
             sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_suspend, user, 0, 0);
-        }           
+        }
         
         if(sndp_dev_sleep_app_get_stage_onoff(false)) {
+            SPUI_TRACE(0, "suspend sleep analysis");
             sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_analysis_suspend, 0, 0, 0);
         }
 #endif
-#endif
-    }
-    else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
-    {
+
 #if defined(__SNDP_HEART_RATE_MGR__)
-        sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_suspend, user, 0, 0);
+        /* BT模式: 仅挂起PPG/ACC原始数据上传流, 不涉及hr算法 */
+        if(sndp_hr_is_reading_ppg_enabled() && !sndp_dev_sleep_app_get_heartrate_onoff(false) &&
+                                               !sndp_dev_sleep_app_get_stage_onoff(false))
+        {
+            SPUI_TRACE(0, "suspend ppg notification");
+            sndp_delay_exec_start(delay_time, (uint32_t)sndp_ppg_notification_suspend, user, 0, 0);
+        }
+
+        if(sndp_hr_is_reading_acc_enabled() && !sndp_dev_sleep_app_get_heartrate_onoff(false) &&
+                                               !sndp_dev_sleep_app_get_stage_onoff(false))
+        {
+            SPUI_TRACE(0, "suspend acc notification");
+            sndp_delay_exec_start(delay_time, (uint32_t)sndp_acc_notification_suspend, user, 0, 0);
+        }
 #endif
-    }     
 }
 
-static void sndp_sleep_app_resume(sndp_sleep_app_op_user_e user)
+void sndp_sleep_app_resume(sndp_sleep_app_op_user_e user)
 {
     POSSIBLY_UNUSED uint16_t delay_time = 1000;
     SPUI_TRACE(0, "user=0x%x", user);
 
     if(user == SLEEP_APP_OP_USER_BT_CALL){
         delay_time = 1;
+    } else if(user == SLEEP_APP_OP_USER_ROLE_SWITCH){
+        delay_time = 0;
     }
-    if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP))
-    {
+
+    /* TWS check:
+     * - WEAR:        only resume when TWS not connected (TWS connected → handled by role switch)
+     * - BT_CALL:     always resume regardless of TWS
+     * - ROLE_SWITCH: only resume when TWS connected (role switch happens during TWS) */
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-        sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_role_switch_trigger, ROLE_SWITCH_REASON_WEAR_ON, 0, 0); 
-#else
+    if(user == SLEEP_APP_OP_USER_WEAR && sndp_is_tws_link_connected() && sndp_dev_wear_is_worn(true)) {
+        SPUI_TRACE(0, "WEAR + TWS connected, skip resume (handled by role switch)");
+        return;
+    }
+    if(user == SLEEP_APP_OP_USER_ROLE_SWITCH && !sndp_is_tws_link_connected()) {
+        SPUI_TRACE(0, "ROLE_SWITCH + TWS not connected, skip resume");
+        return;
+    }
+#endif
+
 #if defined(__SNDP_HEART_RATE_MGR__)
         if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
             sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_resume, user, 0, 0);
-        }            
-        
+        }
+
         if(sndp_dev_sleep_app_get_stage_onoff(false)) {
             sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_analysis_resume, 0, 0, 0);
         }
 #endif
-#endif
-    }
-    else if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_BT))
-    {
 #if defined(__SNDP_HEART_RATE_MGR__)
-        sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_resume, user, 0, 0);
+        if(sndp_hr_is_reading_ppg_enabled() && !sndp_dev_sleep_app_get_heartrate_onoff(false) &&
+                                               !sndp_dev_sleep_app_get_stage_onoff(false))
+        {
+            SPUI_TRACE(0, "resume ppg notification");
+            sndp_delay_exec_start(delay_time, (uint32_t)sndp_ppg_notification_resume, user, 0, 0);
+        }
+        if(sndp_hr_is_reading_acc_enabled() && !sndp_dev_sleep_app_get_heartrate_onoff(false) &&
+                                               !sndp_dev_sleep_app_get_stage_onoff(false))
+        {
+            SPUI_TRACE(0, "resume acc notification");
+            sndp_delay_exec_start(delay_time, (uint32_t)sndp_acc_notification_resume, user, 0, 0);
+        }
 #endif
-    }
 }
 
 void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
@@ -706,9 +741,7 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_role_switch);
         sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_enable_gesture);
         sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_open_anc);
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-        sndp_delay_exec_stop((uint32_t)sndp_sleep_role_switch_trigger);
-#else
+#if !defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
 #if defined(__SNDP_HEART_RATE_MGR__)
         sndp_delay_exec_stop((uint32_t)sndp_hr_resume);
         sndp_delay_exec_stop((uint32_t)sndp_sleep_analysis_resume);
@@ -1091,13 +1124,7 @@ static void sndp_ui_bat_role_switch_exec(void)
     if(peer.bat_per > local.bat_per && (peer.bat_per - local.bat_per) >= 20) {
         SPUI_TRACE(0, "bat switch role, local=%d, peer=%d", local.bat_per, peer.bat_per);
         sndp_ibrt_tws_switch();
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-        /* 睡眠模式：低电触发角色切换（保留算法状态） */
-        if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP))
-        {
-            sndp_sleep_role_switch_trigger(ROLE_SWITCH_REASON_LOW_BATTERY);
-        }
-#endif
+        /* 新架构: 低电只触发 TWS 切换, primary/secondary 由 TWS 角色切换回调处理 */
     }
 }
 
@@ -1450,12 +1477,7 @@ static void sndp_ui_bat_lowpwr_check(void)
             /* 主耳低电关机前先切换角色，让高电量设备接管手机连接 */
             if(sndp_is_tws_link_connected() && sndp_is_tws_master_mode()) {
                 SPUI_TRACE(0, "lowpwr, switch role before shutdown");
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-                if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP))
-                {
-                    sndp_sleep_role_switch_trigger(ROLE_SWITCH_REASON_LOW_BATTERY);
-                }
-#endif
+                /* 新架构: 低电只触发 TWS 切换, primary/secondary 由 TWS 角色切换回调处理 */
                 sndp_ibrt_tws_switch();
                 sndp_delay_exec_start(1000, (uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_LOWPWR, 0, 0);
             } else {
@@ -1576,11 +1598,10 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			}
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-            /* GATT-over-BR/EDR: 手机连接成功时确定角色.
-             * - 单耳 / TWS主耳: 成为Primary(ACTIVE)并广播ROLE_ACTIVE
-             * - TWS从耳: 不主动start, 等收到主耳ROLE_ACTIVE后自降STANDBY
-             *   (见 sndp_sleep_role_switch_on_peer_status 的 IDLE->STANDBY 分支) */
-            if(sndp_is_tws_master_mode()) {
+            /* 新架构: primary/secondary 由 TWS master/slave 决定.
+             * - TWS 未连接: 当前耳机设为 primary (单耳场景)
+             * - TWS 已连接: 不在此处理, 由 TWS 角色确定 (见 TWS_CONNECTED / ROLE_CHANGED) */
+            if(!sndp_is_tws_link_connected()) {
                 sndp_sleep_role_start();
             }
 #endif
@@ -1642,12 +1663,11 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
             sndp_ui_all_status_sync_send();
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-            /* 睡眠模式：TWS连接后激活初始角色 */
-            if(sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP))
-            {
-                SPUI_TRACE(0, "Sleep mode TWS connected, activate role");
-                sndp_sleep_role_switch_init();
-            }
+            /* 新架构: TWS 连接后, 根据 TWS 主从确定 primary/secondary.
+             * master → primary (ACTIVE), slave → secondary (STANDBY).
+             * 不再限定 SLEEP 模式, BT 模式也走同一逻辑. */
+            SPUI_TRACE(0, "TWS connected, determine role by TWS master/slave");
+            sndp_sleep_role_switch_on_bt_role_change();
 #endif
 
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
@@ -1704,6 +1724,11 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 		case SNDP_BT_CONN_STATUS_HFP_CALL_IND:
 			break;
         case SNDP_BT_CONN_ROLE_ROLE_CHANGED:
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+            /* 新架构: TWS 主从切换稳定后, 根据 TWS 角色重新确定 primary/secondary.
+             * master → primary (resume), slave → secondary (suspend) */
+            sndp_sleep_role_switch_on_bt_role_change();
+#endif
             break;
         case SNDP_BT_HFP_CALLSETUP_NONE:
             sndp_call_set_in_out_flag(0);

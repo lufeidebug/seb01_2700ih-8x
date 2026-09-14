@@ -308,13 +308,19 @@ POSSIBLY_UNUSED static uint32_t sndp_comm_cmd_sleepapp_set_local_proximity(void)
 
 void sndp_comm_cmd_sleepapp_start_proximity(void)
 {
+    /* Primary: 开启本地 task, 同步给 Secondary 开启 task */
     sndp_sensor_service_start_proximity_local();
     sndp_comm_cmd_sleepapp_proximity_task();
+    /* TWS 同步: Secondary 收到后开启本地 task */
+    sndp_comm_cmd_send_lr_sync_Proximity_Notification_ONOFF(0x01);
 }
 
 void sndp_comm_cmd_sleepapp_stop_proximity(void)
 {
+    /* Primary: 关闭本地 task, 同步给 Secondary 关闭 task */
     sndp_sensor_service_stop_proximity_local();
+    /* TWS 同步: Secondary 收到后关闭本地 task */
+    sndp_comm_cmd_send_lr_sync_Proximity_Notification_ONOFF(0x00);
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_proximity_notification(sleep_app_comm_cmd_info_s *cmd_info)
@@ -794,7 +800,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sleep_app
     }
     else if(pSensorCtrlMap->sensor_select == 0x02) //accel
     {
-        COMM_CMD_TRACE(3, "ppg reg=0x%02x, write_read=%d, read_len=%d, write_value=0x%02x", 
+        COMM_CMD_TRACE(3, "acc reg=0x%02x, write_read=%d, read_len=%d, write_value=0x%02x", 
                 pSensorCtrlMap->reg_addr, pSensorCtrlMap->write_read, pSensorCtrlMap->read_lenth, pSensorCtrlMap->write_value);
         if(pSensorCtrlMap->write_read == 0x01) //write
         {
@@ -816,7 +822,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sleep_app
             sndp_sleep_comm_main_rsp_cmd(cmd_info);
             return 0;
         }
-        COMM_CMD_TRACE(3, "ppg read_value=0x%02x%02x%02x len=%d", read_value[0], read_value[1], read_value[2], read_len);
+        COMM_CMD_TRACE(3, "acc read_value=0x%02x%02x%02x len=%d", read_value[0], read_value[1], read_value[2], read_len);
     }
     else
     {
@@ -867,7 +873,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_ap
     }
     /* Both ears call this: function internally gates by role (Primary executes, Secondary sets flag only) */
     sndp_sensor_service_start_heartrate_local(sampling_rate, dump_data);
-#if !defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* TWS sync to peer (GATT dual-send mode does not need this) */
     sndp_comm_cmd_send_lr_sync_start_heartrate(sampling_rate, dump_data);
 #endif
@@ -886,7 +892,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app
     cmd_info->value[0] = 0; // success
     /* Both ears call this: function internally gates by role */
     sndp_sleep_comm_cmd_heartrate_stop();
-#if !defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     sndp_comm_cmd_send_lr_sync_stop_heartrate();
 #endif
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -907,7 +913,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_co
     if(sndp_dev_wear_is_worn(false)){
         /* Both ears call this: function internally gates by role */
         sndp_sleep_comm_cmd_analysis_start(sleep_control);
-#if !defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
         /* TWS sync to peer (GATT dual-send mode does not need this) */
         sndp_comm_cmd_send_lr_sync_start_sleep(sleep_control);
 #endif
@@ -927,7 +933,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app
     uint8_t sound_state = cmd_info->value[210];
     /* Both ears call this: function internally gates by role (Primary executes algo, Secondary stores data+flag) */
     sndp_dbbeats_put_sleep_app_data(accel_data_m, screen_status, sound_state);
-#if !defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* TWS sync to peer (GATT dual-send mode does not need this) */
     memset(sleep_tracking_sync_buff, 0, sizeof(sleep_tracking_sync_buff));
     memcpy(sleep_tracking_sync_buff, cmd_info->value, 211);
@@ -970,7 +976,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_com
     cmd_info->value[0] = 0; // success
     /* Both ears call this: function internally gates by role */
     sndp_sleep_comm_cmd_analysis_stop();
-#if !defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     sndp_comm_cmd_send_lr_sync_stop_sleep();
 #endif
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -1348,7 +1354,9 @@ uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
 
 /**
  * @brief   proximity周期任务: 由统一任务线程每1秒tick调用一次
- *          1. 读取本地proximity并缓存 (两耳都做)
+ *          两耳 task 同步跑, 不需要 suspend/resume 转换:
+ *          1. Primary 收到 app cmd → 开启本地 task → TWS 同步 ONOFF → Secondary 开启 task
+ *          2. 读取本地proximity并缓存 (两耳都做)
  *          2. TWS连接: 转发本地值给对耳 (两耳都做, 使主耳持有双耳数据)
  *          3. 上报手机:
  *             - GATT双发(ROLE_SWITCH): 仅Primary(ACTIVE)上报, Secondary只读不汇报
@@ -1649,11 +1657,10 @@ int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* GATT-over-BR/EDR: Secondary does not execute any App command.
-     * State is synchronized via snapshot migration on role switch + TWS sync.
-     * 例外: GET_PROXIMITY_NOTIFICATION 两耳都执行 — Secondary 需要周期读 proximity
-     * 数值并 TWS 转发给 Primary(佩戴监测), tick 必须跟随 app 命令开/关. */
-    if(!sndp_sleep_role_is_active() &&
-       cmd->cmd != SLEEP_APP_CMDID_GET_PROXIMITY_NOTIFICATION) {
+     * State is synchronized via TWS sync from Primary.
+     * proximity: Primary 收到 cmd 后开启本地 task 并 TWS 同步给 Secondary,
+     *   两耳 task 同步跑, 不需要 suspend/resume 转换 (见 proximity task). */
+    if(!sndp_sleep_role_is_active()) {
         COMM_CMD_TRACE(1, "Secondary: skip cmd 0x%02x", cmd->cmd);
         return 0;
     }

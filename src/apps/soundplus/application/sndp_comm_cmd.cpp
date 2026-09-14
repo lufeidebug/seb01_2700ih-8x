@@ -734,7 +734,6 @@ static uint32_t recv_lr_sync_prox_data(uint8_t *payload, uint16_t payload_len)
         unsigned short peer_value = ((unsigned short)payload[0] << 8) |
                                     (unsigned short)payload[1];
         sndp_dev_sleep_app_set_proximity_data(true, peer_value);
-        sndp_comm_cmd_sleepapp_report_proximity_to_app();
     }
     return 0;
 }

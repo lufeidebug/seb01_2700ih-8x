@@ -645,7 +645,7 @@ void sndp_hr_switch_reading_ppg_raw_data(uint32_t user, bool onoff)
     if (before_on == after_on) {
         return;
     }
-
+    HR_TRACE(0, "after_suspended=%d, after_normal=%d, after_on=%d", after_suspended, after_normal, after_on);
     if (after_on) {
         sndp_hal_hr_set_reading_ppg_callback(sndp_hr_read_ppg_callback);
         sndp_hal_hr_set_report_ppg_raw_data_callback(sndp_report_ppg_raw_data_callback);
@@ -689,7 +689,7 @@ void sndp_hr_switch_reading_acc_raw_data(uint32_t user, bool onoff)
     bool after_on        = !after_suspended && after_normal;
 
     hr_ctx.hr_acc_suspended = after_suspended;
-
+    HR_TRACE(0, "after_suspended=%d, after_normal=%d, after_on=%d", after_suspended, after_normal, after_on);
     /* 传感器状态无变化, 跳过重复开/关 */
     if (before_on == after_on) {
         return;
@@ -1051,6 +1051,118 @@ void sndp_acc_notification_stop(void)
     sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_ACC, false);
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
+}
+
+/**
+ * @brief   挂起PPG原始数据上传流(BT模式取下/通话场景):
+ *          不改动dump_state, 仅置位suspend flag强制关闭PPG传感器, resume时恢复。
+ *          与hr算法的suspend分离, 仅作用于notification数据流。
+ *          usersuspend: 0 is wear suspend, 1 is bt call suspend
+ */
+void sndp_ppg_notification_suspend(uint32_t usersuspend)
+{
+    sensor_ppg_op_user_e ppg_op_user;
+
+    /* 仅在 PPG notification 在跑时才 suspend */
+    if(sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE) == 0x00) {
+        SNDP_TRACE(0, "ppg notif suspend, notif not running");
+        return;
+    }
+    if(usersuspend == 0){
+        ppg_op_user = SENSOR_OP_USER_WEAR_SUSPEND_PPG;
+    }else{
+        ppg_op_user = SENSOR_OP_USER_BT_CALL_SUSPEND_PPG;
+    }
+
+    SNDP_TRACE(0, "ppg notif suspend");
+    if(sndp_hr_is_reading_ppg_enabled()){
+        /* onoff=true: 置位suspend flag, 优先级高于普通user, 强制关闭PPG传感器 */
+        sndp_hr_switch_reading_ppg_raw_data(ppg_op_user, true);
+    }
+}
+
+/**
+ * @brief   恢复PPG原始数据上传流(重新佩戴/通话结束场景):
+ *          清除suspend flag, 清空残留队列, dump_state保持不变继续上传。
+ *          usersuspend: 0 is wear suspend, 1 is bt call suspend
+ */
+void sndp_ppg_notification_resume(uint32_t usersuspend)
+{
+    sensor_ppg_op_user_e ppg_op_user;
+
+    /* 仅在 PPG notification 在跑时才 resume */
+    if(sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE) == 0x00) {
+        SNDP_TRACE(0, "ppg notif resume, notif not running");
+        return;
+    }
+    if(usersuspend == 0){
+        ppg_op_user = SENSOR_OP_USER_WEAR_SUSPEND_PPG;
+    }else{
+        ppg_op_user = SENSOR_OP_USER_BT_CALL_SUSPEND_PPG;
+    }
+
+    SNDP_TRACE(0, "ppg notif resume");
+    if(sndp_hr_is_reading_ppg_enabled()){
+        sndp_hr_ppg_raw_data_queue_reset();
+        /* onoff=false: 清除suspend flag, 恢复后由普通user flag决定PPG传感器开关 */
+        sndp_hr_switch_reading_ppg_raw_data(ppg_op_user, false);
+    }
+}
+
+/**
+ * @brief   挂起ACC原始数据上传流(BT模式取下/通话场景):
+ *          不改动dump_state, 仅置位suspend flag强制关闭ACC传感器, resume时恢复。
+ *          与hr算法的suspend分离, 仅作用于notification数据流。
+ *          usersuspend: 0 is wear suspend, 1 is bt call suspend
+ */
+void sndp_acc_notification_suspend(uint32_t usersuspend)
+{
+    sensor_acc_op_user_e acc_op_user;
+
+    /* 仅在 ACC notification 在跑时才 suspend */
+    if(sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE) == 0x00) {
+        SNDP_TRACE(0, "acc notif suspend, notif not running");
+        return;
+    }
+    if(usersuspend == 0){
+        acc_op_user = SENSOR_OP_USER_WEAR_SUSPEND_ACC;
+    }else{
+        acc_op_user = SENSOR_OP_USER_BT_CALL_SUSPEND_ACC;
+    }
+
+    SNDP_TRACE(0, "acc notif suspend");
+    if(sndp_hr_is_reading_acc_enabled()){
+        /* onoff=true: 置位suspend flag, 优先级高于普通user, 强制关闭ACC传感器 */
+        sndp_hr_switch_reading_acc_raw_data(acc_op_user, true);
+    }
+}
+
+/**
+ * @brief   恢复ACC原始数据上传流(重新佩戴/通话结束场景):
+ *          清除suspend flag, 清空残留队列, dump_state保持不变继续上传。
+ *          usersuspend: 0 is wear suspend, 1 is bt call suspend
+ */
+void sndp_acc_notification_resume(uint32_t usersuspend)
+{
+    sensor_acc_op_user_e acc_op_user;
+
+    /* 仅在 ACC notification 在跑时才 resume */
+    if(sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE) == 0x00) {
+        SNDP_TRACE(0, "acc notif resume, notif not running");
+        return;
+    }
+    if(usersuspend == 0){
+        acc_op_user = SENSOR_OP_USER_WEAR_SUSPEND_ACC;
+    }else{
+        acc_op_user = SENSOR_OP_USER_BT_CALL_SUSPEND_ACC;
+    }
+
+    SNDP_TRACE(0, "acc notif resume");
+    if(sndp_hr_is_reading_acc_enabled()){
+        sndp_hr_acc_raw_data_queue_reset();
+        /* onoff=false: 清除suspend flag, 恢复后由普通user flag决定ACC传感器开关 */
+        sndp_hr_switch_reading_acc_raw_data(acc_op_user, false);
+    }
 }
 
 static bool sndp_is_notifi_hr_enabled(void)
