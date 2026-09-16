@@ -18,6 +18,9 @@
 #include "app_ibrt_customif_cmd.h"
 #include "bts_core_if.h"
 #include "app_ble_adv.h"
+#if defined(__GATT_OVER_BR_EDR__)
+#include "app_btgatt.h"
+#endif
 
 #include "sndp_if_device.h"
 #include "sndp_if_common.h"
@@ -302,6 +305,8 @@ POSSIBLY_UNUSED static void sndp_comm_ble_disconnected_done(uint8_t conidx)
 {
 	COMM_BLE_ENTER();
 	sndp_comm_ble_ctx.conn_status = SNDP_COMM_BLE_DISCONNECTED;
+    /* 上报BLE断开事件给UI (sndp_ui) */
+    sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_BLE_DISCONNECTED, conidx);
 #if defined(__SNDP_HEART_RATE_MGR__)
     sndp_hr_ble_disconnected_delay10s_start();
 #endif
@@ -312,11 +317,14 @@ POSSIBLY_UNUSED static void sndp_comm_ble_connected_done(uint8_t conidx)
 	COMM_BLE_TRACE(0,"conidx:%d",conidx);
 	sndp_comm_ble_ctx.conn_status = SNDP_COMM_BLE_CONNECTED;
     sndp_comm_ble_ctx.conidx = conidx;
+    /* 上报BLE连接事件给UI (sndp_ui). 注: LE栈连接建立即触发(BT_GATTS_EVENT_CONN_OPENED);
+     * GATT-over-BR/EDR走app_btgatt独立路径, 不会进入本回调 */
+    sndp_bt_conn_status_changed(SNDP_BT_CONN_STATUS_BLE_CONNECTED, conidx);
     if(sndp_comm_ble_ctx.conidx == 0x01) {
 #if defined(__SNDP_HEART_RATE_MGR__)
         sndp_hr_ble_connected_delay10s_stop();
 #endif
-#ifdef CFG_APP_DATAPATH_SERVER    
+#ifdef CFG_APP_DATAPATH_SERVER
         app_datapath_server_register_tx_done(sndp_comm_ble_tx_done);
 #endif
     }
@@ -351,7 +359,21 @@ bool sndp_comm_ble_is_connected(void)
 	return (sndp_comm_ble_ctx.conn_status == SNDP_COMM_BLE_CONNECTED) ? (true) : (false);
 }
 
-
+sndp_comm_conn_type_e sndp_comm_ble_get_conn_type(void)
+{
+    COMM_BLE_TRACE(0, "btgatt_is_connected:%d", app_btgatt_is_connected_by_conidx(sndp_comm_ble_ctx.conidx));
+#if defined(__GATT_OVER_BR_EDR__)
+    /* 参考ota_ble_get_path_type: 用当前conidx查GATT-over-BREDR连接状态.
+     * GATT-over-BREDR与BLE共享conidx空间, 同一conidx在两条路径上都可见 */
+    if (app_btgatt_is_connected_by_conidx(sndp_comm_ble_ctx.conidx)) {
+        return SNDP_COMM_CONN_TYPE_GATT_OVER_BREDR;
+    }
+#endif
+    if (sndp_comm_ble_is_connected()) {
+        return SNDP_COMM_CONN_TYPE_BLE;
+    }
+    return SNDP_COMM_CONN_TYPE_NONE;
+}
 
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
 

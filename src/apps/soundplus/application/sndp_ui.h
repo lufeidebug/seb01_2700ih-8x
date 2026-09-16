@@ -76,7 +76,6 @@ void sndp_ui_sleep_anc_mode_off(void);
 typedef enum {
     SLEEP_APP_OP_USER_WEAR        = 0,
     SLEEP_APP_OP_USER_BT_CALL     = 1,
-    SLEEP_APP_OP_USER_ROLE_SWITCH = 2,
     SLEEP_APP_OP_USER_MAX,
 } sndp_sleep_app_op_user_e;
 

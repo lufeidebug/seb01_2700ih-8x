@@ -30,6 +30,13 @@ typedef enum {
 		
 } sndp_comm_ble_conn_status_e;
 
+/* App连接类型: 区分BLE直连 / GATT-over-BR/EDR双发 / 未连接 */
+typedef enum {
+    SNDP_COMM_CONN_TYPE_NONE = 0,          /* 未连接 */
+    SNDP_COMM_CONN_TYPE_BLE,              /* BLE直连 */
+    SNDP_COMM_CONN_TYPE_GATT_OVER_BREDR,  /* GATT over BR/EDR双发 */
+} sndp_comm_conn_type_e;
+
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
 void sndp_ble_receive_master_public_addr(uint8_t *addr, uint16_t length);
 void sndp_master_send_ble_public_addr(void);
@@ -37,6 +44,7 @@ void sndp_master_send_ble_public_addr(void);
 
 sndp_comm_ble_conn_status_e sndp_comm_ble_get_conn_status(void);
 bool sndp_comm_ble_is_connected(void);
+sndp_comm_conn_type_e sndp_comm_ble_get_conn_type(void);
 int32_t sndp_comm_ble_send_data(uint8_t *data, uint16_t data_len);
 int32_t sndp_comm_ble_init(void);
 uint32_t sndp_comm_ble_available_of_queue(void);

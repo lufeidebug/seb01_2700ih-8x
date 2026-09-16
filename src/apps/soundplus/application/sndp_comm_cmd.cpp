@@ -617,34 +617,32 @@ uint32_t sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_SLEEP_APP_FLAG_NAME flag
 
 static uint32_t recv_lr_sync_sleep_app_flag(uint8_t *payload, uint16_t payload_len)
 {
-    if(payload_len == 3) {
-        SNDP_SLEEP_APP_FLAG_NAME flag_name = (SNDP_SLEEP_APP_FLAG_NAME)payload[0];
-        uint8_t value = payload[1];
-        bool is_save = (bool)payload[2];
-
-        switch(flag_name) {
-        case SNDP_EQ_INDEX_FLAG:
-            sndp_dev_sleep_app_set_eq_index(false, value, is_save);
-            break;
-        case SNDP_ANC_MODE_FLAG:
-            sndp_dev_sleep_app_anc_mode_set(false, value, is_save);
-            sndp_sleep_app_report_anc_mode();
-            break;
-        case SNDP_PROMPT_ONOFF_FLAG:
-            sndp_dev_sleep_app_set_prompt_onoff(false, value, is_save);
-            break;
-        case SNDP_GESTURE_ONOFF_FLAG:
-            sndp_dev_sleep_app_set_gesture_onoff(false, value, is_save);
-            break;
-        case SNDP_SPLAYPAUSE_ONOFF_FLAG:
-            sndp_dev_sleep_app_set_splaypause_onoff(false, value, is_save);
-            break;
-        case SNDP_SLEEP_MODE_FLAG:
-            sndp_dev_set_working_mode((sndp_dev_working_mode_e)value);
-            break;
-        default:
-            break;
-        }
+    SNDP_SLEEP_APP_FLAG_NAME flag_name = (SNDP_SLEEP_APP_FLAG_NAME)payload[0];
+    uint8_t value = payload[1];
+    bool is_save = (bool)payload[2];
+    COMM_CMD_TRACE(0, "recv LR sync sleep app flag, type=%d, value=%d, is_save=%d", flag_name, value, is_save);
+    switch(flag_name) {
+    case SNDP_EQ_INDEX_FLAG:
+        sndp_dev_sleep_app_set_eq_index(false, value, is_save);
+        break;
+    case SNDP_ANC_MODE_FLAG:
+        sndp_dev_sleep_app_anc_mode_set(false, value, is_save);
+        sndp_sleep_app_report_anc_mode();
+        break;
+    case SNDP_PROMPT_ONOFF_FLAG:
+        sndp_dev_sleep_app_set_prompt_onoff(false, value, is_save);
+        break;
+    case SNDP_GESTURE_ONOFF_FLAG:
+        sndp_dev_sleep_app_set_gesture_onoff(false, value, is_save);
+        break;
+    case SNDP_SPLAYPAUSE_ONOFF_FLAG:
+        sndp_dev_sleep_app_set_splaypause_onoff(false, value, is_save);
+        break;
+    case SNDP_SLEEP_MODE_FLAG:
+        sndp_dev_set_working_mode((sndp_dev_working_mode_e)value);
+        break;
+    default:
+        break;
     }
     return 0;
 }
@@ -951,6 +949,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_sleep_app(sndp_comm_cmd_info_s *cmd_i
     uint8_t *payload = cmd_info->data + 1;
     uint16_t payload_len = cmd_info->data_len - 1;
 
+    COMM_CMD_TRACE(0, "recv LR sync sleep app, type=%d, len=%d", type, payload_len);
     switch(type) {
     case LR_SYNC_TYPE_SLEEP_APP_FLAG:
         return recv_lr_sync_sleep_app_flag(payload, payload_len);

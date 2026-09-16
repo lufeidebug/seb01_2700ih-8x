@@ -770,6 +770,7 @@ bool sndp_is_tws_slave_mode(void)
 
 bool sndp_is_tws_link_connected(void)
 {
+	SNDP_IF_TRACE(1, "%d", bts_tws_if_is_tws_link_connected());
 	return bts_tws_if_is_tws_link_connected();
 }
 

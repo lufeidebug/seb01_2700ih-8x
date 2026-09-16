@@ -164,8 +164,6 @@ void sndp_acc_notification_resume(uint32_t usersuspend);
  */
 void sndp_hr_app_init(void);
 
-uint8_t sndp_hr_running_state(void);
-
 void sndp_hr_set_sleep_control(int32_t sleep_control);
 
 int32_t sndp_hr_get_sleep_control(void);
@@ -178,8 +176,10 @@ void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
 
 int32_t sndp_get_acc_notification(void);
 
-bool sndp_hr_is_reading_ppg_enabled(void);
-bool sndp_hr_is_reading_acc_enabled(void);
+bool sndp_hr_is_ppg_enabled_check_every_user(void);
+bool sndp_hr_is_acc_enabled_check_every_user(void);
+bool sndp_hr_is_acc_enabled_only_acc_user(void);
+bool sndp_hr_is_ppg_enabled_only_ppg_user(void);
 
 void sndp_hr_switch_reading_ppg_raw_data(uint32_t user, bool onoff);
 void sndp_hr_switch_reading_acc_raw_data(uint32_t user, bool onoff);

@@ -45,26 +45,6 @@ Device_Role_t sndp_sleep_role_get_current(void);
 bool sndp_sleep_role_is_active(void);
 
 /**
- * @brief Check if the data plane (sensors/algo/FIFO tasks) should be running.
- *
- * Data-plane gate: sensor on/off, algo execute, FIFO tasks (PPG/ACC/HR/sleep).
- * Returns true for ROLE_ACTIVE (Primary running).
- * Returns false for ROLE_STANDBY / ROLE_IDLE.
- */
-bool sndp_sleep_role_data_plane_active(void);
-
-/**
- * @brief Check if current device is Secondary (ROLE_STANDBY)
- */
-bool sndp_sleep_role_is_standby(void);
-
-/**
- * @brief Check if role switch is in progress (ROLE_SWITCHING)
- * @deprecated ROLE_SWITCHING state is no longer used in the new TWS-based flow.
- */
-bool sndp_sleep_role_is_switching(void);
-
-/**
  * @brief Module init
  */
 void sndp_sleep_role_switch_init(void);
@@ -102,10 +82,6 @@ void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot, uint16_t len);
  * @param peer_role  Role value received from peer via LR_SYNC_SLEEP_ROLE_STATUS
  */
 void sndp_sleep_role_switch_on_peer_status(Device_Role_t peer_role);
-
-void sndp_sleep_role_start(void);
-
-void sndp_sleep_role_stop(void);
 
 void sndp_sleep_role_set_peer(Device_Role_t role);
 #ifdef __cplusplus

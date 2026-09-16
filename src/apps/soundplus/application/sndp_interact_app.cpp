@@ -292,7 +292,7 @@ POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_
         sndp_ppg_notification_stop();
     }
     /* 同步给对耳 */
-    sndp_comm_cmd_send_lr_sync_ppg_notification(onoff);
+    // sndp_comm_cmd_send_lr_sync_ppg_notification(onoff);
     COMM_CMD_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE));
     return 0;
 }
@@ -346,7 +346,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_accelerometer_notifi
 
     sndp_sensor_service_set_acc_notification_local(onoff);
     /* 同步给对耳 */
-    sndp_comm_cmd_send_lr_sync_acc_notification(onoff);
+    // sndp_comm_cmd_send_lr_sync_acc_notification(onoff);
     
     COMM_CMD_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE));
     return 0;
@@ -874,8 +874,10 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_ap
     /* Both ears call this: function internally gates by role (Primary executes, Secondary sets flag only) */
     sndp_sensor_service_start_heartrate_local(sampling_rate, dump_data);
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* TWS sync to peer (GATT dual-send mode does not need this) */
-    sndp_comm_cmd_send_lr_sync_start_heartrate(sampling_rate, dump_data);
+    /* BLE模式: 仅Primary连手机, 需TWS同步给Secondary; GATT双发: 两耳都收到, 不需同步 */
+    // if(sndp_comm_ble_get_conn_type() == SNDP_COMM_CONN_TYPE_BLE) {
+    //     sndp_comm_cmd_send_lr_sync_start_heartrate(sampling_rate, dump_data);
+    // }
 #endif
     return 0;
 }
@@ -893,7 +895,9 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app
     /* Both ears call this: function internally gates by role */
     sndp_sleep_comm_cmd_heartrate_stop();
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    sndp_comm_cmd_send_lr_sync_stop_heartrate();
+    // if(sndp_comm_ble_get_conn_type() == SNDP_COMM_CONN_TYPE_BLE) {
+    //     sndp_comm_cmd_send_lr_sync_stop_heartrate();
+    // }
 #endif
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
@@ -914,8 +918,9 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_co
         /* Both ears call this: function internally gates by role */
         sndp_sleep_comm_cmd_analysis_start(sleep_control);
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-        /* TWS sync to peer (GATT dual-send mode does not need this) */
-        sndp_comm_cmd_send_lr_sync_start_sleep(sleep_control);
+        // if(sndp_comm_ble_get_conn_type() == SNDP_COMM_CONN_TYPE_BLE) {
+        //     sndp_comm_cmd_send_lr_sync_start_sleep(sleep_control);
+        // }
 #endif
         cmd_info->value[0] = 0; // success
     } else {
@@ -934,10 +939,11 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app
     /* Both ears call this: function internally gates by role (Primary executes algo, Secondary stores data+flag) */
     sndp_dbbeats_put_sleep_app_data(accel_data_m, screen_status, sound_state);
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* TWS sync to peer (GATT dual-send mode does not need this) */
-    memset(sleep_tracking_sync_buff, 0, sizeof(sleep_tracking_sync_buff));
-    memcpy(sleep_tracking_sync_buff, cmd_info->value, 211);
-    sndp_delay_exec_start(150,(uint32_t)sndp_comm_cmd_send_lr_sync_sleep_tracking, (uint32_t)&sleep_tracking_sync_buff[0], 211, 0);
+    // if(sndp_comm_ble_get_conn_type() == SNDP_COMM_CONN_TYPE_BLE) {
+    //     memset(sleep_tracking_sync_buff, 0, sizeof(sleep_tracking_sync_buff));
+    //     memcpy(sleep_tracking_sync_buff, cmd_info->value, 211);
+    //     sndp_delay_exec_start(150,(uint32_t)sndp_comm_cmd_send_lr_sync_sleep_tracking, (uint32_t)&sleep_tracking_sync_buff[0], 211, 0);
+    // }
 #endif
     return 0;
 }
@@ -965,9 +971,6 @@ void sndp_sleep_comm_cmd_analysis_stop(void)
 {
     COMM_CMD_TRACE(0, "sleep analysis stop");
     sndp_sensor_service_exit_sleep_mode_local();
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    sndp_sleep_role_stop();
-#endif
 }
 
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_comm_cmd_info_s *cmd_info)
@@ -977,7 +980,9 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_com
     /* Both ears call this: function internally gates by role */
     sndp_sleep_comm_cmd_analysis_stop();
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    sndp_comm_cmd_send_lr_sync_stop_sleep();
+    // if(sndp_comm_ble_get_conn_type() == SNDP_COMM_CONN_TYPE_BLE) {
+    //     sndp_comm_cmd_send_lr_sync_stop_sleep();
+    // }
 #endif
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
@@ -1011,7 +1016,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_test(sleep_app_co
     uint8_t sensor_type = cmd_info->value[0];
     POSSIBLY_UNUSED uint8_t measurement_duration = cmd_info->value[1];
     if(sensor_type == 0x00){
-        if(sndp_hr_is_reading_ppg_enabled() || sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE)){
+        if(sndp_hr_is_ppg_enabled_check_every_user() || sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE)){
 #if defined(__SNDP_GSENSOR_SUPPORT__)
             sndp_hal_hr_read_samples_rate(sndp_comm_cmd_sleepapp_report_ppg_samples);
             sndp_hal_hr_samples_measurement_start(measurement_duration);
@@ -1024,7 +1029,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_test(sleep_app_co
     }
     else if(sensor_type == 0x01)
     {
-        if(sndp_hr_is_reading_acc_enabled() || sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE)){
+        if(sndp_hr_is_acc_enabled_check_every_user() || sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE)){
 #if defined(__SNDP_GSENSOR_SUPPORT__)
             sndp_hal_acc_read_samples_rate(sndp_comm_cmd_sleepapp_report_acc_samples);
             sndp_hal_acc_samples_measurement_start(measurement_duration);
@@ -1109,7 +1114,6 @@ uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
    if(!sndp_comm_ble_is_connected())
     {
         COMM_CMD_TRACE(0, "BLE is not connected, stop sleep stage reporting");
-        // sndp_call_func_in_app_thread((uint32_t)sndp_sleep_analysis_stop, 0, 0, 0);
         return 1;
     }
 
@@ -1151,7 +1155,6 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data
     if(!sndp_comm_ble_is_connected())
     {
         COMM_CMD_TRACE(0, "BLE is not connected, stop hr");
-        // sndp_call_func_in_app_thread((uint32_t)sndp_hr_mearsuring_stop, 0, 0, 0);
         return 1;
     }
     
@@ -1382,13 +1385,11 @@ uint32_t sndp_comm_cmd_sleepapp_proximity_task(void)
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* 3a. GATT双发: 两耳都连着app, 仅Primary(ACTIVE)上报; Secondary只读不汇报 */
     if (sndp_sleep_role_is_active() && sndp_comm_ble_is_connected()) {
-        sndp_dev_sleep_app_set_proximity_data(true, 0);
         sndp_comm_cmd_sleepapp_report_proximity_to_app();
     }
 #else
     /* 3b. 传统TWS: 单耳BLE直连手机时直接上报 */
     if (!sndp_is_tws_link_connected() && sndp_comm_ble_is_connected()) {
-        sndp_dev_sleep_app_set_proximity_data(true, 0);
         sndp_comm_cmd_sleepapp_report_proximity_to_app();
     }
 #endif
@@ -1653,16 +1654,16 @@ int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
         return -1;
     }
 
-    COMM_CMD_TRACE(2,"BLE CON: %d, slave mode:%d", sndp_comm_ble_is_connected(), sndp_is_tws_slave_mode());
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* GATT-over-BR/EDR: Secondary does not execute any App command.
-     * State is synchronized via TWS sync from Primary.
-     * proximity: Primary 收到 cmd 后开启本地 task 并 TWS 同步给 Secondary,
-     *   两耳 task 同步跑, 不需要 suspend/resume 转换 (见 proximity task). */
-    if(!sndp_sleep_role_is_active()) {
-        COMM_CMD_TRACE(1, "Secondary: skip cmd 0x%02x", cmd->cmd);
-        return 0;
+    /* GATT-over-BR/EDR双发: 两耳都收到App命令, Secondary不需要执行 (Primary执行+TWS同步).
+     * BLE直连: 仅Primary收到App命令, 通过TWS同步给Secondary, 两耳都需执行. */
+    if(sndp_is_tws_link_connected()) {
+        if(sndp_comm_ble_get_conn_type() == SNDP_COMM_CONN_TYPE_GATT_OVER_BREDR 
+        && !sndp_sleep_role_is_active()) {
+            COMM_CMD_TRACE(1, "GATT BR/EDR Secondary: skip cmd 0x%02x", cmd->cmd);
+            return 0;
+        }
     }
 #endif
 

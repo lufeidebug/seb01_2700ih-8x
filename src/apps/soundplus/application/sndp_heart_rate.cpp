@@ -187,21 +187,47 @@ int32_t sndp_hr_get_sleep_control(void)
     return hr_ctx.sleep_control;
 }
 
-uint8_t sndp_hr_running_state(void)
+static uint8_t sndp_hr_running_state(void)
 {
     return hr_ctx.hr_running;
 }
 
-bool sndp_hr_is_reading_ppg_enabled(void)
+// Check if PPG is enabled , every user flag is checked
+bool sndp_hr_is_ppg_enabled_check_every_user(void)
 {
     // SNDP_TRACE(0, "ppg_user_flag=%d", hr_ctx.ppg_user_flag);
     return hr_ctx.ppg_user_flag ? true : false;   
 }
 
-bool sndp_hr_is_reading_acc_enabled(void)
+// Check if PPG notification is enabled , only PPG user flag is checked
+bool sndp_hr_is_ppg_enabled_only_ppg_user(void)
+{
+    if(hr_ctx.ppg_user_flag & SENSOR_OP_USER_PPG) {
+        SNDP_TRACE(0, "ppg_user_flag=%d", hr_ctx.ppg_user_flag);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+// Check if ACC is enabled , every user flag is checked
+bool sndp_hr_is_acc_enabled_check_every_user(void)
 {
     // SNDP_TRACE(0, "acc_user_flag=%d", hr_ctx.acc_user_flag);
     return hr_ctx.acc_user_flag ? true : false;   
+}
+
+// Check if ACC notification is enabled , only ACC user flag is checked
+bool sndp_hr_is_acc_enabled_only_acc_user(void)
+{
+    if(hr_ctx.acc_user_flag & SENSOR_OP_USER_ACC) {
+        SNDP_TRACE(0, "acc_user_flag=%d", hr_ctx.acc_user_flag);
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 static bool sndp_hr_acc_is_suspend(void)
@@ -444,7 +470,7 @@ static void sndp_heartrate_algo_task(void)
     SNDP_TRACE(0, "HR_ALGO disabled: No Hr data");
 #endif
     // hr_setp_10: Report results
-    if(hr_ctx.hr_running) {
+    if(sndp_hr_running_state()) {
 #if defined(__SNDP_SLEEP_APP__)
         sndp_comm_cmd_sleepapp_report_hr(hrv_ptr, (uint8_t*)&dbbeats_data);
 #endif
@@ -478,7 +504,7 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
         // ACC读取期间保留250ms看门狗轮询(沿用原da217e线程行为), 其余情况无限等待任务信号
-        wait_timeout = (sndp_hr_is_reading_acc_enabled() && !sndp_hr_acc_is_suspend()) ? SENSOR_TASK_ACC_WATCHDOG_MS : osWaitForever;
+        wait_timeout = (sndp_hr_is_acc_enabled_check_every_user() && !sndp_hr_acc_is_suspend()) ? SENSOR_TASK_ACC_WATCHDOG_MS : osWaitForever;
         evt = osSignalWait(0, wait_timeout);
 
         app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
@@ -489,9 +515,9 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
         fired_signals = (evt.status == osEventSignal) ? evt.value.signals : 0;
         // SNDP_TRACE(0, "fired_signals: 0x%08x ppg_queue_len: %d", fired_signals, sndp_hr_ppg_raw_data_queue_get_len());
         // SNDP_TRACE(0, "ppg_enabled: %d, ppgpend:%d acc_enabled:%d accpend: %d", 
-        //                                                 sndp_hr_is_reading_ppg_enabled(), 
+        //                                                 sndp_hr_is_ppg_enabled_check_every_user(), 
         //                                                 sndp_hr_ppg_is_suspend(), 
-        //                                                 sndp_hr_is_reading_acc_enabled(), 
+        //                                                 sndp_hr_is_acc_enabled_check_every_user(), 
         //                                                 sndp_hr_acc_is_suspend());
         /********** task1: ppg_task **********/
 #if defined(__SNDP_HRSENSOR_SUPPORT__)
@@ -502,7 +528,7 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
            data_plane(ACTIVE||SWITCHING)放行: 旧主停流前读尽残留, 新主开流后立即接管 */
         if((fired_signals & SENSOR_TASK_SIGNAL_PPG_FIFO)) {
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-            if(sndp_sleep_role_data_plane_active())
+            if(sndp_sleep_role_is_active())
 #endif
             {
                 sndp_hal_hr_ppg_fifo_task();
@@ -512,7 +538,7 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
 
         /********** task2: acc_task **********/
 #if defined(__SNDP_GSENSOR_SUPPORT__)
-        if(sndp_hr_is_reading_acc_enabled() && !sndp_hr_acc_is_suspend()) {
+        if(sndp_hr_is_acc_enabled_check_every_user() && !sndp_hr_acc_is_suspend()) {
             if(fired_signals & SENSOR_TASK_SIGNAL_ACC_FIFO) {
                 acc_last_poll_ms = curr_ms;
                 sndp_hal_acc_fifo_task();
@@ -527,12 +553,12 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
 
         /********** task3: heartrate_task **********/
         if((fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) && !sndp_hr_acc_is_suspend() &&
-           (hr_ctx.hr_running) && !sndp_hr_ppg_is_suspend() &&
+           (sndp_hr_running_state()) && !sndp_hr_ppg_is_suspend() &&
            (sndp_hr_ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES)) {
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
             /* 数据面门控: ACTIVE(稳态主)+SWITCHING(切换中旧主读尽/新主接管)执行,
                STANDBY/IDLE不执行心率算法 */
-            if(sndp_sleep_role_data_plane_active())
+            if(sndp_sleep_role_is_active())
 #endif
             {
                 sndp_heartrate_algo_task();
@@ -544,7 +570,7 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
             hr_ctx.sleep_tracking = false;
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
             /* 数据面门控: ACTIVE+SWITCHING执行睡眠分析, STANDBY/IDLE不执行 */
-            if(sndp_sleep_role_data_plane_active())
+            if(sndp_sleep_role_is_active())
 #endif
             {
                 sndp_sleep_analysis();
@@ -563,7 +589,7 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
 static void sndp_hr_read_ppg_callback(int32_t *data, uint16_t cnt)
 {
     // HR_TRACE(0, "cnt=%d", cnt);
-    if(hr_ctx.hr_running) {
+    if(sndp_hr_running_state()) {
         // SNDP_DUMP32("%08X ", data,  cnt > 16?16:cnt);
         sndp_hr_ppg_raw_data_queue_push_data(data, cnt);
 
@@ -597,7 +623,7 @@ static void sndp_hr_acc_read_raw_data_callback(sndp_hal_acc_data_s *data, uint16
     HR_TRACE(0, "acc_read_raw cnt=%d", cnt);
     SNDP_DUMP32("%04X ", data,  cnt > 16?16:cnt);
 
-    if(hr_ctx.hr_running) {
+    if(sndp_hr_running_state()) {
         sndp_hr_acc_raw_data_queue_push_data((int16_t *)data, cnt * 3);
     }
 
@@ -718,7 +744,7 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* 数据面门控: STANDBY/IDLE只设flag不动硬件; ACTIVE/SWITCHING真正开传感器+算法
        (SWITCHING: 新主接管时hr_start需真正开传感器) */
-    if(!sndp_sleep_role_data_plane_active()) {
+    if(!sndp_sleep_role_is_active()) {
         SNDP_TRACE(0, "Secondary: hr_start flag only");
         return;
     }
@@ -753,9 +779,7 @@ void sndp_hr_mearsuring_stop(void)
     sndp_hr_mearsuring_set_dump_state(HR_DUMP_STATE, 0x00);
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* 数据面门控: STANDBY/IDLE只清flag; ACTIVE/SWITCHING真正关传感器
-       (SWITCHING: 旧主停流时hr_stop需真正关传感器) */
-    if(!sndp_sleep_role_data_plane_active()) {
+    if(!sndp_sleep_role_is_active()) {
         SNDP_TRACE(0, "Secondary: hr_stop flag only");
         return;
     }
@@ -799,11 +823,11 @@ void sndp_hr_suspend(uint32_t usersuspend)
     }
     
     SNDP_TRACE(0, "hr suspend");
-    if(sndp_hr_is_reading_ppg_enabled()){
+    if(sndp_hr_is_ppg_enabled_check_every_user()){
         /* onoff=true: 置位suspend flag, 优先级高于普通user, 强制关闭PPG传感器 */
         sndp_hr_switch_reading_ppg_raw_data(ppg_op_user, true);
     }   
-    if(sndp_hr_is_reading_acc_enabled()){
+    if(sndp_hr_is_acc_enabled_check_every_user()){
         /* onoff=true: 置位suspend flag, 优先级高于普通user, 强制关闭ACC传感器 */
         sndp_hr_switch_reading_acc_raw_data(acc_op_user, true);
     }
@@ -843,12 +867,12 @@ void sndp_hr_resume(uint32_t usersuspend)
     }
     
     SNDP_TRACE(0, "hr resume");
-    if(sndp_hr_is_reading_ppg_enabled()){
+    if(sndp_hr_is_ppg_enabled_check_every_user()){
         sndp_hr_ppg_raw_data_queue_reset();
         /* onoff=false: 清除suspend flag, 恢复后由普通user flag决定PPG传感器开关 */
         sndp_hr_switch_reading_ppg_raw_data(ppg_op_user, false);
     }
-    if(sndp_hr_is_reading_acc_enabled()){
+    if(sndp_hr_is_acc_enabled_check_every_user()){
         sndp_hr_acc_raw_data_queue_reset();
         /* onoff=false: 清除suspend flag, 恢复后由普通user flag决定ACC传感器开关 */
         sndp_hr_switch_reading_acc_raw_data(acc_op_user, false);
@@ -931,7 +955,7 @@ void sndp_sleep_analysis_start(int32_t sleep_control)
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* 数据面门控: STANDBY/IDLE只设flag; ACTIVE/SWITCHING真正初始化睡眠算法
        (SWITCHING: 新主接管时需初始化睡眠算法) */
-    if(!sndp_sleep_role_data_plane_active()) {
+    if(!sndp_sleep_role_is_active()) {
         SNDP_TRACE(0, "Secondary: sleep_start flag only");
         return;
     }
@@ -960,7 +984,7 @@ void sndp_sleep_analysis_stop(void)
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* 数据面门控: STANDBY/IDLE只清flag; ACTIVE/SWITCHING真正降频
        (SWITCHING: 旧主停流时sleep_stop) */
-    if(!sndp_sleep_role_data_plane_active()) {
+    if(!sndp_sleep_role_is_active()) {
         SNDP_TRACE(0, "Secondary: sleep_stop flag only");
         return;
     }
@@ -978,7 +1002,7 @@ void sndp_ppg_notification_start(uint8_t dump_state)
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* 数据面门控: STANDBY/IDLE只设flag; ACTIVE/SWITCHING真正开PPG上传传感器 */
-    if(!sndp_sleep_role_data_plane_active()) {
+    if(!sndp_sleep_role_is_active()) {
         SNDP_TRACE(0, "Secondary: ppg_notif_start flag only");
         return;
     }
@@ -1001,7 +1025,7 @@ void sndp_ppg_notification_stop(void)
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* 数据面门控: STANDBY/IDLE只清flag; ACTIVE/SWITCHING真正关PPG上传传感器 */
-    if(!sndp_sleep_role_data_plane_active()) {
+    if(!sndp_sleep_role_is_active()) {
         SNDP_TRACE(0, "Secondary: ppg_notif_stop flag only");
         return;
     }
@@ -1019,7 +1043,7 @@ void sndp_acc_notification_start(uint8_t dump_state)
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* 数据面门控: STANDBY/IDLE只设flag; ACTIVE/SWITCHING真正开ACC上传传感器 */
-    if(!sndp_sleep_role_data_plane_active()) {
+    if(!sndp_sleep_role_is_active()) {
         SNDP_TRACE(0, "Secondary: acc_notif_start flag only");
         return;
     }
@@ -1042,7 +1066,7 @@ void sndp_acc_notification_stop(void)
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* 数据面门控: STANDBY/IDLE只清flag; ACTIVE/SWITCHING真正关ACC上传传感器 */
-    if(!sndp_sleep_role_data_plane_active()) {
+    if(!sndp_sleep_role_is_active()) {
         SNDP_TRACE(0, "Secondary: acc_notif_stop flag only");
         return;
     }
@@ -1075,7 +1099,7 @@ void sndp_ppg_notification_suspend(uint32_t usersuspend)
     }
 
     SNDP_TRACE(0, "ppg notif suspend");
-    if(sndp_hr_is_reading_ppg_enabled()){
+    if(sndp_hr_is_ppg_enabled_check_every_user()){
         /* onoff=true: 置位suspend flag, 优先级高于普通user, 强制关闭PPG传感器 */
         sndp_hr_switch_reading_ppg_raw_data(ppg_op_user, true);
     }
@@ -1102,7 +1126,7 @@ void sndp_ppg_notification_resume(uint32_t usersuspend)
     }
 
     SNDP_TRACE(0, "ppg notif resume");
-    if(sndp_hr_is_reading_ppg_enabled()){
+    if(sndp_hr_is_ppg_enabled_check_every_user()){
         sndp_hr_ppg_raw_data_queue_reset();
         /* onoff=false: 清除suspend flag, 恢复后由普通user flag决定PPG传感器开关 */
         sndp_hr_switch_reading_ppg_raw_data(ppg_op_user, false);
@@ -1131,7 +1155,7 @@ void sndp_acc_notification_suspend(uint32_t usersuspend)
     }
 
     SNDP_TRACE(0, "acc notif suspend");
-    if(sndp_hr_is_reading_acc_enabled()){
+    if(sndp_hr_is_acc_enabled_check_every_user()){
         /* onoff=true: 置位suspend flag, 优先级高于普通user, 强制关闭ACC传感器 */
         sndp_hr_switch_reading_acc_raw_data(acc_op_user, true);
     }
@@ -1158,7 +1182,7 @@ void sndp_acc_notification_resume(uint32_t usersuspend)
     }
 
     SNDP_TRACE(0, "acc notif resume");
-    if(sndp_hr_is_reading_acc_enabled()){
+    if(sndp_hr_is_acc_enabled_check_every_user()){
         sndp_hr_acc_raw_data_queue_reset();
         /* onoff=false: 清除suspend flag, 恢复后由普通user flag决定ACC传感器开关 */
         sndp_hr_switch_reading_acc_raw_data(acc_op_user, false);
@@ -1167,8 +1191,8 @@ void sndp_acc_notification_resume(uint32_t usersuspend)
 
 static bool sndp_is_notifi_hr_enabled(void)
 {
-    SNDP_TRACE(0, "hr: %d acc: %d ppg: %d", hr_ctx.hr_running, hr_ctx.acc_user_flag, hr_ctx.ppg_user_flag);
-   if(hr_ctx.hr_running || hr_ctx.acc_user_flag || hr_ctx.ppg_user_flag) 
+    SNDP_TRACE(0, "hr: %d acc: %d ppg: %d", sndp_hr_running_state(), hr_ctx.acc_user_flag, hr_ctx.ppg_user_flag);
+   if(sndp_hr_running_state() || hr_ctx.acc_user_flag || hr_ctx.ppg_user_flag) 
    {
       return true;
    }
@@ -1193,7 +1217,7 @@ void sndp_hr_ble_disconnected_delay10s_start(void)
 
 void sndp_hr_ble_connected_delay10s_stop(void)
 {
-    SNDP_TRACE(0, "Srunning: %d HRrunning: %d", hr_ctx.sleep_running, hr_ctx.hr_running);
+    SNDP_TRACE(0, "Srunning: %d HRrunning: %d", hr_ctx.sleep_running, sndp_hr_running_state());
     if(hr_ctx.sleep_running){
         hr_ctx.delay_10S_start = false;
 #if defined(__SNDP_SLEEP_APP__)
