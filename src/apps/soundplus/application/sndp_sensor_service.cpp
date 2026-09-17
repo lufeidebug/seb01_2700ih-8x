@@ -132,14 +132,6 @@ void sndp_sensor_service_enter_sleep_mode_local(int32_t sleep_control)
     sndp_hr_set_sleep_control(sleep_control);
 #endif
 
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* 数据面门控: STANDBY/IDLE只设flag; ACTIVE/SWITCHING真正启动睡眠分析+ANC
-       (SWITCHING: 新主接管时需启动) */
-    if(!sndp_sleep_role_is_active()) {
-        TR_INFO(0, "Secondary: enter_sleep flag only");
-        return;
-    }
-#endif
 
     /* Execution: data-plane active */
 #if defined(__SNDP_HEART_RATE_MGR__)
@@ -160,7 +152,7 @@ void sndp_sensor_service_exit_sleep_mode_local(void)
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     /* 数据面门控: STANDBY/IDLE只清flag; ACTIVE/SWITCHING真正关睡眠分析+ANC */
-    if(!sndp_sleep_role_is_active()) {
+    if(!sndp_sleep_tws_is_master_with_ble()) {
         TR_INFO(0, "Secondary: exit_sleep flag only");
         return;
     }

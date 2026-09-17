@@ -702,7 +702,8 @@ bool sndp_comm_ble_is_connected(void)
 
 sndp_comm_conn_type_e sndp_comm_ble_get_conn_type(void)
 {
-    COMM_BLE_TRACE(0, "btgatt_is_connected:%d", app_btgatt_is_connected_by_conidx(sndp_comm_ble_ctx.conidx));
+    COMM_BLE_TRACE(0, "gatt_is_con:%d ble_is_con:%d",
+            app_btgatt_is_connected_by_conidx(sndp_comm_ble_ctx.conidx), sndp_comm_ble_is_connected());
 #if defined(__GATT_OVER_BR_EDR__)
     /* 参考ota_ble_get_path_type: 用当前conidx查GATT-over-BREDR连接状态.
      * GATT-over-BREDR与BLE共享conidx空间, 同一conidx在两条路径上都可见 */

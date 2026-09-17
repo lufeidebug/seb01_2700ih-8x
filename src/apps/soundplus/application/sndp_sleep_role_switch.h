@@ -34,20 +34,17 @@ typedef struct {
 /**
  * @brief Get current device role
  */
-Device_Role_t sndp_sleep_role_get_current(void);
-
 /**
  * @brief Check if current device is Primary (ROLE_ACTIVE)
  *
  * Command-plane gate: App command dispatch + proximity report to app.
  * Only the steady-state Primary may execute/report.
  */
-bool sndp_sleep_role_is_active(void);
+bool sndp_sleep_tws_is_master_with_ble(void);
 
 /**
  * @brief Module init
  */
-void sndp_sleep_role_switch_init(void);
 
 /**
  * @brief Handle TWS role change (master/slave switch).
@@ -81,9 +78,6 @@ void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot, uint16_t len);
  *
  * @param peer_role  Role value received from peer via LR_SYNC_SLEEP_ROLE_STATUS
  */
-void sndp_sleep_role_switch_on_peer_status(Device_Role_t peer_role);
-
-void sndp_sleep_role_set_peer(Device_Role_t role);
 #ifdef __cplusplus
 }
 #endif

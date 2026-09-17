@@ -708,6 +708,7 @@ uint32_t sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(unsigned short p
     data[0] = LR_SYNC_TYPE_PROX_DATA;
     data[1] = (uint8_t)((proximity_value >> 8) & 0xFF);
     data[2] = (uint8_t)(proximity_value & 0xFF);
+    COMM_CMD_TRACE(0, "value=%d", proximity_value);
     sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_SLEEP_APP, data, sizeof(data));
     return 0;
 }
@@ -923,21 +924,6 @@ static uint32_t recv_lr_sync_sleep_snapshot(uint8_t *payload, uint16_t payload_l
     return 0;
 }
 
-uint32_t sndp_comm_cmd_send_lr_sync_sleep_role_status(uint8_t status)
-{
-    uint8_t data[2] = {LR_SYNC_TYPE_ROLE_STATUS, status};
-    sndp_comm_cmd_send_cmd_to_peer(COMM_CMDID_LR_SYNC_SLEEP_APP, data, sizeof(data));
-    return 0;
-}
-
-static uint32_t recv_lr_sync_role_status(uint8_t *payload, uint16_t payload_len)
-{
-    if(payload_len == 1) {
-        /* Trigger role switch state machine (REQUEST/ACK/NACK) instead of just set_peer */
-        sndp_sleep_role_switch_on_peer_status((Device_Role_t)payload[0]);
-    }
-    return 0;
-}
 #endif
 
 static uint32_t sndp_comm_cmd_recv_lr_sync_sleep_app(sndp_comm_cmd_info_s *cmd_info)
@@ -950,6 +936,7 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_sleep_app(sndp_comm_cmd_info_s *cmd_i
     uint16_t payload_len = cmd_info->data_len - 1;
 
     COMM_CMD_TRACE(0, "recv LR sync sleep app, type=%d, len=%d", type, payload_len);
+    DUMP8("%d", payload, payload_len);
     switch(type) {
     case LR_SYNC_TYPE_SLEEP_APP_FLAG:
         return recv_lr_sync_sleep_app_flag(payload, payload_len);
@@ -980,8 +967,8 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_sleep_app(sndp_comm_cmd_info_s *cmd_i
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
     case LR_SYNC_TYPE_SLEEP_SNAPSHOT:
         return recv_lr_sync_sleep_snapshot(payload, payload_len);
-    case LR_SYNC_TYPE_ROLE_STATUS:
-        return recv_lr_sync_role_status(payload, payload_len);
+    // case LR_SYNC_TYPE_ROLE_STATUS:
+    //     return recv_lr_sync_role_status(payload, payload_len);
 #endif
     default:
         break;

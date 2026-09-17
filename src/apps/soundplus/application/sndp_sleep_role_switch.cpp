@@ -28,40 +28,28 @@
 /**************************************************************************************************
  * Types & Constants
  **************************************************************************************************/
-typedef struct {
-    Device_Role_t       role;               /* Current role */
-    Device_Role_t       peer_role;          /* Peer role */
-    bool                initialized;        /* Initialized flag */
-} sndp_sleep_role_ctx_s;
 
 /**************************************************************************************************
  * Global State
  **************************************************************************************************/
-static sndp_sleep_role_ctx_s role_ctx;
 
 /**************************************************************************************************
  * Role Query API
  **************************************************************************************************/
-Device_Role_t sndp_sleep_role_get_current(void)
+bool sndp_sleep_tws_is_master_with_ble(void)
 {
-    return role_ctx.role;
-}
-
-bool sndp_sleep_role_is_active(void)
-{
-    //ble直连时，当前设备为Active
     if (sndp_comm_ble_get_conn_type() != SNDP_COMM_CONN_TYPE_GATT_OVER_BREDR)
+    {
+        //on ble connect, always master
+        //because ble connect only connect one device
+        return true;
+    }
+
+    if(sndp_is_tws_master_mode())
     {
         return true;
     }
-    ROLE_TRACE(0, "is_active: %d", role_ctx.role == ROLE_ACTIVE);
-    return (role_ctx.role == ROLE_ACTIVE);
-}
-
-void sndp_sleep_role_set_peer(Device_Role_t role)
-{
-    ROLE_TRACE(0, "peer role set to %d", role);
-    role_ctx.peer_role = role;
+    return false;
 }
 
 /**************************************************************************************************
@@ -214,16 +202,6 @@ static void sndp_sleep_role_restore_streams(const uint8_t *buf, uint16_t len)
  * Peer role status receiver: called by comm_cmd when LR_SYNC_SLEEP_ROLE_STATUS arrives.
  * Just update peer role state, no protocol handling needed.
  **************************************************************************************************/
-void sndp_sleep_role_switch_on_peer_status(Device_Role_t peer_role)
-{
-    if (!role_ctx.initialized) {
-        ROLE_TRACE(0, "Not initialized, rtn");
-        return;
-    }
-
-    role_ctx.peer_role = peer_role;
-    ROLE_TRACE(0, "peer status=%d, my role=%d", peer_role, role_ctx.role);
-}
 
 /**************************************************************************************************
  * New Primary side: receive migration snapshot from old Primary
@@ -233,10 +211,6 @@ void sndp_sleep_role_switch_on_peer_status(Device_Role_t peer_role)
  **************************************************************************************************/
 void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot_data, uint16_t len)
 {
-    if (!role_ctx.initialized) {
-        ROLE_TRACE(0, "Not initialized, rtn");
-        return;
-    }
 
     if (snapshot_data == NULL || len < ROLE_MIG_HEADER_SIZE) {
         ROLE_TRACE(0, "Invalid migration data (len=%d), rtn", len);
@@ -244,8 +218,6 @@ void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot_data, uint16_t len)
     }
     
     /* Become ROLE_ACTIVE (new Primary) */
-    role_ctx.role = ROLE_ACTIVE;
-    sndp_comm_cmd_send_lr_sync_sleep_role_status(ROLE_ACTIVE);
     ROLE_TRACE(0, "Migration received, became ACTIVE (new Primary)");
 
     /* Restore streams + algo snapshot */
@@ -255,36 +227,14 @@ void sndp_sleep_role_switch_recv_snapshot(uint8_t *snapshot_data, uint16_t len)
 /**************************************************************************************************
  * Public API: module init
  **************************************************************************************************/
-void sndp_sleep_role_switch_init(void)
-{
-    ROLE_TRACE(0, "Initializing...");
-
-    memset(&role_ctx, 0, sizeof(role_ctx));
-
-    if(!sndp_is_tws_slave_mode())
-    {
-        role_ctx.role = ROLE_ACTIVE;
-        role_ctx.peer_role = ROLE_STANDBY;
-    }
-    else
-    {
-        role_ctx.role = ROLE_STANDBY;
-        role_ctx.peer_role = ROLE_ACTIVE;
-    }
-    role_ctx.initialized = true;
-}
 
 static void sndp_set_role_standby(void)
 {
-    role_ctx.role = ROLE_STANDBY;
-    sndp_comm_cmd_send_lr_sync_sleep_role_status(ROLE_STANDBY);
     ROLE_TRACE(0, "Became STANDBY (migrated to peer)");
 }
 
 static void sndp_set_role_active(void)
 {
-    role_ctx.role = ROLE_ACTIVE;
-    sndp_comm_cmd_send_lr_sync_sleep_role_status(ROLE_ACTIVE);
     ROLE_TRACE(0, "Became ACTIVE (new Primary)");
 }
 
@@ -301,10 +251,6 @@ static void sndp_set_role_active(void)
  **************************************************************************************************/
 void sndp_sleep_role_switch_on_bt_role_change(void)
 {
-    if (!role_ctx.initialized) {
-        ROLE_TRACE(0, "Not initialized, rtn");
-        return;
-    }
 
     if(!sndp_is_tws_link_connected())
     {
@@ -313,22 +259,11 @@ void sndp_sleep_role_switch_on_bt_role_change(void)
     }
 
     bool is_now_tws_master = sndp_is_tws_master_mode();
-    ROLE_TRACE(0, "BT role change: TWS master=%d, my role=%d, peer role=%d",
-               is_now_tws_master, role_ctx.role, role_ctx.peer_role);
+    ROLE_TRACE(0, "BT role change: TWS master=%d",is_now_tws_master);
 
     if (is_now_tws_master) {
-        /* TWS master → primary (ACTIVE) */
-        if (role_ctx.role == ROLE_ACTIVE) {
-            ROLE_TRACE(0, "Already ACTIVE, no change");
-            return;
-        }
-
-        if (role_ctx.role == ROLE_STANDBY) {
             sndp_set_role_active();
-        }
     } else {
-        /* TWS slave → secondary (STANDBY) */
-        if (role_ctx.role == ROLE_ACTIVE) {
             /* Was primary, becoming secondary.
              * Build migration payload, stop all streams, send to new primary. */
             if(sndp_comm_ble_get_conn_type() == SNDP_COMM_CONN_TYPE_GATT_OVER_BREDR){
@@ -351,11 +286,7 @@ void sndp_sleep_role_switch_on_bt_role_change(void)
                 ROLE_TRACE(0, "migration sent len=%d", send_len);
 #endif
             }
-            /* Step 4: Become STANDBY (Secondary: sensors closed) */
-            sndp_delay_exec_start(40,(uint32_t)sndp_set_role_standby, 0, 0, 0);
-        } else {
-            ROLE_TRACE(0, "Already STANDBY/IDLE, no change");
-        }
+            sndp_set_role_standby();
     }
 }
 

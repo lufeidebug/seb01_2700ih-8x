@@ -527,12 +527,7 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
            - 混合模式(PROX_PPG_0, Primary ACTIVE/切换中SWITCHING): IRQ通知本task读FIFO
            data_plane(ACTIVE||SWITCHING)放行: 旧主停流前读尽残留, 新主开流后立即接管 */
         if((fired_signals & SENSOR_TASK_SIGNAL_PPG_FIFO)) {
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-            if(sndp_sleep_role_is_active())
-#endif
-            {
                 sndp_hal_hr_ppg_fifo_task();
-            }
         }
 #endif
 
@@ -555,26 +550,13 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
         if((fired_signals & SENSOR_TASK_SIGNAL_HEARTRATE) && !sndp_hr_acc_is_suspend() &&
            (sndp_hr_running_state()) && !sndp_hr_ppg_is_suspend() &&
            (sndp_hr_ppg_raw_data_queue_get_len() >= HR_PPG_SECOND_ALLCH_SAMPLES)) {
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-            /* 数据面门控: ACTIVE(稳态主)+SWITCHING(切换中旧主读尽/新主接管)执行,
-               STANDBY/IDLE不执行心率算法 */
-            if(sndp_sleep_role_is_active())
-#endif
-            {
                 sndp_heartrate_algo_task();
-            }
         }
 
         /********** task4: sleep_analysis_task **********/
         if(hr_ctx.sleep_running && hr_ctx.sleep_tracking) {
             hr_ctx.sleep_tracking = false;
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-            /* 数据面门控: ACTIVE+SWITCHING执行睡眠分析, STANDBY/IDLE不执行 */
-            if(sndp_sleep_role_is_active())
-#endif
-            {
                 sndp_sleep_analysis();
-            }
         }
 
         /********** task5: proximity_task **********/
@@ -741,15 +723,6 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
     sndp_hr_mearsuring_set_dump_state(HR_DUMP_STATE, dump_state);
     sndp_hr_mearsuring_set_sampling_rate(ppg_sampling_rate);
 
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* 数据面门控: STANDBY/IDLE只设flag不动硬件; ACTIVE/SWITCHING真正开传感器+算法
-       (SWITCHING: 新主接管时hr_start需真正开传感器) */
-    if(!sndp_sleep_role_is_active()) {
-        SNDP_TRACE(0, "Secondary: hr_start flag only");
-        return;
-    }
-#endif
-
     /* Execution: data-plane active */
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
 
@@ -777,13 +750,6 @@ void sndp_hr_mearsuring_stop(void)
     /* Flag: both Primary and Secondary clear these (keep state consistent) */
     hr_ctx.hr_running = false;
     sndp_hr_mearsuring_set_dump_state(HR_DUMP_STATE, 0x00);
-
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    if(!sndp_sleep_role_is_active()) {
-        SNDP_TRACE(0, "Secondary: hr_stop flag only");
-        return;
-    }
-#endif
 
     /* Execution: data-plane active */
     if(sndp_dev_wear_is_worn(false) || sndp_call_get_in_out_flag() == 0) {
@@ -906,13 +872,6 @@ void sndp_dbbeats_put_sleep_app_data(int16_t accel_data_m[],
     /* Flag: both Primary and Secondary set this (keep state consistent) */
     hr_ctx.sleep_tracking = true;
 
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* Secondary: data stored + flag set, skip thread wakeup (no algo execution) */
-    if(!sndp_sleep_role_is_active()) {
-        return;
-    }
-#endif
-
     // 通知统一任务线程立即处理(否则要等下一次传感器IRQ唤醒)
     if(hr_process_thread_tid) {
         osSignalSet(hr_process_thread_tid, SENSOR_TASK_SIGNAL_SLEEP_TRACK);
@@ -952,15 +911,6 @@ void sndp_sleep_analysis_start(int32_t sleep_control)
     hr_ctx.sleep_running = true;
     hr_ctx.sleep_tracking = false;
 
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* 数据面门控: STANDBY/IDLE只设flag; ACTIVE/SWITCHING真正初始化睡眠算法
-       (SWITCHING: 新主接管时需初始化睡眠算法) */
-    if(!sndp_sleep_role_is_active()) {
-        SNDP_TRACE(0, "Secondary: sleep_start flag only");
-        return;
-    }
-#endif
-
     /* Execution: data-plane active */
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "sndp_sleep_analysis_start...");
@@ -981,15 +931,6 @@ void sndp_sleep_analysis_stop(void)
     hr_ctx.sleep_running = false;
     hr_ctx.sleep_tracking = false;
 
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* 数据面门控: STANDBY/IDLE只清flag; ACTIVE/SWITCHING真正降频
-       (SWITCHING: 旧主停流时sleep_stop) */
-    if(!sndp_sleep_role_is_active()) {
-        SNDP_TRACE(0, "Secondary: sleep_stop flag only");
-        return;
-    }
-#endif
-
     /* Execution: data-plane active */
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
@@ -999,14 +940,6 @@ void sndp_ppg_notification_start(uint8_t dump_state)
 {
     /* Flag: both Primary and Secondary set dump_state (keep state consistent) */
     sndp_hr_mearsuring_set_dump_state(PPG_DUMP_STATE, dump_state);
-
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* 数据面门控: STANDBY/IDLE只设flag; ACTIVE/SWITCHING真正开PPG上传传感器 */
-    if(!sndp_sleep_role_is_active()) {
-        SNDP_TRACE(0, "Secondary: ppg_notif_start flag only");
-        return;
-    }
-#endif
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "sndp_ppg_notification_start...");
@@ -1023,14 +956,6 @@ void sndp_ppg_notification_stop(void)
     /* Flag: both Primary and Secondary clear dump_state */
     sndp_hr_mearsuring_set_dump_state(PPG_DUMP_STATE, 0x00);
 
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* 数据面门控: STANDBY/IDLE只清flag; ACTIVE/SWITCHING真正关PPG上传传感器 */
-    if(!sndp_sleep_role_is_active()) {
-        SNDP_TRACE(0, "Secondary: ppg_notif_stop flag only");
-        return;
-    }
-#endif
-
     sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_PPG, false);
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 
@@ -1040,14 +965,6 @@ void sndp_acc_notification_start(uint8_t dump_state)
 {
     /* Flag: both Primary and Secondary set dump_state (keep state consistent) */
     sndp_hr_mearsuring_set_dump_state(ACC_DUMP_STATE, dump_state);
-
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* 数据面门控: STANDBY/IDLE只设flag; ACTIVE/SWITCHING真正开ACC上传传感器 */
-    if(!sndp_sleep_role_is_active()) {
-        SNDP_TRACE(0, "Secondary: acc_notif_start flag only");
-        return;
-    }
-#endif
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_104M);
     SNDP_TRACE(0, "sndp_acc_notification_start...");
@@ -1063,14 +980,6 @@ void sndp_acc_notification_stop(void)
 
     /* Flag: both Primary and Secondary clear dump_state */
     sndp_hr_mearsuring_set_dump_state(ACC_DUMP_STATE, 0x00);
-
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* 数据面门控: STANDBY/IDLE只清flag; ACTIVE/SWITCHING真正关ACC上传传感器 */
-    if(!sndp_sleep_role_is_active()) {
-        SNDP_TRACE(0, "Secondary: acc_notif_stop flag only");
-        return;
-    }
-#endif
 
     sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_ACC, false);
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
@@ -1205,7 +1114,7 @@ static bool sndp_is_notifi_hr_enabled(void)
 void sndp_hr_ble_disconnected_delay10s_start(void)
 {   
     SNDP_TRACE(0, "running: %d cover_closed: %d", hr_ctx.sleep_running, sndp_dev_cover_is_closed(false));
- #if defined(__SNDP_SLEEP_APP__)
+#if defined(__SNDP_SLEEP_APP__)
     if(sndp_dev_cover_is_closed(false)) {
         sndp_sleep_comm_disconnect_timer_handler();
     }else {

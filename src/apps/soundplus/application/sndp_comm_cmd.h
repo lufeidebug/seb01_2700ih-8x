@@ -270,7 +270,6 @@ typedef enum {
     LR_SYNC_TYPE_PPG_NOTIF           = 0x0A,  /* [onoff(1)]                                      = 0x3B */
     LR_SYNC_TYPE_ACC_NOTIF           = 0x0B,  /* [onoff(1)]                                      = 0x3C */
     LR_SYNC_TYPE_SLEEP_SNAPSHOT      = 0x0C,  /* [snapshot(2B size + nB data)]                   = 0x3D */
-    LR_SYNC_TYPE_ROLE_STATUS         = 0x0D,  /* [role_status(1)]                                = 0x3E */
 } sndp_lr_sync_sleep_app_type_e;
 #endif
 

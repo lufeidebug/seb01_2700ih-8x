@@ -12,7 +12,7 @@ extern "C" {
 #define __SNDP_INTERACT_APP_TRACE__
 
 #if defined(__SNDP_INTERACT_APP_TRACE__)
-#define INTERACT_APP_TRACE(num, str, ...)       SNDP_TRACE(1 + num,	"[INTERACT_APP] %s, " str, __func__, ##__VA_ARGS__)
+#define INTERACT_APP_TRACE(num, str, ...)       SNDP_TRACE(1 + num,	"[INTERACT_APP], " str, ##__VA_ARGS__)
 #else
 #define INTERACT_APP_TRACE(num, str, ...)
 #endif
@@ -191,7 +191,6 @@ typedef union
 
 
 uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data);
-uint32_t sndp_comm_cmd_send_lr_sync_sleep_role_status(uint8_t status);
 uint32_t sndp_comm_cmd_send_lr_sync_heart_rate_onoff(uint8_t onoff);
 uint32_t sndp_comm_cmd_send_lr_sync_stage_onoff(uint8_t onoff);
 uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,

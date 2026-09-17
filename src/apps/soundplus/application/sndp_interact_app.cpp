@@ -80,7 +80,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_mode(sleep_app_co
         0x04：relaxed
         0x09：custom mode
     */
-    COMM_CMD_TRACE(1, "eq mode=%d", cmd_info->value[0]);
+    INTERACT_APP_TRACE(1, "eq mode=%d", cmd_info->value[0]);
     sndp_sleep_app_set_flag_onoff(SNDP_EQ_INDEX_FLAG, false, cmd_info->value[0], true);
     cmd_info->value[0] = 0; // success
 
@@ -96,7 +96,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_eq_mode(sleep_app_co
 
     cmd_info->value[0] = eq_index;
     
-    COMM_CMD_TRACE(1, "eq mode=%d", cmd_info->value[0]);
+    INTERACT_APP_TRACE(1, "eq mode=%d", cmd_info->value[0]);
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
@@ -180,7 +180,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_find_my_earphone(sleep_a
         0x00：start
         0x01：stop
     */
-    COMM_CMD_TRACE(0, "findme earphone = %d",cmd_info->value[0]);
+    INTERACT_APP_TRACE(0, "findme earphone = %d",cmd_info->value[0]);
     sndp_delay_exec_start(100, (uint32_t)sndp_findme_loop_handler,cmd_info->value[0],0,0);
 
     cmd_info->value[0] = 0;
@@ -202,7 +202,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
     
     uint8_t anc_mode = cmd_info->value[0];
     
-    COMM_CMD_TRACE(1, "anc mode=%d", anc_mode);
+    INTERACT_APP_TRACE(1, "anc mode=%d", anc_mode);
     if(anc_mode <= 0x05){
         if(sndp_dev_wear_is_worn(true))
         {
@@ -230,7 +230,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_anc_mode(sleep_app_c
 {
     cmd_info->data_len = 0x02;
     cmd_info->value[0] = sndp_dev_sleep_app_anc_mode_get(false);
-    COMM_CMD_TRACE(1, "anc mode=%d", cmd_info->value[0]);
+    INTERACT_APP_TRACE(1, "anc mode=%d", cmd_info->value[0]);
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
@@ -238,7 +238,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_anc_mode(sleep_app_c
 
 uint32_t sndp_sleep_app_report_anc_mode(void)
 {	
-    //COMM_CMD_TRACE(1, "ble_is_connected %d", sndp_comm_ble_is_connected());
+    //INTERACT_APP_TRACE(1, "ble_is_connected %d", sndp_comm_ble_is_connected());
     if(!sndp_comm_ble_is_connected())
     {
         return 1;
@@ -284,7 +284,7 @@ POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_
     //if StartHeartrate 0x30 Dump on
     uint8_t onoff = cmd_info->value[0];
     ppg_ntf_debug_count = 0;
-    COMM_CMD_TRACE(1, "ppg notification=%d", onoff);
+    INTERACT_APP_TRACE(1, "ppg notification=%d", onoff);
     if(onoff){
         sndp_ppg_notification_start(0x01);
     }else{
@@ -293,7 +293,7 @@ POSSIBLY_UNUSED static uint32_t  sleep_comm_cmd_recv_ppg_notification(sleep_app_
     }
     /* 同步给对耳 */
     // sndp_comm_cmd_send_lr_sync_ppg_notification(onoff);
-    COMM_CMD_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE));
+    INTERACT_APP_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state(PPG_DUMP_STATE));
     return 0;
 }
 
@@ -342,13 +342,13 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_accelerometer_notifi
 {
     uint8_t onoff = cmd_info->value[0];
     acc_ntf_debug_count = 0;
-    COMM_CMD_TRACE(1, "acc notification=%d", onoff);
+    INTERACT_APP_TRACE(1, "acc notification=%d", onoff);
 
     sndp_sensor_service_set_acc_notification_local(onoff);
     /* 同步给对耳 */
     // sndp_comm_cmd_send_lr_sync_acc_notification(onoff);
     
-    COMM_CMD_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE));
+    INTERACT_APP_TRACE(1, "dump=%d", sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE));
     return 0;
 }
 #endif
@@ -427,7 +427,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_ap
     }
     cmd_info->data_len = p - cmd_info->value + 1; // 加1是因为data_len不包含cmd_id本身
 
-    COMM_CMD_TRACE(0,"data_len:%d", cmd_info->data_len);
+    INTERACT_APP_TRACE(0,"data_len:%d", cmd_info->data_len);
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
@@ -539,7 +539,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_smart_play_pause(sle
 {   
     cmd_info->data_len = 0x02;
     cmd_info->value[0] = sndp_dev_sleep_app_get_splaypause_onoff(false);
-    COMM_CMD_TRACE(1, "smart_play=%d", cmd_info->value[0]);
+    INTERACT_APP_TRACE(1, "smart_play=%d", cmd_info->value[0]);
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
     return 0;
@@ -764,7 +764,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sleep_app
     
     memset(&pSensorCtrlReplyMap, 0, sizeof(pSensorCtrlReplyMap));
     if(cmd_info->data_len != 7){
-        COMM_CMD_TRACE(0, "invalid data_len=%d", cmd_info->data_len);
+        INTERACT_APP_TRACE(0, "invalid data_len=%d", cmd_info->data_len);
         cmd_info->data_len = 0x09;
         pSensorCtrlReplyMap.receive_status = 0x01; // fail
         memcpy(cmd_info->value, &pSensorCtrlReplyMap, sizeof(pSensorCtrlReplyMap));
@@ -774,7 +774,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sleep_app
 
     if(pSensorCtrlMap->sensor_select == 0x01) //ppg
     {
-        COMM_CMD_TRACE(3, "ppg reg=0x%02x, write_read=%d, read_len=%d, write_value=0x%02x", 
+        INTERACT_APP_TRACE(3, "ppg reg=0x%02x, write_read=%d, read_len=%d, write_value=0x%02x", 
                         pSensorCtrlMap->reg_addr, pSensorCtrlMap->write_read, pSensorCtrlMap->read_lenth, pSensorCtrlMap->write_value);
         if(pSensorCtrlMap->write_read == 0x01) //write
         {
@@ -789,18 +789,18 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sleep_app
         }
         else
         {
-            COMM_CMD_TRACE(0, "invalid write_read value=%d", pSensorCtrlMap->write_read);
+            INTERACT_APP_TRACE(0, "invalid write_read value=%d", pSensorCtrlMap->write_read);
             cmd_info->data_len = 0x09;
             pSensorCtrlReplyMap.receive_status = 0x01; // fail
             memcpy(cmd_info->value, &pSensorCtrlReplyMap, sizeof(pSensorCtrlReplyMap));
             sndp_sleep_comm_main_rsp_cmd(cmd_info);
             return 0;
         }
-        COMM_CMD_TRACE(3, "ppg read_value=0x%02x%02x%02x len=%d", read_value[0], read_value[1], read_value[2], read_len);
+        INTERACT_APP_TRACE(3, "ppg read_value=0x%02x%02x%02x len=%d", read_value[0], read_value[1], read_value[2], read_len);
     }
     else if(pSensorCtrlMap->sensor_select == 0x02) //accel
     {
-        COMM_CMD_TRACE(3, "acc reg=0x%02x, write_read=%d, read_len=%d, write_value=0x%02x", 
+        INTERACT_APP_TRACE(3, "acc reg=0x%02x, write_read=%d, read_len=%d, write_value=0x%02x", 
                 pSensorCtrlMap->reg_addr, pSensorCtrlMap->write_read, pSensorCtrlMap->read_lenth, pSensorCtrlMap->write_value);
         if(pSensorCtrlMap->write_read == 0x01) //write
         {
@@ -815,18 +815,18 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sensor_control(sleep_app
         }
         else
         {
-            COMM_CMD_TRACE(0, "invalid write_read value=%d", pSensorCtrlMap->write_read);
+            INTERACT_APP_TRACE(0, "invalid write_read value=%d", pSensorCtrlMap->write_read);
             cmd_info->data_len = 0x09;
             pSensorCtrlReplyMap.receive_status = 0x01; // fail
             memcpy(cmd_info->value, &pSensorCtrlReplyMap, sizeof(pSensorCtrlReplyMap));
             sndp_sleep_comm_main_rsp_cmd(cmd_info);
             return 0;
         }
-        COMM_CMD_TRACE(3, "acc read_value=0x%02x%02x%02x len=%d", read_value[0], read_value[1], read_value[2], read_len);
+        INTERACT_APP_TRACE(3, "acc read_value=0x%02x%02x%02x len=%d", read_value[0], read_value[1], read_value[2], read_len);
     }
     else
     {
-        COMM_CMD_TRACE(0, "invalid sensor_select value=%d", pSensorCtrlMap->sensor_select);
+        INTERACT_APP_TRACE(0, "invalid sensor_select value=%d", pSensorCtrlMap->sensor_select);
         cmd_info->data_len = 0x09;
         pSensorCtrlReplyMap.receive_status = 0x01; // fail
         memcpy(cmd_info->value, &pSensorCtrlReplyMap, sizeof(pSensorCtrlReplyMap));
@@ -884,7 +884,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_heartrate(sleep_ap
 
 void sndp_sleep_comm_cmd_heartrate_stop(void)
 {
-    COMM_CMD_TRACE(0, "heartrate stop");
+    INTERACT_APP_TRACE(0, "heartrate stop");
     sndp_sensor_service_stop_heartrate_local();
 }
 
@@ -905,7 +905,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_heartrate(sleep_app
 
 void sndp_sleep_comm_cmd_analysis_start(int32_t sleep_control)
 {
-    COMM_CMD_TRACE(0, "sleep analysis start");
+    INTERACT_APP_TRACE(0, "sleep analysis start");
     sndp_sensor_service_enter_sleep_mode_local(sleep_control);
 }
 
@@ -913,7 +913,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_start_sleep(sleep_app_co
 {
     uint32_t sleep_control = cmd_info->value[0]<<24 | cmd_info->value[1]<<16 | cmd_info->value[2]<<8 | cmd_info->value[3];
     DUMP8("0x%02x ", cmd_info->value, 4);
-    COMM_CMD_TRACE(1, "sleep control=%d wear state=%d", sleep_control, sndp_dev_wear_is_worn(false));
+    INTERACT_APP_TRACE(1, "sleep control=%d wear state=%d", sleep_control, sndp_dev_wear_is_worn(false));
     if(sndp_dev_wear_is_worn(false)){
         /* Both ears call this: function internally gates by role */
         sndp_sleep_comm_cmd_analysis_start(sleep_control);
@@ -969,7 +969,7 @@ void sndp_sleep_comm_disconnect_timer_handler(void)
 
 void sndp_sleep_comm_cmd_analysis_stop(void)
 {
-    COMM_CMD_TRACE(0, "sleep analysis stop");
+    INTERACT_APP_TRACE(0, "sleep analysis stop");
     sndp_sensor_service_exit_sleep_mode_local();
 }
 
@@ -992,7 +992,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_stop_sleep(sleep_app_com
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_wear_state(sleep_app_comm_cmd_info_s *cmd_info)
 {
     wear_state_update_onoff = cmd_info->value[0];
-    COMM_CMD_TRACE(1,"wear_state_update_onoff:%d", wear_state_update_onoff);
+    INTERACT_APP_TRACE(1,"wear_state_update_onoff:%d", wear_state_update_onoff);
     if(wear_state_update_onoff == 0)
     {
         sndp_dev_sleep_app_clean_wear_cnt();
@@ -1057,7 +1057,7 @@ void sndp_comm_cmd_sleepapp_report_ppg_samples(uint16_t sensor_samples)
 {
     if(!sndp_comm_ble_is_connected())
     {
-        COMM_CMD_TRACE(0, "BLE is not connected, stop ppg samples reporting");
+        INTERACT_APP_TRACE(0, "BLE is not connected, stop ppg samples reporting");
         return;
     }
     uint8_t data_len = 0;
@@ -1079,7 +1079,7 @@ void sndp_comm_cmd_sleepapp_report_acc_samples(uint16_t sensor_samples)
 {
     if(!sndp_comm_ble_is_connected())
     {
-        COMM_CMD_TRACE(0, "BLE is not connected, stop acc samples reporting");
+        INTERACT_APP_TRACE(0, "BLE is not connected, stop acc samples reporting");
         return;
     }
     uint8_t data_len = 0;
@@ -1113,7 +1113,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_sleep_stage(int8_t *sleep_stage,
     */
    if(!sndp_comm_ble_is_connected())
     {
-        COMM_CMD_TRACE(0, "BLE is not connected, stop sleep stage reporting");
+        INTERACT_APP_TRACE(0, "BLE is not connected, stop sleep stage reporting");
         return 1;
     }
 
@@ -1154,7 +1154,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data
 
     if(!sndp_comm_ble_is_connected())
     {
-        COMM_CMD_TRACE(0, "BLE is not connected, stop hr");
+        INTERACT_APP_TRACE(0, "BLE is not connected, stop hr");
         return 1;
     }
     
@@ -1207,7 +1207,7 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data
 uint32_t sndp_comm_cmd_sleepapp_report_ppg_raw_data(uint8_t *ppg_raw_data, uint16_t ppg_raw_len)
 {
     if(!sndp_comm_ble_is_connected()){
-        COMM_CMD_TRACE(0, "ble is not connected, not report ppg");
+        INTERACT_APP_TRACE(0, "ble is not connected, not report ppg");
         return 0;
     }
 
@@ -1243,13 +1243,13 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf_debug(int16_t *acc_raw_data, uint
     int16_t *acc_data_ptr = acc_raw_data;
     acc_ntf_debug_count++;
     if(!sndp_comm_ble_is_connected()){
-        COMM_CMD_TRACE(0, "ble is not connected, not report accelerometer");
+        INTERACT_APP_TRACE(0, "ble is not connected, not report accelerometer");
         return 0;
     }
 
     uint8_t data_len = 0;
     sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd(); // 1字节LR_flag + 2字节count + 最多25个数据点，每个数据点包含X/Y/Z三个轴，每轴2字节
-    // COMM_CMD_TRACE(1, "report accelerometer to app, len=%d", acc_raw_len);
+    // INTERACT_APP_TRACE(1, "report accelerometer to app, len=%d", acc_raw_len);
         // 1. 打包LR_flag 1字节
     if(sndp_dev_is_left_earphone()){
         cmd->value[data_len++] = 0x01;
@@ -1282,13 +1282,13 @@ uint32_t sndp_comm_cmd_sleepapp_report_acc_ntf(int16_t *acc_raw_data, uint16_t a
 {
     int16_t *acc_data_ptr = acc_raw_data;
     if(!sndp_comm_ble_is_connected()){
-        COMM_CMD_TRACE(0, "ble is not connected, not report accelerometer");
+        INTERACT_APP_TRACE(0, "ble is not connected, not report accelerometer");
         return 0;
     }
 
     uint8_t data_len = 0;
     sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
-    // COMM_CMD_TRACE(1, "report accelerometer to app, len=%d", acc_raw_len);
+    // INTERACT_APP_TRACE(1, "report accelerometer to app, len=%d", acc_raw_len);
         // 1. 打包LR_flag 1字节
     if(sndp_dev_is_left_earphone())
         cmd->value[data_len++] = 0x01;
@@ -1319,10 +1319,9 @@ uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void)
     uint8_t data_len = 0;
     sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
 
-    sndp_dev_hr_read_proximity_value(&proximity_value_local);
-    sndp_dev_sleep_app_set_proximity_data(false, proximity_value_local);
+    proximity_value_local = sndp_dev_sleep_app_get_proximity_data(false);
     proximity_value_peer = sndp_dev_sleep_app_get_proximity_data(true);
-    COMM_CMD_TRACE(2, "local prox=%d, peer prox=%d", proximity_value_local, proximity_value_peer);
+    INTERACT_APP_TRACE(2, "local prox=%d, peer prox=%d", proximity_value_local, proximity_value_peer);
     /*
         Byte0	Master Source
                 0x01:   Left
@@ -1377,22 +1376,18 @@ uint32_t sndp_comm_cmd_sleepapp_proximity_task(void)
     sndp_dev_hr_read_proximity_value(&proximity_value_local);
     sndp_dev_sleep_app_set_proximity_data(false, proximity_value_local);
 
-    /* 2. TWS连接: 转发本地值给对耳 (两耳都做, 保留) */
+    /* 2. TWS连接: 相互同步 */
     if (sndp_is_tws_link_connected()) {
         sndp_comm_cmd_send_lr_sync_Proximity_Notification_DATA(proximity_value_local);
     }
 
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    /* 3a. GATT双发: 两耳都连着app, 仅Primary(ACTIVE)上报; Secondary只读不汇报 */
-    if (sndp_sleep_role_is_active() && sndp_comm_ble_is_connected()) {
+    /* 3b. 1、BLE直连手机时直接上报 
+           2、gatt over br时, 仅master上报, slave只读不汇报 */
+    if(sndp_sleep_tws_is_master_with_ble())
+    {
         sndp_comm_cmd_sleepapp_report_proximity_to_app();
     }
-#else
-    /* 3b. 传统TWS: 单耳BLE直连手机时直接上报 */
-    if (!sndp_is_tws_link_connected() && sndp_comm_ble_is_connected()) {
-        sndp_comm_cmd_sleepapp_report_proximity_to_app();
-    }
-#endif
+
     return 0;
 }
 #endif 
@@ -1411,20 +1406,20 @@ uint32_t sndp_comm_cmd_sleepapp_wear_state_update(uint8_t lR_flag, uint8_t wear_
 
     if(!sndp_comm_ble_is_connected())
     {
-        COMM_CMD_TRACE(0,"ble not connected,wear state update no use......");
+        INTERACT_APP_TRACE(0,"ble not connected,wear state update no use......");
         return 0;
     }
 
     if(wear_state_update_onoff == 0)
     {
-        COMM_CMD_TRACE(0,"wear_state_update_onoff is 0");
+        INTERACT_APP_TRACE(0,"wear_state_update_onoff is 0");
         return 0;        
     }
     uint8_t data_len = 0;
     sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();    
     sndp_dev_sleep_app_wear_cnt(lR_flag, wear_state);
     memcpy(wear_onoff_cnt, sndp_dev_sleep_app_get_wear_cnt(), sizeof(wear_onoff_cnt));
-    COMM_CMD_TRACE(0,"wear cnt:%d, %d, %d, %d", wear_onoff_cnt[0], wear_onoff_cnt[1],wear_onoff_cnt[2],wear_onoff_cnt[3]);
+    INTERACT_APP_TRACE(0,"wear cnt:%d, %d, %d, %d", wear_onoff_cnt[0], wear_onoff_cnt[1],wear_onoff_cnt[2],wear_onoff_cnt[3]);
     cmd->value[data_len++] = lR_flag;
     cmd->value[data_len++] = wear_state;
     if(lR_flag == SNDP_DEV_EARSIDE_LEFT){
@@ -1449,7 +1444,7 @@ static void sndp_findme_loop_handler(uint8_t onoff)
 {
     if(onoff)
     {
-        COMM_CMD_TRACE(0,"stop findeme....");
+        INTERACT_APP_TRACE(0,"stop findeme....");
         sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
         return;
     }
@@ -1490,7 +1485,7 @@ void sndp_sleep_app_report_battery(void)
     */
     if(!sndp_sleepapp_report_battery_onoff)
     {
-        COMM_CMD_TRACE(0,"rtn battery report off.....");
+        INTERACT_APP_TRACE(0,"rtn battery report off.....");
         return;
     }
     
@@ -1536,7 +1531,7 @@ void sndp_sleep_app_report_battery(void)
     sndp_dev_get_box_bat_info(&cradle_bt_info);
     reply_battery.bits.cradle_charging_status = 0;
     reply_battery.bits.cradle_battery_level = cradle_bt_info.bat_per;
-    // COMM_CMD_TRACE(0,"left:%02x,right:%02x,cradle:%02x", 
+    // INTERACT_APP_TRACE(0,"left:%02x,right:%02x,cradle:%02x", 
     //                    reply_battery.bits.left_battery_level,
     //                    reply_battery.bits.right_battery_level, 
     //                    reply_battery.bits.cradle_battery_level);
@@ -1564,7 +1559,7 @@ void sndp_sleep_app_report_gesture(uint32_t gesture)
     */
     if(!sndp_comm_ble_is_connected())
     {
-        COMM_CMD_TRACE(0,"ble not connected,gesture no send......");
+        INTERACT_APP_TRACE(0,"ble not connected,gesture no send......");
         return;
     }
     uint8_t reply_gesture[2] = {0};
@@ -1578,12 +1573,12 @@ void sndp_sleep_app_report_tap(void)
 //避免在stack not ready时调用ble connected判断接口，导致死机
     if(!app_is_stack_ready())
     {
-        COMM_CMD_TRACE(0,"stack not ready,ble api no use......");
+        INTERACT_APP_TRACE(0,"stack not ready,ble api no use......");
         return;
     }     
     if(!sndp_comm_ble_is_connected())
     {
-        COMM_CMD_TRACE(0,"ble not connected,tap no send......");
+        INTERACT_APP_TRACE(0,"ble not connected,tap no send......");
         return;
     }
     uint8_t reply_tap[2] = {0};
@@ -1659,9 +1654,8 @@ int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
     /* GATT-over-BR/EDR双发: 两耳都收到App命令, Secondary不需要执行 (Primary执行+TWS同步).
      * BLE直连: 仅Primary收到App命令, 通过TWS同步给Secondary, 两耳都需执行. */
     if(sndp_is_tws_link_connected()) {
-        if(sndp_comm_ble_get_conn_type() == SNDP_COMM_CONN_TYPE_GATT_OVER_BREDR 
-        && !sndp_sleep_role_is_active()) {
-            COMM_CMD_TRACE(1, "GATT BR/EDR Secondary: skip cmd 0x%02x", cmd->cmd);
+        if(!sndp_sleep_tws_is_master_with_ble()) {
+            INTERACT_APP_TRACE(1, "GATT BR/EDR Secondary: skip cmd 0x%02x", cmd->cmd);
             return 0;
         }
     }
@@ -1672,7 +1666,7 @@ int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
         cmd_hdlr = (sndp_sleep_comm_cmd_handle_s *)&sleep_app_comm_cmd_hdlr_list[i];
         if(sndp_sleep_app_comm_exec_cmd.cmd == cmd_hdlr->cmd_id) {
             if(cmd_hdlr->cmd_exec_hdlr) {
-                COMM_CMD_TRACE(1, "cmd name = %s", cmd_hdlr->name ? cmd_hdlr->name : "null");
+                INTERACT_APP_TRACE(1, "cmd name = %s", cmd_hdlr->name ? cmd_hdlr->name : "null");
                 ret = cmd_hdlr->cmd_exec_hdlr(&sndp_sleep_app_comm_exec_cmd);
             }
             break;
@@ -1683,7 +1677,7 @@ int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
 
 static void sndp_sleep_app_set_flag_onoff(SNDP_SLEEP_APP_FLAG_NAME flag_name, bool peer, uint8_t onoff, bool sava)
 {
-    COMM_CMD_TRACE(1, "flag_name = %d, peer = %d, onoff = %d, sava = %d", flag_name, peer, onoff, sava);
+    INTERACT_APP_TRACE(1, "flag_name = %d, peer = %d, onoff = %d, sava = %d", flag_name, peer, onoff, sava);
     switch (flag_name)
     {
     case SNDP_PROMPT_ONOFF_FLAG:

@@ -1712,6 +1712,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
             /* 新架构: TWS 主从切换稳定后, 根据 TWS 角色重新确定 primary/secondary.
              * master → primary (resume), slave → secondary (suspend) */
+            SPUI_TRACE(0, "TWS role changed, determine role by TWS master/slave");
             sndp_sleep_role_switch_on_bt_role_change();
 #endif
             break;
@@ -1867,9 +1868,9 @@ static void sndp_ui_all_status_sync_send(void)
         all_dev_sta.sleep_flag.sleep_heartrate_onoff = sndp_dev_sleep_app_get_heartrate_onoff(false);
         all_dev_sta.sleep_flag.sleep_stage_onoff = sndp_dev_sleep_app_get_stage_onoff(false);
 #endif
-#if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-        all_dev_sta.device_role = sndp_sleep_role_get_current();
-#endif
+// #if defined(__SNDP_SLEEP_APP__) && defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+//         all_dev_sta.device_role = sndp_sleep_role_get_current();
+// #endif
 #if defined(__SNDP_APP_WHITE_NOISE__)
         all_dev_sta.white_noise_onoff = sndp_white_noise_is_turnon();
 #endif
@@ -1899,9 +1900,9 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
             sndp_dev_sleep_app_set_proximity_onoff(false, all_dev_sta.sleep_proximity_onoff);
             sndp_dev_sleep_app_set_heartrate_onoff(false, all_dev_sta.sleep_flag.sleep_heartrate_onoff);
             sndp_dev_sleep_app_set_stage_onoff(false, all_dev_sta.sleep_flag.sleep_stage_onoff);
-#if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-            sndp_sleep_role_set_peer(all_dev_sta.device_role);
-#endif
+// #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
+//             sndp_sleep_role_set_peer(all_dev_sta.device_role);
+// #endif
 #if defined(__SNDP_APP_WHITE_NOISE__)
             sndp_white_noise_onoff_sync_recv(all_dev_sta.white_noise_onoff);
 #endif
@@ -1968,7 +1969,7 @@ void sndp_ui_init(void)
 #endif
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
-    sndp_sleep_role_switch_init();
+    // sndp_sleep_role_switch_init();
 #endif
 
 	sndp_ui_check_dev_initial_status();
