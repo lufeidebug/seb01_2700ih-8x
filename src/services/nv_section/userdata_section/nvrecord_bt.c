@@ -43,6 +43,15 @@
 extern bool bts_tws_if_is_tws_addr(const uint8_t* pBdAddr);
 #endif
 
+#if defined(__SNDP_CTKD_OVER_LE__)
+/* SNDP CTKD: weak stub, overridden by the strong definition in sndp_comm_ble.cpp */
+__attribute__((weak)) bool sndp_ctkd_remap_classic_bdaddr(bt_bdaddr_t *bdAddr)
+{
+    (void)bdAddr;
+    return false;
+}
+#endif /* __SNDP_CTKD_OVER_LE__ */
+
 #ifdef RAM_NV_RECORD
 #define MAX_RECORD_NUM     3
 nvrec_btdevicerecord g_fpga_ram_record[MAX_RECORD_NUM];
@@ -578,6 +587,15 @@ bt_status_t nv_record_add(SECTIONS_ADP_ENUM type, void *record)
     switch(type)
     {
         case section_usrdata_ddbrecord:
+#if defined(__SNDP_CTKD_OVER_LE__)
+            {
+                btif_device_record_t *rec = (btif_device_record_t *)record;
+                if (sndp_ctkd_remap_classic_bdaddr(&rec->bdAddr)) {
+                    NV_SECTION_TRACE(0, "CTKD classic addr remapped:");
+                    NV_SECTION_DUMP8("%02x ", rec->bdAddr.address, BT_ADDR_OUTPUT_PRINT_NUM);
+                }
+            }
+#endif /* __SNDP_CTKD_OVER_LE__ */
 #ifndef RAM_NV_RECORD
             retstatus = nv_record_ddbrec_add(record);
 #else
