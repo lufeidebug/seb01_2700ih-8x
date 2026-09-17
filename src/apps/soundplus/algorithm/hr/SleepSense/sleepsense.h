@@ -34,7 +34,7 @@ struct Dump {
 };
 
 #define SNAPSHOT_DATA_MAX_SIZE 256
-#define SNAPSHOT_PAYLOAD_SIZE  213
+#define SNAPSHOT_PAYLOAD_SIZE  192
 
 struct Snapshot {
     uint16_t size;
@@ -76,6 +76,9 @@ void dbbeats_sleep_data(int16_t accel_data_m[],
 
 void dbbeats_get_snapshot(struct Snapshot *out);
 void dbbeats_set_snapshot(const struct Snapshot *in);
+
+void dbbeats_suspend(void);
+void dbbeats_resume(void);
 
 const char* lib_engine_version(void);
 
