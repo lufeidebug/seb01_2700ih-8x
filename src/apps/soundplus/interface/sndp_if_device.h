@@ -176,7 +176,9 @@ typedef struct
 {
 	/* data */
 	uint8_t sleep_eq_index;
+	uint8_t sleep_running_anc_mode;
 	uint8_t sleep_anc_mode;
+	uint8_t sleep_enc_mode;
 	uint8_t sleep_prompt_onoff;
 	uint8_t sleep_gesture_onoff;
 	uint8_t sleep_splaypause_onoff;
@@ -195,7 +197,9 @@ typedef enum {
 typedef enum {
 	SNDP_PROMPT_ONOFF_FLAG,
 	SNDP_EQ_INDEX_FLAG,
+	SNDP_RUNNING_ANC_MODE_FLAG,
 	SNDP_ANC_MODE_FLAG,
+	SNDP_ENC_MODE_FLAG,
 	SNDP_GESTURE_ONOFF_FLAG,
 	SNDP_SPLAYPAUSE_ONOFF_FLAG,
 	SNDP_SLEEP_MODE_FLAG,
@@ -461,9 +465,12 @@ uint8_t sndp_dev_sleep_app_get_eq_index(bool peer);
 void sndp_dev_sleep_app_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_data);
 bool sndp_dev_sleep_app_get_prompt_onoff(bool peer);
 void sndp_save_app_flag_to_flash(void);
+void sndp_dev_sleep_app_running_anc_mode_set(bool peer,uint8_t anc_mode,bool sava_data);
 void sndp_dev_sleep_app_anc_mode_set(bool peer,uint8_t anc_mode,bool sava_data);
+void sndp_dev_sleep_app_enc_mode_set(bool peer,uint8_t enc_mode,bool sava_data);
 uint8_t sndp_dev_sleep_app_anc_mode_get(bool peer);
-uint8_t sndp_dev_sleep_app_flash_anc_mode_get(void);
+uint8_t sndp_dev_sleep_app_running_anc_mode_get(bool peer);
+uint8_t sndp_dev_sleep_app_enc_mode_get(bool peer);
 void sndp_dev_sleep_app_set_gesture_onoff(bool peer, uint8_t onoff, bool sava);
 bool sndp_dev_sleep_app_get_gesture_onoff(bool peer);
 void sndp_dev_sleep_app_set_splaypause_onoff(bool peer, uint8_t onoff, bool sava);

@@ -67,7 +67,6 @@ uint8_t sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_8;
 **************************************************************************************************/
 #if defined(__SNDP_SLEEP_APP__)
 static void sndp_findme_loop_handler(uint8_t onoff);
-static void sndp_sleep_app_set_flag_onoff(SNDP_SLEEP_APP_FLAG_NAME flag_name, bool peer, uint8_t onoff, bool sava);
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_eq_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
     /*
@@ -188,6 +187,34 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_find_my_earphone(sleep_a
     return 0;
 }
 
+static void sndp_set_mode(sndp_anc_mode_e mode)
+{
+    if(sndp_dev_wear_is_worn(true))
+    {
+        if(!sndp_dev_iobox_is_in_box(false))
+        {
+            sndp_anc_mode_set((sndp_anc_mode_e)mode);
+        }            
+    }
+    else
+    {
+        sndp_anc_mode_set_locally((sndp_anc_mode_e)mode);
+    }
+}
+
+static void sndp_set_mode_flash_flag(sndp_anc_mode_e mode)
+{
+    sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, (sndp_anc_mode_e)mode, true);
+    if(mode <= SNDP_ANC_MODE_4 && mode >= SNDP_ANC_MODE_1)
+    {
+        sndp_sleep_app_set_flag_onoff(SNDP_ANC_MODE_FLAG, false, (sndp_anc_mode_e)mode, true);
+    }
+    if(mode == SNDP_ANC_MODE_TRANSPARENT || mode == SNDP_ANC_MODE_VOICEENHANCE)
+    {
+        sndp_sleep_app_set_flag_onoff(SNDP_ENC_MODE_FLAG, false, (sndp_anc_mode_e)mode, true);
+    }
+}
+
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
     /*
@@ -201,23 +228,12 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
             0x06: Transparent Strong
     */
     
-    uint8_t anc_mode = cmd_info->value[0];
+    uint8_t mode = cmd_info->value[0];
     
-    INTERACT_APP_TRACE(1, "anc mode=%d", anc_mode);
-    if(anc_mode < SNDP_ANC_MODE_QTY){
-        if(sndp_dev_wear_is_worn(true))
-        {
-            if(!sndp_dev_iobox_is_in_box(false))
-            {
-                sndp_anc_mode_set((sndp_anc_mode_e)anc_mode);
-            }            
-        }
-        else
-        {
-            sndp_anc_mode_set_locally((sndp_anc_mode_e)anc_mode);
-        }
-        sndp_dev_sleep_app_anc_mode_set(false, (sndp_anc_mode_e)anc_mode, true);
-        sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_ANC_MODE_FLAG, anc_mode, true);
+    INTERACT_APP_TRACE(1, "mode=%d", mode);
+    if(mode <= SNDP_ANC_MODE_QTY){
+        sndp_set_mode((sndp_anc_mode_e)mode);
+        sndp_set_mode_flash_flag((sndp_anc_mode_e)mode);
         cmd_info->value[0] = 0; // success
     }else{
         cmd_info->value[0] = 0x01;
@@ -230,7 +246,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_anc_mode(sleep_app_comm_cmd_info_s *cmd_info)
 {
     cmd_info->data_len = 0x02;
-    cmd_info->value[0] = sndp_dev_sleep_app_anc_mode_get(false);
+    cmd_info->value[0] = sndp_dev_sleep_app_running_anc_mode_get(false);
     INTERACT_APP_TRACE(1, "anc mode=%d", cmd_info->value[0]);
 
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -248,7 +264,7 @@ uint32_t sndp_sleep_app_report_anc_mode(void)
     uint8_t data_len = 0;
     sleep_app_comm_cmd_info_s *cmd = sleep_app_comm_main_get_send_cmd();
 
-    cmd->value[data_len++] = sndp_dev_sleep_app_anc_mode_get(false);
+    cmd->value[data_len++] = sndp_dev_sleep_app_running_anc_mode_get(false);
     cmd->flag = AppFlag;
     cmd->data_len = data_len + SLEEP_APP_CMD_LEN;
     cmd->cmd = SLEEP_APP_CMDID_GET_ANC_MODE;
@@ -574,7 +590,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
             BIT4: Smart PlayPause Disable
             BIT3: Music Play
             BIT2: Music Pause
-            BIT1: reserved(0)
+            BIT1: ANC ON ENHANCED VOICE
             BIT0: reserved(0)
     */
     SndpSettingsBitMap_t BitMap;
@@ -622,13 +638,17 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
         sndp_anc_mode_e anc_mode = SNDP_ANC_MODE_QTY;
         //Byte2 bit0~bit7 of struct
         /******************anc map*******************/
-        if(BitMap.anc_transparent)
+        if(BitMap.anc_enhanced_voice)
+        {
+            anc_mode = SNDP_ANC_MODE_VOICEENHANCE;
+        }
+        else if(BitMap.anc_transparent)
         {
             anc_mode = SNDP_ANC_MODE_TRANSPARENT;
         }
         else if(BitMap.anc_adaptive)
         {
-            anc_mode = SNDP_ANC_MODE_1;
+            anc_mode = SNDP_ANC_MODE_2;
         }
         else if(BitMap.anc_strong)
         {
@@ -648,7 +668,15 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
         }
         if(anc_mode < SNDP_ANC_MODE_QTY)
         {
-            sndp_sleep_app_set_flag_onoff(SNDP_ANC_MODE_FLAG, false, anc_mode, false);
+            sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, (sndp_anc_mode_e)anc_mode, false);
+            if(anc_mode <= SNDP_ANC_MODE_4 && anc_mode >= SNDP_ANC_MODE_1)
+            {
+                sndp_sleep_app_set_flag_onoff(SNDP_ANC_MODE_FLAG, false, anc_mode, false);
+            }
+            if(anc_mode == SNDP_ANC_MODE_TRANSPARENT || anc_mode == SNDP_ANC_MODE_VOICEENHANCE)
+            {
+                sndp_sleep_app_set_flag_onoff(SNDP_ENC_MODE_FLAG, false, anc_mode, false);
+            }
         }   
         /******************anc map*******************/
 
@@ -714,7 +742,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
 POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_settings(sleep_app_comm_cmd_info_s *cmd_info)
 {
     cmd_info->data_len = 0x06;
-    cmd_info->value[0] = sndp_dev_sleep_app_anc_mode_get(false);
+    cmd_info->value[0] = sndp_dev_sleep_app_running_anc_mode_get(false);
 #if defined(__SNDP_HEART_RATE_MGR__)
     cmd_info->value[1] = sndp_hr_mearsuring_get_sampling_rate();
 #endif
@@ -1150,7 +1178,11 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data
         Byte7	HR count
     ------------------------
         Byte8   Result Code
-        Byte9	
+        Byte9
+    ------------------------
+        Byte10   Master Source
+                    0x01: Left
+                    0x02: Right
     */
 
     if(!sndp_comm_ble_is_connected())
@@ -1179,13 +1211,13 @@ uint32_t sndp_comm_cmd_sleepapp_report_hr(uint8_t* sendhr, uint8_t* dbbeats_data
     cmd->value[data_len++] = dbbeats_data_ptr->count;
     cmd->value[data_len++] = dbbeats_data_ptr->result_code & 0xFF;
     cmd->value[data_len++] = (dbbeats_data_ptr->result_code>>8) & 0xFF;
+    if(sndp_dev_is_left_earphone()){
+        cmd->value[data_len++] = 0x01;
+    }else if(sndp_dev_is_right_earphone()){
+        cmd->value[data_len++] = 0x02;
+    }
     if(sndp_hr_mearsuring_get_dump_state(HR_DUMP_STATE))
     {
-        if(sndp_dev_is_left_earphone()){
-            cmd->value[data_len++] = 0x01;
-        }else if(sndp_dev_is_right_earphone()){
-            cmd->value[data_len++] = 0x02;
-        }
         cmd->value[data_len++] = dbbeats_data_ptr->is_contact;
         cmd->value[data_len++] = dbbeats_data_ptr->led_state;
         cmd->value[data_len++] = dbbeats_data_ptr->pck_interval & 0xFF;
@@ -1676,7 +1708,7 @@ int32_t sleep_comm_execute_cmd_hdlr(sleep_app_comm_cmd_info_s *cmd)
     return ret;
 }
 
-static void sndp_sleep_app_set_flag_onoff(SNDP_SLEEP_APP_FLAG_NAME flag_name, bool peer, uint8_t onoff, bool sava)
+void sndp_sleep_app_set_flag_onoff(SNDP_SLEEP_APP_FLAG_NAME flag_name, bool peer, uint8_t onoff, bool sava)
 {
     INTERACT_APP_TRACE(1, "flag_name = %d, peer = %d, onoff = %d, sava = %d", flag_name, peer, onoff, sava);
     switch (flag_name)
@@ -1687,8 +1719,14 @@ static void sndp_sleep_app_set_flag_onoff(SNDP_SLEEP_APP_FLAG_NAME flag_name, bo
     case SNDP_EQ_INDEX_FLAG:
         sndp_dev_sleep_app_set_eq_index(peer, onoff, sava);
         break;
+    case SNDP_RUNNING_ANC_MODE_FLAG:
+        sndp_dev_sleep_app_running_anc_mode_set(peer, onoff, sava);
+        break;
     case SNDP_ANC_MODE_FLAG:
         sndp_dev_sleep_app_anc_mode_set(peer, onoff, sava);
+        break;
+    case SNDP_ENC_MODE_FLAG:
+        sndp_dev_sleep_app_enc_mode_set(peer, onoff, sava);
         break;
     case SNDP_GESTURE_ONOFF_FLAG:
         sndp_dev_sleep_app_set_gesture_onoff(peer, onoff, sava);

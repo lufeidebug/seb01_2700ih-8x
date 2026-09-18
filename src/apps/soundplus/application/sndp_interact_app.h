@@ -140,7 +140,7 @@ typedef struct
     
     // Byte2
     uint8_t reserved0    : 1;      // BIT0
-    uint8_t reserved1    : 1;      // BIT1
+    uint8_t anc_enhanced_voice : 1;      // BIT1
     uint8_t music_pause  : 1;      // BIT2
     uint8_t music_play   : 1;      // BIT3
     uint8_t smart_playpause_disable : 1;  // BIT4
@@ -215,7 +215,7 @@ void sndp_sleep_app_report_tap(void);
 
 uint32_t sndp_sleep_app_report_anc_mode(void);
 uint32_t sndp_comm_cmd_sleepapp_report_proximity_to_app(void);
-
+void sndp_sleep_app_set_flag_onoff(SNDP_SLEEP_APP_FLAG_NAME flag_name, bool peer, uint8_t onoff, bool sava);
 
 #if defined(__SNDP_GESTURE_MAP__)
 typedef struct{

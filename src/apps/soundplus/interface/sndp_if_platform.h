@@ -94,8 +94,7 @@ typedef enum {
 	SNDP_ANC_MODE_3,
 	SNDP_ANC_MODE_4,
 	SNDP_ANC_MODE_TRANSPARENT,
-	SNDP_ANC_MODE_TRANSPARENT_STRONG,
-
+	SNDP_ANC_MODE_VOICEENHANCE,
 	SNDP_ANC_MODE_QTY,
 } sndp_anc_mode_e;
 
@@ -241,6 +240,7 @@ bool sndp_anc_is_off(void);
 bool sndp_anc_is_on(void);
 bool sndp_anc_is_transparent(void);
 sndp_anc_mode_e sndp_anc_get_mode_index(void);
+sndp_anc_mode_e sndp_enc_get_mode_index(void);
 void sndp_anc_mode_set(sndp_anc_mode_e anc_mode);
 void sndp_anc_mode_set_locally(sndp_anc_mode_e anc_mode);
 sndp_anc_mode_e sndp_anc_get_curr_mode(void);

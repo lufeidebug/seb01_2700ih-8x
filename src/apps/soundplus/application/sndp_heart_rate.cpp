@@ -537,8 +537,7 @@ static void sndp_hr_sleep_app_process_thread(void const *argument)
             if(fired_signals & SENSOR_TASK_SIGNAL_ACC_FIFO) {
                 acc_last_poll_ms = curr_ms;
                 sndp_hal_acc_fifo_task();
-            } else if((curr_ms - acc_last_poll_ms) >= SENSOR_TASK_ACC_WATCHDOG_MS) {
-                // 看门狗: 中断丢失时兜底轮询一次
+            } else if(acc_last_poll_ms!=0 && (curr_ms - acc_last_poll_ms) >= SENSOR_TASK_ACC_WATCHDOG_MS) {
                 acc_last_poll_ms = curr_ms;
                 // SNDP_TRACE(0, "250ms acc_fifo_task");
                 sndp_hal_acc_fifo_task();

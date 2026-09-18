@@ -625,9 +625,15 @@ static uint32_t recv_lr_sync_sleep_app_flag(uint8_t *payload, uint16_t payload_l
     case SNDP_EQ_INDEX_FLAG:
         sndp_dev_sleep_app_set_eq_index(false, value, is_save);
         break;
+    case SNDP_RUNNING_ANC_MODE_FLAG:
+        sndp_dev_sleep_app_running_anc_mode_set(false, value, is_save);
+        sndp_sleep_app_report_anc_mode();
+        break;
     case SNDP_ANC_MODE_FLAG:
         sndp_dev_sleep_app_anc_mode_set(false, value, is_save);
-        sndp_sleep_app_report_anc_mode();
+        break;
+    case SNDP_ENC_MODE_FLAG:
+        sndp_dev_sleep_app_enc_mode_set(false, value, is_save);
         break;
     case SNDP_PROMPT_ONOFF_FLAG:
         sndp_dev_sleep_app_set_prompt_onoff(false, value, is_save);

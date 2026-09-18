@@ -1493,7 +1493,14 @@ bool sndp_anc_is_transparent(void)
 
 sndp_anc_mode_e sndp_anc_get_mode_index(void)
 {
-    return SNDP_ANC_MODE_1;
+		TRACE(0, "sndp_anc_get_mode_index:%d", sndp_dev_sleep_app_anc_mode_get(false));
+    return (sndp_anc_mode_e)sndp_dev_sleep_app_anc_mode_get(false);
+}
+
+sndp_anc_mode_e sndp_enc_get_mode_index(void)
+{
+	TRACE(0, "sndp_enc_get_mode_index:%d", sndp_dev_sleep_app_enc_mode_get(false));
+	  return (sndp_anc_mode_e)sndp_dev_sleep_app_enc_mode_get(false);
 }
 
 void sndp_anc_mode_set(sndp_anc_mode_e anc_mode)

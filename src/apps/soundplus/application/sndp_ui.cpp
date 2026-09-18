@@ -240,7 +240,7 @@ POSSIBLY_UNUSED static void sndp_ui_anc_switch(void)
 #endif
 		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
 #if defined(__SNDP_SLEEP_APP__)
-        sndp_dev_sleep_app_anc_mode_set(false, sndp_anc_get_mode_index(), true);
+        sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, (sndp_anc_mode_e)sndp_anc_get_mode_index(), true);
 #endif
 	} else if(sndp_anc_is_on()) {
         SPUI_TRACE(0, "ANC_TT");
@@ -250,16 +250,16 @@ POSSIBLY_UNUSED static void sndp_ui_anc_switch(void)
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_TRANSPARENT, 0);
 #endif           
-		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)SNDP_ANC_MODE_TRANSPARENT, 0, 0);
+		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_enc_get_mode_index(), 0, 0);
 #if defined(__SNDP_SLEEP_APP__)
-        sndp_dev_sleep_app_anc_mode_set(false, SNDP_ANC_MODE_TRANSPARENT, true);
+        sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, (sndp_anc_mode_e)sndp_enc_get_mode_index(), true);
 #endif
 	} else if(sndp_anc_is_transparent()) {
         SPUI_TRACE(0, "ANC_OFF");
         
 	    sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
 #if defined(__SNDP_SLEEP_APP__)
-        sndp_dev_sleep_app_anc_mode_set(false, SNDP_ANC_MODE_OFF, true);
+        sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, (sndp_anc_mode_e)sndp_enc_get_mode_index(), true);
 #endif
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_OFF, 0);
@@ -267,7 +267,7 @@ POSSIBLY_UNUSED static void sndp_ui_anc_switch(void)
 
 	}
 #if defined(__SNDP_SLEEP_APP__)
-    sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_ANC_MODE_FLAG, sndp_dev_sleep_app_anc_mode_get(false), true);
+    sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_ANC_MODE_FLAG, sndp_dev_sleep_app_running_anc_mode_get(false), true);
     sndp_sleep_app_report_anc_mode();
 #endif
 }
@@ -389,7 +389,7 @@ static POSSIBLY_UNUSED void sndp_ui_wear_on_open_anc(void)
         return;
     }
 #if defined(__SNDP_SLEEP_APP__)
-    sndp_anc_mode_e running_param_anc_mode = (sndp_anc_mode_e)sndp_dev_sleep_app_anc_mode_get(false);
+    sndp_anc_mode_e running_param_anc_mode = (sndp_anc_mode_e)sndp_dev_sleep_app_running_anc_mode_get(false);
     SPUI_TRACE(0, "starting... %d",running_param_anc_mode);
     if(running_param_anc_mode != SNDP_ANC_MODE_OFF) {
         sndp_anc_mode_set_locally(running_param_anc_mode);
@@ -1860,7 +1860,9 @@ static void sndp_ui_all_status_sync_send(void)
         sndp_dev_get_bat_info(false, &all_dev_sta.bat_info);
 #if defined(__SNDP_SLEEP_APP__)
         all_dev_sta.sleep_flag.sleep_eq_index = sndp_dev_sleep_app_get_eq_index(false);
+        all_dev_sta.sleep_flag.sleep_running_anc_mode = sndp_dev_sleep_app_running_anc_mode_get(false);
         all_dev_sta.sleep_flag.sleep_anc_mode = sndp_dev_sleep_app_anc_mode_get(false);
+        all_dev_sta.sleep_flag.sleep_enc_mode = sndp_dev_sleep_app_enc_mode_get(false);
         all_dev_sta.sleep_flag.sleep_prompt_onoff = sndp_dev_sleep_app_get_prompt_onoff(false);
         all_dev_sta.sleep_flag.sleep_gesture_onoff = sndp_dev_sleep_app_get_gesture_onoff(false);
         all_dev_sta.sleep_flag.sleep_splaypause_onoff = sndp_dev_sleep_app_get_splaypause_onoff(false);
@@ -1893,7 +1895,9 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
 #if defined(__SNDP_SLEEP_APP__)
         if(sndp_is_tws_slave_mode()) {
             sndp_dev_sleep_app_set_eq_index(false, all_dev_sta.sleep_flag.sleep_eq_index, true);
+            sndp_dev_sleep_app_running_anc_mode_set(false, all_dev_sta.sleep_flag.sleep_running_anc_mode, true);
             sndp_dev_sleep_app_anc_mode_set(false, all_dev_sta.sleep_flag.sleep_anc_mode, true);
+            sndp_dev_sleep_app_enc_mode_set(false, all_dev_sta.sleep_flag.sleep_enc_mode, true);
             sndp_dev_sleep_app_set_prompt_onoff(false, all_dev_sta.sleep_flag.sleep_prompt_onoff, true);
             sndp_dev_sleep_app_set_gesture_onoff(false, all_dev_sta.sleep_flag.sleep_gesture_onoff, true);
             sndp_dev_sleep_app_set_splaypause_onoff(false, all_dev_sta.sleep_flag.sleep_splaypause_onoff, true);
