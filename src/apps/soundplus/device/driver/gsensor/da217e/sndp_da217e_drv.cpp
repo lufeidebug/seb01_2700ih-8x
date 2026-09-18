@@ -351,19 +351,24 @@ int32_t da217e_fifo_polling_data(da217e_drv_acc_data_s *data)
 
 int32_t da217e_read_water_int_fifo(da217e_drv_acc_data_s *data)
 {
-   uint8_t i = 0, num = 0, tmp_data = 0;  
-   
-   da217e_reg_read(DA217E_REG_FIFO_CTRL, &num);
-   num &= 0x3f;
-   da217e_reg_read(DA217E_REG_FIFO_STATUS, &tmp_data);
+    uint8_t i = 0, num = 0, tmp_data = 0;  
+
+    da217e_reg_read(DA217E_REG_FIFO_CTRL, &num);
+    num &= 0x3f;
+    da217e_reg_read(DA217E_REG_FIFO_STATUS, &tmp_data);
    
     tmp_data &= 0x3f;
+#if 0    
+    if(tmp_data > num) {
+        tmp_data = num;
+    }
+#endif
 
-    for(i = 0; i < num; i++){
+    for(i = 0; i < tmp_data; i++){
         da217e_read_acc_data(&data[i].ax, &data[i].ay, &data[i].az);	
     }
-
-    return num;
+    
+    return tmp_data;
 }
 
 int32_t da217e_close_fifo_int(void)
