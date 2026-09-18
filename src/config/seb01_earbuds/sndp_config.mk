@@ -292,13 +292,16 @@ ifeq ($(SNDP_COMM_BLE),1)
     KBUILD_CPPFLAGS += -D__SNDP_COMM_BLE__
     KBUILD_CPPFLAGS += -D__SNDP_COMM_BLE_ADV_SET__
 
-    # SNDP CTKD over LE: BLE 配对时派生经典 BR/EDR LinkKey 的私有特性。
-    # 置 0 即整体关闭（广播/地址/SMP/记录重映射全部回到原始行为）。可在命令行覆盖。
+    # SNDP CTKD over LE: 在app上通过BLE连接经典蓝牙
     export SNDP_CTKD_OVER_LE                 := 1
+	export SNDP_FIX_IOS_GATT_OTA_FAIL        := 1
 
     ifeq ($(SNDP_CTKD_OVER_LE),1)
         KBUILD_CPPFLAGS += -D__SNDP_CTKD_OVER_LE__
     endif
+	ifeq ($(SNDP_FIX_IOS_GATT_OTA_FAIL),1)
+	    KBUILD_CPPFLAGS += -D__SNDP_FIX_IOS_GATT_OTA_FAIL__
+	endif
 endif
 
 ifeq ($(SNDP_COMM_SPP),1)

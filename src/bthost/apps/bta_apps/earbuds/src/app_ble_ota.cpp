@@ -24,6 +24,12 @@
 
 #include "hal_trace.h"
 
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+#ifndef TRACE
+#define TRACE(attr, str, ...)               TR_INFO(attr, str, ##__VA_ARGS__)
+#endif
+#endif
+
 #define APP_BLE_OTA_MAX_LEN (495)
 
 typedef enum app_ble_ota_attr_type
@@ -40,7 +46,6 @@ typedef struct app_ble_ota_environment
     bool is_initilized;
     // Event callback
     app_ota_event_callback ota_event_cb;
-
 } app_ble_ota_env_t;
 
 static const bt_attr_uuid_t ble_ota_service_uuid_128_le         = {0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66};
@@ -53,11 +58,34 @@ static bt_gatt_attr_t ble_ota_attr_list[APP_BLE_OTA_ATTR_TYPE_MAX] = {{0}};
 
 static app_ble_ota_env_t app_ota_env = {0};
 
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+static uint16_t app_ota_saved_connhdl = BT_INVALID_HANDLE;
+
+static uint16_t app_ota_resolve_connhdl(uint8_t conidx)
+{
+    uint16_t connhdl = bta_ble_get_conhdl_by_conidx(conidx);
+
+    if (connhdl == BT_INVALID_HANDLE)
+    {
+        // GATT over BR/EDR has no independent BLE connection.
+        connhdl = app_ota_saved_connhdl;
+    }
+
+    return connhdl;
+}
+#endif
+
 static bool ble_ota_server_callback(bt_gatt_svc_t *svc, bt_gatts_event_t event, bt_gatts_callback_param_t param)
 {
     app_ota_event_param_t cb_param = {0};
 
     cb_param.connhdl = svc->connhdl;
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+    if (svc->connhdl != BT_INVALID_HANDLE)
+    {
+        app_ota_saved_connhdl = svc->connhdl;
+    }
+#endif
 
     switch (event)
     {
@@ -139,6 +167,9 @@ static bool ble_ota_server_callback(bt_gatt_svc_t *svc, bt_gatts_event_t event, 
                 cb_param.param.status = p->error_code;
                 app_ota_env.ota_event_cb(&cb_param);
             }
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+            app_ota_saved_connhdl = BT_INVALID_HANDLE;
+#endif
             break;
         }
         default:
@@ -215,6 +246,9 @@ void app_ble_ota_deinit(void)
     bta_gatts_unregister_service(app_ble_ota_build_attr_list(NULL));
 
     app_ota_env.is_initilized = false;
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+    app_ota_saved_connhdl = BT_INVALID_HANDLE;
+#endif
 }
 
 void app_ota_event_reg(app_ota_event_callback cb)
@@ -233,6 +267,9 @@ void app_ota_event_unreg(void)
 bool app_ota_send_notification(uint8_t conidx, uint8_t *data, uint32_t len)
 {
     int status = 0;
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+    uint16_t connhdl = app_ota_resolve_connhdl(conidx);
+#endif
 
     bt_gatt_char_notify_t val_ntf =
     {
@@ -240,7 +277,22 @@ bool app_ota_send_notification(uint8_t conidx, uint8_t *data, uint32_t len)
         .character = app_ble_ota_get_attribute(APP_BLE_OTA_ATTR_TYPE_CHARACTER),
     };
 
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+    if (connhdl == BT_INVALID_HANDLE)
+    {
+        TRACE(1, "app_ota_notification drop, invalid connhdl conidx:%d", conidx);
+        return false;
+    }
+
+    status = bta_gatts_send_character_value(connhdl, true, &val_ntf, data, (uint16_t)len);
+    if (status == 0) {
+        TRACE(2, "app_ota_notification success, conidx:%d connhdl:%d", conidx, connhdl);
+    } else {
+        TRACE(2, "app_ota_notification failed, conidx:%d connhdl:%d", conidx, connhdl);
+    }
+#else
     status = bta_gatts_send_character_value(bta_ble_get_conhdl_by_conidx(conidx), true, &val_ntf, data, (uint16_t)len);
+#endif
 
     return (status == 0);
 }
@@ -248,6 +300,9 @@ bool app_ota_send_notification(uint8_t conidx, uint8_t *data, uint32_t len)
 bool app_ota_send_indication(uint8_t conidx, uint8_t *data, uint32_t len)
 {
     int status = 0;
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+    uint16_t connhdl = app_ota_resolve_connhdl(conidx);
+#endif
 
     bt_gatt_char_notify_t val_ind =
     {
@@ -255,7 +310,17 @@ bool app_ota_send_indication(uint8_t conidx, uint8_t *data, uint32_t len)
         .character = app_ble_ota_get_attribute(APP_BLE_OTA_ATTR_TYPE_CHARACTER),
     };
 
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+    if (connhdl == BT_INVALID_HANDLE)
+    {
+        TRACE(1, "app_ota_indication drop, invalid connhdl conidx:%d", conidx);
+        return false;
+    }
+
+    status = bta_gatts_send_character_value(connhdl, false, &val_ind, data, (uint16_t)len);
+#else
     status = bta_gatts_send_character_value(bta_ble_get_conhdl_by_conidx(conidx), false, &val_ind, data, (uint16_t)len);
+#endif
 
     return (status == 0);
 }

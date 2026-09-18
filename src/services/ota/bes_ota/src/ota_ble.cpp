@@ -24,6 +24,9 @@
 #include "bluetooth_ble_api.h"
 #include "cqueue.h"
 #include "ota_dbg.h"
+#if defined(__GATT_OVER_BR_EDR__)
+#include "app_btgatt.h"
+#endif
 
 #if defined(__IAG_BLE_INCLUDE__)&&!defined(OTA_OVER_TOTA_ENABLED)
 struct ota_ble_env_info
@@ -47,10 +50,18 @@ static void ota_ble_disconn_hdl(void)
     bes_ble_gap_update_conn_param_mode(BLE_CONN_PARAM_MODE_OTA, false);
 }
 
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+static BES_OTA_PATH_TYPE_E ota_ble_get_path_type(uint8_t conidx)
+#else
 static BES_OTA_PATH_TYPE_E ota_ble_get_path_type()
+#endif
 {
 #if defined(__GATT_OVER_BR_EDR__)
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+    if (app_btgatt_is_connected_by_conidx(conidx)) {
+#else
     if (app_btgatt_is_connected_by_conidx(app_ota_get_conidx())) {
+#endif
         return DATA_PATH_BTGATT;
     } else
 #endif
@@ -62,7 +73,11 @@ static BES_OTA_PATH_TYPE_E ota_ble_get_path_type()
 static void ota_ble_event_callback(bes_ble_ota_event_param_t *param)
 {
     bes_ota_event_param_t otaParam = {.conidx = INVALID_CONNECTION_INDEX};
+#ifdef __SNDP_FIX_IOS_GATT_OTA_FAIL__
+    otaParam.pathType = ota_ble_get_path_type(param->conidx);
+#else
     otaParam.pathType = ota_ble_get_path_type();
+#endif
     otaParam.conidx = param->conidx;
 
     switch (param->event_type){
