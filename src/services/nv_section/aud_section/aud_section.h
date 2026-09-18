@@ -192,6 +192,8 @@ enum ANC_INDEX {
     ANC_INDEX_1,
     ANC_INDEX_2,
     ANC_INDEX_3,
+    ANC_INDEX_TRANSPARENT,          /* transparent, coef index of app_anc_table is 0x04 */
+    ANC_INDEX_TRANSPARENT_STRONG,   /* strong transparent, coef index of app_anc_table is 0x05 */
     ANC_INDEX_TOTAL,
 };
 

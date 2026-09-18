@@ -32,7 +32,7 @@ static const app_anc_coef_index_cfg_t app_anc_coef_index_cfg[APP_ANC_MODE_QTY] =
     {0x02, 0x02, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 3, Default Moderate
     {0x03, 0x03, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 4, Default Mild
     {0x04, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 5, TRANSPARENCY
-    {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_FIR_TT},     // 6, Weak TRANSPARENCY
+    {0x05, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 6, Strong TRANSPARENCY
     {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 7, APP_ANC_MODE1
     {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 8, APP_ANC_MODE2
     {XXXX, XXXX, XXXX, XXXX, XXXX, XXXX, ANC_CUSTOM_MODE_ANC},        // 9, APP_ANC_MODE3
@@ -61,7 +61,7 @@ static const app_anc_coef_index_cfg_t app_anc_coef_index_cfg[APP_ANC_MODE_QTY] =
     {XXXX, 0x02, XXXX, XXXX, 0x02, XXXX, ANC_CUSTOM_MODE_ANC},        // 3, Default Moderate
     {XXXX, 0x03, XXXX, XXXX, 0x03, XXXX, ANC_CUSTOM_MODE_ANC},        // 4, Default Mild
     {XXXX, 0x04, XXXX, XXXX, 0x04, XXXX, ANC_CUSTOM_MODE_FIR_TT},     // 5, TRANSPARENCY
-    {XXXX, 0x05, XXXX, XXXX, 0x05, XXXX, ANC_CUSTOM_MODE_TT},         // 6, Weak TRANSPARENCY
+    {XXXX, 0x05, XXXX, XXXX, 0x05, XXXX, ANC_CUSTOM_MODE_TT},         // 6, Strong TRANSPARENCY
     {XXXX, 0x06, XXXX, XXXX, 0x06, XXXX, ANC_CUSTOM_MODE_ANC},        // 7, APP_ANC_MODE1
     {XXXX, 0x07, XXXX, XXXX, 0x07, XXXX, ANC_CUSTOM_MODE_ANC},        // 8, APP_ANC_MODE2
     {XXXX, 0x08, XXXX, XXXX, 0x08, XXXX, ANC_CUSTOM_MODE_ANC},        // 9, APP_ANC_MODE3

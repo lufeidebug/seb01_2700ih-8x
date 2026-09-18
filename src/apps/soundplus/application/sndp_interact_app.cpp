@@ -198,12 +198,13 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
             0x03: ANC ON (Mild)
             0x04: ANC ON (Adaptive)
             0x05: Transparent
+            0x06: Transparent Strong
     */
     
     uint8_t anc_mode = cmd_info->value[0];
     
     INTERACT_APP_TRACE(1, "anc mode=%d", anc_mode);
-    if(anc_mode <= 0x05){
+    if(anc_mode < SNDP_ANC_MODE_QTY){
         if(sndp_dev_wear_is_worn(true))
         {
             if(!sndp_dev_iobox_is_in_box(false))

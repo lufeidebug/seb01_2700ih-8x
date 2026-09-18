@@ -1488,7 +1488,7 @@ bool sndp_anc_is_transparent(void)
 {
     app_anc_mode_t anc_mode = app_anc_get_curr_mode();
 
-    return (APP_ANC_MODE5 == anc_mode);
+    return (APP_ANC_MODE5 == anc_mode || APP_ANC_MODE6 == anc_mode);
 }
 
 sndp_anc_mode_e sndp_anc_get_mode_index(void)

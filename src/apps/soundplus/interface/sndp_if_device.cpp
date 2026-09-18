@@ -2228,10 +2228,10 @@ void sndp_dev_init(void)
 
 /************************************************** anc total gain start ************************************************/
 
-/* group 0 reads mode0; group 1 reads the transparent (last) mode. */
+/* group 0 reads mode0; group 1 reads the transparent mode. */
 void sndp_dev_get_anc_gain_group(uint8_t group, uint16_t *ff, uint16_t *fb)
 {
-    enum ANC_INDEX idx = (group == 1) ? (enum ANC_INDEX)(ANC_COEF_LIST_NUM - 1) : ANC_INDEX_0;
+    enum ANC_INDEX idx = (group == 1) ? ANC_INDEX_TRANSPARENT : ANC_INDEX_0;
     int32_t gff = anc_get_coef_total_gain(ANC_FEEDFORWARD, idx);
     int32_t gfb = anc_get_coef_total_gain(ANC_FEEDBACK, idx);
 
