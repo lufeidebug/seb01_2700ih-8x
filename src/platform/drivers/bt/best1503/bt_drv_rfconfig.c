@@ -1004,7 +1004,7 @@ void bt_drv_rf_sdk_init(void)
 
     //config TX power in dbm
     btdrv_rf_customer_config.config_tx_pwr_en = true;
-    btdrv_rf_customer_config.bt_tx_page_pwr = TX_PWR_8DBM;//in dbm
+    btdrv_rf_customer_config.bt_tx_page_pwr = TX_PWR_5DBM;//in dbm
 
     btdrv_rf_customer_config.bt_tx_idx3_pwr = TX_PWR_14DBM;//in dbm
     btdrv_rf_customer_config.bt_tx_idx2_pwr = TX_PWR_10DBM;//in dbm
