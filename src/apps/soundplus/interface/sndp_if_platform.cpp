@@ -468,17 +468,15 @@ static void sndp_pt_reenter_pairing(void)
 void sndp_mobile_pairing_timeout(void)
 {
     SNDP_IF_TRACE(0, ".");
-    
-    // 兜底检查：如果对端（主耳）已经连上手机，不关机
-    if (sndp_is_tws_link_connected() && sndp_is_tws_slave_mode()
-        && sndp_is_master_mobile_link_connected()) {
-        SNDP_IF_TRACE(0, "peer already connected, skip shutdown");
-        sndp_pairing_status = SNDP_PAIR_STA_SUCCESS;
-        sndp_pairing_type = SNDP_PAIRING_NONE;
-        sndp_freeman_pairing_stop_scan_retry();
-		
-        app_stop_10_second_timer(APP_PAIR_TIMER_ID);
-        app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
+
+    /* 还有手机在线就不关机：双连断一台，或从耳对端主耳已连上手机。
+     * 走 pairing_sccessful，把 page 阻挡、产测计数、配对/关机定时器一起清掉 */
+    if (sndp_get_connected_mobile_count() > 0 ||
+        (sndp_is_tws_link_connected() && sndp_is_tws_slave_mode() &&
+         sndp_is_master_mobile_link_connected())) {
+        SNDP_IF_TRACE(1, "mobile still connected(%d), skip shutdown",
+                      sndp_get_connected_mobile_count());
+        sndp_mobile_pairing_sccessful();
         return;
     }
 

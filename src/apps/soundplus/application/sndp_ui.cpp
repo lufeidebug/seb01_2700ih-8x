@@ -1533,6 +1533,63 @@ static void sndp_ui_temperature_measure_callback(int16_t temperature)
 
 
 //---------------------------------------- bt ctrl --------------------------------------------
+/* 手机断连后的处理：延迟到设备表更新完成后再决策。
+ * 断连瞬间 sndp_get_connected_mobile_count() 可能还残留正在断开的那台手机
+ * （实测 log：双连断一台时读到 2），立即判断会把"最后一台手机断开"误判成
+ * "还有手机在线"，从而跳过本应执行的配对/回连超时流程。 */
+static void sndp_ui_mobile_disconnect_deal(uint32_t reason)
+{
+    SPUI_TRACE(1, "reason=%02X, con_cnt=%d", (uint8_t)reason, sndp_get_connected_mobile_count());
+
+    /* 延迟窗口内已进入关机流程就不再介入，避免干扰关机 */
+    if (sndp_get_is_shutting_down()) {
+        return;
+    }
+
+    /* 还有手机在线（双连只断了一台）：保持现有连接，不进配对/回连流程，
+     * 并停掉配对/回连超时定时器，避免 3 分钟配对超时误关机 */
+    if (sndp_get_connected_mobile_count() > 0) {
+        SPUI_TRACE(0, "another mobile still connected, keep current state");
+        /* 配对进行中（主动重配/APP 下发配对）不能清状态：
+         * sndp_mobile_pairing_sccessful 会解掉 page block 并复位配对状态，
+         * 导致 sndp_enter_freeman_pairing 的守卫失败、配对流程被打断 */
+        if (SNDP_PAIR_STA_PAIRING != sndp_get_pairing_status()) {
+            sndp_mobile_pairing_sccessful();
+#if defined(__BTIF_AUTOPOWEROFF__)
+            app_stop_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
+#endif
+        }
+        return;
+    }
+
+    if(!sndp_dev_cover_is_opened(false)) {
+        return;
+    }
+
+#if 1
+    if(SNDP_PAIRING_FREEMAN != sndp_get_pairing_type())
+    {
+        if(reason == 0x08) { 
+            //other reason, shutdown time is set to 15 minutes
+            sndp_enter_mobile_reconnect();
+        } else { 
+            //REMOTE_USER_TERMINATED   
+            if(sndp_is_tws_link_connected()) {
+                sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+            } else {
+                sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
+            }
+        }
+    }
+#else
+    sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+#endif
+
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+    sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+#endif
+}
+
 POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e conn_status, uint8_t reason)
 {
     SPUI_TRACE(0, "conn_sta=%d, reason=%02X", conn_status, reason);
@@ -1547,31 +1604,9 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
                     sndp_get_connected_mobile_count(), 
                     sndp_is_master_mobile_link_connected());
 
-            if(sndp_dev_cover_is_opened(false)) {
-#if 1
-                if(SNDP_PAIRING_FREEMAN != sndp_get_pairing_type())
-                {
-                    if(reason == 0x08) { 
-                        //other reason, shutdown time is set to 15 minutes
-                        sndp_enter_mobile_reconnect();
-                    } else { 
-                        //REMOTE_USER_TERMINATED   
-                        if(sndp_is_tws_link_connected()) {
-                            sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
-                        } else {
-                            sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
-                        }
-                        
-                    }
-                }
-#else
-                sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
-#endif
-
-#if defined(__SNDP_COMM_BLE_ADV_SET__)
-                sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
-#endif
-            }
+            /* 延迟 500ms 再决策（设备表此时已更新完成），避免用断连瞬间的
+             * 残留计数做判断；重复断连事件会自动合并到同一次延迟回调 */
+            sndp_delay_exec_start(500, (uint32_t)sndp_ui_mobile_disconnect_deal, reason, 0, 0);
 			break;
             
 		case SNDP_BT_CONN_STATUS_MOBILE_CONNECTED:
