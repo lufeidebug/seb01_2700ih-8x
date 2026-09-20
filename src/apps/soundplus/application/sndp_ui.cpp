@@ -161,7 +161,7 @@ void sndp_ui_sleep_anc_mode_off(void)
     sndp_delay_exec_start(100, (uint32_t) sndp_ui_working_mode_switch_tone, AUD_ID_WORKING_MODE_BT, 0, 0);
     sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
 #if defined(__SNDP_SLEEP_APP__)
-    sndp_dev_sleep_app_anc_mode_set(false, SNDP_ANC_MODE_OFF, false);
+    sndp_dev_sleep_app_running_anc_mode_set(false, SNDP_ANC_MODE_OFF, false);
 #endif
 }
 
@@ -173,7 +173,7 @@ void sndp_ui_sleep_anc_mode_on(void)
     sndp_delay_exec_start(100, (uint32_t) sndp_ui_working_mode_switch_tone, AUD_ID_WORKING_MODE_SLEEP, 0, 0);
     sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
 #if defined(__SNDP_SLEEP_APP__)
-    sndp_dev_sleep_app_anc_mode_set(false, sndp_anc_get_mode_index(), false);
+    sndp_dev_sleep_app_running_anc_mode_set(false, sndp_anc_get_mode_index(), false);
 #endif
 }
 
@@ -259,7 +259,7 @@ POSSIBLY_UNUSED static void sndp_ui_anc_switch(void)
         
 	    sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
 #if defined(__SNDP_SLEEP_APP__)
-        sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, (sndp_anc_mode_e)sndp_enc_get_mode_index(), true);
+        sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, SNDP_ANC_MODE_OFF, true);
 #endif
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_OFF, 0);
@@ -267,7 +267,7 @@ POSSIBLY_UNUSED static void sndp_ui_anc_switch(void)
 
 	}
 #if defined(__SNDP_SLEEP_APP__)
-    sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_ANC_MODE_FLAG, sndp_dev_sleep_app_running_anc_mode_get(false), true);
+    sndp_comm_cmd_send_lr_sync_sleep_app_flag(SNDP_RUNNING_ANC_MODE_FLAG, sndp_dev_sleep_app_running_anc_mode_get(false), true);
     sndp_sleep_app_report_anc_mode();
 #endif
 }
