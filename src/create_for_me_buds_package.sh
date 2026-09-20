@@ -17,7 +17,9 @@ if [ -z "$SOFTWARE_VERSION" ]; then
 fi
 
 DATE_TAG="$(date +%Y%m%d)"
-TARGET_BASE="$SCRIPT_DIR/For_me_buds_${SOFTWARE_VERSION}"
+# 包内 bin 文件名前缀（与 src/copy_and_gen_ota.sh 的 bin_prefix 保持一致）
+BIN_PREFIX="For_me_buds"
+TARGET_BASE="$SCRIPT_DIR/${BIN_PREFIX}_${SOFTWARE_VERSION}"
 BOX_DIR="$TARGET_BASE/box"
 EARBUDS_DIR="$TARGET_BASE/earbuds"
 DOWNLOAD_DIR="$EARBUDS_DIR/download"
@@ -149,7 +151,7 @@ target_copy_rename() {
   for f in "${files[@]}"; do
     if [[ -f "$f" ]]; then
       local base="$(basename "$f")"
-      local rename="${base/#seb01_earbuds_/For_me_buds_}"
+      local rename="${base/#seb01_earbuds_/${BIN_PREFIX}_}"
       cp -v "$f" "$dest/$rename"
     fi
   done
@@ -157,15 +159,20 @@ target_copy_rename() {
 
 pushd "$SCRIPT_DIR" >/dev/null
 
-# Remove stale original filenames from previous runs
-rm -f "$OTA_DIR"/seb01_earbuds_app_for_ota_v*.bin "$DOWNLOAD_DIR"/seb01_earbuds_app_v*.bin "$DOWNLOAD_DIR"/seb01_earbuds_boot_20260413.bin 2>/dev/null || true
+# Remove stale filenames from previous runs（新旧前缀都清）
+rm -f "$OTA_DIR"/"${BIN_PREFIX}"_app_for_ota_v*.bin "$DOWNLOAD_DIR"/"${BIN_PREFIX}"_app_v*.bin \
+      "$OTA_DIR"/seb01_earbuds_app_for_ota_v*.bin "$DOWNLOAD_DIR"/seb01_earbuds_app_v*.bin \
+      "$DOWNLOAD_DIR"/"${BIN_PREFIX}"_boot_*.bin "$DOWNLOAD_DIR"/seb01_earbuds_boot_*.bin 2>/dev/null || true
 
+target_copy_rename "${BIN_PREFIX}_app_for_ota_v*.bin" "$OTA_DIR"
+target_copy_rename "${BIN_PREFIX}_app_v*.bin" "$DOWNLOAD_DIR"
+# 兼容旧前缀产物（若 bin 仍是 seb01_earbuds_ 开头，拷贝时一并改名）
 target_copy_rename "seb01_earbuds_app_for_ota_v*.bin" "$OTA_DIR"
 target_copy_rename "seb01_earbuds_app_v*.bin" "$DOWNLOAD_DIR"
 
 BOOT_FILE="$SCRIPT_DIR/out/prod_test/ota_copy/ota_copy.bin"
 if [[ -f "$BOOT_FILE" ]]; then
-  cp -v "$BOOT_FILE" "$DOWNLOAD_DIR/For_me_buds_boot_${DATE_TAG}.bin"
+  cp -v "$BOOT_FILE" "$DOWNLOAD_DIR/${BIN_PREFIX}_boot_${DATE_TAG}.bin"
 else
   echo "WARNING: boot file not found: $BOOT_FILE"
 fi
