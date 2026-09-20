@@ -187,6 +187,9 @@ static uint16_t sndp_da_calc_backup_struct_checksum(void)
 
 	addr = (uint32_t)&p_param->field_sn2;
 	checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
+
+	addr = (uint32_t)&p_param->field_sn3;
+	checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
     
     addr = (uint32_t)&p_param->field_ppg_calib_data;
     checksum = sndp_da_calc_crc16(checksum, (uint8_t *)&addr, 0, sizeof(uint32_t));
@@ -377,6 +380,10 @@ static int32_t sndp_da_find_backup_field_info(sndp_da_field_id_e field_id, sndp_
 			break;  
 		case SNDP_DA_FIELD_SN2:
 			field_info->offset = (uint32_t)&p_param->field_sn2;
+			field_info->size = sizeof(sndp_da_field_sn_s);
+			break;
+		case SNDP_DA_FIELD_SN3:
+			field_info->offset = (uint32_t)&p_param->field_sn3;
 			field_info->size = sizeof(sndp_da_field_sn_s);
 			break;
         case SNDP_DA_FIELD_PROXIMITY_CALIB_DATA:

@@ -1438,6 +1438,7 @@ char *sndp_dev_get_bt_name(void)
 
 static uint8_t sndp_dev_dev_sn[SNDP_DEV_DEV_SN_LEN + 1];
 static uint8_t sndp_dev_dev_sn2[SNDP_DEV_DEV_SN_LEN + 1];
+static uint8_t sndp_dev_dev_sn3[SNDP_DEV_DEV_SN_LEN + 1];
 #define SNDP_SN_VALID_FLAG          (0xA1B2C3D4)
 
 void sndp_dev_get_default_sn(uint8_t *buf, uint16_t buf_size)
@@ -1543,6 +1544,48 @@ bool sndp_dev_save_dev_sn2(uint8_t *sn, uint16_t sn_len)
         if(sndp_da_read_field(SNDP_DA_FIELD_SN2, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
             if(memcmp(sn, field_sn.sn, sn_len) == 0) {
                 SNDP_IF_TRACE(0, "sn2 saved successfully.");
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+uint8_t *sndp_dev_get_dev_sn3(void)
+{
+    sndp_da_field_sn_s field_sn;
+
+    memset(sndp_dev_dev_sn3, 0, sizeof(sndp_dev_dev_sn3));
+    if(sndp_da_read_field(SNDP_DA_FIELD_SN3, &field_sn, sizeof(sndp_da_field_sn_s), false) == 0) {
+        if(field_sn.key == SNDP_DA_PARAM_FIELD_VALID) {
+            memcpy(sndp_dev_dev_sn3, field_sn.sn, SNDP_DEV_DEV_SN_LEN);
+        } else {
+            sndp_dev_get_default_sn(sndp_dev_dev_sn3, sizeof(sndp_dev_dev_sn3));
+        }
+    } else {
+        sndp_dev_get_default_sn(sndp_dev_dev_sn3, sizeof(sndp_dev_dev_sn3));
+    }
+    return sndp_dev_dev_sn3;
+}
+
+bool sndp_dev_save_dev_sn3(uint8_t *sn, uint16_t sn_len)
+{
+    sndp_da_field_sn_s field_sn;
+
+    if(sn == NULL || sn_len == 0 || sn_len > SNDP_DEV_DEV_SN_LEN) {
+        return false;
+    }
+
+    SNDP_IF_TRACE(2, "sn3_len=%d, sn3:%.*s", sn_len, sn_len, sn);
+
+    memset(&field_sn.sn, 0, SNDP_DEV_DEV_SN_LEN);
+    strncpy((char *)field_sn.sn, (char *)sn, sn_len);
+    if(sndp_da_write_field(SNDP_DA_FIELD_SN3, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
+        memset(&field_sn, 0, sizeof(sndp_da_field_sn_s));
+        if(sndp_da_read_field(SNDP_DA_FIELD_SN3, &field_sn, sizeof(sndp_da_field_sn_s), true) == 0) {
+            if(memcmp(sn, field_sn.sn, sn_len) == 0) {
+                SNDP_IF_TRACE(0, "sn3 saved successfully.");
                 return true;
             }
         }

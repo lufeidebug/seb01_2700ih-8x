@@ -1285,6 +1285,30 @@ static uint32_t sndp_comm_cmd_recv_pt_write_dev_sn2(sndp_comm_cmd_info_s *cmd_in
     return 0;
 }
 
+static uint32_t sndp_comm_cmd_recv_pt_read_dev_sn3(sndp_comm_cmd_info_s *cmd_info)
+{
+    uint8_t *sn = sndp_dev_get_dev_sn3();
+    uint16_t sn_len = strlen((char *)sn);
+
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    memcpy(&cmd_info->data[cmd_info->data_len], sn, sn_len);
+    cmd_info->data_len += sn_len;
+    sndp_comm_main_rsp_cmd(cmd_info);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_write_dev_sn3(sndp_comm_cmd_info_s *cmd_info)
+{
+    bool ret = sndp_dev_save_dev_sn3(cmd_info->data, cmd_info->data_len);
+
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    cmd_info->data[cmd_info->data_len++] = ret ? 0x01 : 0x00;
+    sndp_comm_main_rsp_cmd(cmd_info);
+    return 0;
+}
+
 static uint32_t sndp_comm_cmd_recv_pt_read_bt_addr(sndp_comm_cmd_info_s *cmd_info)
 {
 	uint8_t *bt_addr = sndp_dev_get_bt_addr(false);
@@ -2304,6 +2328,8 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
     { COMM_CMDID_PT_READ_DEV_SN2                , "PT_R_DEV_SN2"             , sndp_comm_cmd_recv_pt_read_dev_sn2                },
     { COMM_CMDID_PT_WRITE_DEV_SN2               , "PT_W_DEV_SN2"             , sndp_comm_cmd_recv_pt_write_dev_sn2               },
 	{ COMM_CMDID_PT_WRITE_DEV_SN                , "PT_W_DEV_SN"	            , sndp_comm_cmd_recv_pt_write_dev_sn                },
+    { COMM_CMDID_PT_READ_DEV_SN3                , "PT_R_DEV_SN3"             , sndp_comm_cmd_recv_pt_read_dev_sn3                },
+    { COMM_CMDID_PT_WRITE_DEV_SN3               , "PT_W_DEV_SN3"             , sndp_comm_cmd_recv_pt_write_dev_sn3               },
     { COMM_CMDID_PT_READ_BT_ADDR                , "PT_R_BT_ADDR"	        , sndp_comm_cmd_recv_pt_read_bt_addr                },
 	{ COMM_CMDID_PT_WRITE_BT_ADDR               , "PT_W_BT_ADDR "	        , sndp_comm_cmd_recv_pt_set_bt_addr                 },
 	{ COMM_CMDID_PT_READ_BLE_ADDR               , "PT_R_BLE_ADDR"	        , sndp_comm_cmd_recv_pt_read_ble_addr		        },
