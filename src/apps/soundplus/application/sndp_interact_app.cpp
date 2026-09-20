@@ -381,7 +381,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_get_device_info(sleep_ap
 {
     uint8_t *p = cmd_info->value;
     char *bt_name = (char *)sndp_dev_get_bt_name();
-    char *sn = (char *)sndp_dev_get_dev_sn();
+    char *sn = (char *)sndp_dev_get_dev_sn3();
     char *hw_ver = (char *)sndp_dev_get_hw_ver(false);
     char *fw_ver = (char *)sndp_dev_get_fw_ver(false);
 #if defined(__SNDP_HR_ALGO__)
