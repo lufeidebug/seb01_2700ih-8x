@@ -54,7 +54,6 @@ int32_t da217e_read_water_int_fifo(da217e_drv_acc_data_s *data);
 
 int32_t da217e_close_fifo_int(void);
 
-void da217e_drv_mark_tap_irq(void);
 void da217e_drv_deal_tap_interruption(void);
 void da217e_drv_deal_fifo_interruption(void);
 void da217e_drv_deal_fifo_polling(void);

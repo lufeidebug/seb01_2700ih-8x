@@ -168,3 +168,10 @@ ifeq ($(SINGLE_WIRE_MCU_UART),1)
     
 endif
 
+
+export SINGLE_FWU_NOP_CHECK ?= 1
+ifeq ($(SINGLE_FWU_NOP_CHECK),1)
+    KBUILD_CPPFLAGS += -DSINGLE_FWU_NOP_CHECK
+endif
+
+

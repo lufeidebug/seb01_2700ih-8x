@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 
-#define __DA217E_TRACE__      //tap diagnostic log: comment it out for the release build
+#define __DA217E_TRACE__
 
 #ifdef __DA217E_TRACE__
 #define DA217E_TRACE(num, str, ...)   SNDP_TRACE(1 + num, "[DA217E] %s, " str, __func__, ##__VA_ARGS__)

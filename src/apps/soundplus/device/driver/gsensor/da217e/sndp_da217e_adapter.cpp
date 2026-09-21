@@ -152,7 +152,6 @@ int32_t da217e_acc_fifo_task(void)
 
 static void da217e_int1_irq_handler(enum HAL_GPIO_PIN_T pin)
 {
-    da217e_drv_mark_tap_irq();
     sndp_call_func_in_app_thread((uint32_t)da217e_deal_int1_data, 0, 0, 0);
 }
 
