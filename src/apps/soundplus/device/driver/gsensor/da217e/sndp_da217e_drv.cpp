@@ -72,7 +72,7 @@
 #define DA217E_CHIP_ID				        0x13
     
 #define DA217E_TAP_THRESHOLD_DEFAULT        0x05
-#define DA217E_TAP_THRESHOLD_BOOST        0x07
+#define DA217E_TAP_THRESHOLD_BOOST          0x05
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -89,6 +89,7 @@
 **************************************************************************************************/
 static da217e_drv_if_s da217e_drv_if;
 static volatile uint8_t da217e_tap_cnt = 0;
+static uint32_t sndp_da217e_tap_time = 0;
 
 static void da217_tap_timer_handler(void const *param);
 osTimerDef(DA217_TAP_TIMER, da217_tap_timer_handler);
@@ -394,12 +395,16 @@ int32_t da217e_close_fifo(void)
 
 static void da217_tap_timer_handler(void const *param)
 {
-    da217e_reg_write(DA217E_REG_TAP_THS, DA217E_TAP_THRESHOLD_DEFAULT);
-	if(da217e_drv_if.tap_event_cb) {
-        da217e_drv_if.tap_event_cb(da217e_tap_cnt);
+    uint8_t cnt = da217e_tap_cnt;
+    if(cnt == 0) {
+        return;
     }
-
     da217e_tap_cnt = 0;
+
+    da217e_reg_write(DA217E_REG_TAP_THS, DA217E_TAP_THRESHOLD_DEFAULT);
+    if(da217e_drv_if.tap_event_cb) {
+        da217e_drv_if.tap_event_cb(cnt);
+    }
 }
 
 
@@ -422,12 +427,30 @@ void da217e_drv_deal_tap_interruption(void)
             osTimerStart(da217_tap_timer, 600);
         }
 #else
-        da217e_tap_cnt++;
-        if(1 == da217e_tap_cnt) {
-            da217e_reg_write(DA217E_REG_TAP_THS, DA217E_TAP_THRESHOLD_BOOST);
+        uint32_t tap_time = TICKS_TO_MS(hal_sys_timer_get());
+        if(tap_time - sndp_da217e_tap_time > 100) {
+            sndp_da217e_tap_time = tap_time;
+            
+            if(da217e_tap_cnt >= 3) {
+               return;
+            }
+            da217e_tap_cnt++;
+
+            if(1 == da217e_tap_cnt) {
+                da217e_reg_write(DA217E_REG_TAP_THS, DA217E_TAP_THRESHOLD_BOOST);
+            }
+
+            osTimerStop(da217_tap_timer);
+            if(1 == da217e_tap_cnt) {
+                osTimerStart(da217_tap_timer, 700);
+            } else  if(2 == da217e_tap_cnt) {
+                osTimerStart(da217_tap_timer, 600);
+            } else {
+                osTimerStart(da217_tap_timer, 300);
+            }
         }
-        osTimerStop(da217_tap_timer);
-        osTimerStart(da217_tap_timer, 700);
+        
+        
 #endif
 
     }

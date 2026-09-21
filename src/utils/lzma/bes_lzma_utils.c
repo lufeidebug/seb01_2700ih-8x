@@ -239,7 +239,7 @@ bool ota_copy_compressed_image(uint32_t srcFlashOffset, uint32_t dstFlashOffset,
     crcValue = crc_update(crcValue, (const unsigned char*)&magic_number, 4);
     while (readOffset < imageSize)
     {
-        //LZMA_TRACE(0,"readOffset=%d,wrtieOffset=%d,srcFlashOffset=0x%x,dstFlashOffset=0x%x",readOffset,wrtieOffset,srcFlashOffset,dstFlashOffset);
+        LZMA_TRACE(0,"readOffset=%d,wrtieOffset=%d,srcFlashOffset=0x%x,dstFlashOffset=0x%x",readOffset,wrtieOffset,srcFlashOffset,dstFlashOffset);
         lock = int_lock();
         pmu_flash_write_config();
         uint32_t next_size = 0;
@@ -249,7 +249,7 @@ bool ota_copy_compressed_image(uint32_t srcFlashOffset, uint32_t dstFlashOffset,
         readOffset += 4;
         crcValue = crc_update(crcValue, (const unsigned char*)&next_size, 4);
 
-        //LZMA_TRACE(0,"readOffset=%d,next_size=0x%x,swap=0x%x",readOffset,next_size,__bswap32(next_size));
+        LZMA_TRACE(0,"readOffset=%d,next_size=0x%x,swap=0x%x",readOffset,next_size,__bswap32(next_size));
         next_size = __bswap32(next_size);
         void *srcbuf = bes_lzma_malloc(next_size);
         memcpy((void*)srcbuf,(const uint8_t*)SRC_FLASH_LOGIC_ADDR + srcFlashOffset + readOffset,next_size);
@@ -257,7 +257,7 @@ bool ota_copy_compressed_image(uint32_t srcFlashOffset, uint32_t dstFlashOffset,
         crcValue = crc_update(crcValue, (const unsigned char*)srcbuf, next_size);
         memset(decompressed,0,output_size);
         ret = bes_lzma_dec_buf((uint8_t *)srcbuf,next_size,(uint8_t *)decompressed,&output_size);
-        //LZMA_TRACE(0,"bes_lzma_dec_buf ret=%d",ret);
+        LZMA_TRACE(0,"bes_lzma_dec_buf ret=%d",ret);
         bes_lzma_free(srcbuf);
 
         // add by lzw@sndp 20260409 start
@@ -313,7 +313,7 @@ bool ota_copy_compressed_image(uint32_t srcFlashOffset, uint32_t dstFlashOffset,
                                                         (uint8_t *)image_info_sanity_crc_key_word,
                                                         strlen(image_info_sanity_crc_key_word));
 
-            //LZMA_TRACE(2,"sanity_crc_location is %d,output_size=%d", sanity_crc_location,output_size);
+            LZMA_TRACE(2,"sanity_crc_location is %d,output_size=%d", sanity_crc_location,output_size);
 
             uint8_t *crcString = (uint8_t *)((uint8_t *)decompressed + sanity_crc_location + strlen(image_info_sanity_crc_key_word));
             for (uint8_t index = 0; index < 8; index++)
@@ -321,7 +321,7 @@ bool ota_copy_compressed_image(uint32_t srcFlashOffset, uint32_t dstFlashOffset,
                 sanityCrc32 |= (asciiToHex(crcString[index]) << (28 - 4 * index));
             }
             crcValue_dcom = crc_update(crcValue_dcom, (const unsigned char*)decompressed, sanity_crc_location+ strlen(image_info_sanity_crc_key_word));
-            //LZMA_TRACE(2,"sanityCrc32 is 0x%x, crcValue_dcom is 0x%x", sanityCrc32,crcValue_dcom);
+            LZMA_TRACE(2,"sanityCrc32 is 0x%x, crcValue_dcom is 0x%x", sanityCrc32,crcValue_dcom);
 #endif
             break;
         }
@@ -337,12 +337,12 @@ bool ota_copy_compressed_image(uint32_t srcFlashOffset, uint32_t dstFlashOffset,
     if (srcbuf)
     {
         memset(srcbuf,0,imageSize-readOffset);
-        //LZMA_TRACE(0,"readOffset=%d,remain=%d",readOffset,imageSize-readOffset);
+        LZMA_TRACE(0,"readOffset=%d,remain=%d",readOffset,imageSize-readOffset);
         memcpy((void*)srcbuf,(const uint8_t*)SRC_FLASH_LOGIC_ADDR + srcFlashOffset + readOffset,imageSize-readOffset);
         crcValue = crc_update(crcValue, (const unsigned char*)srcbuf, imageSize-readOffset);
         bes_lzma_free(srcbuf);
     }
-    //LZMA_TRACE(2,"Original CRC32 is 0x%x Confirmed CRC32 is 0x%x.", imageCrc, crcValue);
+    LZMA_TRACE(2,"Original CRC32 is 0x%x Confirmed CRC32 is 0x%x.", imageCrc, crcValue);
 #ifdef SANITY_CRC_CHECK
     if (crcValue == imageCrc && (sanityCrc32 == crcValue_dcom || 0 == sanityCrc32))
 #else

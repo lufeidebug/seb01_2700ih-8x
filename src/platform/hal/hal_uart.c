@@ -671,24 +671,11 @@ int hal_uart_writable(enum HAL_UART_ID_T id)
     return (uart[id].base->UARTFR & UARTFR_TXFF) == 0;
 }
 
-#ifdef SINGLE_FWU_NOP_CHECK
-WEAK void fwu_single_uart_rx_data_hook(void)
-{
-}
-#endif
-
 uint8_t hal_uart_getc(enum HAL_UART_ID_T id)
 {
     uint32_t c;
     ASSERT(id < HAL_UART_ID_QTY, err_invalid_id, id);
     ASSERT((uart[id].base->UARTDMACR & UARTDMACR_RXDMAE) == 0, "RX-DMA configured on UART %d", id);
-
-#ifdef SINGLE_FWU_NOP_CHECK
-    if (id == HAL_UART_ID_1) {
-        fwu_single_uart_rx_data_hook();
-    }
-#endif
-
     c = uart[id].base->UARTDR;
     return (c & 0xFF);
 }
@@ -886,12 +873,6 @@ static void recv_dma_irq_handler(uint8_t chan, uint32_t remain_tsize, uint32_t e
     } else {
         xfer = 0;
     }
-
-#ifdef SINGLE_FWU_NOP_CHECK
-    if(id == HAL_UART_ID_1 && error == 0) {
-        fwu_single_uart_rx_data_hook();
-    }
-#endif
 
     if (rxdma_handler[id]) {
         if (recv_dma_mode[id] == UART_RX_DMA_MODE_NORMAL) {
@@ -1495,12 +1476,6 @@ static void hal_uart_irq_handler(void)
 
         if (state.reg) {
             uart[id].base->UARTICR = state.reg;
-
-#ifdef SINGLE_FWU_NOP_CHECK
-            if ((id == HAL_UART_ID_1) && (state.RX || state.RT)) {
-                fwu_single_uart_rx_data_hook();
-            }
-#endif
 
             if (irq_handler[id] != NULL) {
                 irq_handler[id](id, state);

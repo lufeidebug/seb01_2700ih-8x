@@ -25,7 +25,6 @@
 #include "pmu.h"
 #include "string.h"
 #include "sys_api_programmer.h"
-#include "hal_timer_user_irq.h"
 #include "crc_c.h"
 #include "tgt_hardware.h"
 #include "plat_addr_map.h"
@@ -87,29 +86,6 @@ FLASH_OTA_BOOT_INFO_T otaBootInfoInFlash =
     {COPY_NEW_IMAGE, FLASH_SIZE / 2 - OTA_CODE_OFFSET, 0, FLASH_SIZE / 2, BOOT_WORD_A};
 #else
     {NORMAL_BOOT, 0, 0, OTA_CODE_OFFSET, BOOT_WORD_A};
-#endif
-
-
-#ifdef SINGLE_FWU_NOP_CHECK
-/**************************************************************************************************
-* Single line firmware upgrade: idle timeout auto-exit
-*
-* If the device enters single line download mode but no firmware transfer ever starts,
-* exit automatically after FW_UPGRADE_IDLE_TIMEOUT_MS and boot back to the application.
-*
-* SAFETY RULE -- never exit once an upgrade is really running:
-*   . any UART RX activity was seen          (g_fw_upgrade_cmd_received, also stops the timer)
-*   . an OTA image is being copied to app    (g_ota_copying)
-*   . an OTA image is still pending          (magic == COPY_NEW_IMAGE)
-* Clearing the bootmode in any of those states would boot a half written app bin, and
-* since the bootmode is cleared the device could never enter download mode again.
-**************************************************************************************************/
-
-#define FWU_NOP_TIMEOUT_MS              (2 * 60 * 1000)
-
-static volatile bool g_fwu_cmd_received = false;
-static volatile bool g_fwu_copy_new_image = false;
-static volatile uint32_t g_fwu_start_time = 0;
 #endif
 
 uint32_t BOOT_TEXT_FLASH_LOC programmer_get_magic_number(void)
@@ -459,14 +435,10 @@ void copy_new_image(void)
 
     if (COPY_NEW_IMAGE == magicNumber)
     {
-#ifdef SINGLE_FWU_NOP_CHECK
-        g_fwu_copy_new_image = true;
-#endif
-        
         hal_norflash_disable_protection(HAL_FLASH_ID_0);
         //we will reboot once copy success
 #ifdef OTA_BIN_COMPRESSED
-        PROGRAMMER_EXT_TRACE(2, "Start copying from 0x%x to 0x%x...", otaBootInfo.newImageFlashOffset, ota_flash_offset_of_image);
+        PROGRAMMER_EXT_TRACE(2, "Start copying new image from 0x%x to 0x%x...", otaBootInfo.newImageFlashOffset, ota_flash_offset_of_image);
         bool ret = ota_copy_compressed_image(otaBootInfo.newImageFlashOffset, ota_flash_offset_of_image,
                                             otaBootInfo.imageCrc, otaBootInfo.imageSize);
         if (!ret)
@@ -477,7 +449,7 @@ void copy_new_image(void)
         #ifdef OTA_TZ_ENABLE
         if (otaBootInfo.tzNewImageFlashOffset && otaBootInfo.tzNewImageFlashOffset != INVAILD_VALUE)
         {
-            PROGRAMMER_EXT_TRACE(2, "Start copying from 0x%x to 0x%x...",
+            PROGRAMMER_EXT_TRACE(2, "Start copying new image from 0x%x to 0x%x...",
                 otaBootInfo.tzNewImageFlashOffset, se_ota_flash_offset_of_image);
             ret = ota_copy_compressed_image(otaBootInfo.tzNewImageFlashOffset, se_ota_flash_offset_of_image,
                                             otaBootInfo.tzImageCrc, otaBootInfo.tzImageSize);
@@ -488,7 +460,7 @@ void copy_new_image(void)
         }
         #endif
 #else
-        PROGRAMMER_EXT_TRACE(2, "Start copying from 0x%x to 0x%x...", otaBootInfo.newImageFlashOffset, ota_flash_offset_of_image);
+        PROGRAMMER_EXT_TRACE(2, "Start copying new image from 0x%x to 0x%x...", otaBootInfo.newImageFlashOffset, ota_flash_offset_of_image);
         //we will reboot once copy success
         bool ret = programmer_copy_new_image(otaBootInfo.newImageFlashOffset, ota_flash_offset_of_image,
                                             otaBootInfo.imageCrc, otaBootInfo.imageSize);
@@ -499,7 +471,7 @@ void copy_new_image(void)
         #ifdef OTA_TZ_ENABLE
         if (otaBootInfo.tzNewImageFlashOffset && otaBootInfo.tzNewImageFlashOffset != INVAILD_VALUE)
         {
-            PROGRAMMER_EXT_TRACE(2, "Start copying from 0x%x to 0x%x...",
+            PROGRAMMER_EXT_TRACE(2, "Start copying new image from 0x%x to 0x%x...",
                 otaBootInfo.tzNewImageFlashOffset, se_ota_flash_offset_of_image);
             ret = programmer_copy_new_image(otaBootInfo.tzNewImageFlashOffset, se_ota_flash_offset_of_image,
                                             otaBootInfo.tzImageCrc, otaBootInfo.tzImageSize);
@@ -518,55 +490,13 @@ void copy_new_image(void)
 
 exit:
         //PROGRAMMER_EXT_TRACE(0,"Copying new image failed, enter OTA mode.");
-        //PROGRAMMER_EXT_TRACE(0, "Copying new image failed, enter Single Download mode.");
-        PROGRAMMER_EXT_TRACE(0, "copying failed, enter 1wire mode.");
-    }
-}
-#endif
-
-
-#ifdef SINGLE_FWU_NOP_CHECK
-/* UART RX activity hook: weak in hal_uart.c, invoked from the UART ISR. */
-void fwu_single_uart_rx_data_hook(void)
-{
-    g_fwu_cmd_received = true;
-}
-
-static void fwu_nop_check_timer_handler(uint32_t elapsed)
-{
-    /* Conservative: only exit when nothing has been received at all and no
-       OTA image is pending or being copied. */
-    uint32_t curr_time = TICKS_TO_MS(hal_sys_timer_get());
-
-    //PROGRAMMER_EXT_TRACE(0, "FWU %d,%d,%d", curr_time - g_fwu_start_time, g_fwu_cmd_received, g_fwu_copy_new_image);
-    if(curr_time - g_fwu_start_time >= FWU_NOP_TIMEOUT_MS) {
-        if (!g_fwu_cmd_received && !g_fwu_copy_new_image && (programmer_get_magic_number() != COPY_NEW_IMAGE)) {
-            //PROGRAMMER_EXT_TRACE(0, "FWU timeout");
-            //NORM_LOG_FLUSH();
-            system_clear_bootmode(HAL_SW_BOOTMODE_SINGLE_LINE_DOWNLOAD);
-            system_reboot();
-            while(1);
-        } else {
-            hal_user_timer0_stop();
-        }
+        PROGRAMMER_EXT_TRACE(0, "Copying new image failed, enter Single Download mode.");
     }
 }
 #endif
 
 static void ota_copy_init(void)
 {
-#ifdef SINGLE_FWU_NOP_CHECK
-    g_fwu_cmd_received = false;
-    g_fwu_copy_new_image = false;
-    g_fwu_start_time = TICKS_TO_MS(hal_sys_timer_get());
-    /* Bare metal: the CMSIS-RTOS osTimer needs the RTOS kernel, which the
-       programmer does not have. Use the HW timer instead.
-       One-shot: fires once after 2 minutes, unless cancelled by the first
-       UART RX activity. */
-    hal_user_timer0_setup(HAL_TIMER_TYPE_PERIODIC, fwu_nop_check_timer_handler);
-    hal_user_timer0_start(MS_TO_HWTICKS(1000000));
-#endif
-        
     if (is_ota_remap_enabled())
     {
        //return directly.
