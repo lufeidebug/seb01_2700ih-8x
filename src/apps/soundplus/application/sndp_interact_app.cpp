@@ -987,6 +987,7 @@ void sndp_sleep_comm_disconnect_timer_handler(void)
     }
     if(sndp_dev_sleep_app_get_heartrate_onoff(false)){
         sndp_sensor_service_stop_heartrate_local();
+        sndp_sleep_app_set_flag_onoff(SNDP_GESTURE_ONOFF_FLAG, false, 0x01, false);
     }
     if(sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE)){
         sndp_acc_notification_stop();
