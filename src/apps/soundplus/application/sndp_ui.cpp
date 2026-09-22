@@ -1562,6 +1562,11 @@ static void sndp_ui_mobile_disconnect_deal(uint32_t reason)
         return;
     }
 
+    /* 所有手机都断开了才播"蓝牙断开"提示音*/
+#ifdef MEDIA_PLAYER_SUPPORT
+    media_PlayAudio(AUD_ID_BT_DIS_CONNECT, 0);
+#endif
+
     if(!sndp_dev_cover_is_opened(false)) {
         return;
     }
@@ -1596,10 +1601,6 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
     
 	switch(conn_status) {
 		case SNDP_BT_CONN_STATUS_MOBILE_DISCONNECTED:
-			
-#ifdef MEDIA_PLAYER_SUPPORT            
-            media_PlayAudio(AUD_ID_BT_DIS_CONNECT, 0);
-#endif
             SPUI_TRACE(0, "mobile con_cnt=%d, con_sta=%d", 
                     sndp_get_connected_mobile_count(), 
                     sndp_is_master_mobile_link_connected());
@@ -1611,9 +1612,12 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
             
 		case SNDP_BT_CONN_STATUS_MOBILE_CONNECTED:
 			
-#ifdef MEDIA_PLAYER_SUPPORT            
-            media_PlayAudio(AUD_ID_BT_CONNECTED, 0);
-#endif			
+#ifdef MEDIA_PLAYER_SUPPORT
+            /* 只有第一台手机连上才播“已连接”。第二台、第三台连入时不播*/
+            if (sndp_get_connected_mobile_count() <= 1) {
+                media_PlayAudio(AUD_ID_BT_CONNECTED, 0);
+            }
+#endif
 			sndp_mobile_pairing_sccessful();
             sndp_mobile_reconnect_sccessful();
 
