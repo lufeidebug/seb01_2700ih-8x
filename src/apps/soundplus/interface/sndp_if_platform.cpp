@@ -174,6 +174,11 @@ void sndp_pmu_shutdown(void)
     pmu_shutdown();
 }
 
+void sndp_set_is_shutting_down(uint8_t flag)
+{
+    sndp_is_shutting_down = flag;
+}
+
 uint8_t sndp_get_is_shutting_down(void)
 {
 		return sndp_is_shutting_down;

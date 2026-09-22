@@ -420,6 +420,17 @@ extern void app_rbplay_audio_reset_pause_status(void);
 #endif
 
 uint8_t  app_poweroff_flag = 0;
+static uint8_t app_reboot_flag = 0;
+
+void app_set_reboot_in_progress(uint8_t flag)
+{
+    app_reboot_flag = flag;
+}
+
+uint8_t app_is_reboot_in_progress(void)
+{
+    return app_reboot_flag;
+}
 static enum APP_POWERON_CASE_T g_pwron_case = APP_POWERON_CASE_INVALID;
 
 #ifndef BESUI_STEREO_EN
@@ -988,6 +999,11 @@ void app_start_postponed_reset(void)
 #ifdef BESUI_TWS_EN
     customer_ui_timer_delete();
 #endif
+#if defined(__SNDP_PROJ__)
+    /* OTA 复位从这里开始，到真正断链还有 2s。提前置位，
+     * 两边的断连/关机/配对提示音都进不了队列。不调用 sndp_app_shutdown()。 */
+    sndp_set_is_shutting_down(1);
+#endif
     if (NULL == app_postponed_reset_timer)
     {
         app_postponed_reset_timer = osTimerCreate(osTimer(APP_POSTPONED_RESET_TIMER), osTimerOnce, NULL);
@@ -1542,6 +1558,11 @@ int app_deinit(int deinit_case)
         app_anc_assist_deinit();
 #endif
         app_poweroff_flag = 1;
+#if defined(__SNDP_PROJ__)
+        /* 正常关机从这里开始挡断连提示音。OTA 复位在 app_start_postponed_reset()
+         * 里已经置过，这里再置一次无副作用。不走 sndp_app_shutdown()。 */
+        sndp_set_is_shutting_down(1);
+#endif
 #if defined(APP_LINEIN_A2DP_SOURCE)
         app_audio_sendrequest(APP_A2DP_SOURCE_LINEIN_AUDIO, (uint8_t)APP_BT_SETTING_CLOSE,0);
 #endif
@@ -1601,16 +1622,23 @@ int app_deinit(int deinit_case)
 #endif
 #ifndef BESUI_STEREO_EN
 #ifdef MEDIA_PLAYER_SUPPORT
-        media_PlayAudio_standalone_locally(AUD_ID_POWER_OFF, 0);
+        /* OTA/复位不播关机音，避免和断链、TWS 重建抢队列。正常关机仍播。 */
+        if (!app_is_reboot_in_progress())
+        {
+            media_PlayAudio_standalone_locally(AUD_ID_POWER_OFF, 0);
+            /* 固定 1s 会在关机音还没开播或没播完时就 af_close()。
+             * 这里等到真正播完，超时仍继续关机，避免卡死。 */
+            if (!app_prompt_wait_power_off_done(3000))
+            {
+                osDelay(200);
+            }
+        }
 #endif
 #endif
 
 #ifdef BESUI_COMM_EN
         uictl.poweroff_start_flag = 1;
         MAIN_TRACE(1,"[UIAPP]%s, uictl.poweroff_start_flag3 = %d",__func__, uictl.poweroff_start_flag);
-#endif
-#ifndef BESUI_STEREO_EN
-        osDelay(1000);
 #endif
 #endif
         af_close();

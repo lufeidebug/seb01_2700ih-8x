@@ -260,6 +260,12 @@ void app_prompt_stop_all(void);
 
 void app_prompt_flush_pending_prompts(void);
 
+/* 关机/复位前等待关机提示音真正播完。只看播放状态，不改队列。 */
+bool app_prompt_wait_power_off_done(uint32_t timeout_ms);
+
+/* TWS 断链时清掉从耳等主耳同步的挂起请求，避免占住后续本地提示音。 */
+void app_prompt_abort_pending_sync(void);
+
 void media_playAudio_set_continous_prompt_env(AUD_ID_ENUM id);
 
 typedef enum

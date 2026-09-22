@@ -119,6 +119,8 @@
 #if defined(__SNDP_UI__)
 #include "sndp_if_device.h"
 #include "sndp_if_platform.h"
+#include "apps.h"
+extern uint8_t app_poweroff_flag;
 #if defined(__SNDP_FINDME__)
 #include "sndp_comm_cmd.h"
 #include "sndp_interact_app.h"
@@ -1214,7 +1216,9 @@ void media_PlayAudio(AUD_ID_ENUM id,uint8_t device_id)
         return;
     }
 #endif
-    if(sndp_get_is_shutting_down() && (id != AUD_ID_POWER_OFF))
+    /* 正常关机仍允许 POWER_OFF。OTA 复位两边都不播断连和关机音。 */
+    if(sndp_get_is_shutting_down() &&
+        ((id != AUD_ID_POWER_OFF) || app_is_reboot_in_progress() || app_poweroff_flag == 0))
     {
         AUDIO_BT_TRACE(1,"[UIAPP]%s, is shutting down",__func__);
         return;
@@ -3627,6 +3631,15 @@ void app_prompt_list_clear_specific_prompt(uint8_t deviceId, uint16_t promptId)
 
 void app_prompt_forward_play_handler(APP_PROMPT_PLAY_REQ_TYPE_E prompt_type, AUD_ID_ENUM voicePrompt, uint8_t dev_id)
 {
+#if defined(__SNDP_PROJ__)
+    /* 对耳转发不经过 media_PlayAudio()。复位期间丢掉，避免另一只耳朵仍播断连音。 */
+    if (sndp_get_is_shutting_down() &&
+        ((voicePrompt != AUD_ID_POWER_OFF) || app_is_reboot_in_progress() || app_poweroff_flag == 0))
+    {
+        AUDIO_BT_TRACE(0, "drop peer prompt 0x%x while shutting down", voicePrompt);
+        return;
+    }
+#endif
     AUDIO_BT_TRACE(0, "voicePrompt %x app_prompt_wait_forward_play_id %x", voicePrompt, app_prompt_wait_forward_play_id);
     if (app_prompt_wait_forward_play_id != AUD_ID_INVALID)
     {
@@ -3836,6 +3849,43 @@ void app_prompt_flush_pending_prompts(void)
             break;
         }
     }
+}
+
+bool app_prompt_wait_power_off_done(uint32_t timeout_ms)
+{
+    uint32_t waited_ms = 0;
+
+    while (waited_ms < timeout_ms)
+    {
+        if (!app_prompt_is_on_going && (app_prompt_list_begin(app_prompt_list) == NULL))
+        {
+            return true;
+        }
+        osDelay(APP_PROMPT_FLUSH_CHECK_INTERVAL_MS);
+        waited_ms += APP_PROMPT_FLUSH_CHECK_INTERVAL_MS;
+    }
+
+    AUDIO_BT_TRACE(0, "wait power off prompt timeout, on_going %d", app_prompt_is_on_going);
+    return false;
+}
+
+void app_prompt_abort_pending_sync(void)
+{
+    if (!app_prompt_is_on_going)
+    {
+        return;
+    }
+
+    if ((app_prompt_on_going_prompt_id != AUD_ID_INVALID) &&
+        (app_prompt_on_going_prompt_id != AUD_ID_BT_DIS_CONNECT))
+    {
+        return;
+    }
+
+    AUDIO_BT_TRACE(0, "abort pending sync prompt 0x%x", app_prompt_on_going_prompt_id);
+    app_prompt_stop_wait_master_sync_play_req_timer();
+    app_prompt_stop_wait_slave_play_req_timer();
+    app_prompt_inform_completed_event();
 }
 
 static void app_prompt_clear_non_continuous_prompt(void)

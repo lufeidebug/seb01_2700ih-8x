@@ -253,6 +253,7 @@ uint8_t *sndp_get_nvrecord_bt_peer_address(void);
 
 int sndp_language_switch_handler(int new_lan);
 void sndp_bt_switch(bool onoff, bool sync);
+void sndp_set_is_shutting_down(uint8_t flag);
 uint8_t sndp_get_is_shutting_down(void);
 uint8_t sndp_get_shutdown_reason_is_charging_full(void);
 uint8_t sndp_get_shutdown_reset_flag(void);

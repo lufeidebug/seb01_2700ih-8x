@@ -1656,6 +1656,11 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			break;
 
 		case SNDP_BT_CONN_STATUS_TWS_DISCONNECTED:
+			/* 从耳等主耳同步时链路被拆掉，主耳不会再发开始播放。
+			 * 只清这类挂起等待，已经在播的提示音不动。 */
+#ifdef MEDIA_PLAYER_SUPPORT
+			app_prompt_abort_pending_sync();
+#endif
 			sndp_update_audio_channel(false);
 			sndp_dev_clear_device_info(true);
 

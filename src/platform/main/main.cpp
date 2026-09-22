@@ -147,6 +147,8 @@ extern "C" int system_shutdown(void)
 
 extern "C" int system_reset(void)
 {
+    /* 先于 signal 置位，app_deinit() 里不再播关机提示音。 */
+    app_set_reboot_in_progress(1);
     osThreadSetPriority(main_thread_tid, osPriorityRealtime);
     osSignalSet(main_thread_tid, 0x8);
     return 0;

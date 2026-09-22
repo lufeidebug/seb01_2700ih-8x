@@ -84,6 +84,10 @@ void app_start_ota_language_reset(void);
 
 bool app_is_power_off_in_progress(void);
 
+/* system_reset() 置位。app_deinit() 据此跳过复位场景的关机提示音，正常关机不受影响。 */
+void app_set_reboot_in_progress(uint8_t flag);
+uint8_t app_is_reboot_in_progress(void);
+
 #define CHIP_ID_C     1
 #define CHIP_ID_D     2
 
