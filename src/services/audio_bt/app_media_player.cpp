@@ -1210,7 +1210,11 @@ void media_PlayAudio(AUD_ID_ENUM id,uint8_t device_id)
 
 #if defined(__SNDP_PROJ__)
 #if defined(__SNDP_SLEEP_APP__)
-    if(!sndp_dev_sleep_app_get_prompt_onoff(false))
+    /* 睡眠模式静音的统一拦截在 app_prompt_push_request()，这里提前返回可少走一次 TWS 转发。
+     * MUTE 只用于打断/清空提示音队列、本身不发声，需放行到 push 处生效。 */
+    if((AUDIO_ID_BT_MUTE != id) &&
+       (sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP) ||
+        !sndp_dev_sleep_app_get_prompt_onoff(false)))
     {
         AUDIO_BT_TRACE(1,"[UIAPP]%s, prompt is off",__func__);
         return;
@@ -3552,9 +3556,46 @@ void app_prompt_list_init(void)
 static void app_prompt_clear_prompt_list(void);
 static void app_prompt_clear_non_continuous_prompt(void);
 
+#if defined(__SNDP_PROJ__) && defined(__SNDP_UI__) && defined(__SNDP_SLEEP_APP__)
+/* 睡眠模式静音判定。
+ * 睡眠耳机进入睡眠工作模式后不应被任何提示音打扰，而 media_PlayAudio() 只覆盖了
+ * 其中一条路径，media_PlayAudio_locally/standalone/remotely/single_play、对耳转发
+ * 以及 TWS 同步请求都绕过了它。这里在所有提示音请求的统一收口 app_prompt_push_request()
+ * 处拦截，保证睡眠工作模式期间无任何提示音（进入睡眠的切换音同样被拦下）。
+ * 例外：AUDIO_ID_BT_MUTE 只用于清空提示音队列，本身不发声。 */
+static bool app_prompt_is_muted(AUD_ID_ENUM id)
+{
+    if (AUDIO_ID_BT_MUTE == id)
+    {
+        return false;
+    }
+
+    if (sndp_dev_is_working_mode(SNDP_DEV_WORKING_MODE_SLEEP))
+    {
+        return true;
+    }
+
+    /* 睡眠 App 内提示音开关关闭时同样静音（沿用原有语义） */
+    if (!sndp_dev_sleep_app_get_prompt_onoff(false))
+    {
+        return true;
+    }
+
+    return false;
+}
+#endif
+
 void app_prompt_push_request(APP_PROMPT_PLAY_REQ_TYPE_E reqType,
     AUD_ID_ENUM id, uint8_t device_id, bool isLocalPlaying)
 {
+#if defined(__SNDP_PROJ__) && defined(__SNDP_UI__) && defined(__SNDP_SLEEP_APP__)
+    if (app_prompt_is_muted(id))
+    {
+        AUDIO_BT_TRACE(1, "[UIAPP]%s, drop prompt 0x%x (sleep mode muted)", __func__, id);
+        return;
+    }
+#endif
+
     APP_PROMPT_PLAY_REQ_T req;
     req.deviceId = device_id;
     req.promptId = (uint32_t)id;

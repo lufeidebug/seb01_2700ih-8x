@@ -8,6 +8,7 @@
 #include "sndp_if_common.h"
 #include "sndp_heart_rate.h"
 #include "sndp_ui.h"
+#include "app_media_player.h"
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
 #include "sndp_sleep_role_switch.h"
@@ -128,6 +129,13 @@ void sndp_sensor_service_enter_sleep_mode_local(int32_t sleep_control)
     /* Flag: both Primary and Secondary set these (keep state consistent) */
     sndp_dev_sleep_app_set_stage_onoff(false, 0x01);
     sndp_ui_working_mode_sleep_app_set(SNDP_DEV_WORKING_MODE_SLEEP);
+
+#ifdef MEDIA_PLAYER_SUPPORT
+    /* 睡眠模式下不允许有任何提示音：新请求由 app_prompt_push_request() 统一拦截，
+     * 这里补上进入睡眠瞬间"已经在播/已排队"的残留提示音。 */
+    app_prompt_stop_all();
+#endif
+
 #if defined(__SNDP_HEART_RATE_MGR__)
     sndp_hr_set_sleep_control(sleep_control);
 #endif
