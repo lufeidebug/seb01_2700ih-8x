@@ -54,14 +54,24 @@
 
 
 typedef struct{
+#if defined(__SNDP_TOTA_SPP_MULTI_DEVICE__)
+    bool isConnected[BT_DEVICE_NUM];
+    bt_spp_channel_t *pSppDevice[BT_DEVICE_NUM];
+#else
     bool isConnected;
     bt_spp_channel_t *pSppDevice;
+#endif
     const tota_callback_func_t *callBack;
 }tota_spp_ctl_t;
 
 static tota_spp_ctl_t tota_spp_ctl = {
+#if defined(__SNDP_TOTA_SPP_MULTI_DEVICE__)
+    .isConnected    = {false},
+    .pSppDevice     = {NULL},
+#else
     .isConnected    = false,
     .pSppDevice     = NULL,
+#endif
     .callBack       = NULL,
 };
 
@@ -226,10 +236,22 @@ static int spp_tota_callback(const bt_bdaddr_t *remote, bt_spp_event_t event, bt
 {
     switch (event)
     {
-    case BT_SPP_EVENT_OPENED:
+    case BT_SPP_EVENT_OPENED: {
         TOTA_V2_TRACE(0, "spp_tota_callback v2 ::BTIF_SPP_EVENT_REMDEV_CONNECTED");
+#if defined(__SNDP_TOTA_SPP_MULTI_DEVICE__)
+        if (param == NULL || param->device_id >= BT_DEVICE_NUM) {
+            break;
+        }
+        bool wasConnected = false;
+        for (uint8_t i = 0; i < BT_DEVICE_NUM; ++i) {
+            wasConnected |= tota_spp_ctl.isConnected[i];
+        }
+        tota_spp_ctl.isConnected[param->device_id] = true;
+        tota_spp_ctl.pSppDevice[param->device_id] = param->spp_chan;
+#else
         tota_spp_ctl.isConnected = true;
         tota_spp_ctl.pSppDevice = param->spp_chan;
+#endif
 #if defined(OTA_OVER_TOTA_ENABLED)
         bes_ota_event_param_t otaParam;
         otaParam.pathType = DATA_PATH_SPP;
@@ -239,30 +261,62 @@ static int spp_tota_callback(const bt_bdaddr_t *remote, bt_spp_event_t event, bt
 #endif
 #if defined(__SNDP_COMM_SPP_USE_OTA_CHANNEL__)
         sndp_comm_spp_set_connect_sta(true);
-#endif        
-
-        if (tota_spp_ctl.callBack->connected_cb)
-        {
+#endif
+#if defined(__SNDP_TOTA_SPP_MULTI_DEVICE__)
+        if (!wasConnected && tota_spp_ctl.callBack->connected_cb) {
+#else
+        if (tota_spp_ctl.callBack->connected_cb) {
+#endif
             tota_spp_ctl.callBack->connected_cb();
         }
         break;
-    case BT_SPP_EVENT_CLOSED:
+    }
+    case BT_SPP_EVENT_CLOSED: {
         TOTA_V2_TRACE(0, "spp_tota_callback v2 ::BTIF_SPP_EVENT_REMDEV_DISCONNECTED");
+#if defined(__SNDP_TOTA_SPP_MULTI_DEVICE__)
+        if (param == NULL || param->device_id >= BT_DEVICE_NUM) {
+            break;
+        }
+#if defined(OTA_OVER_TOTA_ENABLED) && defined(__SNDP_TOTA_SPP_MULTI_DEVICE__)
+        bt_spp_channel_t *closedChannel = tota_spp_ctl.pSppDevice[param->device_id];
+#endif
+        tota_spp_ctl.isConnected[param->device_id] = false;
+        tota_spp_ctl.pSppDevice[param->device_id] = NULL;
+        bool anyConnected = false;
+        for (uint8_t i = 0; i < BT_DEVICE_NUM; ++i) {
+            anyConnected |= tota_spp_ctl.isConnected[i];
+        }
+#else
         tota_spp_ctl.isConnected = false;
+#endif
 #if defined(OTA_OVER_TOTA_ENABLED)
+        bes_ota_event_param_t otaParam;
         otaParam.pathType = DATA_PATH_SPP;
+#if defined(__SNDP_TOTA_SPP_MULTI_DEVICE__)
+        if (closedChannel != NULL) {
+            memcpy(otaParam.param.address, (uint8_t*)&closedChannel->remote, sizeof(otaParam.param.address));
+        }
+#endif
         otaParam.event = BES_OTA_DISCONN;
         app_ota_push_rx_data(SPP_RX_DATA_SELF_OTA_OVER_TOTA, &otaParam);
 #endif
+#if defined(__SNDP_TOTA_SPP_MULTI_DEVICE__)
 #if defined(__SNDP_COMM_SPP_USE_OTA_CHANNEL__)
-        sndp_comm_spp_set_connect_sta(false);
-#endif 
-
-        if (tota_spp_ctl.callBack->disconnected_cb)
-        {
+        sndp_comm_spp_set_connect_sta(anyConnected);
+#endif
+        if (!anyConnected && tota_spp_ctl.callBack->disconnected_cb) {
             tota_spp_ctl.callBack->disconnected_cb();
         }
+#else
+#if defined(__SNDP_COMM_SPP_USE_OTA_CHANNEL__)
+        sndp_comm_spp_set_connect_sta(false);
+#endif
+        if (tota_spp_ctl.callBack->disconnected_cb) {
+            tota_spp_ctl.callBack->disconnected_cb();
+        }
+#endif
         break;
+    }
     case BT_SPP_EVENT_TX_DONE:
         TOTA_V2_TRACE(0, "spp_tota_callback v2 ::BTIF_SPP_EVENT_DATA_SENT");
         //osSemaphoreRelease(tota_spp_ctl.txSem);
@@ -290,18 +344,22 @@ void app_spp_tota_init(const tota_callback_func_t *tota_callback_func)
 
     bta_spp_set_callback(RFCOMM_CHANNEL_TOTA, TOTA_RX_BUF_SIZE, spp_tota_callback, NULL);
 
-    bt_adapter_spp_listen(RFCOMM_CHANNEL_TOTA, false, NULL);
+#if defined(__SNDP_TOTA_SPP_MULTI_DEVICE__)
+    bt_adapter_spp_listen(RFCOMM_CHANNEL_TOTA, true, NULL);
 
+    for (uint8_t device_id = 0; device_id < BT_DEVICE_NUM; ++device_id) {
+        tota_spp_ctl.pSppDevice[device_id] = bta_spp_create_channel(device_id, RFCOMM_CHANNEL_TOTA);
+    }
+#else
+    bt_adapter_spp_listen(RFCOMM_CHANNEL_TOTA, false, NULL);
     tota_spp_ctl.pSppDevice = bta_spp_create_channel(BT_DEVICE_ID_1, RFCOMM_CHANNEL_TOTA);
+#endif
 }
 
 /* this func is safe in thread */
 bool app_spp_tota_send_data(uint8_t* ptrData, uint16_t length)
 {
-    if (!tota_spp_ctl.isConnected)
-    {
-        return false;
-    }
+    bool sent = false;
 
     /**
      * app_spp_tota_send_data may be called in bt thread, as same the thread who
@@ -312,8 +370,20 @@ bool app_spp_tota_send_data(uint8_t* ptrData, uint16_t length)
      */
 
     TOTA_V2_TRACE(1, "spp tx:%d", length);
-    bool ret = bta_spp_send_data(tota_spp_ctl.pSppDevice->rfcomm_handle, ptrData, length);
-    return ret;
+#if defined(__SNDP_TOTA_SPP_MULTI_DEVICE__)
+    for (uint8_t i = 0; i < BT_DEVICE_NUM; ++i) {
+        bt_spp_channel_t *channel = tota_spp_ctl.pSppDevice[i];
+        if (!tota_spp_ctl.isConnected[i] || channel == NULL || channel->rfcomm_handle == 0) {
+            continue;
+        }
+        sent |= bta_spp_send_data(channel->rfcomm_handle, ptrData, length);
+    }
+#else
+    if (tota_spp_ctl.isConnected) {
+        sent = bta_spp_send_data(tota_spp_ctl.pSppDevice->rfcomm_handle, ptrData, length);
+    }
+#endif
+    return sent;
 }
 
 #if defined(__SNDP_COMM_SPP_USE_OTA_CHANNEL__)
