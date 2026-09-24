@@ -107,7 +107,7 @@ static uint32_t da217e_acc_samples_duration = 0;
 
 int32_t da217e_reg_write(uint8_t reg, uint8_t val)
 {
-    if(da217e_drv_if.i2c_read) {
+    if(da217e_drv_if.i2c_write_byte) {
         return da217e_drv_if.i2c_write_byte(DA217E_I2C_SLAVE_ADDR, reg, val);
     }
 
@@ -428,10 +428,11 @@ void da217e_drv_deal_tap_interruption(void)
         }
 #else
         uint32_t tap_time = TICKS_TO_MS(hal_sys_timer_get());
-        if(tap_time - sndp_da217e_tap_time > 100) {
+        if(tap_time - sndp_da217e_tap_time > 50) {
             sndp_da217e_tap_time = tap_time;
             
-            if(da217e_tap_cnt >= 3) {
+
+            if(da217e_tap_cnt >= 5) {
                return;
             }
             da217e_tap_cnt++;
@@ -445,8 +446,10 @@ void da217e_drv_deal_tap_interruption(void)
                 osTimerStart(da217_tap_timer, 700);
             } else  if(2 == da217e_tap_cnt) {
                 osTimerStart(da217_tap_timer, 600);
+            } else if(3 == da217e_tap_cnt) {
+                osTimerStart(da217_tap_timer, 600);
             } else {
-                osTimerStart(da217_tap_timer, 300);
+                osTimerStart(da217_tap_timer, 500);
             }
         }
         

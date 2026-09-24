@@ -113,7 +113,7 @@ static void da217e_tap_event(uint8_t tap_cnt)
     DA217E_TRACE(1, "tap_cnt=%d", tap_cnt);
 #if defined(__SNDP_GESTURE_MGR__)    
     if(da217e_gesture_event_cb_ptr) {
-        if(tap_cnt <= 3) {
+        if(tap_cnt <= 5) {
             da217e_gesture_event_cb_ptr((sndp_hal_gesture_event_e)(SNDP_HAL_GESTURE_EVENT_1_CLICK + tap_cnt - 1));
         }
     }
