@@ -42,7 +42,7 @@ const unsigned char g_ss_ppg_init_register_ssh202[][2] = {
 // #define SS_PPG_INIT_PARAM_20260424
 #define SS_PPG_INIT_PARAM_20260511
 #define SS_PPG_INIT_PARAM_20260721
-
+#define SS_PPG_INIT_PARAM_20260924
 /**
  * @brief SSH401 initial register settings
  *
@@ -177,9 +177,13 @@ const unsigned char g_ss_ppg_init_register_ssh401[][2] = {
 
     // DAC Range setting
     {REG_SEQ0_DAC_RANGE, 0x02},  // ADAC=6.38uA, DDAC=220uA
+#if defined(SS_PPG_INIT_PARAM_20260924)
+    {REG_SEQ1_DAC_RANGE, 0x30},  // ADAC=25.5uA, DDAC=220uA
+    {REG_DDAC_CO_FI_SEL, 0x00},  // ADAC=25.5uA, DDAC=220uA
+#else
     {REG_SEQ1_DAC_RANGE, 0x32},  // ADAC=25.5uA, DDAC=220uA
     {REG_DDAC_CO_FI_SEL, 0x02},  // ADAC=25.5uA, DDAC=220uA
-
+#endif
     // Hidden register settings
     {REG_H_TIA_GAIN, 0x63},      // SEQ0 TIA Gain=400Kohm (x16)
     {REG_H_INT_GAIN, 0x35},      // SEQ0 INT Gain=50Kohm/16pF
