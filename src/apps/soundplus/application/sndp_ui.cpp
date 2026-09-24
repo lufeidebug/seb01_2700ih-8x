@@ -1681,18 +1681,17 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			sndp_update_audio_channel(true);
             sndp_ui_all_status_sync_send();
 
+#if defined(__SNDP_COMM_BLE_ADV_SET__)
+            sndp_delay_exec_start(50, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+#endif
+
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
             /* 新架构: TWS 连接后, 根据 TWS 主从确定 primary/secondary.
              * master → primary (ACTIVE), slave → secondary (STANDBY).*/
             SPUI_TRACE(0, "TWS connected, determine role by TWS master/slave");
-            sndp_sleep_role_switch_on_bt_role_change();
+            sndp_delay_exec_start(100, (uint32_t)sndp_sleep_role_switch_on_bt_role_change, 0, 0, 0);
 #endif
-
-#if defined(__SNDP_COMM_BLE_ADV_SET__)
-			sndp_master_send_ble_public_addr();
-            sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
-#endif
-          
+			sndp_delay_exec_start(300, (uint32_t)sndp_update_audio_channel, true, 0, 0);
 			break;
 
 		case SNDP_BT_CONN_STATUS_A2DP_DISCONNECTED:
