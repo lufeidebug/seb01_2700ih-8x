@@ -135,6 +135,7 @@ static uint16_t sndp_temp_ntc_conver_volt_to_temperature(void)
 	if(sndp_ntc_ctx.voltage > SNDP_NTC_REF_VOLTAGE || sndp_ntc_ctx.voltage == 0) {
 		/* invalid data */
 		sndp_ntc_ctx.curr_temp = 99;
+        TEMP_NTC_TRACE(0, "volt invalid, V=%d", sndp_ntc_ctx.voltage);
 	}  else {
 
 		/* convert voltage to resistence */
@@ -147,9 +148,9 @@ static uint16_t sndp_temp_ntc_conver_volt_to_temperature(void)
 				break;
 			}
 		}
-	}
 
-	TEMP_NTC_TRACE(3, "volt=%d, lT=%d, cT=%d,", sndp_ntc_ctx.voltage, sndp_ntc_ctx.last_temp, sndp_ntc_ctx.curr_temp);
+        TEMP_NTC_TRACE(0, "V=%d, R=%d, lT=%d, cT=%d,", sndp_ntc_ctx.voltage, resistence, sndp_ntc_ctx.last_temp, sndp_ntc_ctx.curr_temp);
+	}
 	
 	/* Report temperature after measurement */
 	//if(sndp_ntc_ctx.curr_temp != sndp_ntc_ctx.last_temp) {
