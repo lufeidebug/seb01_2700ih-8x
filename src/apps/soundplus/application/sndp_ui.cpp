@@ -1962,10 +1962,12 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
 
 void sndp_ui_timing_to_do(void)
 {
-	sndp_ui_dev_status_print();
-
-    sndp_delay_exec_start(10, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
- 	sndp_delay_exec_start(20, (uint32_t)sndp_dev_temperature_measure, 0, 0, 0);
+    if(sndp_call_is_active()) {
+         sndp_delay_exec_start(10, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
+    } else {
+        sndp_ui_dev_status_print();
+ 	    sndp_delay_exec_start(20, (uint32_t)sndp_dev_temperature_measure, 0, 0, 0);
+    }
     sndp_ui_bat_charging_check();
     sndp_ui_bat_lowpwr_check();
 
