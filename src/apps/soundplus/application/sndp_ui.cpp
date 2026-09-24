@@ -1700,8 +1700,12 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
             
 		case SNDP_BT_CONN_STATUS_A2DP_CONNECTED:
 #ifdef MEDIA_PLAYER_SUPPORT
-            /* A2DP 建链完成后再播，错开 profile/NV 高峰。只有第一台手机连上才播。 */
-            if (sndp_get_connected_mobile_count() <= 1) {
+            /* A2DP 建链完成后再播，错开 profile/NV 高峰。
+             * 1) 只有第一台手机连上才播（第二、三台连入不播）；
+             * 2) TWS 已连接时只由主耳播：对耳开盖回连会经 TWS profile 同步
+             *    收到同样的 A2DP connected，从耳若也播会再响一遍"已连接"。 */
+            if ((sndp_get_connected_mobile_count() <= 1) &&
+                !(sndp_is_tws_link_connected() && sndp_is_tws_slave_mode())) {
                 sndp_delay_exec_start(100, (uint32_t)media_PlayAudio, AUD_ID_BT_CONNECTED, 0, 0);
             }
 #endif
