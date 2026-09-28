@@ -34,6 +34,11 @@ typedef enum {
 typedef void (*sndp_call_func_ptr)(uint32_t param0, uint32_t param1, uint32_t param2);
 
 void sndp_delay_exec_start(uint32_t delay_ms, uint32_t ptr, uint32_t param0, uint32_t param1, uint32_t param2);
+/* Same as sndp_delay_exec_start(), but the callback is posted to app thread and
+ * the delay thread only does the timing. Use it when the callback touches state
+ * owned by app thread (e.g. the UI state machine), so that the callback stays
+ * serialized with other app thread work. */
+void sndp_delay_exec_start_in_app(uint32_t delay_ms, uint32_t ptr, uint32_t param0, uint32_t param1, uint32_t param2);
 void sndp_delay_exec_stop(uint32_t ptr);
 void sndp_call_func_in_dev_thread(uint32_t ptr, uint32_t param0, uint32_t param1, uint32_t param2);
 void sndp_call_func_in_app_thread(uint32_t ptr, uint32_t param0, uint32_t param1, uint32_t param2);

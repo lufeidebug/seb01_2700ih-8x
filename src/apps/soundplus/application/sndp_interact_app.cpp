@@ -180,7 +180,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_find_my_earphone(sleep_a
         0x01：stop
     */
     INTERACT_APP_TRACE(0, "findme earphone = %d",cmd_info->value[0]);
-    sndp_delay_exec_start(100, (uint32_t)sndp_findme_loop_handler,cmd_info->value[0],0,0);
+    sndp_delay_exec_start_in_app(100, (uint32_t)sndp_findme_loop_handler,cmd_info->value[0],0,0);
 
     cmd_info->value[0] = 0;
     sndp_sleep_comm_main_rsp_cmd(cmd_info);
@@ -971,7 +971,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app
     // if(sndp_comm_ble_get_conn_type() == SNDP_COMM_CONN_TYPE_BLE) {
     //     memset(sleep_tracking_sync_buff, 0, sizeof(sleep_tracking_sync_buff));
     //     memcpy(sleep_tracking_sync_buff, cmd_info->value, 211);
-    //     sndp_delay_exec_start(150,(uint32_t)sndp_comm_cmd_send_lr_sync_sleep_tracking, (uint32_t)&sleep_tracking_sync_buff[0], 211, 0);
+    //     sndp_delay_exec_start_in_app(150,(uint32_t)sndp_comm_cmd_send_lr_sync_sleep_tracking, (uint32_t)&sleep_tracking_sync_buff[0], 211, 0);
     // }
 #endif
     return 0;
@@ -1490,7 +1490,7 @@ static void sndp_findme_loop_handler(uint8_t onoff)
             sndp_findme_fadein_vol = TGT_VOLUME_LEVEL_16;
         }
     }
-    sndp_delay_exec_start(2800, (uint32_t)sndp_findme_loop_handler,0,0,0);
+    sndp_delay_exec_start_in_app(2800, (uint32_t)sndp_findme_loop_handler,0,0,0);
 }
 
 uint8_t sndp_get_findme_vol(void)

@@ -260,7 +260,7 @@ static void sndp_comm_spp_send_data_exec(void)
 
     if(comm_spp_ctx.is_sending) {
 		COMM_SPP_TRACE(0, "is_sending, delay exec");
-        sndp_delay_exec_start((uint32_t)100, (uint32_t)sndp_comm_spp_send_data_exec, 0, 0, 0);
+        sndp_delay_exec_start_in_app((uint32_t)100, (uint32_t)sndp_comm_spp_send_data_exec, 0, 0, 0);
 		return;
 	}
 
@@ -283,10 +283,10 @@ static void sndp_comm_spp_send_data_exec(void)
     ret = bta_spp_send_data(comm_spp_ctx.pSppDevice->rfcomm_handle, comm_spp_send_buf, send_len);
     if (ret) {
         //COMM_SPP_TRACE(0, "success");
-        sndp_delay_exec_start(100, (uint32_t)sndp_comm_spp_send_data_timeout, 0, 0, 0);
+        sndp_delay_exec_start_in_app(100, (uint32_t)sndp_comm_spp_send_data_timeout, 0, 0, 0);
     } else {
         COMM_SPP_TRACE(0, "fail");
-        sndp_delay_exec_start(10, (uint32_t)sndp_comm_spp_send_data_exec, 0, 0, 0);
+        sndp_delay_exec_start_in_app(10, (uint32_t)sndp_comm_spp_send_data_exec, 0, 0, 0);
     }
 }
 
@@ -372,7 +372,7 @@ static int sndp_comm_spp_server_callback(const bt_bdaddr_t *remote, bt_spp_event
     case BT_SPP_EVENT_TX_DONE:
         COMM_SPP_TRACE(0, "TX_DONE");
         sndp_delay_exec_stop((uint32_t)sndp_comm_spp_send_data_timeout);
-        sndp_delay_exec_start(10, (uint32_t)sndp_comm_spp_send_data_exec, 0, 0, 0);
+        sndp_delay_exec_start_in_app(10, (uint32_t)sndp_comm_spp_send_data_exec, 0, 0, 0);
         break;
     
     case BT_SPP_EVENT_RX_DATA:

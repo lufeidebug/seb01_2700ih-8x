@@ -158,7 +158,7 @@ void sndp_ui_sleep_anc_mode_off(void)
     sndp_delay_exec_stop((uint32_t) sndp_ui_working_mode_switch_tone);
     SPUI_TRACE(0, "BT_MODE_ANC");
     //Play prompt sound.
-    sndp_delay_exec_start(100, (uint32_t) sndp_ui_working_mode_switch_tone, AUD_ID_WORKING_MODE_BT, 0, 0);
+    sndp_delay_exec_start_in_app(100, (uint32_t) sndp_ui_working_mode_switch_tone, AUD_ID_WORKING_MODE_BT, 0, 0);
     sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
 #if defined(__SNDP_SLEEP_APP__)
     sndp_dev_sleep_app_running_anc_mode_set(false, SNDP_ANC_MODE_OFF, false);
@@ -170,8 +170,8 @@ void sndp_ui_sleep_anc_mode_on(void)
     sndp_delay_exec_stop((uint32_t) sndp_ui_working_mode_switch_tone);
     SPUI_TRACE(0, "SLEEP_MODE_ANC");
     //Play prompt sound.
-    sndp_delay_exec_start(100, (uint32_t) sndp_ui_working_mode_switch_tone, AUD_ID_WORKING_MODE_SLEEP, 0, 0);
-    sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
+    sndp_delay_exec_start_in_app(100, (uint32_t) sndp_ui_working_mode_switch_tone, AUD_ID_WORKING_MODE_SLEEP, 0, 0);
+    sndp_delay_exec_start_in_app(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
 #if defined(__SNDP_SLEEP_APP__)
     sndp_dev_sleep_app_running_anc_mode_set(false, sndp_anc_get_mode_index(), false);
 #endif
@@ -238,7 +238,7 @@ POSSIBLY_UNUSED static void sndp_ui_anc_switch(void)
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_ANC_ON, 0);
 #endif
-		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
+		sndp_delay_exec_start_in_app(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_anc_get_mode_index(), 0, 0);
 #if defined(__SNDP_SLEEP_APP__)
         sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, (sndp_anc_mode_e)sndp_anc_get_mode_index(), true);
 #endif
@@ -250,7 +250,7 @@ POSSIBLY_UNUSED static void sndp_ui_anc_switch(void)
 #ifdef MEDIA_PLAYER_SUPPORT        
 		media_PlayAudio(AUD_ID_TRANSPARENT, 0);
 #endif           
-		sndp_delay_exec_start(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_enc_get_mode_index(), 0, 0);
+		sndp_delay_exec_start_in_app(1500, (uint32_t)sndp_anc_mode_set, (uint32_t)sndp_enc_get_mode_index(), 0, 0);
 #if defined(__SNDP_SLEEP_APP__)
         sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, (sndp_anc_mode_e)sndp_enc_get_mode_index(), true);
 #endif
@@ -480,26 +480,26 @@ void sndp_sleep_app_suspend(sndp_sleep_app_op_user_e user)
 #if defined(__SNDP_HEART_RATE_MGR__)
         if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
             SPUI_TRACE(0, "suspend hr");
-            sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_suspend, user, 0, 0);
+            sndp_delay_exec_start_in_app(delay_time, (uint32_t)sndp_hr_suspend, user, 0, 0);
         }
         
         if(sndp_dev_sleep_app_get_stage_onoff(false)) {
             SPUI_TRACE(0, "suspend sleep analysis");
-            sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_analysis_suspend, 0, 0, 0);
+            sndp_delay_exec_start_in_app(delay_time, (uint32_t)sndp_sleep_analysis_suspend, 0, 0, 0);
         }
         /* BT模式: 仅挂起PPG/ACC原始数据上传流, 不涉及hr算法 */
         if(sndp_hr_is_ppg_enabled_check_every_user() && !sndp_dev_sleep_app_get_heartrate_onoff(false) &&
                                                !sndp_dev_sleep_app_get_stage_onoff(false))
         {
             SPUI_TRACE(0, "suspend ppg notification");
-            sndp_delay_exec_start(delay_time, (uint32_t)sndp_ppg_notification_suspend, user, 0, 0);
+            sndp_delay_exec_start_in_app(delay_time, (uint32_t)sndp_ppg_notification_suspend, user, 0, 0);
         }
 
         if(sndp_hr_is_acc_enabled_check_every_user() && !sndp_dev_sleep_app_get_heartrate_onoff(false) &&
                                                !sndp_dev_sleep_app_get_stage_onoff(false))
         {
             SPUI_TRACE(0, "suspend acc notification");
-            sndp_delay_exec_start(delay_time, (uint32_t)sndp_acc_notification_suspend, user, 0, 0);
+            sndp_delay_exec_start_in_app(delay_time, (uint32_t)sndp_acc_notification_suspend, user, 0, 0);
         }
 #endif
 }
@@ -535,24 +535,24 @@ void sndp_sleep_app_resume(sndp_sleep_app_op_user_e user)
 #if defined(__SNDP_HEART_RATE_MGR__)
         if(sndp_dev_sleep_app_get_heartrate_onoff(false)) {
             SPUI_TRACE(0, "resume hr");
-            sndp_delay_exec_start(delay_time, (uint32_t)sndp_hr_resume, user, 0, 0);
+            sndp_delay_exec_start_in_app(delay_time, (uint32_t)sndp_hr_resume, user, 0, 0);
         }
 
         if(sndp_dev_sleep_app_get_stage_onoff(false)) {
             SPUI_TRACE(0, "resume sleep analysis");
-            sndp_delay_exec_start(delay_time, (uint32_t)sndp_sleep_analysis_resume, 0, 0, 0);
+            sndp_delay_exec_start_in_app(delay_time, (uint32_t)sndp_sleep_analysis_resume, 0, 0, 0);
         }
         if(sndp_hr_is_ppg_enabled_check_every_user() && !sndp_dev_sleep_app_get_heartrate_onoff(false) &&
                                                !sndp_dev_sleep_app_get_stage_onoff(false))
         {
             SPUI_TRACE(0, "resume ppg notification");
-            sndp_delay_exec_start(delay_time, (uint32_t)sndp_ppg_notification_resume, user, 0, 0);
+            sndp_delay_exec_start_in_app(delay_time, (uint32_t)sndp_ppg_notification_resume, user, 0, 0);
         }
         if(sndp_hr_is_acc_enabled_check_every_user() && !sndp_dev_sleep_app_get_heartrate_onoff(false) &&
                                                !sndp_dev_sleep_app_get_stage_onoff(false))
         {
             SPUI_TRACE(0, "resume acc notification");
-            sndp_delay_exec_start(delay_time, (uint32_t)sndp_acc_notification_resume, user, 0, 0);
+            sndp_delay_exec_start_in_app(delay_time, (uint32_t)sndp_acc_notification_resume, user, 0, 0);
         }
 #endif
 }
@@ -563,24 +563,24 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 
 	if(remote == false) {
 		if(SNDP_DEV_WEAR_ON == wear_action) {	
-            sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds, 0, 0, 0);
-            sndp_delay_exec_start(300, (uint32_t)sndp_ui_wear_on_play_music, 0, 0, 0);
-			sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_role_switch, 0, 0, 0);  
+            sndp_delay_exec_start_in_app(200, (uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds, 0, 0, 0);
+            sndp_delay_exec_start_in_app(300, (uint32_t)sndp_ui_wear_on_play_music, 0, 0, 0);
+			sndp_delay_exec_start_in_app(500, (uint32_t)sndp_ui_wear_on_role_switch, 0, 0, 0);  
 
 #if defined(__SNDP_PRODUCT_TEST__)
             if(!sndp_pt_is_in_test_mode()) {
-                sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_open_anc, 0, 0, 0);
+                sndp_delay_exec_start_in_app(1000, (uint32_t)sndp_ui_wear_on_open_anc, 0, 0, 0);
             }
 #else
-            sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_open_anc, 0, 0, 0);
+            sndp_delay_exec_start_in_app(1000, (uint32_t)sndp_ui_wear_on_open_anc, 0, 0, 0);
 #endif
 
-            sndp_delay_exec_start(2000, (uint32_t)sndp_ui_wear_on_enable_gesture, 0, 0, 0);
+            sndp_delay_exec_start_in_app(2000, (uint32_t)sndp_ui_wear_on_enable_gesture, 0, 0, 0);
             sndp_sleep_app_resume(SLEEP_APP_OP_USER_WEAR);
 	    } else if(SNDP_DEV_WEAR_OFF == wear_action) {
-            sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_off_tone_switch_to_phone, 0, 0, 0);
+            sndp_delay_exec_start_in_app(200, (uint32_t)sndp_ui_wear_off_tone_switch_to_phone, 0, 0, 0);
 			sndp_ui_wear_off_stop_music();
-            sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_off_role_switch, 0, 0, 0);
+            sndp_delay_exec_start_in_app(500, (uint32_t)sndp_ui_wear_off_role_switch, 0, 0, 0);
 
 #if defined(__SNDP_PRODUCT_TEST__)
             if(!sndp_pt_is_in_test_mode()) {
@@ -603,7 +603,7 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
 		if(SNDP_DEV_WEAR_ON == wear_action) {		
 
 		} else if(SNDP_DEV_WEAR_OFF == wear_action) {
-			sndp_delay_exec_start(100, (uint32_t)sndp_ui_wear_off_stop_music, 0, 0, 0);	
+			sndp_delay_exec_start_in_app(100, (uint32_t)sndp_ui_wear_off_stop_music, 0, 0, 0);	
 		}
 	}
 }
@@ -632,7 +632,7 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 	if(SNDP_DEV_WEAR_ON == wear_status) {
         sndp_ui_wear_on_exec_delayed();
 		/* play wear prompt tone */
-		sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_play_tone, 0, 0, 0);
+		sndp_delay_exec_start_in_app(500, (uint32_t)sndp_ui_wear_on_play_tone, 0, 0, 0);
 
 	} else {
         if(!sndp_pt_click_test_is_opened()) {
@@ -698,7 +698,7 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 #endif
 
         /* 关盖拆链是异步的。开盖挡不住已经发出的拆链，先等盖子稳定再拆。 */
-        sndp_delay_exec_start(SNDP_UI_COVER_CLOSE_DEBOUNCE_MS, (uint32_t)sndp_ui_cover_close_commit, 0, 0, 0);
+        sndp_delay_exec_start_in_app(SNDP_UI_COVER_CLOSE_DEBOUNCE_MS, (uint32_t)sndp_ui_cover_close_commit, 0, 0, 0);
         
  #if defined(__BTIF_EARPHONE__)
         app_stop_10_second_timer(APP_PAIR_TIMER_ID);
@@ -799,9 +799,9 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         }
 #endif  
 
-        sndp_delay_exec_start(300, (uint32_t)sndp_ui_inbox_role_switch, 0, 0, 0);
+        sndp_delay_exec_start_in_app(300, (uint32_t)sndp_ui_inbox_role_switch, 0, 0, 0);
 
-        sndp_delay_exec_start(100, (uint32_t)sndp_dev_io_pmu_check_cover, 0, 0, 0);
+        sndp_delay_exec_start_in_app(100, (uint32_t)sndp_dev_io_pmu_check_cover, 0, 0, 0);
     
     } else {
         sndp_dev_io_pmu_check_cover();
@@ -809,7 +809,7 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
         bta_tws_box_event_entry(BTA_TWS_UNDOCK);
         sndp_dev_hr_enter_detection_mode();
 
-        sndp_delay_exec_start(300, (uint32_t)sndp_ui_outbox_role_switch, 0, 0, 0);
+        sndp_delay_exec_start_in_app(300, (uint32_t)sndp_ui_outbox_role_switch, 0, 0, 0);
     }
 }
 
@@ -1085,11 +1085,11 @@ void sndp_ui_charger_plug_status_changed(sndp_dev_charger_plug_e plug_status)
     SPUI_TRACE(0, "%s", (SNDP_DEV_CHARGER_PLUG_IN == plug_status) ? "PLUG_IN" : "PLUG_OUT");
 
     if(SNDP_DEV_CHARGER_PLUG_OUT == plug_status) {
-        sndp_delay_exec_start(100, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
+        sndp_delay_exec_start_in_app(100, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
     }
 
     if(SNDP_DEV_CHARGER_PLUG_UNKNOWN != plug_status) {
-        sndp_delay_exec_start(100, (uint32_t)sndp_dev_io_pmu_check_cover, 0, 0, 0);
+        sndp_delay_exec_start_in_app(100, (uint32_t)sndp_dev_io_pmu_check_cover, 0, 0, 0);
     }
 }
 
@@ -1500,7 +1500,7 @@ static void sndp_ui_bat_lowpwr_check(void)
                 SPUI_TRACE(0, "lowpwr, switch role before shutdown");
                 /* 新架构: 低电只触发 TWS 切换, primary/secondary 由 TWS 角色切换回调处理 */
                 sndp_ibrt_tws_switch();
-                sndp_delay_exec_start(1000, (uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_LOWPWR, 0, 0);
+                sndp_delay_exec_start_in_app(1000, (uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_LOWPWR, 0, 0);
             } else {
                 sndp_app_shutdown(SNDP_SHUTDOWN_REASON_LOWPWR);
             }
@@ -1595,7 +1595,7 @@ static void sndp_ui_mobile_disconnect_deal(uint32_t reason)
 
     /* 所有手机都断开了才播"蓝牙断开"提示音*/
 #ifdef MEDIA_PLAYER_SUPPORT
-        sndp_delay_exec_start(100, (uint32_t)media_PlayAudio, AUD_ID_BT_DIS_CONNECT, 0, 0);
+        sndp_delay_exec_start_in_app(100, (uint32_t)media_PlayAudio, AUD_ID_BT_DIS_CONNECT, 0, 0);
 #endif
 
     if(!sndp_dev_cover_is_opened(false)) {
@@ -1629,7 +1629,7 @@ static void sndp_ui_mobile_disconnect_deal(uint32_t reason)
 #endif
 
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
-    sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+    sndp_delay_exec_start_in_app(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
 #endif
 }
 
@@ -1645,7 +1645,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 
             /* 延迟 500ms 再决策（设备表此时已更新完成），避免用断连瞬间的
              * 残留计数做判断；重复断连事件会自动合并到同一次延迟回调 */
-            sndp_delay_exec_start(500, (uint32_t)sndp_ui_mobile_disconnect_deal, reason, 0, 0);
+            sndp_delay_exec_start_in_app(500, (uint32_t)sndp_ui_mobile_disconnect_deal, reason, 0, 0);
 			break;
             
 		case SNDP_BT_CONN_STATUS_MOBILE_CONNECTED:
@@ -1659,7 +1659,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			}
 
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
-                sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+                sndp_delay_exec_start_in_app(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
 #endif
 
 		break;
@@ -1716,7 +1716,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			}
       
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
-                sndp_delay_exec_start(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+                sndp_delay_exec_start_in_app(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
 #endif
 
 			break;
@@ -1726,16 +1726,16 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
             sndp_ui_all_status_sync_send();
 
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
-            sndp_delay_exec_start(50, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+            sndp_delay_exec_start_in_app(50, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
 #endif
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
             /* 新架构: TWS 连接后, 根据 TWS 主从确定 primary/secondary.
              * master → primary (ACTIVE), slave → secondary (STANDBY).*/
             SPUI_TRACE(0, "TWS connected, determine role by TWS master/slave");
-            sndp_delay_exec_start(100, (uint32_t)sndp_sleep_role_switch_on_bt_role_change, 0, 0, 0);
+            sndp_delay_exec_start_in_app(100, (uint32_t)sndp_sleep_role_switch_on_bt_role_change, 0, 0, 0);
 #endif
-			sndp_delay_exec_start(300, (uint32_t)sndp_update_audio_channel, true, 0, 0);
+			sndp_delay_exec_start_in_app(300, (uint32_t)sndp_update_audio_channel, true, 0, 0);
 			break;
 
 		case SNDP_BT_CONN_STATUS_A2DP_DISCONNECTED:
@@ -1749,7 +1749,7 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
              *    收到同样的 A2DP connected，从耳若也播会再响一遍"已连接"。 */
             if ((sndp_get_connected_mobile_count() <= 1) &&
                 !(sndp_is_tws_link_connected() && sndp_is_tws_slave_mode())) {
-                sndp_delay_exec_start(100, (uint32_t)media_PlayAudio, AUD_ID_BT_CONNECTED, 0, 0);
+                sndp_delay_exec_start_in_app(100, (uint32_t)media_PlayAudio, AUD_ID_BT_CONNECTED, 0, 0);
             }
 #endif
 			break;
@@ -1865,14 +1865,14 @@ static void sndp_ui_bt_event_exec_after_power_on(void)
 
         sndp_ui_pairing_type_set(SNDP_UI_PAIRING_NONE);
         sndp_start_freeman_pairing();
-        sndp_delay_exec_start(100, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
+        sndp_delay_exec_start_in_app(100, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
        
     } else if (sndp_ui_pairing_type_is(SNDP_UI_PAIRING_TWS)) {
         SPUI_TRACE(0, "force tws pairing");
         
         sndp_ui_pairing_type_set(SNDP_UI_PAIRING_NONE);
         sndp_enter_mobile_pairing_after_tws_connected();
-        sndp_delay_exec_start(300, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
+        sndp_delay_exec_start_in_app(300, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
         
     } else {
         if(sndp_get_mobile_pairing_count() > 0) {
@@ -1883,7 +1883,7 @@ static void sndp_ui_bt_event_exec_after_power_on(void)
         } else {
             SPUI_TRACE(0, "no paired record, tws pairing");
             
-            //sndp_delay_exec_start(300, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
+            //sndp_delay_exec_start_in_app(300, (uint32_t)media_PlayAudio, AUD_ID_BT_PAIRING, 0, 0);
             sndp_enter_mobile_pairing_after_tws_connected();
         }
     }
@@ -2010,10 +2010,10 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
 void sndp_ui_timing_to_do(void)
 {
     if(sndp_call_is_active()) {
-         sndp_delay_exec_start(10, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
+         sndp_delay_exec_start_in_app(10, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
     } else {
         sndp_ui_dev_status_print();
- 	    sndp_delay_exec_start(20, (uint32_t)sndp_dev_temperature_measure, 0, 0, 0);
+ 	    sndp_delay_exec_start_in_app(20, (uint32_t)sndp_dev_temperature_measure, 0, 0, 0);
     }
     sndp_ui_bat_charging_check();
     sndp_ui_bat_lowpwr_check();
@@ -2070,10 +2070,10 @@ void sndp_ui_init(void)
 #endif
 
 	sndp_ui_check_dev_initial_status();
-    //sndp_delay_exec_start(300, (uint32_t)sndp_ui_bt_event_exec_after_power_on, 0, 0, 0);
+    //sndp_delay_exec_start_in_app(300, (uint32_t)sndp_ui_bt_event_exec_after_power_on, 0, 0, 0);
 
 #if defined(__SNDP_AUDIO_TEST__)
-    sndp_delay_exec_start(2000, (uint32_t)sndp_audio_test_switch, 0, 0, 0);
+    sndp_delay_exec_start_in_app(2000, (uint32_t)sndp_audio_test_switch, 0, 0, 0);
 #endif    
 }
 

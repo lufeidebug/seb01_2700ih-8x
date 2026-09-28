@@ -1118,7 +1118,7 @@ void sndp_hr_ble_disconnected_delay10s_start(void)
         sndp_sleep_comm_disconnect_timer_handler();
     }else {
         hr_ctx.delay_10S_start = true;
-        sndp_delay_exec_start(10000, (uint32_t)sndp_sleep_comm_disconnect_timer_handler, 0, 0, 0);
+        sndp_delay_exec_start_in_app(10000, (uint32_t)sndp_sleep_comm_disconnect_timer_handler, 0, 0, 0);
     }
 #endif
 }

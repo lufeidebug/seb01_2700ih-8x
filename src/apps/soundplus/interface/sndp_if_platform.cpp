@@ -310,7 +310,7 @@ static void sndp_freeman_pairing_enable_scan(void)
     /* 周期补 scan 时不要先 disable，避免可见窗口被关掉 */
     bta_tws_enable_pairing_mode(true);
     bta_tws_enable_access_mode(true);
-    sndp_delay_exec_start(1000, (uint32_t)sndp_freeman_pairing_enable_scan, 0, 0, 0);
+    sndp_delay_exec_start_in_app(1000, (uint32_t)sndp_freeman_pairing_enable_scan, 0, 0, 0);
 }
 
 static void sndp_freeman_pairing_stop_scan_retry(void)
@@ -338,7 +338,7 @@ void sndp_enter_freeman_pairing(void)
     sndp_tws_enable_pairing_mode();
     sndp_freeman_pairing_enable_scan();
     /* 先 200ms 补一次，避开 page cancel 后的 0x0C；之后由 enable_scan 每 1s 兜底 */
-    sndp_delay_exec_start(200, (uint32_t)sndp_freeman_pairing_enable_scan, 0, 0, 0);
+    sndp_delay_exec_start_in_app(200, (uint32_t)sndp_freeman_pairing_enable_scan, 0, 0, 0);
 #if defined(__BTIF_AUTOPOWEROFF__)
     app_stop_10_second_timer(APP_POWEROFF_TIMER_ID);
     app_start_10_second_timer(APP_PAIR_TIMER_ID);   //5minute pairing
@@ -361,7 +361,7 @@ void sndp_start_freeman_pairing(void)
 	osDelay(100);
 	sndp_pmu_reboot(HAL_SW_BOOTMODE_CUSTOM_OP1_AFTER_REBOOT);
 #else
-    sndp_delay_exec_start(200, (uint32_t)sndp_enter_freeman_pairing, 0, 0, 0);
+    sndp_delay_exec_start_in_app(200, (uint32_t)sndp_enter_freeman_pairing, 0, 0, 0);
 #endif    
 
 }
@@ -385,7 +385,7 @@ void sndp_start_tws_pairing(void)
 	sndp_pmu_reboot(HAL_SW_BOOTMODE_CUSTOM_OP2_AFTER_REBOOT);
 #else
     bta_tws_box_event_entry(BTA_TWS_CLOSE);
-    sndp_delay_exec_start(1000, (uint32_t) sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
+    sndp_delay_exec_start_in_app(1000, (uint32_t) sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
 #endif
 
 }
@@ -522,7 +522,7 @@ void sndp_mobile_pairing_timeout(void)
 		if (sndp_is_tws_master_mode()) {
 			// 主耳：通知从耳一起关机
 			sndp_comm_cmd_send_lr_sync_both_shutdown();
-			sndp_delay_exec_start(200, (uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_PAIR_TIMEOUT, 0, 0);
+			sndp_delay_exec_start_in_app(200, (uint32_t)sndp_app_shutdown, SNDP_SHUTDOWN_REASON_PAIR_TIMEOUT, 0, 0);
 		} else {
 			// 从耳：不独立关机，重启配对定时器，等待主耳统一决策
 			SNDP_IF_TRACE(0, "slave timeout, restart pair timer, wait master decision");

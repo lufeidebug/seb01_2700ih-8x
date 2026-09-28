@@ -247,7 +247,7 @@ static void pgp_uart_recv_data(void)
         }
 
         if(pgp_uart_recv_queue_get_len() > 0) {
-            sndp_delay_exec_start(10, (uint32_t) pgp_uart_recv_data, 0, 0, 0);
+            sndp_delay_exec_start_in_app(10, (uint32_t) pgp_uart_recv_data, 0, 0, 0);
         } else {
             pgp_uart_ctx.rx_working = false;
         }
@@ -351,7 +351,7 @@ static void pgp_uart_irq_tx(uint8_t *data, uint32_t data_len)
 		    osThreadYield();
 		};
     }
-    sndp_delay_exec_start(10, (uint32_t) pgp_uart_send_complete, 0, 0, 0);
+    sndp_delay_exec_start_in_app(10, (uint32_t) pgp_uart_send_complete, 0, 0, 0);
 }
 
 static void pgp_uart_irq_disable(void)
@@ -407,7 +407,7 @@ static void pgp_uart_dma_tx_handler(uint32_t xfer_size, int dma_error)
         delay_ms = 2;
     }
     
-    sndp_delay_exec_start(delay_ms, (uint32_t) pgp_uart_send_complete, 0, 0, 0);
+    sndp_delay_exec_start_in_app(delay_ms, (uint32_t) pgp_uart_send_complete, 0, 0, 0);
 }
 
 
@@ -476,7 +476,7 @@ static void pgp_uart_send_complete(void)
     sndp_delay_exec_stop((uint32_t)pgp_uart_send_timeout);
     pgp_uart_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_RX);
     if(pgp_uart_send_queue_get_len() > 0) {
-        sndp_delay_exec_start(20, (uint32_t)pgp_uart_send_hdlr, 0, 0, 0);
+        sndp_delay_exec_start_in_app(20, (uint32_t)pgp_uart_send_hdlr, 0, 0, 0);
     }
 }
 
@@ -485,7 +485,7 @@ static void pgp_uart_send_hdlr(void)
     pgp_uart_send_item_s *p_send_item = &pgp_uart_send_process_item;
 
     if(pgp_uart_ctx.tx_working) {
-        sndp_delay_exec_start(50, (uint32_t)pgp_uart_send_hdlr, 0, 0, 0);
+        sndp_delay_exec_start_in_app(50, (uint32_t)pgp_uart_send_hdlr, 0, 0, 0);
         return;
     }
 
@@ -496,7 +496,7 @@ static void pgp_uart_send_hdlr(void)
         PGP_UART_TRACE(0, "send_data_len=%d", p_send_item->len);
         DUMP8("%02X ", p_send_item->data, p_send_item->len > 32 ? 32 : p_send_item->len);
 
-        sndp_delay_exec_start(200, (uint32_t)pgp_uart_send_timeout, 0, 0, 0);
+        sndp_delay_exec_start_in_app(200, (uint32_t)pgp_uart_send_timeout, 0, 0, 0);
         pgp_uart_set_mode(SNDP_HAL_POGOPIN_MODE_COMM_TX);
         
 #if (PGP_UART_DMA) 
