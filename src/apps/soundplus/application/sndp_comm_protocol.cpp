@@ -228,6 +228,11 @@ bool sndp_comm_protocol_data_is_valid(uint8_t *recv_data, uint16_t recv_len)
         return false;
     }
     
+    if(recv_len < SNDP_COMM_FRAME_HEAD_LEN + SNDP_COMM_FRAME_CRC_LEN) {
+        COMM_PROTOCOL_TRACE(2, "recv_len(%d) < HEAD+CRC(%d), rtn", recv_len, SNDP_COMM_FRAME_HEAD_LEN + SNDP_COMM_FRAME_CRC_LEN);
+        return false;
+    }
+
 	uint8_t flag = recv_data[SNDP_COMM_FRAME_FLAG_IDX];
 	uint16_t cmd_data_len = (uint16_t)((recv_data[SNDP_COMM_FRAME_DLEN_IDX]<<8)|(recv_data[SNDP_COMM_FRAME_DLEN_IDX+1]));
 
