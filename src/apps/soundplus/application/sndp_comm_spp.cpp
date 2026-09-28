@@ -30,7 +30,7 @@ bool sndp_comm_spp_cmd_check(uint8_t *data, uint16_t data_len)
 {
     COMM_SPP_TRACE(2, "len=%d", data_len);
     DUMP8("0x%02x ", data, (data_len > 16) ? 16 : data_len);
-    return sndp_comm_protocol_data_is_valid(data, data_len);
+    return sndp_comm_protocol_data_is_valid(SNDP_COMM_PATH_SPP, data, data_len);
 }
 
 int32_t sndp_comm_spp_recv_data(uint8_t *data, uint16_t data_len)

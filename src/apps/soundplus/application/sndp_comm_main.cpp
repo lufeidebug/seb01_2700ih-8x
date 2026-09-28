@@ -399,7 +399,7 @@ static void sndp_comm_recv_thread(void const *argument)
             DUMP8("%02X ", deal_buf, peek_len > 32 ? 32 : peek_len);
 
             if(deal_buf[0] == SNDP_COMM_FRAME_FLAG) {
-                error_code = sndp_comm_protocol_parse_recv_data(deal_buf, peek_len, recv_cmd);
+                error_code = sndp_comm_protocol_parse_recv_data(path_hdlr->path_id, deal_buf, peek_len, recv_cmd);
                 COMM_MIAN_TRACE(0, "error_code=%02x", error_code);
             
                 if(error_code == SNDP_COMM_ERROR_WAITTING_MORE) {
@@ -531,15 +531,6 @@ int32_t sndp_comm_main_send_cmd(sndp_comm_cmd_info_s *cmd)
     COMM_MIAN_TRACE(4, "from=%02X, to=%02X, path=%02X, cmd_id=%02X, data_len=%d", 
             COMM_GET_FROM(cmd->fromto), COMM_GET_TO(cmd->fromto), cmd->path, cmd->cmd_id, cmd->data_len);
 
-    send_frame_len = sndp_comm_protocol_pack_send_data(cmd, sndp_comm_send_frame, sizeof(sndp_comm_send_frame));
-    if(send_frame_len == 0) {
-        return -2;
-    }
-
-    DUMP8("%02X ", sndp_comm_send_frame, (send_frame_len > 32) ? (32) : (send_frame_len));
-    SNDP_TRACE(0, "\n");
-    
-
     uint8_t from = COMM_GET_FROM(cmd->fromto);
     uint8_t to = COMM_GET_TO(cmd->fromto);
     uint8_t path = cmd->path;
@@ -622,6 +613,14 @@ int32_t sndp_comm_main_send_cmd(sndp_comm_cmd_info_s *cmd)
         }   
     }
 
+    send_frame_len = sndp_comm_protocol_pack_send_data(send_path, cmd, sndp_comm_send_frame, sizeof(sndp_comm_send_frame));
+    if(send_frame_len == 0) {
+        return -2;
+    }
+
+    //DUMP8("%02X ", sndp_comm_send_frame, (send_frame_len > 32) ? (32) : (send_frame_len));
+    //SNDP_TRACE(0, "\n");
+    
     sndp_comm_main_send_data(send_path, sndp_comm_send_frame, send_frame_len);
     return 0;
 }

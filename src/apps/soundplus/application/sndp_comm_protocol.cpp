@@ -53,12 +53,12 @@ static uint16_t sndp_comm_protocol_calc_crc16(uint16_t crc, const uint8_t *buff,
 }
 
 
-uint32_t sndp_comm_protocol_parse_recv_data(uint8_t *recv_data, uint16_t recv_len, sndp_comm_cmd_info_s *cmd_info)											
+uint32_t sndp_comm_protocol_parse_recv_data(sndp_comm_path_id_e recv_path, uint8_t *recv_data, uint16_t recv_len, sndp_comm_cmd_info_s *cmd_info)											
 {
     ASSERT(recv_data != NULL, "%s, data == NULL", __func__);
     ASSERT(cmd_info != NULL, "%s, cmd == NULL", __func__);
     
-#if 1
+#if 0
 	COMM_PROTOCOL_TRACE(0, "recv_len=%d, recv_data:", recv_len);
 	DUMP8("%02X ", recv_data, (recv_len > 32) ? (32) : (recv_len));
 #endif
@@ -127,11 +127,18 @@ uint32_t sndp_comm_protocol_parse_recv_data(uint8_t *recv_data, uint16_t recv_le
 
 	uint16_t crc_idx = SNDP_COMM_FRAME_HEAD_LEN + cmd_data_len;
 	uint16_t recv_crc = (uint16_t)(((recv_data[crc_idx]&0xff)<<8)|(recv_data[crc_idx + 1]&0xff));
-	uint16_t calc_crc = sndp_comm_protocol_calc_crc16(SNDP_COMM_CRC_INIT_VAL, recv_data, 0, SNDP_COMM_FRAME_HEAD_LEN + cmd_data_len);
-	if(recv_crc != calc_crc) {
-		COMM_PROTOCOL_TRACE(2, "Invalid CRC, recv(%04X) != calc(%04X), return", recv_crc, calc_crc);
-		return SNDP_COMM_ERROR_INVALID_CRC;
-	}
+    if(recv_path == SNDP_COMM_PATH_MS) {
+        if(recv_crc != 0xFFFF) {
+            COMM_PROTOCOL_TRACE(2, "Invalid CRC 01, recv(%04X) != 0xFFFF, return", recv_crc);
+    		return SNDP_COMM_ERROR_INVALID_CRC;
+        }
+    } else {
+    	uint16_t calc_crc = sndp_comm_protocol_calc_crc16(SNDP_COMM_CRC_INIT_VAL, recv_data, 0, SNDP_COMM_FRAME_HEAD_LEN + cmd_data_len);
+    	if(recv_crc != calc_crc) {
+    		COMM_PROTOCOL_TRACE(2, "Invalid CRC, recv(%04X) != calc(%04X), return", recv_crc, calc_crc);
+    		return SNDP_COMM_ERROR_INVALID_CRC;
+    	}
+    }
 
 	cmd_info->flag = flag;
 	cmd_info->fromto = fromto;
@@ -145,7 +152,7 @@ uint32_t sndp_comm_protocol_parse_recv_data(uint8_t *recv_data, uint16_t recv_le
 }
 
 
-uint16_t sndp_comm_protocol_pack_send_data(sndp_comm_cmd_info_s *cmd_info, uint8_t *send_buf, uint16_t send_buf_size)
+uint16_t sndp_comm_protocol_pack_send_data(sndp_comm_path_id_e send_path, sndp_comm_cmd_info_s *cmd_info, uint8_t *send_buf, uint16_t send_buf_size)
 {
 	if(cmd_info == NULL) {
 		COMM_PROTOCOL_TRACE(0, "cmd_info == NULL, return");
@@ -176,10 +183,15 @@ uint16_t sndp_comm_protocol_pack_send_data(sndp_comm_cmd_info_s *cmd_info, uint8
 	send_buf[send_len++] = (uint8_t)(cmd_info->data_len & 0xff);
 	memcpy(&send_buf[send_len], cmd_info->data, cmd_info->data_len);
 	send_len += cmd_info->data_len;
-	
-	uint16_t crc16 = sndp_comm_protocol_calc_crc16(SNDP_COMM_CRC_INIT_VAL, send_buf, 0, send_len);
-	send_buf[send_len++] = (uint8_t)((crc16>>8)&0xff);
-	send_buf[send_len++] = (uint8_t)(crc16&0xff);
+
+    if(send_path == SNDP_COMM_PATH_MS) {
+        send_buf[send_len++] = 0xff;
+    	send_buf[send_len++] = 0xff;
+    } else {
+    	uint16_t crc16 = sndp_comm_protocol_calc_crc16(SNDP_COMM_CRC_INIT_VAL, send_buf, 0, send_len);
+    	send_buf[send_len++] = (uint8_t)((crc16>>8)&0xff);
+    	send_buf[send_len++] = (uint8_t)(crc16&0xff);
+    }
 
 	return send_len;
 }
@@ -222,7 +234,7 @@ uint16_t sndp_comm_protocol_find_next_sleep_flag_idx(uint8_t *recv_data, uint16_
     return data_len;
 }
 
-bool sndp_comm_protocol_data_is_valid(uint8_t *recv_data, uint16_t recv_len)											
+bool sndp_comm_protocol_data_is_valid(sndp_comm_path_id_e recv_path, uint8_t *recv_data, uint16_t recv_len)											
 {
     if(recv_data == NULL) {
         return false;
@@ -255,12 +267,19 @@ bool sndp_comm_protocol_data_is_valid(uint8_t *recv_data, uint16_t recv_len)
 
 	uint16_t crc_idx = SNDP_COMM_FRAME_HEAD_LEN + cmd_data_len;
 	uint16_t recv_crc = (uint16_t)((recv_data[crc_idx]<<8)|(recv_data[crc_idx + 1]));
-	uint16_t calc_crc = sndp_comm_protocol_calc_crc16(SNDP_COMM_CRC_INIT_VAL, recv_data, 0, SNDP_COMM_FRAME_HEAD_LEN + cmd_data_len);
-    
-	if(recv_crc != calc_crc) {
-        COMM_PROTOCOL_TRACE(2, "Invalid CRC, recv(%04X) != calc(%04X), return", recv_crc, calc_crc);
-		return false;
-	}
+    if(recv_path == SNDP_COMM_PATH_MS) {
+        if(recv_crc != 0xFFFF) {
+            COMM_PROTOCOL_TRACE(2, "Invalid CRC 01, recv(%04X) != 0xFFFF, return", recv_crc);
+    		return false;
+        }
+    } else {
+    	uint16_t calc_crc = sndp_comm_protocol_calc_crc16(SNDP_COMM_CRC_INIT_VAL, recv_data, 0, SNDP_COMM_FRAME_HEAD_LEN + cmd_data_len);
+        
+    	if(recv_crc != calc_crc) {
+            COMM_PROTOCOL_TRACE(2, "Invalid CRC, recv(%04X) != calc(%04X), return", recv_crc, calc_crc);
+    		return false;
+    	}
+    }
 
 	return true;
 }
