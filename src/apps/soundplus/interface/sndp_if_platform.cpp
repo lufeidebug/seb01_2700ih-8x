@@ -440,10 +440,16 @@ void sndp_enter_mobile_reconnect(void)
 {
 
     if(sndp_is_master_mobile_link_connected()) {
-        SNDP_IF_TRACE(0, "mobile already connected, skip reconnect");
 #if defined(__BTIF_AUTOPOWEROFF__)
         app_stop_10_second_timer(APP_BT_RECONNECT_TIMER_ID);
 #endif
+        /* 手机已连上不再拉手机。TWS 已断时只补 page 对耳，避免停在 role unknown。 */
+        if(!sndp_is_tws_link_connected()) {
+            SNDP_IF_TRACE(0, "mobile connected, page tws only");
+            bta_tws_connect_tws_link();
+        } else {
+            SNDP_IF_TRACE(0, "mobile already connected, skip reconnect");
+        }
         return;
     }
 

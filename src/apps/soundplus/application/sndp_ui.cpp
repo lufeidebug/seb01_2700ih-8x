@@ -566,14 +566,30 @@ void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote)
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds, 0, 0, 0);
             sndp_delay_exec_start(300, (uint32_t)sndp_ui_wear_on_play_music, 0, 0, 0);
 			sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_on_role_switch, 0, 0, 0);  
-            sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_open_anc, 0, 0, 0);  
+
+#if defined(__SNDP_PRODUCT_TEST__)
+            if(!sndp_pt_is_in_test_mode()) {
+                sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_open_anc, 0, 0, 0);
+            }
+#else
+            sndp_delay_exec_start(1000, (uint32_t)sndp_ui_wear_on_open_anc, 0, 0, 0);
+#endif
+
             sndp_delay_exec_start(2000, (uint32_t)sndp_ui_wear_on_enable_gesture, 0, 0, 0);
             sndp_sleep_app_resume(SLEEP_APP_OP_USER_WEAR);
 	    } else if(SNDP_DEV_WEAR_OFF == wear_action) {
             sndp_delay_exec_start(200, (uint32_t)sndp_ui_wear_off_tone_switch_to_phone, 0, 0, 0);
 			sndp_ui_wear_off_stop_music();
             sndp_delay_exec_start(500, (uint32_t)sndp_ui_wear_off_role_switch, 0, 0, 0);
+
+#if defined(__SNDP_PRODUCT_TEST__)
+            if(!sndp_pt_is_in_test_mode()) {
+                sndp_ui_wear_off_close_anc();
+            }
+#else
             sndp_ui_wear_off_close_anc();
+#endif
+            
             sndp_ui_wear_off_disable_gesture();
             sndp_sleep_app_suspend(SLEEP_APP_OP_USER_WEAR);
 #if defined(__SNDP_APP_WHITE_NOISE__)
@@ -646,6 +662,21 @@ static void sndp_ui_wear_status_changed(sndp_dev_wear_status_e wear_status)
 
 //---------------------------------------- cover ctrl --------------------------------------------
 
+#define SNDP_UI_COVER_CLOSE_DEBOUNCE_MS     (2000)
+
+static void sndp_ui_cover_close_commit(void)
+{
+    if(sndp_dev_cover_is_opened(false)) {
+        SPUI_TRACE(0, "cover reopened, skip close");
+        return;
+    }
+
+    SPUI_TRACE(0, "cover close commit");
+    bta_tws_box_event_entry(BTA_TWS_CLOSE);
+    sndp_bt_set_access_mode(SNDP_BT_NOT_ACCESSIBEL);
+    bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_BOX, false);
+}
+
 static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 {
     static sndp_dev_cover_status_e status = SNDP_DEV_COVER_UNKNOWN;
@@ -666,9 +697,8 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
         sndp_white_noise_onoff(false, false);
 #endif
 
-        bta_tws_box_event_entry(BTA_TWS_CLOSE);
-        sndp_bt_set_access_mode(SNDP_BT_NOT_ACCESSIBEL);
-        bts_ble_force_switch_adv(BT_BLE_ADV_SWITCH_USER_BOX, false);
+        /* 关盖拆链是异步的。开盖挡不住已经发出的拆链，先等盖子稳定再拆。 */
+        sndp_delay_exec_start(SNDP_UI_COVER_CLOSE_DEBOUNCE_MS, (uint32_t)sndp_ui_cover_close_commit, 0, 0, 0);
         
  #if defined(__BTIF_EARPHONE__)
         app_stop_10_second_timer(APP_PAIR_TIMER_ID);
@@ -677,6 +707,7 @@ static void sndp_ui_cover_status_changed(sndp_dev_cover_status_e cover_status)
 #endif
 
     } else {
+        sndp_delay_exec_stop((uint32_t)sndp_ui_cover_close_commit);
         sndp_dev_hr_switch_operation_mode(SNDP_DEV_HR_PROX);
         
 #if defined(__BTIF_EARPHONE__)
@@ -1574,11 +1605,18 @@ static void sndp_ui_mobile_disconnect_deal(uint32_t reason)
 #if 1
     if(SNDP_PAIRING_FREEMAN != sndp_get_pairing_type())
     {
-        if(reason == 0x08) { 
-            //other reason, shutdown time is set to 15 minutes
+        /* 0x08 connection timeout：链路超时，走回连。
+         * 0x16 connection terminated by local host：关盖/入盒由本机拆掉的链路。
+         * 这里什么都不做，回连交给开盖的 box event。
+         * 不能进 freeman pairing，它会 block page 并 CLEAR_TWS_PAGE。
+         * 也不能在这里调 sndp_enter_mobile_reconnect()，那个接口会再发 BTA_TWS_OPEN，
+         * 500ms 延迟回调若仍在舱内，会把手机 page 重新拉起来。 */
+        if(reason == 0x16) {
+            /* 不回连，但继续走下面的 BLE 刷新 */
+        } else if(reason == 0x08) {
             sndp_enter_mobile_reconnect();
-        } else { 
-            //REMOTE_USER_TERMINATED   
+        } else {
+            //REMOTE_USER_TERMINATED
             if(sndp_is_tws_link_connected()) {
                 sndp_call_func_in_app_thread((uint32_t)sndp_enter_mobile_pairing_after_tws_connected, 0, 0, 0);
             } else {
@@ -1663,6 +1701,12 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			sndp_dev_clear_device_info(true);
 
 			SPUI_TRACE(1, "TWS_DISCONNECTED, pairing_status=%d", sndp_get_pairing_status());
+
+			/* 关盖拆链是异步的。刚好卡在防抖窗口时，拆链完成时盖可能已经打开。
+			 * 这时补一次开盖回连，避免停在 role unknown。真关盖时这里直接返回。 */
+			if(sndp_dev_cover_is_opened(false)) {
+				sndp_call_func_in_app_thread((uint32_t)sndp_ui_bt_event_exec_after_power_on, 0, 0, 0);
+			}
 
 			/* [FIX] 配对过程中对耳出仓关盖，TWS断开后对耳不可见，重新开启配对模式
 			 * 保持仓外耳机的可发现性，避免 access_mode 从 BT_GENERAL_ACCESSIBLE(3) 降为 BT_CONNECTABLE_ONLY(2)
