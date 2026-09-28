@@ -79,6 +79,31 @@ static sndp_da_ctx_s sndp_da_ctx;
 static sndp_da_running_param_s sndp_da_running_param;
 static sndp_da_backup_param_s sndp_da_backup_param;
 
+/*
+ * Serialize the access to the shared memory images (running/backup param_buf)
+ * and to the flash update that follows them.
+ * A field access is a read-modify-write of the whole image, and the image is
+ * written back together with its checksum. Without this lock, concurrent field
+ * accesses could corrupt the image, or leave flash holding data that does not
+ * match its own checksum.
+ */
+osMutexDef(sndp_da_mutex);
+static osMutexId sndp_da_mutex_id = NULL;
+
+static void sndp_da_mutex_wait(void)
+{
+    if(sndp_da_mutex_id != NULL) {
+        osMutexWait(sndp_da_mutex_id, osWaitForever);
+    }
+}
+
+static void sndp_da_mutex_release(void)
+{
+    if(sndp_da_mutex_id != NULL) {
+        osMutexRelease(sndp_da_mutex_id);
+    }
+}
+
 
 /**************************************************************************************************
 * Function
@@ -229,7 +254,7 @@ static void sndp_da_update_backup_checksum(void *param)
     }
     
     sndp_da_backup_param_s *backup_param = (sndp_da_backup_param_s *)param;
-    backup_param->struct_ver = DA_RUNNING_PARAM_STRUCT_VER;
+    backup_param->struct_ver = DA_BACKUP_PARAM_STRUCT_VER;
     backup_param->struct_checksum = sndp_da_calc_backup_struct_checksum();
     backup_param->data_checksum = sndp_da_calc_backup_data_checksum(param);
 
@@ -497,9 +522,16 @@ static int32_t sndp_da_write_field_data(sndp_da_access_info_s *access_info, sndp
 
 	SNDP_IF_TRACE(3, "offset=%d, size=%d, data_size=%d, save=%d", field_info.offset, field_info.size, data_size, save_to_flash);
 
-	sndp_da_field_common_s *field_common = (sndp_da_field_common_s *)field_data;
-	field_common->key = SNDP_DA_PARAM_FIELD_VALID;
-	memcpy(&access_info->param_buf[field_info.offset], field_data, data_size);
+	/*
+	 * Do not modify the caller's buffer. Copy the field data into the memory
+	 * image first, then stamp the valid key at the head of the field in the
+	 * image (every field structure begins with a 'key' member).
+	 */
+	uint32_t field_key = SNDP_DA_PARAM_FIELD_VALID;
+	uint8_t *field_dst = &access_info->param_buf[field_info.offset];
+
+	memcpy(field_dst, field_data, data_size);
+	memcpy(field_dst, &field_key, sizeof(field_key));
 	
 	if(save_to_flash) {
 		sndp_da_wirte_param_to_flash(access_info);
@@ -527,9 +559,18 @@ static int32_t sndp_da_read_field_data(sndp_da_access_info_s *access_info, sndp_
     SNDP_IF_TRACE(3, "offset=%d, size=%d, data_size=%d, from_flash=%d", field_info.offset, field_info.size, data_size, read_from_flash);
     
     if(read_from_flash) {
-        memset(access_info->param_buf, 0, access_info->param_size);
-        sndp_da_read_param_from_flash(access_info);
-        memcpy(field_data, &access_info->param_buf[field_info.offset], data_size);
+        /*
+         * Read only the requested field from flash instead of the whole
+         * parameter section. param_size is far larger than a single field and
+         * the flash access runs with interrupts locked.
+         * The field is also refreshed in the memory image, because the image is
+         * written back as a whole and must stay consistent with flash.
+         */
+        app_flash_read((enum NORFLASH_API_MODULE_ID_T)sndp_da_ctx.section_mod_id,
+                       access_info->section_offset + field_info.offset,
+                       (uint8_t *)field_data,
+                       data_size);
+        memcpy(&access_info->param_buf[field_info.offset], field_data, data_size);
     } else {
     	memcpy(field_data, &access_info->param_buf[field_info.offset], data_size);
     }
@@ -540,46 +581,67 @@ static int32_t sndp_da_read_field_data(sndp_da_access_info_s *access_info, sndp_
 int32_t sndp_da_write_field(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool save_to_flash)
 {
     sndp_da_field_info_s field_info;
+    int32_t ret;
 
     if(!sndp_da_ctx.inited) {
 		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
 		return -4;
 	}
-    
+
+    sndp_da_mutex_wait();
+
     if(sndp_da_ctx.running_access_info.find_field_info(field_id, &field_info) == 0) {
-	    return sndp_da_write_field_data(&sndp_da_ctx.running_access_info, 
+	    ret = sndp_da_write_field_data(&sndp_da_ctx.running_access_info, 
                     field_info, field_data, field_size, save_to_flash);
     } else if(sndp_da_ctx.backup_access_info.find_field_info(field_id, &field_info) == 0) {
-	    return sndp_da_write_field_data(&sndp_da_ctx.backup_access_info, 
+	    ret = sndp_da_write_field_data(&sndp_da_ctx.backup_access_info, 
                     field_info, field_data, field_size, save_to_flash);
+    } else {
+        ret = -1;
     }
 
-    return -1;
+    sndp_da_mutex_release();
+
+    return ret;
 }
 
 int32_t sndp_da_read_field(sndp_da_field_id_e field_id, void *field_data, uint16_t field_size, bool read_from_flash)
 {
     sndp_da_field_info_s field_info;
+    int32_t ret;
 
     if(!sndp_da_ctx.inited) {
 		SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
 		return -4;
 	}
-    
+
+    sndp_da_mutex_wait();
+
     if(sndp_da_ctx.running_access_info.find_field_info(field_id, &field_info) == 0) {
-	    return sndp_da_read_field_data(&sndp_da_ctx.running_access_info, 
+	    ret = sndp_da_read_field_data(&sndp_da_ctx.running_access_info, 
                     field_info, field_data, field_size, read_from_flash);
     } else if(sndp_da_ctx.backup_access_info.find_field_info(field_id, &field_info) == 0) {
-	    return sndp_da_read_field_data(&sndp_da_ctx.backup_access_info, 
+	    ret = sndp_da_read_field_data(&sndp_da_ctx.backup_access_info, 
                     field_info, field_data, field_size, read_from_flash);
+    } else {
+        ret = -1;
     }
 
-    return -1;
+    sndp_da_mutex_release();
+
+    return ret;
 }
 
 void sndp_da_flush_param_to_flash(void)
 {
+    if(!sndp_da_ctx.inited) {
+        SNDP_IF_TRACE(0, "%d, rtn", __LINE__);
+        return;
+    }
+
+    sndp_da_mutex_wait();
     sndp_da_wirte_param_to_flash(&sndp_da_ctx.running_access_info);
+    sndp_da_mutex_release();
 }
 
 
@@ -645,6 +707,11 @@ void sndp_da_init(void)
                               sndp_da_ctx.section_start_addr,
                               sndp_da_ctx.section_size,
                               (uint32_t)sndp_da_flash_operate_callback);
+
+    if(sndp_da_mutex_id == NULL) {
+        sndp_da_mutex_id = osMutexCreate(osMutex(sndp_da_mutex));
+    }
+    ASSERT(sndp_da_mutex_id != NULL, "%s, create mutex failed", __func__);
 
     sndp_da_ctx.inited = true;
 	
