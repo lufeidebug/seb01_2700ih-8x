@@ -1722,20 +1722,22 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			break;
             
 		case SNDP_BT_CONN_STATUS_TWS_CONNECTED:
-			sndp_update_audio_channel(true);
-            sndp_ui_all_status_sync_send();
 
+            /* 该回调只读取本地状态并组包同步给对耳，实测在 app thread 中会连续占用
+             * 30ms 以上，导致 TWS 回连时 af_thread 被饿死、A2DP 缓冲欠载产生杂音。
+             * 放在延时线程(osPriorityNormal)执行，保证不会抢占音频流。 */
+            sndp_delay_exec_start(50, (uint32_t)sndp_ui_all_status_sync_send, 0, 0, 0);
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
-            sndp_delay_exec_start_in_app(50, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+            sndp_delay_exec_start(70, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
 #endif
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
             /* 新架构: TWS 连接后, 根据 TWS 主从确定 primary/secondary.
              * master → primary (ACTIVE), slave → secondary (STANDBY).*/
-            SPUI_TRACE(0, "TWS connected, determine role by TWS master/slave");
+            //SPUI_TRACE(0, "TWS connected, determine role by TWS master/slave");
             sndp_delay_exec_start_in_app(100, (uint32_t)sndp_sleep_role_switch_on_bt_role_change, 0, 0, 0);
 #endif
-			sndp_delay_exec_start_in_app(300, (uint32_t)sndp_update_audio_channel, true, 0, 0);
+			sndp_delay_exec_start(300, (uint32_t)sndp_update_audio_channel, true, 0, 0);
 			break;
 
 		case SNDP_BT_CONN_STATUS_A2DP_DISCONNECTED:
