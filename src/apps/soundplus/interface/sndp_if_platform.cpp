@@ -801,7 +801,7 @@ uint8_t sndp_is_besaud_connected(void)
 
 void sndp_connect_status_print(void)
 {
-	SNDP_TRACE_IMM(0, "\n");
+	SNDP_IF_TRACE(0, "\n");
 	SNDP_IF_TRACE(1, "---------------enter---------------");
 	SNDP_IF_TRACE(2, "mobile=%d, ibrt=%d, tws=%d, besaud=%d", 
     		sndp_is_master_mobile_link_connected(),
@@ -815,7 +815,7 @@ void sndp_connect_status_print(void)
             sndp_is_freeman_mode());
 	
 	SNDP_IF_TRACE(1, "---------------end---------------");
-	SNDP_TRACE_IMM(0, "\n");
+	SNDP_IF_TRACE(0, "\n");
 }
 
 
