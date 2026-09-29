@@ -3006,7 +3006,17 @@ static int bt_a2dp_player(enum PLAYER_OPER_T on, enum APP_SYSFREQ_FREQ_T freq)
 #if 0
         af_set_priority(AF_USER_SBC, osPriorityRealtime);
 #else
+		/* A2DP 播放期间把 af_thread 提到 osPriorityRealtime。
+         * app_thread 与 af_thread 同为 osPriorityHigh，TWS 回连/重建时 app thread
+         * 侧的状态同步任务会把音频线程分片，导致 DMA 处理周期被拉长
+         * (af_thread:WARNING "intvl ERROR" / "ran too long")，A2DP 缓冲欠载
+         * 产生杂音。提到 Realtime 后音频线程不再被同级线程抢占。
+         * 停止播放时回落 osPriorityAboveNormal，见下方 PLAYER_OPER_STOP 分支。 */
+#if 1
+        af_set_priority(AF_USER_SBC, osPriorityRealtime);
+#else
         af_set_priority(AF_USER_SBC, osPriorityHigh);
+#endif
 #endif
 
 #if defined(__SNDP_APP_WHITE_NOISE__)

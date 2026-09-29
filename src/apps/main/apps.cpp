@@ -536,7 +536,7 @@ void app_stop_10_second_timer(uint8_t timer_id)
 {
     APP_10_SECOND_TIMER_STRUCT *timer = &app_10_second_array[timer_id];
 #if defined(__SNDP_UI__)
-    MAIN_TRACE(0, "%s, id=%d", __func__, timer_id);
+    //MAIN_TRACE(0, "%s, id=%d", __func__, timer_id);
 #endif
 
     timer->timer_en = 0;

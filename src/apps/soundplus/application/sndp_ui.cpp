@@ -14,6 +14,8 @@
 #include "bta_tws_ux_api.h"
 #include "bts_ble_api.h"
 #include "bta_ble_api.h"
+#include "app_utils.h"
+
 
 #include "sndp_ui.h"
 #include "sndp_if_common.h"
@@ -142,6 +144,9 @@ static void sndp_ui_bt_event_exec_after_power_on(void);
 static sndp_ui_ctx_s sndp_ui_ctx;
 
 static sndp_ui_pairing_type_e sndp_ui_pairing_type = SNDP_UI_PAIRING_NONE;  //0:none, 1:tws pairing, 2:freeman pairing
+
+static bool tws_connected_operating = false;
+
 
 /**************************************************************************************************
 * Function
@@ -1648,9 +1653,17 @@ static void sndp_ui_mobile_disconnect_deal(uint32_t reason)
 #endif
 }
 
+
+
+static void sndp_tws_connected_operation_over(void)
+{
+    app_sysfreq_req(APP_SYSFREQ_USER_SNDP_TWS_CONNECTED_OP, APP_SYSFREQ_32K);
+    tws_connected_operating = false;
+}
+
 POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e conn_status, uint8_t reason)
 {
-    SPUI_TRACE(0, "conn_sta=%d, reason=%02X", conn_status, reason);
+    SPUI_TRACE(0, "sta=%d, R=%02X", conn_status, reason);
     
 	switch(conn_status) {
 		case SNDP_BT_CONN_STATUS_MOBILE_DISCONNECTED:
@@ -1731,26 +1744,29 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			}
       
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
-                sndp_delay_exec_start_in_app(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+            sndp_delay_exec_start_in_app(200, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
 #endif
 
 			break;
             
 		case SNDP_BT_CONN_STATUS_TWS_CONNECTED:
+            tws_connected_operating = true;
+            app_sysfreq_req(APP_SYSFREQ_USER_SNDP_TWS_CONNECTED_OP, APP_SYSFREQ_104M);
+            sndp_delay_exec_start(15000, (uint32_t)sndp_tws_connected_operation_over, 0, 0, 0);
 
             /* 该回调只读取本地状态并组包同步给对耳，实测在 app thread 中会连续占用
              * 30ms 以上，导致 TWS 回连时 af_thread 被饿死、A2DP 缓冲欠载产生杂音。
              * 放在延时线程(osPriorityNormal)执行，保证不会抢占音频流。 */
             sndp_delay_exec_start(50, (uint32_t)sndp_ui_all_status_sync_send, 0, 0, 0);
 #if defined(__SNDP_COMM_BLE_ADV_SET__)
-            sndp_delay_exec_start(70, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
+            sndp_delay_exec_start(100, (uint32_t)app_ble_refresh_adv_state_generic, 0, 0, 0);
 #endif
 
 #if defined(__SNDP_SLEEP_APP_ROLE_SWITCH__)
             /* 新架构: TWS 连接后, 根据 TWS 主从确定 primary/secondary.
              * master → primary (ACTIVE), slave → secondary (STANDBY).*/
             //SPUI_TRACE(0, "TWS connected, determine role by TWS master/slave");
-            sndp_delay_exec_start_in_app(100, (uint32_t)sndp_sleep_role_switch_on_bt_role_change, 0, 0, 0);
+            sndp_delay_exec_start_in_app(150, (uint32_t)sndp_sleep_role_switch_on_bt_role_change, 0, 0, 0);
 #endif
 			sndp_delay_exec_start(300, (uint32_t)sndp_update_audio_channel, true, 0, 0);
 			break;
@@ -1928,29 +1944,29 @@ static void sndp_ui_dev_status_print(void)
         role = (uint8_t *)"U";
 	
 	SNDP_TRACE_IMM(0, "\n");
-	SNDP_TRACE(0, "-------------------------------------------------------------");
-	SNDP_TRACE(3, "[con sta] tws:%4d, mobi:%4d, ibrt:%4d, role:%s", sndp_is_tws_link_connected(), sndp_is_master_mobile_link_connected(), sndp_is_slave_ibrt_link_connected(), role);
+	SNDP_TRACE(0, "------------------");
+	SNDP_TRACE(3, "[con sta] T:%4d, M:%4d, I:%4d, R:%s", sndp_is_tws_link_connected(), sndp_is_master_mobile_link_connected(), sndp_is_slave_ibrt_link_connected(), role);
 	if(sndp_is_besaud_connected()) {
-        SNDP_TRACE(2, "[chgplug] loc:%4d, peer:%4d", sndp_dev_charger_is_plugin(false), sndp_dev_charger_is_plugin(true));
-		SNDP_TRACE(2, "[chg sta] loc:%4d, peer:%4d", sndp_dev_charger_get_charging_status(false), sndp_dev_charger_get_charging_status(true));
-		SNDP_TRACE(2, "[percent] loc:%4d, peer:%4d", sndp_dev_get_bat_percentage(false), sndp_dev_get_bat_percentage(true));
-		SNDP_TRACE(2, "[voltage] loc:%4d, peer:%4d", sndp_dev_get_bat_voltage(false), sndp_dev_get_bat_voltage(true));       
-		SNDP_TRACE(2, "[temp   ] loc:%4d, peer:%4d", sndp_dev_temperature_get_temperature(false), sndp_dev_temperature_get_temperature(true));
-		SNDP_TRACE(2, "[wear   ] loc:%4s, peer:%4s", sndp_dev_wear_is_worn(false) ? str_wear_on : str_wear_off, sndp_dev_wear_is_worn(true) ? str_wear_on : str_wear_off);
-        SNDP_TRACE(2, "[cover  ] loc:%4s, peer:%4s", sndp_dev_cover_is_opened(false) ? str_cover_open : str_cover_close, sndp_dev_cover_is_opened(true) ? str_cover_open : str_cover_close);
-        SNDP_TRACE(2, "[iobox  ] loc:%4s, peer:%4s", sndp_dev_iobox_is_in_box(false) ? str_iobox_in : str_iobox_out, sndp_dev_iobox_is_in_box(true) ? str_iobox_in : str_iobox_out);
+        SNDP_TRACE(2, "[chgplug] L:%4d, P:%4d", sndp_dev_charger_is_plugin(false), sndp_dev_charger_is_plugin(true));
+		SNDP_TRACE(2, "[chg sta] L:%4d, P:%4d", sndp_dev_charger_get_charging_status(false), sndp_dev_charger_get_charging_status(true));
+		SNDP_TRACE(2, "[percent] L:%4d, P:%4d", sndp_dev_get_bat_percentage(false), sndp_dev_get_bat_percentage(true));
+		SNDP_TRACE(2, "[voltage] L:%4d, P:%4d", sndp_dev_get_bat_voltage(false), sndp_dev_get_bat_voltage(true));       
+		SNDP_TRACE(2, "[temp   ] L:%4d, P:%4d", sndp_dev_temperature_get_temperature(false), sndp_dev_temperature_get_temperature(true));
+		SNDP_TRACE(2, "[wear   ] L:%4s, P:%4s", sndp_dev_wear_is_worn(false) ? str_wear_on : str_wear_off, sndp_dev_wear_is_worn(true) ? str_wear_on : str_wear_off);
+        SNDP_TRACE(2, "[cover  ] L:%4s, P:%4s", sndp_dev_cover_is_opened(false) ? str_cover_open : str_cover_close, sndp_dev_cover_is_opened(true) ? str_cover_open : str_cover_close);
+        SNDP_TRACE(2, "[iobox  ] L:%4s, P:%4s", sndp_dev_iobox_is_in_box(false) ? str_iobox_in : str_iobox_out, sndp_dev_iobox_is_in_box(true) ? str_iobox_in : str_iobox_out);
 	} else {
-        SNDP_TRACE(1, "[chgplug] loc:%4d, peer:----", sndp_dev_charger_is_plugin(false));
-		SNDP_TRACE(1, "[chg sta] loc:%4d, peer:----", sndp_dev_charger_get_charging_status(false));
-		SNDP_TRACE(1, "[percent] loc:%4d, peer:----", sndp_dev_get_bat_percentage(false));
-		SNDP_TRACE(1, "[voltage] loc:%4d, peer:----", sndp_dev_get_bat_voltage(false));     
-		SNDP_TRACE(1, "[temp   ] loc:%4d, peer:----", sndp_dev_temperature_get_temperature(false));
-		SNDP_TRACE(1, "[wear   ] loc:%4s, peer:----", sndp_dev_wear_is_worn(false) ? str_wear_on : str_wear_off);
-        SNDP_TRACE(1, "[cover  ] loc:%4s, peer:----", sndp_dev_cover_is_opened(false) ? str_cover_open : str_cover_close);
-        SNDP_TRACE(1, "[iobox  ] loc:%4s, peer:----", sndp_dev_iobox_is_in_box(false) ? str_iobox_in : str_iobox_out);
+        SNDP_TRACE(1, "[chgplug] L:%4d, P:----", sndp_dev_charger_is_plugin(false));
+		SNDP_TRACE(1, "[chg sta] L:%4d, P:----", sndp_dev_charger_get_charging_status(false));
+		SNDP_TRACE(1, "[percent] L:%4d, P:----", sndp_dev_get_bat_percentage(false));
+		SNDP_TRACE(1, "[voltage] L:%4d, P:----", sndp_dev_get_bat_voltage(false));     
+		SNDP_TRACE(1, "[temp   ] L:%4d, P:----", sndp_dev_temperature_get_temperature(false));
+		SNDP_TRACE(1, "[wear   ] L:%4s, P:----", sndp_dev_wear_is_worn(false) ? str_wear_on : str_wear_off);
+        SNDP_TRACE(1, "[cover  ] L:%4s, P:----", sndp_dev_cover_is_opened(false) ? str_cover_open : str_cover_close);
+        SNDP_TRACE(1, "[iobox  ] L:%4s, P:----", sndp_dev_iobox_is_in_box(false) ? str_iobox_in : str_iobox_out);
 	}
 	SNDP_TRACE(4, "[fw ver ] %d.%d.%d.%d", fw_ver[0], fw_ver[1], fw_ver[2], fw_ver[3]);
-	SNDP_TRACE(0, "-------------------------------------------------------------");
+	SNDP_TRACE(0, "------------------");
 	SNDP_TRACE_IMM(0, "\n");
 }
 
@@ -2026,7 +2042,7 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
 
 void sndp_ui_timing_to_do(void)
 {
-    if(sndp_call_is_active()) {
+    if(sndp_call_is_active() || sndp_music_is_playing() || tws_connected_operating ) {
          sndp_delay_exec_start_in_app(10, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
     } else {
         sndp_ui_dev_status_print();

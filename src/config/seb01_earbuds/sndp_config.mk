@@ -478,6 +478,7 @@ ifeq ($(SNDP_RF_TEST),1)
     
 endif
 
+export AF_STREAM_ID_0_PLAYBACK_FADEOUT := 1
 
 
 endif

@@ -423,7 +423,7 @@ void sndp_mobile_reconnect_timeout(void)
 
 void sndp_mobile_reconnect_sccessful(void)
 {
-    SNDP_IF_TRACE(0, ".");
+    //SNDP_IF_TRACE(0, ".");
     sndp_pairing_status = SNDP_PAIR_STA_SUCCESS;
     sndp_pairing_type = SNDP_PAIRING_NONE;
     sndp_freeman_pairing_stop_scan_retry();
@@ -538,7 +538,7 @@ void sndp_mobile_pairing_timeout(void)
 
 void sndp_mobile_pairing_sccessful(void)
 {
-    SNDP_IF_TRACE(0, ".");
+    //SNDP_IF_TRACE(0, ".");
     sndp_pairing_status = SNDP_PAIR_STA_SUCCESS;
     sndp_pairing_type = SNDP_PAIRING_NONE;
     sndp_freeman_pairing_stop_scan_retry();
@@ -1019,7 +1019,7 @@ void sndp_set_bt_conn_status_changed_callback(sndp_bt_conn_status_changed_callba
 
 void sndp_bt_conn_status_changed(sndp_bt_conn_status_e conn_status, uint8_t reason)
 {
-	SNDP_IF_TRACE(2, "conn_sta:%d, reason:0x%02x", conn_status, reason);
+	//SNDP_IF_TRACE(2, "conn_sta:%d, reason:0x%02x", conn_status, reason);
 	
 	if(sndp_bt_conn_status_changed_cb_ptr != NULL) {
 		sndp_call_func_in_app_thread((uint32_t)sndp_bt_conn_status_changed_cb_ptr, (uint32_t)conn_status, (uint32_t)reason, 0);
@@ -1272,7 +1272,7 @@ bool sndp_call_is_active(void)
 		device = app_bt_get_device(id);
 		if(device == NULL)
 			continue;
-#if 1		
+#if 0		
 	    SNDP_IF_TRACE(5, "id=%d, audio_state=%d, callSetup=%d, call=%d, callheld=%d", 
 	    		id,
 	    		device->hf_audio_state,

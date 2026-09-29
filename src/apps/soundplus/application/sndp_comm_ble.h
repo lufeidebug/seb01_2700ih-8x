@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#define __SNDP_COMM_BLE_TRACE__
+//#define __SNDP_COMM_BLE_TRACE__
 
 #if defined(__SNDP_COMM_BLE_TRACE__)
 #define COMM_BLE_ENTER()                    SNDP_TRACE(2, 		"[COMM_BLE] %s, line=%d, enter", __func__, __LINE__)

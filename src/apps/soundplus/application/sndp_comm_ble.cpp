@@ -859,7 +859,7 @@ bool sndp_comm_ble_activity_prepare(ble_adv_activity_t *adv)
      * 未组队: adv MAC == local BT addr == local BLE addr(产测需同值)
      * 已组队: adv MAC == 右耳 BT 地址(sndp_get_pair_addr) */
     {
-        uint8_t *hw_bt_addr = (uint8_t *)bt_get_local_address();
+        POSSIBLY_UNUSED uint8_t *hw_bt_addr = (uint8_t *)bt_get_local_address();
 
         COMM_BLE_TRACE(0, "ADV adv BT MAC   : %02X %02X %02X %02X %02X %02X",
                        local_bt_addr[0], local_bt_addr[1], local_bt_addr[2],

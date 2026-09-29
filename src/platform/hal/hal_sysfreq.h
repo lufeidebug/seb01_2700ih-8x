@@ -73,6 +73,7 @@ enum HAL_SYSFREQ_USER_T {
     HAL_SYSFREQ_USER_APP_34,            // 46
     HAL_SYSFREQ_USER_APP_35,            // 47 //Add by lzw@sndp 202601 end
     HAL_SYSFREQ_USER_APP_36,            // 48 //Add by lzw@sndp 20260901
+    HAL_SYSFREQ_USER_APP_37,            // 49 //Add by lzw@sndp 20260929
     HAL_SYSFREQ_USER_QTY
 };
 
