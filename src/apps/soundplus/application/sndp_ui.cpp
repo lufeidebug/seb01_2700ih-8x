@@ -753,6 +753,43 @@ static void sndp_ui_outbox_role_switch(void)
     }
 }
 
+/* TWS 已连：双耳都在仓才转移。单耳使用：本耳在仓即转移。 */
+static bool sndp_ui_call_should_switch_to_phone(void)
+{
+    if(sndp_is_tws_link_connected()) {
+        return sndp_dev_iobox_is_in_box(false) && sndp_dev_iobox_is_in_box(true);
+    }
+
+    return sndp_dev_iobox_is_in_box(false);
+}
+
+void sndp_ui_both_in_box_transfer_call_to_phone(void)
+{
+    if(!sndp_ui_call_should_switch_to_phone()) {
+        SPUI_TRACE(0, "in box condition not met, rtn");
+        return;
+    }
+
+    if(sndp_is_tws_link_connected() && !sndp_is_tws_master_mode()) {
+        SPUI_TRACE(0, "slave, rtn");
+        return;
+    }
+
+    if(!sndp_call_is_active()) {
+        SPUI_TRACE(0, "no call, rtn");
+        return;
+    }
+
+    /* 音频已在手机就不再切。来电/去电只在 SCO 回到耳机时切一次。 */
+    if(!spfi_call_is_hfp_audio_on()) {
+        SPUI_TRACE(0, "already on phone, rtn");
+        return;
+    }
+
+    SPUI_TRACE(0, "in box, switch call audio to phone");
+    sndp_call_ctrl(SNDP_CALL_CTRL_TONE_SWITCH_TO_PHONE);
+}
+
 static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
 {
     static sndp_dev_iobox_status_e status = SNDP_DEV_IOBOX_UNKNOWN;
@@ -820,6 +857,9 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
 #endif  
 
         sndp_delay_exec_start_in_app(300, (uint32_t)sndp_ui_inbox_role_switch, 0, 0, 0);
+
+        /* 等对耳入仓状态同步后，音频在耳机就切一次到手机。 */
+        sndp_delay_exec_start_in_app(300, (uint32_t)sndp_ui_both_in_box_transfer_call_to_phone, 0, 0, 0);
 
         sndp_delay_exec_start_in_app(100, (uint32_t)sndp_dev_io_pmu_check_cover, 0, 0, 0);
     
@@ -1867,6 +1907,8 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 #endif            
             break;
         case SNDP_BT_HFP_AUDIO_CONNECTED:
+            /* 在仓时音频在耳机，切一次到手机。 */
+            sndp_delay_exec_start_in_app(100, (uint32_t)sndp_ui_both_in_box_transfer_call_to_phone, 0, 0, 0);
             sndp_sleep_app_suspend(SLEEP_APP_OP_USER_BT_CALL);
 #if defined(__SNDP_APP_WHITE_NOISE__)
             if(sndp_white_noise_is_playing()) {

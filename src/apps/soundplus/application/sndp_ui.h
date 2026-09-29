@@ -49,6 +49,9 @@ void sndp_ui_volume_dec(uint8_t type, uint8_t level);
 
 void sndp_ui_wear_action(sndp_dev_wear_status_e wear_action, bool remote);
 
+/* 双耳都在仓，或单耳使用且本耳在仓时，把通话音频切到手机，不接听。 */
+void sndp_ui_both_in_box_transfer_call_to_phone(void);
+
 #if defined(__SNDP_KEY_TEST__)
 void sndp_ui_key_init(void);
 #endif

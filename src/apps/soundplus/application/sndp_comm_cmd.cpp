@@ -471,6 +471,10 @@ static uint32_t sndp_comm_cmd_recv_lr_sync_iobox_status(sndp_comm_cmd_info_s *cm
 {
     if(cmd_info->data_len == 1) {
 	    sndp_dev_iobox_set_status(true, (sndp_dev_iobox_status_e)cmd_info->data[0]);
+        /* 对耳入仓状态到达后，再判断双耳是否都在仓并转移通话。 */
+        if(cmd_info->data[0] == SNDP_DEV_IOBOX_IN) {
+            sndp_delay_exec_start_in_app(100, (uint32_t)sndp_ui_both_in_box_transfer_call_to_phone, 0, 0, 0);
+        }
     }
 	return 0;
 }
