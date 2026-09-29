@@ -3595,6 +3595,22 @@ void app_prompt_push_request(APP_PROMPT_PLAY_REQ_TYPE_E reqType,
         return;
     }
 #endif
+#if defined(__SNDP_UI__)
+    /* 只静音本耳。转发仍放行，仓外对耳该播就播。
+     * PENDING 若在这里丢掉，wait_forward_play_id 会一直有效，必须一起清掉。 */
+    if ((AUDIO_ID_BT_MUTE != id) &&
+#if defined(__SNDP_FINDME__)
+        (AUD_ID_BT_FINDME != id) &&
+#endif
+        sndp_dev_iobox_is_in_box(false))
+    {
+        if (APP_PROMPT_PENDING_FOR_SLAVE_PLAY_REQ == reqType)
+        {
+            app_prompt_wait_forward_play_id = AUD_ID_INVALID;
+        }
+        return;
+    }
+#endif
 
     APP_PROMPT_PLAY_REQ_T req;
     req.deviceId = device_id;

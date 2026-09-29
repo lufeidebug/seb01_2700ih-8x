@@ -768,6 +768,21 @@ static void sndp_ui_iobox_status_changed(sndp_dev_iobox_status_e inout_status)
     if(inout_status == SNDP_DEV_IOBOX_IN) {
 
         sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_tone);
+#ifdef MEDIA_PLAYER_SUPPORT
+        /* 已入队的提示音入口拦不住，入仓时清掉。查找音清完再本地播。 */
+        {
+#if defined(__SNDP_FINDME__)
+            AUD_ID_ENUM playing = app_prompt_get_current_prompt_id();
+#endif
+            app_prompt_stop_all();
+#if defined(__SNDP_FINDME__)
+            if (AUD_ID_BT_FINDME == playing)
+            {
+                media_PlayAudio_locally(AUD_ID_BT_FINDME, 0);
+            }
+#endif
+        }
+#endif
         sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_play_music);
         sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_tone_switch_to_earbuds);
         sndp_delay_exec_stop((uint32_t)sndp_ui_wear_on_role_switch);
