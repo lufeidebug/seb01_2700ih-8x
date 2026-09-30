@@ -5,7 +5,7 @@ ifeq ($(SNDP_PROJ),1)
 KBUILD_CPPFLAGS += -D__SNDP_PROJ__
 
 export HARDWARE_VERSION ?= 3.0
-export SOFTWARE_VERSION ?= 0.0.0.37
+export SOFTWARE_VERSION ?= 0.0.0.38
 
 # platform macro configuration
 export TRACE_BAUD_RATE 							:= 1152000
