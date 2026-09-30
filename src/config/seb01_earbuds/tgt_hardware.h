@@ -26,7 +26,7 @@ extern "C" {
 #include "hal_aud.h"
 
 #if defined(__SNDP_PROJ__)
-#if defined(__HW_VER_1_0__)
+#if defined(__HW_VER_1_0__) || defined(__HW_VER_2_0__) || defined(__HW_VER_3_0__)
 #define HW_PIN_EAR_SIDE						(HAL_IOMUX_PIN_P1_0)
 #define HW_PIN_LDO_1V8_ENABLE				(HAL_IOMUX_PIN_NUM)
 #define HW_PIN_LDO_3V3_ENABLE				(HAL_IOMUX_PIN_P3_3)
