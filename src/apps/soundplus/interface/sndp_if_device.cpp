@@ -1853,6 +1853,49 @@ void sndp_dev_acc_init(void)
 
 /**************************************************  acc End **************************************************/
 #if defined(__SNDP_SLEEP_APP__)
+
+void sndp_dev_sleep_app_flag_lr_sync_set(const sndp_sleep_app_flag *src)
+{
+	if(src == NULL) {
+		SNDP_IF_TRACE(0, "%d, src == NULL", __LINE__);
+		return;
+	}
+
+     if (src->sleep_eq_index > SNDP_EQ_MODE_RELAXED
+        && src->sleep_eq_index != SNDP_EQ_MODE_CUSTOM_MODE) {
+        SNDP_IF_TRACE(0, "invalid eq_index=%d, keep old", src->sleep_eq_index);
+    } else {
+    	sndp_dev_ctx.local.sleep_app_flag.sleep_eq_index = src->sleep_eq_index;
+    	sleep_flag_run.sleep_eq_index = src->sleep_eq_index;
+        sleep_flag_flash.sleep_eq_index = src->sleep_eq_index;
+    }
+
+    sndp_dev_ctx.local.sleep_app_flag.sleep_running_anc_mode = src->sleep_running_anc_mode;
+    sleep_flag_run.sleep_running_anc_mode = src->sleep_running_anc_mode;
+
+    sndp_dev_ctx.local.sleep_app_flag.sleep_anc_mode = src->sleep_anc_mode;
+	sleep_flag_run.sleep_anc_mode = src->sleep_anc_mode;
+    sleep_flag_flash.sleep_anc_mode = src->sleep_anc_mode;
+    
+    sndp_dev_ctx.local.sleep_app_flag.sleep_enc_mode = src->sleep_enc_mode;
+	sleep_flag_run.sleep_enc_mode = src->sleep_enc_mode;
+    sleep_flag_flash.sleep_enc_mode = src->sleep_enc_mode;
+
+    sndp_dev_ctx.local.sleep_app_flag.sleep_prompt_onoff = src->sleep_prompt_onoff;
+	sleep_flag_run.sleep_prompt_onoff = src->sleep_prompt_onoff;
+    sleep_flag_flash.sleep_prompt_onoff = src->sleep_prompt_onoff;
+
+    sndp_dev_ctx.local.sleep_app_flag.sleep_gesture_onoff = src->sleep_gesture_onoff;
+	sleep_flag_run.sleep_gesture_onoff = src->sleep_gesture_onoff;
+    sleep_flag_flash.sleep_gesture_onoff = src->sleep_gesture_onoff;
+    
+    sndp_dev_ctx.local.sleep_app_flag.sleep_splaypause_onoff = src->sleep_splaypause_onoff;
+	sleep_flag_run.sleep_splaypause_onoff = src->sleep_splaypause_onoff;
+    sleep_flag_flash.sleep_splaypause_onoff = src->sleep_splaypause_onoff;
+
+    sndp_save_app_flag_to_flash();
+}
+
 /************************************************** prompt start **************************************************/
 void sndp_dev_sleep_app_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_data)
 {
@@ -1926,11 +1969,11 @@ uint8_t sndp_dev_sleep_app_get_eq_index(bool peer)
 
 	if(peer)
 	{
-			select_eq_num = sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index;
+        select_eq_num = sndp_dev_ctx.peer.sleep_app_flag.sleep_eq_index;
 	}
 	else
 	{
-			select_eq_num = sndp_dev_ctx.local.sleep_app_flag.sleep_eq_index;	
+        select_eq_num = sndp_dev_ctx.local.sleep_app_flag.sleep_eq_index;	
 	}
 	return select_eq_num;
 }

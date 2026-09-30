@@ -2060,13 +2060,8 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
         sndp_dev_set_bat_info(true, all_dev_sta.bat_info);
 #if defined(__SNDP_SLEEP_APP__)
         if(sndp_is_tws_slave_mode()) {
-            sndp_dev_sleep_app_set_eq_index(false, all_dev_sta.sleep_flag.sleep_eq_index, true);
-            sndp_dev_sleep_app_running_anc_mode_set(false, all_dev_sta.sleep_flag.sleep_running_anc_mode, true);
-            sndp_dev_sleep_app_anc_mode_set(false, all_dev_sta.sleep_flag.sleep_anc_mode, true);
-            sndp_dev_sleep_app_enc_mode_set(false, all_dev_sta.sleep_flag.sleep_enc_mode, true);
-            sndp_dev_sleep_app_set_prompt_onoff(false, all_dev_sta.sleep_flag.sleep_prompt_onoff, true);
-            sndp_dev_sleep_app_set_gesture_onoff(false, all_dev_sta.sleep_flag.sleep_gesture_onoff, true);
-            sndp_dev_sleep_app_set_splaypause_onoff(false, all_dev_sta.sleep_flag.sleep_splaypause_onoff, true);
+            sndp_dev_sleep_app_flag_lr_sync_set(&all_dev_sta.sleep_flag);
+            
             sndp_dev_sleep_app_set_proximity_onoff(false, all_dev_sta.sleep_proximity_onoff);
             sndp_dev_sleep_app_set_heartrate_onoff(false, all_dev_sta.sleep_flag.sleep_heartrate_onoff);
             sndp_dev_sleep_app_set_stage_onoff(false, all_dev_sta.sleep_flag.sleep_stage_onoff);

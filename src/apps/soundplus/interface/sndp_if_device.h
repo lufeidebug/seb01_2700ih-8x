@@ -462,6 +462,8 @@ void sndp_dev_acc_init(void);
 
 /************************************************** prompt start **************************************************/
 #if defined(__SNDP_SLEEP_APP__)
+void sndp_dev_sleep_app_flag_lr_sync_set(const sndp_sleep_app_flag *src);
+
 void sndp_dev_sleep_app_set_eq_index(bool peer, uint8_t index, bool save_data);
 uint8_t sndp_dev_sleep_app_get_eq_index(bool peer);
 void sndp_dev_sleep_app_set_prompt_onoff(bool peer, uint8_t onoff, bool sava_data);
