@@ -145,6 +145,8 @@ static sndp_ui_ctx_s sndp_ui_ctx;
 
 static sndp_ui_pairing_type_e sndp_ui_pairing_type = SNDP_UI_PAIRING_NONE;  //0:none, 1:tws pairing, 2:freeman pairing
 
+static bool tws_connected_operating = false;
+
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
@@ -1690,7 +1692,10 @@ static void sndp_ui_mobile_disconnect_deal(uint32_t reason)
 #endif
 }
 
-
+static void sndp_tws_connected_operation_over(void)
+{
+    tws_connected_operating = false;
+}
 
 POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e conn_status, uint8_t reason)
 {
@@ -1781,6 +1786,9 @@ POSSIBLY_UNUSED static void sndp_ui_bt_conn_status_changed(sndp_bt_conn_status_e
 			break;
             
 		case SNDP_BT_CONN_STATUS_TWS_CONNECTED:
+            tws_connected_operating = true;
+            sndp_delay_exec_start(15000, (uint32_t)sndp_tws_connected_operation_over, 0, 0, 0);
+
             /* 该回调只读取本地状态并组包同步给对耳，实测在 app thread 中会连续占用
              * 30ms 以上，导致 TWS 回连时 af_thread 被饿死、A2DP 缓冲欠载产生杂音。
              * 放在延时线程(osPriorityNormal)执行，保证不会抢占音频流。 */
@@ -2066,11 +2074,13 @@ void sndp_ui_all_status_sync_recv(uint8_t *data, uint16_t len)
 
 void sndp_ui_timing_to_do(void)
 {
-    if(sndp_call_is_active() || sndp_music_is_playing()) {
-         sndp_delay_exec_start_in_app(10, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
+    if(sndp_call_is_active() || tws_connected_operating) {
+        sndp_delay_exec_start_in_app(10, (uint32_t)sndp_dev_temperature_measure, 0, 0, 0);
     } else {
         sndp_ui_dev_status_print();
- 	    sndp_delay_exec_start_in_app(20, (uint32_t)sndp_dev_temperature_measure, 0, 0, 0);
+        sndp_delay_exec_start_in_app(10, (uint32_t)sndp_dev_bat_pwr_measure, 0, 0, 0);
+        sndp_delay_exec_start_in_app(20, (uint32_t)sndp_dev_temperature_measure, 0, 0, 0);
+
     }
     sndp_ui_bat_charging_check();
     sndp_ui_bat_lowpwr_check();
