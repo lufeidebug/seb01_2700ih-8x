@@ -1,0 +1,44 @@
+{
+  "port": "COM12",
+  "baud": "115200",
+  "auto_reconnect": true,
+  "ear": "右耳",
+  "path": "0x03  SPP",
+  "interval": "2",
+  "charge": true,
+  "min_bat": "20",
+  "items": [
+    {
+      "enabled": false,
+      "cycles": "1"
+    },
+    {
+      "enabled": false,
+      "cycles": "1"
+    },
+    {
+      "enabled": false,
+      "cycles": "3"
+    },
+    {
+      "enabled": false,
+      "cycles": "0"
+    },
+    {
+      "enabled": false,
+      "cycles": "3"
+    },
+    {
+      "enabled": true,
+      "cycles": "3"
+    },
+    {
+      "enabled": false,
+      "cycles": "3"
+    },
+    {
+      "enabled": false,
+      "cycles": "1"
+    }
+  ]
+}

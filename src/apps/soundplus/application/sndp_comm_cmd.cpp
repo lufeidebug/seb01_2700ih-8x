@@ -37,6 +37,10 @@
 #define COMM_CMDID_IS_PT_CMD(id)  ((id) >= COMM_CMDID_PT_SWITCH_TEST_MODE && (id) <= COMM_CMDID_PT_CMD_END)
 #endif
 
+#if defined(__SNDP_AGING_TEST__)
+#include "sndp_aging_test.h"
+#endif
+
 #if defined(__SNDP_COVER_SWITCH_BOX_NOTIFY__)
 #include "sndp_hal_cover_switch.h"
 #include "sndp_cover_switch_box_notify.h"
@@ -2133,6 +2137,180 @@ static uint32_t sndp_comm_cmd_recv_pt_query_ntc_info(sndp_comm_cmd_info_s *cmd_i
     return 0;
 }
 
+#if defined(__SNDP_AGING_TEST__)
+/***** 整机老化测试指令 *****/
+/* 下发老化配置(不启动)
+ *
+ * DATA 两种形态:
+ *   1) 27 字节 = 9 × [ 大项ID(1) + 是否测试(1) + 目标次数(1) ], 严格按 ID 0..8 顺序。
+ *      大项 ID: 0 charge(保留) 1 sram 2 flash 3 soft_rst 4 hard_rst
+ *               5 mid 6 high 7 bus 8 end
+ *      9 项一次全带, 不勾选的项 enable=0 也要带, 耳机侧照单全收。
+ *   2) 1 字节 0x00(兼容旧版 ASCII 的 '0'): 清除配置并退出老化
+ */
+static uint32_t sndp_comm_cmd_recv_pt_aging_test_set_cfg(sndp_comm_cmd_info_s *cmd_info)
+{
+    sndp_aging_big_cfg_t big_cfg[SNDP_AGING_ITEM_QTY];
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+    bool    any_big  = false;
+
+    memset(big_cfg, 0, sizeof(big_cfg));
+
+    if (cmd_info->data_len == 1 &&
+        (cmd_info->data[0] == 0x00 || cmd_info->data[0] == (uint8_t)'0')) {
+        /* 清除配置并退出老化模式 */
+        sndp_aging_test_exit();
+        COMM_CMD_TRACE(0, "aging cfg cleared, exit");
+        sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NONE);
+        return 0;
+    }
+
+    if (cmd_info->data_len != (SNDP_AGING_ITEM_QTY * 3)) {
+        err_code = SNDP_COMM_ERROR_PARAM_LEN_INVALID;
+    } else if (sndp_aging_test_cfg_parse(cmd_info->data, cmd_info->data_len, big_cfg) != 0) {
+        err_code = SNDP_COMM_ERROR_PARAM_OUT_RANG;
+    } else {
+        /* 有效大项 = 是否测试 && 目标次数 > 0。
+         * 每项都有独立的 enable, "未勾选"就是 enable=0, 不再靠 target=0 反推 */
+        for (uint8_t i = 1; i < SNDP_AGING_ITEM_QTY; i++) {
+            if (big_cfg[i].enable && big_cfg[i].target_cycle > 0) {
+                any_big = true;
+                break;
+            }
+        }
+
+        if (!any_big) {
+            /* 没有一个大项要测: 按"退出老化"处理 */
+            sndp_aging_test_exit();
+            COMM_CMD_TRACE(0, "aging cfg cleared (no big enabled), exit");
+        } else {
+            if (sndp_aging_test_set_cfg(big_cfg) != 0) {
+                err_code = SNDP_COMM_ERROR_EXEC_FAIL;
+            }
+            COMM_CMD_TRACE(0, "aging cfg set, mid=%d(%d) high=%d(%d) bus=%d(%d)",
+                           big_cfg[SNDP_AGING_ITEM_MID_ID].enable,
+                           big_cfg[SNDP_AGING_ITEM_MID_ID].target_cycle,
+                           big_cfg[SNDP_AGING_ITEM_HIGH_ID].enable,
+                           big_cfg[SNDP_AGING_ITEM_HIGH_ID].target_cycle,
+                           big_cfg[SNDP_AGING_ITEM_BUS_ID].enable,
+                           big_cfg[SNDP_AGING_ITEM_BUS_ID].target_cycle);
+        }
+    }
+
+    sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
+    return 0;
+}
+
+/* 启动老化测试(使用已下发的配置) */
+static uint32_t sndp_comm_cmd_recv_pt_aging_test_start(sndp_comm_cmd_info_s *cmd_info)
+{
+    uint8_t err_code = SNDP_COMM_ERROR_NONE;
+
+    if (sndp_aging_test_start() != 0) {
+        err_code = SNDP_COMM_ERROR_EXEC_FAIL;
+        COMM_CMD_TRACE(0, "aging start fail (no cfg?)");
+    } else {
+        COMM_CMD_TRACE(0, "aging start");
+    }
+
+    sndp_comm_cmd_rsp_with_errcode(cmd_info, err_code);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_aging_test_stop(sndp_comm_cmd_info_s *cmd_info)
+{
+    sndp_aging_test_stop();
+    COMM_CMD_TRACE(0, "aging stop");
+
+    sndp_comm_cmd_rsp_with_errcode(cmd_info, SNDP_COMM_ERROR_NONE);
+    return 0;
+}
+
+static uint32_t sndp_comm_cmd_recv_pt_aging_test_query(sndp_comm_cmd_info_s *cmd_info)
+{
+    sndp_aging_status_t status;
+
+    sndp_aging_test_get_status(&status);
+
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    cmd_info->data[cmd_info->data_len++] = status.running;
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((status.total_times >> 8) & 0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(status.total_times & 0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((status.temperature >> 8) & 0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(status.temperature & 0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((status.bat_voltage >> 8) & 0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(status.bat_voltage & 0xff);
+    cmd_info->data[cmd_info->data_len++] = status.bat_percentage;
+    cmd_info->data[cmd_info->data_len++] = status.charger_status;
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((status.elapsed_ms >> 24) & 0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((status.elapsed_ms >> 16) & 0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)((status.elapsed_ms >> 8) & 0xff);
+    cmd_info->data[cmd_info->data_len++] = (uint8_t)(status.elapsed_ms & 0xff);
+    cmd_info->data[cmd_info->data_len++] = status.curr_big_id;
+    cmd_info->data[cmd_info->data_len++] = status.curr_sub_id;
+    cmd_info->data[cmd_info->data_len++] = status.curr_fail_code;
+    for (uint8_t i = 0; i < SNDP_AGING_ITEM_QTY; i++) {
+        uint16_t cycle = status.target_cycle[i];
+        cmd_info->data[cmd_info->data_len++] = (uint8_t)((cycle >> 8) & 0xff);
+        cmd_info->data[cmd_info->data_len++] = (uint8_t)(cycle & 0xff);
+    }
+    for (uint8_t i = 0; i < SNDP_AGING_ITEM_QTY; i++) {
+        uint16_t cycle = status.run_cycle[i];
+        cmd_info->data[cmd_info->data_len++] = (uint8_t)((cycle >> 8) & 0xff);
+        cmd_info->data[cmd_info->data_len++] = (uint8_t)(cycle & 0xff);
+    }
+    for (uint8_t i = 0; i < SNDP_AGING_ITEM_QTY; i++) {
+        uint32_t sec = status.run_time_s[i];
+        cmd_info->data[cmd_info->data_len++] = (uint8_t)((sec >> 24) & 0xff);
+        cmd_info->data[cmd_info->data_len++] = (uint8_t)((sec >> 16) & 0xff);
+        cmd_info->data[cmd_info->data_len++] = (uint8_t)((sec >> 8) & 0xff);
+        cmd_info->data[cmd_info->data_len++] = (uint8_t)(sec & 0xff);
+    }
+
+    COMM_CMD_TRACE(1, "aging query: run=%d total=%d big=%d sub=%d fail=%d elapsed=%ums",
+                   status.running, status.total_times, status.curr_big_id,
+                   status.curr_sub_id, status.curr_fail_code, status.elapsed_ms);
+
+    sndp_comm_main_rsp_cmd(cmd_info);
+    return 0;
+}
+
+/* 查询当前老化配置
+ * rsp: 28 字节 = error(1) + 9 × [ 大项ID(1) + 是否测试(1) + 目标次数(1) ], 按 ID 0..8 顺序 */
+static uint32_t sndp_comm_cmd_recv_pt_aging_test_query_cfg(sndp_comm_cmd_info_s *cmd_info)
+{
+    sndp_aging_big_cfg_t big_cfg[SNDP_AGING_ITEM_QTY];
+
+    sndp_aging_test_get_cfg(big_cfg);
+
+    cmd_info->data_len = 0;
+    cmd_info->data[cmd_info->data_len++] = SNDP_COMM_ERROR_NONE;
+    for (uint8_t i = 0; i < SNDP_AGING_ITEM_QTY; i++) {
+        /* 目标次数在线路上只占 1 字节; 老记录里若存过 >255 的值, 这里收敛到 255,
+         * 免得上位机反推出一个和实际不符的次数 */
+        uint16_t cycle = big_cfg[i].target_cycle;
+        if (cycle > 0xFFu) {
+            cycle = 0xFFu;
+        }
+        cmd_info->data[cmd_info->data_len++] = i;
+        cmd_info->data[cmd_info->data_len++] = big_cfg[i].enable ? 1 : 0;
+        cmd_info->data[cmd_info->data_len++] = (uint8_t)cycle;
+    }
+
+    COMM_CMD_TRACE(1, "aging query cfg: mid=%d(%d) high=%d(%d) bus=%d(%d)",
+                   big_cfg[SNDP_AGING_ITEM_MID_ID].enable,
+                   big_cfg[SNDP_AGING_ITEM_MID_ID].target_cycle,
+                   big_cfg[SNDP_AGING_ITEM_HIGH_ID].enable,
+                   big_cfg[SNDP_AGING_ITEM_HIGH_ID].target_cycle,
+                   big_cfg[SNDP_AGING_ITEM_BUS_ID].enable,
+                   big_cfg[SNDP_AGING_ITEM_BUS_ID].target_cycle);
+
+    sndp_comm_main_rsp_cmd(cmd_info);
+    return 0;
+}
+#endif /* __SNDP_AGING_TEST__ */
+
 static uint8_t click_test_from = SNDP_COMM_DEVICE_ATE;
 static uint8_t click_test_path = SNDP_COMM_PATH_SPP;
 
@@ -2392,6 +2570,15 @@ static const sndp_comm_cmd_handle_s sndp_comm_cmd_hdlr_list[] = {
 #endif
     { COMM_CMDID_PT_DESENCE_TEST_SWITCH_PPG     , "PT_DESENCE_S_PPG"        , sndp_comm_cmd_recv_pt_desence_test_switch_ppg         },
 
+#if defined(__SNDP_AGING_TEST__)
+    /***** 整机老化测试指令 *****/
+    { COMM_CMDID_PT_AGING_TEST_START            , "PT_AGING_START"          , sndp_comm_cmd_recv_pt_aging_test_start                },
+    { COMM_CMDID_PT_AGING_TEST_STOP             , "PT_AGING_STOP"           , sndp_comm_cmd_recv_pt_aging_test_stop                 },
+    { COMM_CMDID_PT_AGING_TEST_QUERY            , "PT_AGING_QUERY"          , sndp_comm_cmd_recv_pt_aging_test_query                },
+    { COMM_CMDID_PT_AGING_TEST_SET_CFG          , "PT_AGING_SET_CFG"        , sndp_comm_cmd_recv_pt_aging_test_set_cfg              },
+    { COMM_CMDID_PT_AGING_TEST_QUERY_CFG        , "PT_AGING_Q_CFG"          , sndp_comm_cmd_recv_pt_aging_test_query_cfg            },
+#endif
+
 };
 
 static const int32_t sndp_comm_cmd_hdlr_cnt = sizeof(sndp_comm_cmd_hdlr_list) / sizeof(sndp_comm_cmd_hdlr_list[0]);
@@ -2418,6 +2605,14 @@ int32_t sndp_comm_execute_cmd_hdlr(sndp_comm_cmd_info_s *cmd)
         && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_DESENCE_TEST_SWITCH_SPK
         && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_DESENCE_TEST_SWITCH_PPG
 #endif        
+#if defined(__SNDP_AGING_TEST__)
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_AGING_TEST_START
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_AGING_TEST_STOP
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_AGING_TEST_QUERY
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_AGING_TEST_SET_CFG
+        && sndp_comm_exec_cmd.cmd_id != COMM_CMDID_PT_AGING_TEST_QUERY_CFG
+#endif  
+
         && sndp_comm_exec_cmd.path != SNDP_COMM_PATH_TRACE_UART) {
         if(!sndp_pt_is_in_test_mode()) {
             COMM_CMD_TRACE(1, "cmd(0x%02X) rejected, not in test mode", sndp_comm_exec_cmd.cmd_id);

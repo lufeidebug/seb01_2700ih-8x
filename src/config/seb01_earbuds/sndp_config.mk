@@ -88,6 +88,7 @@ export SNDP_PROMPT_TEST                         := 1
 export SNDP_ANC_MODIFY                          := 1
 export SNDP_DAC_ZERO_CROSSING_MUTE              := 1
 export SNDP_RF_TEST                             := 0
+export SNDP_AGING_TEST                          := 1
 
 
 ifeq ($(SNDP_UI),1)
@@ -477,6 +478,62 @@ ifeq ($(SNDP_RF_TEST),1)
     endif
     
 endif
+
+#-----------------------------------------------------------------------------
+# 整机老化测试 (Aging Test / Run In)
+# 说明: 打开后使能 sndp_aging_test.cpp 中的老化测试功能,
+#       并通过 COMM_CMDID_PT_AGING_* 指令启停。
+#       老化测试依赖: 温度(NTC)/电量(ADC)/充电IC/传感器(DA217E,SSH401A)
+#-----------------------------------------------------------------------------
+ifeq ($(SNDP_AGING_TEST),1)
+    KBUILD_CPPFLAGS += -D__SNDP_AGING_TEST__
+
+    export SNDP_AGING_TEST_SECTION_SIZE			:= 0x1000
+    KBUILD_CPPFLAGS += -DSNDP_AGING_TEST_SECTION_SIZE=$(SNDP_AGING_TEST_SECTION_SIZE)
+    LDS_CPPFLAGS += -DSNDP_AGING_TEST_SECTION_SIZE=$(SNDP_AGING_TEST_SECTION_SIZE)
+
+    # 老化擦写专用分区(4KB): FLASH 大项做"擦除 -> 写随机数 -> 回读比对 CRC",
+    # 不存任何需要保留的数据, 放在 SNDP_AGING_TEST 分区前面
+    export SNDP_AGING_RW_SECTION_SIZE			:= 0x1000
+    KBUILD_CPPFLAGS += -DSNDP_AGING_RW_SECTION_SIZE=$(SNDP_AGING_RW_SECTION_SIZE)
+    LDS_CPPFLAGS += -DSNDP_AGING_RW_SECTION_SIZE=$(SNDP_AGING_RW_SECTION_SIZE)
+    
+    # 老化测试子项开关(与 AT 指令中的子项对应)
+    export SNDP_AGING_ITEM_CHARGE               := 1
+    export SNDP_AGING_ITEM_SRAM                 := 1
+    export SNDP_AGING_ITEM_FLASH                := 1
+    export SNDP_AGING_ITEM_RESTART              := 1
+    export SNDP_AGING_ITEM_LOAD                 := 1
+    export SNDP_AGING_ITEM_SENSOR               := 1
+    export SNDP_AGING_ITEM_AUDIO                := 1
+    export SNDP_AGING_ITEM_RF                   := 0
+
+    ifeq ($(SNDP_AGING_ITEM_CHARGE),1)
+        KBUILD_CPPFLAGS += -D__SNDP_AGING_ITEM_CHARGE__
+    endif
+    ifeq ($(SNDP_AGING_ITEM_SRAM),1)
+        KBUILD_CPPFLAGS += -D__SNDP_AGING_ITEM_SRAM__
+    endif
+    ifeq ($(SNDP_AGING_ITEM_FLASH),1)
+        KBUILD_CPPFLAGS += -D__SNDP_AGING_ITEM_FLASH__
+    endif
+    ifeq ($(SNDP_AGING_ITEM_RESTART),1)
+        KBUILD_CPPFLAGS += -D__SNDP_AGING_ITEM_RESTART__
+    endif
+    ifeq ($(SNDP_AGING_ITEM_LOAD),1)
+        KBUILD_CPPFLAGS += -D__SNDP_AGING_ITEM_LOAD__
+    endif
+    ifeq ($(SNDP_AGING_ITEM_SENSOR),1)
+        KBUILD_CPPFLAGS += -D__SNDP_AGING_ITEM_SENSOR__
+    endif
+    ifeq ($(SNDP_AGING_ITEM_AUDIO),1)
+        KBUILD_CPPFLAGS += -D__SNDP_AGING_ITEM_AUDIO__
+    endif
+    ifeq ($(SNDP_AGING_ITEM_RF),1)
+        KBUILD_CPPFLAGS += -D__SNDP_AGING_ITEM_RF__
+    endif
+endif
+
 
 export AF_STREAM_ID_0_PLAYBACK_FADEOUT := 1
 

@@ -247,6 +247,58 @@ typedef enum {
     COMM_CMDID_PT_WRITE_DEV_SN3                      = 0x79, /* recv: <=20 bytes.
                                                             rsp: 2 bytes, error code(1) + result(1). 充电仓 SN */
 
+#if defined(__SNDP_AGING_TEST__)
+    /***** 整机老化测试指令. *****/
+    COMM_CMDID_PT_AGING_TEST_START                   = 0x7A, /* desc: 启动整机老化测试。使用已下发的配置(见 SET_CFG)。
+                                                               recv: 0 bytes.
+                                                               注: 未配置(无任何大项被打开)时返回执行失败。
+                                                               rsp : 1 byte, error code(1). */
+    COMM_CMDID_PT_AGING_TEST_STOP                    = 0x7B, /* desc: 停止老化测试。正在运行时将 flash 中 state 置为 IDLE, 过程数据保留。
+                                                               recv: 0 bytes.
+                                                               rsp : 1 byte, error code(1). */
+    COMM_CMDID_PT_AGING_TEST_QUERY                   = 0x7C, /* desc: 查询老化测试状态与结果。
+                                                               recv: 0 bytes.
+                                                               rsp : 89 bytes,
+                                                                     error code(1)
+                                                                     + running(1)
+                                                                     + total_times(2, 累计执行轮次, 大端)
+                                                                     + temperature(2, 有符号, 大端)
+                                                                     + bat_voltage(2, mV, 大端)
+                                                                     + bat_percentage(1)
+                                                                     + charger_status(1)
+                                                                     + elapsed_ms(4, 本次已运行时长, 大端)
+                                                                     + curr_big_id(1)
+                                                                     + curr_sub_id(1)
+                                                                     + curr_fail_code(1)
+                                                                     + target_cycle[9](18, 各大项目标轮次, 大端)
+                                                                       顺序 = 大项 ID 0..8:
+                                                                       0 charge(保留) 1 sram  2 flash     3 soft_rst
+                                                                       4 hard_rst     5 mid   6 high      7 bus
+                                                                       8 终检(传感器复检 + 检测充电 + 补电)
+                                                                     + run_cycle[9](18, 各大项已完成轮次, 大端)
+                                                                     + run_time_s[9](36, 各大项耗时 秒, 大端) */
+    COMM_CMDID_PT_AGING_TEST_SET_CFG                 = 0x7D, /* desc: 下发老化配置(不启动)。9 项一次全带, 与是否勾选无关。
+                                                               recv: 27 bytes = 9 × [ 大项ID(1) + 是否测试(1) + 目标次数(1) ],
+                                                                     严格按大项 ID 0..8 顺序:
+                                                                       0 charge(保留) 1 sram  2 flash     3 soft_rst
+                                                                       4 hard_rst     5 mid   6 high      7 bus
+                                                                       8 终检
+                                                                     目标次数 1 字节(0~255); 未勾选的项 enable=0,
+                                                                     也照样带在数据里(不再靠 target=0 反推)。
+                                                                     例(只开 sram/flash/mid = 1/1/9 次):
+                                                                       00 00 00 01 01 01 02 01 01 03 00 00 04 00 00
+                                                                       05 01 09 06 00 00 07 00 00 08 00 00
+                                                                     或 1 字节 0x00 表示清除配置并退出老化
+                                                               rsp : 1 byte, error code(1).
+                                                               注: 一个大项都没勾(或目标都是 0)时按"退出老化"处理。 */
+    COMM_CMDID_PT_AGING_TEST_QUERY_CFG               = 0x7E, /* desc: 查询当前老化配置。
+                                                               recv: 0 bytes.
+                                                               rsp : 28 bytes,
+                                                                     error code(1)
+                                                                     + 9 × [ 大项ID(1) + 是否测试(1) + 目标次数(1) ]
+                                                                       严格按大项 ID 0..8 顺序(同 0x7D) */
+#endif /* __SNDP_AGING_TEST__ */
+
     COMM_CMDID_PT_CMD_END                           = 0x7F,
 
     /***** 与APP交互指令 *****/

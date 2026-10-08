@@ -221,6 +221,10 @@ void sndp_profile_state_change_ind(uint32_t profile, uint8_t connected);
 
 uint8_t sndp_music_get_avrcp_playback_status(void);
 bool sndp_music_is_playing(void);
+/* 手机是否正在推媒体流(A2DP 正在占用音频通路)。
+ * 与 sndp_music_is_playing 的区别: 这里看的是"流真的在跑"(媒体通路 + A2DP streaming),
+ * 老化测试要据此判断本地粉噪流会不会被抢走。 */
+bool sndp_music_is_streaming(void);
 void sndp_music_ctrl(sndp_music_ctrl_event_e event);
 uint8_t sndp_get_a2dp_volume(void);
 

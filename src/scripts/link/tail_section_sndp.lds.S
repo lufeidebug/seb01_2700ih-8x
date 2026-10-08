@@ -44,7 +44,11 @@
 #if defined(__SNDP_PROJ__)
 #define SNDP_PARAM_SECTION_LOC				1
 #if defined(SNDP_TX_AI_ENABLE)
-#define SNDP_KEY_SECTION_LOC					1
+#define SNDP_KEY_SECTION_LOC				1
+#endif
+#if defined(__SNDP_AGING_TEST__)
+#define SNDP_AGING_TEST_SECTION_LOC			1
+#define SNDP_AGING_RW_SECTION_LOC			1
 #endif
 #endif
 #define COMBO_SECTION_LOC					1
@@ -64,7 +68,11 @@
 #if defined(__SNDP_PROJ__)
 #define SNDP_PARAM_SECTION_LOC				0
 #if defined(SNDP_TX_AI_ENABLE)
-#define SNDP_KEY_SECTION_LOC					0
+#define SNDP_KEY_SECTION_LOC				0
+#endif
+#if defined(__SNDP_AGING_TEST__)
+#define SNDP_AGING_TEST_SECTION_LOC			0
+#define SNDP_AGING_RW_SECTION_LOC			0
 #endif
 #endif
 #define COMBO_SECTION_LOC					0
@@ -121,7 +129,11 @@
 #if defined(__SNDP_PROJ__)
 							SECTION_SIZE_LOC(0, SNDP_PARAM) -
 #if defined(SNDP_TX_AI_ENABLE)
-							SECTION_SIZE_LOC(1, SNDP_KEY) -
+							SECTION_SIZE_LOC(0, SNDP_KEY) -
+#endif
+#if defined(__SNDP_AGING_TEST__)
+							SECTION_SIZE_LOC(0, SNDP_AGING_RW) -
+							SECTION_SIZE_LOC(0, SNDP_AGING_TEST) -
 #endif
 #endif
 							0;
@@ -159,6 +171,10 @@
 #if defined(SNDP_TX_AI_ENABLE)
 							SECTION_SIZE_LOC(1, SNDP_KEY) -
 #endif
+#if defined(__SNDP_AGING_TEST__)
+							SECTION_SIZE_LOC(1, SNDP_AGING_RW) -
+							SECTION_SIZE_LOC(1, SNDP_AGING_TEST) -
+#endif
 #endif	
 							0;
 
@@ -173,12 +189,32 @@
 #endif
 
 #if defined(__SNDP_PROJ__)
+
+#if defined(__SNDP_AGING_TEST__)
+	/* 老化擦写专用分区: 放在老化数据分区之前, 只给 FLASH 大项做
+	 * 擦除/写入/回读 CRC 校验, 不存任何需要保留的数据 */
+	.sndp_aging_rw (NOLOAD):
+	{
+		__sndp_aging_rw_start = .;
+		. = SECTION_SIZE(SNDP_AGING_RW);
+		__sndp_aging_rw_end = .;
+	} > FLASH_LOC(SNDP_AGING_RW)
+
+	.sndp_aging_test (NOLOAD):
+	{
+		__sndp_aging_test_start = .;
+		. = SECTION_SIZE(SNDP_AGING_TEST);
+		__sndp_aging_test_end = .;
+	} > FLASH_LOC(SNDP_AGING_TEST)
+#endif
+
 	.sndp_param (NOLOAD):
 	{
 		__sndp_param_start = .;
 		. = SECTION_SIZE(SNDP_PARAM);
 		__sndp_param_end = .;
 	} > FLASH_LOC(SNDP_PARAM)
+	
 #if defined(SNDP_TX_AI_ENABLE)
 	.__sndpkey (NOLOAD):
 	{

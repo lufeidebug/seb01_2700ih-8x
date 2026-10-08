@@ -382,6 +382,9 @@ extern "C" {
 #if defined(__SNDP_COMM_MGR__)
 #include "sndp_comm_main.h"
 #endif
+#if defined(__SNDP_AGING_TEST__)
+#include "sndp_aging_test.h"
+#endif
 
 
 #define APP_SIGNAL_POWERON        0x2
@@ -2852,6 +2855,10 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #if defined(__SNDP_COMM_MGR__)
     sndp_comm_main_init(SNDP_COMM_INIT_ALL);
 #endif
+#if defined(__SNDP_AGING_TEST__)
+    /* 软/硬重启后从老化分区续测，必须在 reboot 启动路径执行 */
+    sndp_aging_test_init();
+#endif
 
 #if defined(__SNDP_UI__)
         sndp_ui_init();
@@ -3110,7 +3117,10 @@ osPriority formerPriority = osThreadGetPriority(app_thread_id);
 #if defined(__SNDP_COMM_MGR__)
             sndp_comm_main_init(SNDP_COMM_INIT_ALL);
 #endif
-
+#if defined(__SNDP_AGING_TEST__)
+            /* 正常开机路径同样初始化，内部有 inited 保护，不会重复恢复 */
+            sndp_aging_test_init();
+#endif
 
 #if defined(__SNDP_UI__)
             sndp_ui_init();

@@ -1201,6 +1201,20 @@ bool sndp_music_is_playing(void)
 	return ret;
 }
 
+bool sndp_music_is_streaming(void)
+{
+    /* 两个判据取或:
+     *   bt_media_cur_is_bt_stream_music() —— 音频通路当前归属 BT 音乐(A2DP 已抢到 codec)
+     *   app_bt_is_a2dp_streaming()        —— A2DP 链路侧正在推流
+     * 只判前者会漏掉"刚收到 AVDTP START、通路还没切过去"的瞬间。 */
+    bool ret = bt_media_cur_is_bt_stream_music()
+               || app_bt_is_a2dp_streaming(BT_DEVICE_ID_1)
+               || app_bt_is_a2dp_streaming(BT_DEVICE_ID_2);
+
+    SNDP_IF_TRACE(1, "ret=%d", ret);
+    return ret;
+}
+
 void sndp_music_ctrl(sndp_music_ctrl_event_e event)
 {
 	enum BT_DEVICE_ID_T device_id = (enum BT_DEVICE_ID_T)app_bt_audio_get_curr_a2dp_device();
