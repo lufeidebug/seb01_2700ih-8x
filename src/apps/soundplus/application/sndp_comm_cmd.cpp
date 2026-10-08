@@ -192,7 +192,9 @@ static uint32_t sndp_comm_cmd_recv_eb_freeman_pairing(sndp_comm_cmd_info_s *cmd_
     if(err_code == SNDP_COMM_ERROR_NONE) {
 
         if(!sndp_is_tws_link_connected()) {
-            sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
+            //sndp_call_func_in_app_thread((uint32_t)sndp_start_freeman_pairing, 0, 0, 0);
+            sndp_call_func_in_app_thread((uint32_t)sndp_enter_restore_factory_setting, 0, 0, 0);
+            
         } else {
             sndp_call_func_in_app_thread((uint32_t)sndp_tws_enter_mobile_pairing_after_mobile_disconnect, 0, 0, 0);
         }

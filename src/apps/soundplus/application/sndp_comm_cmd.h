@@ -28,7 +28,7 @@ typedef enum {
 	COMM_CMDID_EB_HANDSHAKE                         = 0x00, /* desc: 握手指令。
                                                              * recv: 0 bytes,
                                                              * rsp : 1 bytes, error code(1) */ 
-	COMM_CMDID_EB_FREEMAN_PAIRING                   = 0x01, /* desc: 单耳配对指令。
+	COMM_CMDID_EB_FREEMAN_PAIRING                   = 0x06, /* desc: 进配对指令。
                                                              * recv: 0 bytes,
                                                              * rsp : 1 bytes, error code(1) */ 
 	COMM_CMDID_EB_TWS_PAIRING                       = 0x02, /* desc: 对耳耳配对指令。
@@ -43,7 +43,7 @@ typedef enum {
 	COMM_CMDID_EB_EARBUDS_SHUTDOWN                  = 0x05, /* desc: 耳机关机指令。
                                                              * recv: 0 bytes, no command data
                                                              * rsp : 1 bytes, error code(1) */ 
-	COMM_CMDID_EB_RESTORE_FACTORY_SETTING           = 0x06, /* desc: 耳机恢复出厂设置指令。
+	COMM_CMDID_EB_RESTORE_FACTORY_SETTING           = 0x01, /* desc: 耳机恢复出厂设置指令。
                                                              * recv: 0 bytes, no command data
                                                              * rsp : 1 bytes, error code(1) */ 
 	COMM_CMDID_EB_ENTER_FW_UPGRADE                  = 0x07, /* desc: 进入固件升级模式指令。

@@ -376,6 +376,7 @@ void sndp_start_tws_pairing(void)
     sndp_disconnect_all_mobile_link();
     sndp_clear_mobile_pairing_list();
 
+    sndp_anc_mode_set(SNDP_ANC_MODE_OFF);
     /* 双耳配对需要主动 page 对耳，先解除 freeman 配对残留的 block */
     sndp_freeman_pairing_stop_scan_retry();
     bta_tws_block_page(false);
