@@ -202,16 +202,16 @@ static void sndp_set_mode(sndp_anc_mode_e mode)
     }
 }
 
-static void sndp_set_mode_flash_flag(sndp_anc_mode_e mode)
+static void sndp_set_mode_flash_flag(sndp_anc_mode_e mode, bool is_save)
 {
-    sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, (sndp_anc_mode_e)mode, true);
+    sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, (sndp_anc_mode_e)mode, is_save);
     if(mode <= SNDP_ANC_MODE_4 && mode >= SNDP_ANC_MODE_1)
     {
-        sndp_sleep_app_set_flag_onoff(SNDP_ANC_MODE_FLAG, false, (sndp_anc_mode_e)mode, true);
+        sndp_sleep_app_set_flag_onoff(SNDP_ANC_MODE_FLAG, false, (sndp_anc_mode_e)mode, is_save);
     }
     if(mode == SNDP_ANC_MODE_TRANSPARENT || mode == SNDP_ANC_MODE_VOICEENHANCE)
     {
-        sndp_sleep_app_set_flag_onoff(SNDP_ENC_MODE_FLAG, false, (sndp_anc_mode_e)mode, true);
+        sndp_sleep_app_set_flag_onoff(SNDP_ENC_MODE_FLAG, false, (sndp_anc_mode_e)mode, is_save);
     }
 }
 
@@ -233,7 +233,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_anc_mode(sleep_app_c
     INTERACT_APP_TRACE(1, "mode=%d", mode);
     if(mode <= SNDP_ANC_MODE_QTY){
         sndp_set_mode((sndp_anc_mode_e)mode);
-        sndp_set_mode_flash_flag((sndp_anc_mode_e)mode);
+        sndp_set_mode_flash_flag((sndp_anc_mode_e)mode,true);
         cmd_info->value[0] = 0; // success
     }else{
         cmd_info->value[0] = 0x01;
@@ -668,15 +668,7 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_set_settings(sleep_app_c
         }
         if(anc_mode < SNDP_ANC_MODE_QTY)
         {
-            sndp_sleep_app_set_flag_onoff(SNDP_RUNNING_ANC_MODE_FLAG, false, (sndp_anc_mode_e)anc_mode, false);
-            if(anc_mode <= SNDP_ANC_MODE_4 && anc_mode >= SNDP_ANC_MODE_1)
-            {
-                sndp_sleep_app_set_flag_onoff(SNDP_ANC_MODE_FLAG, false, anc_mode, false);
-            }
-            if(anc_mode == SNDP_ANC_MODE_TRANSPARENT || anc_mode == SNDP_ANC_MODE_VOICEENHANCE)
-            {
-                sndp_sleep_app_set_flag_onoff(SNDP_ENC_MODE_FLAG, false, anc_mode, false);
-            }
+            sndp_set_mode_flash_flag(anc_mode, false);
         }   
         /******************anc map*******************/
 
@@ -977,6 +969,14 @@ POSSIBLY_UNUSED static uint32_t sleep_comm_cmd_recv_app_sleep_tracking(sleep_app
     return 0;
 }
 
+static void sndp_sleep_comm_disconnect_restore_app_flag(void)
+{
+    sndp_sleep_app_flag* sleep_flag = sndp_dev_sleep_app_flash_flag_to_run();
+    sndp_sleep_app_set_flag_onoff(SNDP_PROMPT_ONOFF_FLAG, false, sleep_flag->sleep_prompt_onoff, false);
+    sndp_sleep_app_set_flag_onoff(SNDP_GESTURE_ONOFF_FLAG, false, sleep_flag->sleep_gesture_onoff, false);
+    sndp_sleep_app_set_flag_onoff(SNDP_SPLAYPAUSE_ONOFF_FLAG, false, sleep_flag->sleep_splaypause_onoff, false);
+}
+
 void sndp_sleep_comm_disconnect_timer_handler(void)
 {
     if(sndp_dev_sleep_app_get_stage_onoff(false)){
@@ -987,7 +987,7 @@ void sndp_sleep_comm_disconnect_timer_handler(void)
     }
     if(sndp_dev_sleep_app_get_heartrate_onoff(false)){
         sndp_sensor_service_stop_heartrate_local();
-        sndp_sleep_app_set_flag_onoff(SNDP_GESTURE_ONOFF_FLAG, false, 0x01, false);
+        sndp_sleep_comm_disconnect_restore_app_flag();
     }
     if(sndp_hr_mearsuring_get_dump_state(ACC_DUMP_STATE)){
         sndp_acc_notification_stop();

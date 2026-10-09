@@ -2223,6 +2223,11 @@ void sndp_dev_sleep_app_clean_wear_cnt(void)
 	memset(&sndp_dev_ctx.peer.sleep_wear_cnt[0], 0, sizeof(uint16_t)*SNDP_DEV_WEAR_CNT_MAX);
 }
 
+sndp_sleep_app_flag* sndp_dev_sleep_app_flash_flag_to_run(void)
+{
+	return &sleep_flag_run;
+}
+
 void sndp_save_app_flag_to_flash(void)
 {
 	// Save the custom EQ parameters to flash, so that it can be loaded and used after power on.

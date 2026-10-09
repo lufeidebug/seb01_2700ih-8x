@@ -490,6 +490,7 @@ uint8_t sndp_dev_sleep_app_get_heartrate_onoff(bool peer);
 uint8_t sndp_dev_sleep_app_set_stage_onoff(bool peer, uint8_t onoff);
 uint8_t sndp_dev_sleep_app_get_stage_onoff(bool peer);
 void sndp_dev_sleep_app_clean_wear_cnt(void);
+sndp_sleep_app_flag* sndp_dev_sleep_app_flash_flag_to_run(void);
 #endif
 /************************************************** prompt end ************************************************/
 
