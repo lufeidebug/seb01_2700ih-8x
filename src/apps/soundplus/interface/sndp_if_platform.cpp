@@ -1731,23 +1731,18 @@ uint8_t sndp_bt_audio_updata_eq_for_anc(void)
 	bool sndp_anc_status = app_anc_work_status();
 	uint8_t sndp_eq_index = sndp_dev_sleep_app_get_eq_index(false);
 	
-	if(sndp_user_eq_record != sndp_eq_index || sndp_user_anc_record != sndp_anc_status) {
+	if(sndp_user_eq_record != sndp_eq_index) {
 		SNDP_TRACE(4, "anc_status=%d,eq_index=%d,rec_anc=%d,rec_eq=%d", sndp_anc_status,sndp_eq_index,sndp_user_anc_record,sndp_user_eq_record);
-		if(sndp_anc_status != 0)
-		{
-			sndp_user_anc_record = sndp_anc_status;
-			sndp_user_eq_record = sndp_eq_index;
-			hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_104M);
-			sndp_bt_audio_set_eq(sndp_eq_index + EQ_HW_DAC_IIR_LIST_NUM/2);
-			hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_32K);
-		}
-		else
-		{
-			sndp_user_eq_record = sndp_eq_index;
-			sndp_user_anc_record = sndp_anc_status;
-			sndp_bt_audio_set_eq(sndp_eq_index);
-		}	
+		hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_104M);
+		//sndp_bt_audio_set_eq(sndp_eq_index + EQ_HW_DAC_IIR_LIST_NUM/2);
+		sndp_bt_audio_set_eq(sndp_eq_index);
+		hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_32K);
 	}
+	// ANC 状态变化不再触发 EQ 下发：ANC 切换瞬间下发 EQ 会使 DEQ bank 切换与
+	// ANC codec 重配置产生竞争窗口（实机验证：即使统一 EQ 参数仍复现单耳无声）。
+	// 仅 EQ index 变化时下发；ANC 状态只同步记录。
+	sndp_user_eq_record = sndp_eq_index;
+	sndp_user_anc_record = sndp_anc_status;
 	return 0;
 
 }
