@@ -94,6 +94,8 @@ enum HAL_CMU_FREQ_T hal_sysfreq_get(void);
 
 enum HAL_CMU_FREQ_T hal_sysfreq_get_hw_freq(void);
 
+enum HAL_CMU_FREQ_T hal_sysfreq_req_by_user(enum HAL_SYSFREQ_USER_T user);
+
 int hal_sysfreq_busy(void);
 
 void hal_sysfreq_print_user_freq(void);

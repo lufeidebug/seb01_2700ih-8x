@@ -1733,10 +1733,12 @@ uint8_t sndp_bt_audio_updata_eq_for_anc(void)
 	
 	if(sndp_user_eq_record != sndp_eq_index) {
 		SNDP_TRACE(4, "anc_status=%d,eq_index=%d,rec_anc=%d,rec_eq=%d", sndp_anc_status,sndp_eq_index,sndp_user_anc_record,sndp_user_eq_record);
+		// 记录 ANC 用户切换前的主频，EQ 下发完成后恢复，避免干扰其他模块的频点管理
+		enum HAL_CMU_FREQ_T saved_freq = hal_sysfreq_req_by_user(HAL_SYSFREQ_USER_ANC);
 		hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_104M);
 		//sndp_bt_audio_set_eq(sndp_eq_index + EQ_HW_DAC_IIR_LIST_NUM/2);
 		sndp_bt_audio_set_eq(sndp_eq_index);
-		hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, HAL_CMU_FREQ_32K);
+		hal_sysfreq_req(HAL_SYSFREQ_USER_ANC, saved_freq);
 	}
 	// ANC 状态变化不再触发 EQ 下发：ANC 切换瞬间下发 EQ 会使 DEQ bank 切换与
 	// ANC codec 重配置产生竞争窗口（实机验证：即使统一 EQ 参数仍复现单耳无声）。

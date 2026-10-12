@@ -216,6 +216,15 @@ enum HAL_CMU_FREQ_T hal_sysfreq_get_hw_freq(void)
     }
 }
 
+enum HAL_CMU_FREQ_T hal_sysfreq_req_by_user(enum HAL_SYSFREQ_USER_T user)
+{
+    if (user >= HAL_SYSFREQ_USER_QTY) {
+        return HAL_CMU_FREQ_32K;
+    }
+
+    return sysfreq_per_user[user];
+}
+
 int hal_sysfreq_busy(void)
 {
     int i;
