@@ -15,6 +15,7 @@
 #include "sndp_hal_gesture.h"
 #include "sndp_da217e_adapter.h"
 #include "sndp_da217e_drv.h"
+#include "sndp_tap_algo.h"
 
 
 
@@ -73,6 +74,19 @@
     
 #define DA217E_TAP_THRESHOLD_DEFAULT        0x05
 #define DA217E_TAP_THRESHOLD_BOOST          0x05
+
+/* 仅认 Z 轴先触发的敲击滤波。默认关闭。
+ * 2026-10-08 左右耳日志：真敲击会被丢弃。多数中断上 TAP_ACTIVE_STATUS bit4
+ * （Tap_first_z）为 0（tstaus=A0/40/C0/60/20 = X 或 Y 先过阈值）。
+ * 芯片轴系里先过斜率阈值的轴并不是机械敲击法向，按 Tap_first_z 过滤
+ * 会破坏双击/三击识别。仅为再做 A/B 对比时置 1，不要带出厂。 */
+#define DA217E_TAP_Z_AXIS_ONLY              0
+#define DA217E_TAP_FIRST_Z_BIT              0x10
+
+/* 旧硬件单击计数路径开关。默认 0：敲击判定由软件检测器负责，残留的 INT1
+ * 边沿不允许再启动旧的去抖定时器、在波形检测器之上重复上报手势。
+ * 置 1 仅用于与软件检测器做 A/B 对比，不要带出厂。 */
+#define DA217E_HW_TAP_LEGACY                0
 /**************************************************************************************************
 * Prototype
 **************************************************************************************************/
@@ -89,10 +103,10 @@
 **************************************************************************************************/
 static da217e_drv_if_s da217e_drv_if;
 static volatile uint8_t da217e_tap_cnt = 0;
-static uint32_t sndp_da217e_tap_time = 0;
 
 static void da217_tap_timer_handler(void const *param);
 osTimerDef(DA217_TAP_TIMER, da217_tap_timer_handler);
+static void da217e_tap_algo_dbg(const char *tag, int32_t v1, int32_t v2);
 static osTimerId da217_tap_timer = NULL;
 static uint32_t da217e_acc_samples_count = 0;
 static unsigned int da217e_read_samples_count = 0;
@@ -258,6 +272,19 @@ int32_t da217e_close_single_tap_interrupt(void)
 	return ret;
 }
 
+/* 敲击判定由软件负责。无论标志位如何都清掉硬件单击中断映射，
+ * 防止上次开机或裸寄存器写入留下的状态在波形检测器背后继续计数。 */
+int32_t da217e_force_close_single_tap_interrupt(void)
+{
+	int32_t ret = 0;
+
+	da217e_single_tap_int_enabled = false;
+	ret |= da217e_reg_mask_write(DA217E_REG_INT_SET1, 0x20, 0x00);
+	ret |= da217e_reg_mask_write(DA217E_REG_INT_MAP1, 0x20, 0x00);
+
+	return ret;
+}
+
 int32_t da217e_open_fifo(void)
 {
 	int32_t ret = 0;
@@ -350,26 +377,36 @@ int32_t da217e_fifo_polling_data(da217e_drv_acc_data_s *data)
     
 }
 
-int32_t da217e_read_water_int_fifo(da217e_drv_acc_data_s *data)
+int32_t da217e_read_water_int_fifo(da217e_drv_acc_data_s *data, uint8_t max_cnt)
 {
-    uint8_t i = 0, num = 0, tmp_data = 0;  
+	uint8_t i = 0, num = 0, tmp_data = 0;
 
-    da217e_reg_read(DA217E_REG_FIFO_CTRL, &num);
-    num &= 0x3f;
-    da217e_reg_read(DA217E_REG_FIFO_STATUS, &tmp_data);
-   
-    tmp_data &= 0x3f;
-#if 0    
+	da217e_reg_read(DA217E_REG_FIFO_CTRL, &num);
+	num &= 0x3f;
+	if(da217e_reg_read(DA217E_REG_FIFO_STATUS, &tmp_data) != 0) {
+		return -1;
+	}
+
+	tmp_data &= 0x3f;
+	/* FIFO_STATUS 最多报告 63 个样本。超过调用方缓冲容量时只读一批，
+	 * 剩余由后续中断/看门狗分批排空；整批丢弃会让积压永不消散，
+	 * 手势检测从此饿死。I2C 读取失败通过负返回值交给调用方处理。 */
+	if(tmp_data > max_cnt) {
+		tmp_data = max_cnt;
+	}
+#if 0
     if(tmp_data > num) {
         tmp_data = num;
     }
 #endif
 
-    for(i = 0; i < tmp_data; i++){
-        da217e_read_acc_data(&data[i].ax, &data[i].ay, &data[i].az);	
-    }
-    
-    return tmp_data;
+	for(i = 0; i < tmp_data; i++){
+		if(da217e_read_acc_data(&data[i].ax, &data[i].ay, &data[i].az) != 0) {
+			return -1;
+		}
+	}
+
+	return tmp_data;
 }
 
 int32_t da217e_close_fifo_int(void)
@@ -393,6 +430,16 @@ int32_t da217e_close_fifo(void)
 	return ret;
 }
 
+/* 调试期临时全放行：定位第二击丢失需观察 skip_xx/rej_xx/start/gap。
+ * 抓完 log 后改回仅放行 evt/tap/solo/drop/warm。 */
+static void da217e_tap_algo_dbg(const char *tag, int32_t v1, int32_t v2)
+{
+	if(tag == NULL) {
+		return;
+	}
+	DA217E_TRACE(2, "tap_algo %s %d %d", tag, v1, v2);
+}
+
 static void da217_tap_timer_handler(void const *param)
 {
     uint8_t cnt = da217e_tap_cnt;
@@ -410,6 +457,8 @@ static void da217_tap_timer_handler(void const *param)
 
 void da217e_drv_deal_tap_interruption(void)
 {
+#if DA217E_HW_TAP_LEGACY
+    static uint32_t sndp_da217e_tap_time = 0;
     uint8_t motion_flag = 0;
     uint8_t tap_staus = 0;
     uint8_t fifo_status = 0;
@@ -420,6 +469,12 @@ void da217e_drv_deal_tap_interruption(void)
     DA217E_TRACE(1, "mflag=%02X, tstaus=%02X, fstatus=%02X", motion_flag, tap_staus, fifo_status);
 
     if(motion_flag&0x20) { //S_tap_int
+#if DA217E_TAP_Z_AXIS_ONLY
+        if(!(tap_staus & DA217E_TAP_FIRST_Z_BIT)) {
+            DA217E_TRACE(1, "tap drop: axis!=Z, tstaus=%02X", tap_staus);
+            return;
+        }
+#endif
 #if 0
         if(tap_staus&0x10) {
             da217e_tap_cnt++;
@@ -430,7 +485,7 @@ void da217e_drv_deal_tap_interruption(void)
         uint32_t tap_time = TICKS_TO_MS(hal_sys_timer_get());
         if(tap_time - sndp_da217e_tap_time > 50) {
             sndp_da217e_tap_time = tap_time;
-            
+
 
             if(da217e_tap_cnt >= 5) {
                return;
@@ -452,11 +507,12 @@ void da217e_drv_deal_tap_interruption(void)
                 osTimerStart(da217_tap_timer, 500);
             }
         }
-        
-        
+
+
 #endif
 
     }
+#endif
 }
 
 uint32_t da217e_get_acc_samples_count(void)
@@ -491,8 +547,18 @@ void da217e_drv_deal_fifo_interruption(void)
 {
     da217e_drv_acc_data_s data[32];
     int32_t num;
-    
-    num = da217e_read_water_int_fifo(data);
+
+    /* 读取数按缓冲容量钳位；读取失败的整批数据不交给检测器或心率。 */
+    num = da217e_read_water_int_fifo(data, (uint8_t)(sizeof(data) / sizeof(data[0])));
+    if(num < 0) {
+        /* 采样已不连续，丢弃未决手势并重新预热，避免断点形成伪冲击。 */
+        DA217E_TRACE(0, "fifo rd fail, batch drop + warmup");
+        if(tap_algo_is_enabled()) {
+            tap_algo_enable(false);
+            tap_algo_enable(true);
+        }
+        return;
+    }
     if(da217e_acc_samples_measurement_started)
     {
         da217e_read_samples_count++;
@@ -512,6 +578,14 @@ void da217e_drv_deal_fifo_interruption(void)
     }
 
     if(num > 0) {
+        /* 无论心率是否需要同一批样本，都先喂给波形检测器。
+         * 手势用户关闭时 tap_algo_feed() 是空操作。 */
+        if(tap_algo_is_enabled()) {
+            int32_t i;
+            for(i = 0; i < num; i++) {
+                tap_algo_feed(data[i].ax, data[i].ay, data[i].az);
+            }
+        }
         if(da217e_drv_if.read_fifo_cb) {
             da217e_drv_if.read_fifo_cb(data, num);
         }
@@ -577,7 +651,7 @@ int32_t da217e_drv_init(da217e_drv_if_s * drv_if)
 
 	ret |= da217e_reg_write(DA217E_REG_RESOLUTION_RANGE, 0x01);               //+/-4G,14bit
 	ret |= da217e_reg_write(DA217E_REG_MODE_BW, 0x10);          //normal mode
-	ret |= da217e_reg_write(DA217E_REG_ODR_AXIS, 0x07);      //ODR = 125hz
+	ret |= da217e_reg_write(DA217E_REG_ODR_AXIS, 0x07);      //ODR = 125hz, must match TAP_FS_HZ
 
 #if 0	
 	//Engineering mode
@@ -595,7 +669,9 @@ int32_t da217e_drv_init(da217e_drv_if_s * drv_if)
 
 #endif
 
-	ret |= da217e_open_single_with_default_threshold(); //enalbe single tap and set tap threshold 0x05 - 0x1f   
+	/* 硬件单击计数不再参与判定。佩戴时改为启动软件检测器和 125Hz FIFO。 */
+	ret |= da217e_force_close_single_tap_interrupt();
+	tap_algo_init(drv_if->tap_event_cb, da217e_tap_algo_dbg);
 	return ret;
 }
 

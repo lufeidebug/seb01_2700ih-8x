@@ -15,6 +15,7 @@
 #include "sndp_if_platform.h"
 #include "sndp_da217e_adapter.h"
 #include "sndp_da217e_drv.h"
+#include "sndp_tap_algo.h"
 #include "sndp_heart_rate.h"
 #include "sndp_i2c.h"
 #if defined(__SNDP_GSENSOR_SUPPORT__)
@@ -35,6 +36,14 @@
 
 #define DA217E_INT2_DEBOUNCE_REPEAT_MS            (5) //ms
 #define DA217E_INT2_DEBOUNCE_DELAY_MS             (10) //ms
+
+/* 水印中断是边沿触发。错过一次上升沿，FIFO 会一直保持满且不再触发中断，
+ * 因此仅手势工作时需要看门狗定时兜底排水。 */
+#define DA217E_GESTURE_FIFO_WATCHDOG_MS           (200)
+#define DA217E_FIFO_WATERMARK                     (25)
+
+#define DA217E_FIFO_USER_GESTURE                  (1u << 0)
+#define DA217E_FIFO_USER_HR                       (1u << 1)
 
         
 #define DA217E_I2C_TYPE                          (SNDP_I2C_HW_TASK)
@@ -67,6 +76,15 @@ static sndp_hal_gesture_event_callback  da217e_gesture_event_cb_ptr = NULL;
 static sndp_hal_acc_fifo_ready_callback da217e_acc_fifo_ready_cb_ptr = NULL;
 
 static sndp_hal_acc_samples_callback da217e_acc_samples_callback = NULL;
+
+/* 手势与心率共享同一个 FIFO。任一用户在用，水印中断就保持运行。 */
+static uint8_t da217e_fifo_users = 0;
+static osMutexId da217e_fifo_mutex = NULL;
+osMutexDef(da217e_fifo_mutex);
+
+static void da217e_gesture_fifo_watchdog_handler(void const *param);
+osTimerDef(DA217E_GESTURE_FIFO_WD, da217e_gesture_fifo_watchdog_handler);
+static osTimerId da217e_gesture_fifo_wd = NULL;
 /**************************************************************************************************
 * Function
 **************************************************************************************************/
@@ -144,10 +162,79 @@ static void da217e_deal_int1_data(void)
 }
 
 
+static void da217e_fifo_lock(void)
+{
+    if(da217e_fifo_mutex) {
+        osMutexWait(da217e_fifo_mutex, osWaitForever);
+    }
+}
+
+static void da217e_fifo_unlock(void)
+{
+    if(da217e_fifo_mutex) {
+        osMutexRelease(da217e_fifo_mutex);
+    }
+}
+
+/* 可能从心率线程或 app 线程调用。互斥锁保证两路排水以及
+ * tap_algo_enable/flush 不会并发访问同一 I2C 和检测器状态。 */
 int32_t da217e_acc_fifo_task(void)
 {
+    da217e_fifo_lock();
     da217e_drv_deal_fifo_interruption();
+    da217e_fifo_unlock();
     return SNDP_HAL_RET_OK;
+}
+
+static void da217e_gesture_fifo_drain_in_app(void)
+{
+    if((da217e_fifo_users & DA217E_FIFO_USER_GESTURE) == 0) {
+        return;
+    }
+    da217e_acc_fifo_task();
+}
+
+/* 定时器/GPIO 上下文：此处禁止直接访问 I2C。 */
+static void da217e_gesture_fifo_watchdog_handler(void const *param)
+{
+    sndp_call_func_in_app_thread((uint32_t)da217e_gesture_fifo_drain_in_app, 0, 0, 0);
+}
+
+static void da217e_gesture_watchdog_update(void)
+{
+    if(da217e_gesture_fifo_wd == NULL) {
+        return;
+    }
+
+    /* 心率有自己的 250ms 排水节奏，仅纯手势工作才需要看门狗。 */
+    if((da217e_fifo_users & DA217E_FIFO_USER_GESTURE) && da217e_acc_fifo_ready_cb_ptr == NULL) {
+        osTimerStart(da217e_gesture_fifo_wd, DA217E_GESTURE_FIFO_WATCHDOG_MS);
+    } else {
+        osTimerStop(da217e_gesture_fifo_wd);
+    }
+}
+
+static void da217e_fifo_user_set(uint8_t user, bool on)
+{
+    uint8_t prev = da217e_fifo_users;
+
+    if(on) {
+        da217e_fifo_users |= user;
+    } else {
+        da217e_fifo_users &= (uint8_t)~user;
+    }
+
+    if(prev == 0 && da217e_fifo_users != 0) {
+        da217e_set_enable(1);
+        da217e_open_fifo_watermark_int(DA217E_FIFO_WATERMARK);
+    } else if(prev != 0 && da217e_fifo_users == 0) {
+        da217e_close_fifo_int();
+        /* 最后一个用户已释放：芯片回 standby，避免脱戴/入仓后仍以
+         * normal 模式 125Hz 空转。下一次 0→1 会重新 set_enable(1)。 */
+        da217e_set_enable(0);
+    }
+
+    da217e_gesture_watchdog_update();
 }
 
 static void da217e_int1_irq_handler(enum HAL_GPIO_PIN_T pin)
@@ -181,6 +268,10 @@ static void da217e_int2_polling_irq_handler(enum HAL_GPIO_PIN_T pin)
     // DA217E_TRACE(0, "enter %d cnt %d", TICKS_TO_MS(hal_sys_timer_get()), da217e_interrupt_cnt);
     if(da217e_acc_fifo_ready_cb_ptr) {
         da217e_acc_fifo_ready_cb_ptr();
+    } else if(da217e_fifo_users & DA217E_FIFO_USER_GESTURE) {
+        /* HR is not listening. Drain from the app thread so the gesture
+         * detector still sees every watermark. */
+        sndp_call_func_in_app_thread((uint32_t)da217e_gesture_fifo_drain_in_app, 0, 0, 0);
     }
 }
 
@@ -219,6 +310,13 @@ int32_t da217e_init(void)
     }
 
     da217e_i2c_init();
+
+    if(da217e_fifo_mutex == NULL) {
+        da217e_fifo_mutex = osMutexCreate(osMutex(da217e_fifo_mutex));
+    }
+    if(da217e_gesture_fifo_wd == NULL) {
+        da217e_gesture_fifo_wd = osTimerCreate(osTimer(DA217E_GESTURE_FIFO_WD), osTimerPeriodic, NULL);
+    }
     
     da217e_drv_if_s drv_if;
     drv_if.i2c_write_byte = da217e_i2c_write_byte;
@@ -243,6 +341,11 @@ int32_t da217e_init(void)
 int32_t da217e_enter_standby_mode(void)
 {
     DA217E_TRACE(0, "...");
+    /* 手势或心率仍需要采样数据。此处若关断芯片会静默停掉波形检测器。 */
+    if(da217e_fifo_users != 0) {
+        DA217E_TRACE(0, "fifo users=0x%x, keep measuring", da217e_fifo_users);
+        return SNDP_HAL_RET_OK;
+    }
     da217e_set_enable(0);
     return SNDP_HAL_RET_OK;
 }
@@ -286,6 +389,7 @@ int32_t da217e_set_acc_fifo_ready_callback(sndp_hal_acc_fifo_ready_callback call
 {
     DA217E_TRACE(0, "%d", (uint32_t)callback);
     da217e_acc_fifo_ready_cb_ptr = callback;
+    da217e_gesture_watchdog_update();
     return SNDP_HAL_RET_OK;
 }
 
@@ -297,7 +401,7 @@ int32_t da217e_start_reading_raw_data(void)
     sndp_delay_exec_start(1000, (uint32_t)da217e_read_raw_data_test, 0, 0, 0);
 #else
     // da217e_interrupt_cnt = 0;
-    da217e_open_fifo_watermark_int(25);
+    da217e_fifo_user_set(DA217E_FIFO_USER_HR, true);
 #endif
 
     return SNDP_HAL_RET_OK;
@@ -310,10 +414,34 @@ int32_t da217e_stop_reading_raw_data(void)
 #if defined(__DA217E_READ_RAW_DATA_MODIS__)
     sndp_delay_exec_stop((uint32_t)da217e_read_raw_data_test);
 #else
-    da217e_close_fifo_int();
+    da217e_fifo_user_set(DA217E_FIFO_USER_HR, false);
 #endif
 
     return SNDP_HAL_RET_OK;
+}
+
+/* HAL 接口名保持不变。佩戴/产测调用这两个接口；现在它们启停的是
+ * 软件检测器和共享 FIFO，而不是硬件敲击计数器。 */
+static int32_t da217e_start_software_tap(void)
+{
+    da217e_force_close_single_tap_interrupt();
+    da217e_fifo_lock();
+    tap_algo_enable(true);
+    da217e_fifo_unlock();
+    da217e_fifo_user_set(DA217E_FIFO_USER_GESTURE, true);
+    DA217E_TRACE(0, "software tap on");
+    return 0;
+}
+
+static int32_t da217e_stop_software_tap(void)
+{
+    da217e_fifo_user_set(DA217E_FIFO_USER_GESTURE, false);
+    da217e_fifo_lock();
+    /* 关闭时丢弃未决组，避免窗口未结束或第四击尚未验证就上报。 */
+    tap_algo_enable(false);
+    da217e_fifo_unlock();
+    DA217E_TRACE(0, "software tap off");
+    return 0;
 }
 
 int32_t da217e_set_calibration_rsp_func(sndp_hal_acc_calibration_rsp_func func)
@@ -368,8 +496,8 @@ extern "C" const sndp_hal_acc_s sndp_acc_da217e = {
     .set_reading_raw_data_callback  = da217e_set_reading_raw_data_callback,
     .start_reading_raw_data         = da217e_start_reading_raw_data,
     .stop_reading_raw_data          = da217e_stop_reading_raw_data,
-    .start_single_tap_interrupt     = da217e_open_single_with_default_threshold,
-    .stop_single_tap_interrupt      = da217e_close_single_tap_interrupt,
+    .start_single_tap_interrupt     = da217e_start_software_tap,
+    .stop_single_tap_interrupt      = da217e_stop_software_tap,
     .set_calibration_rsp_func       = da217e_set_calibration_rsp_func,
     .recv_calibration_data          = da217e_recv_calibration_data,
     .exec_calibration_self_calib    = da217e_exec_calibration_self_calib,

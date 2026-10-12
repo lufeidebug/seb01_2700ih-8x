@@ -41,6 +41,7 @@ int32_t da217e_open_double_tap_interrupt(uint8_t th);
 int32_t da217e_close_double_tap_interrupt(void);
 int32_t da217e_open_single_tap_interrupt(uint8_t th);
 int32_t da217e_close_single_tap_interrupt(void);
+int32_t da217e_force_close_single_tap_interrupt(void);
 int32_t da217e_open_single_with_default_threshold(void);
 
 int32_t da217e_open_fifo(void);
@@ -50,7 +51,7 @@ int32_t da217e_open_full_fifo_int(void);
 int32_t da217e_read_full_int_fifo(da217e_drv_acc_data_s *data);
 
 int32_t da217e_open_fifo_watermark_int(uint8_t num);
-int32_t da217e_read_water_int_fifo(da217e_drv_acc_data_s *data);
+int32_t da217e_read_water_int_fifo(da217e_drv_acc_data_s *data, uint8_t max_cnt);
 
 int32_t da217e_close_fifo_int(void);
 

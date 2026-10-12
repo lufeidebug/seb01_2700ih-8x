@@ -105,6 +105,10 @@ void sndp_sensor_service_start_proximity_local(void)
        仅"上报app"在task5内用is_active门控。佩戴事件检测走GPIO中断,两耳始终有效。 */
     sndp_dev_sleep_app_set_proximity_onoff(false, 0x01);
     sndp_hr_proximity_tick_enable(true);
+    /* 睡眠会话在两耳挂起敲击: HR测量只在主耳运行(mearsuring_start不同步到从耳),
+     * proximity的TWS同步是唯一到达从耳的会话信号, 从耳必须靠这里挂起tap,
+     * 否则从耳wear_on会重新武装敲击, 心率检测期间双击仍然触发。 */
+    sndp_dev_acc_tap_pause_for_hr();
 #endif
 }
 
@@ -116,6 +120,8 @@ void sndp_sensor_service_stop_proximity_local(void)
     /* 两耳都清flag并停tick(同上, proximity不走data_plane门控) */
     sndp_dev_sleep_app_set_proximity_onoff(false, 0x00);
     sndp_hr_proximity_tick_enable(false);
+    /* 会话结束恢复敲击; 与HR stop路径的resume重复调用是幂等的 */
+    sndp_dev_acc_tap_resume_after_hr();
 #endif
 }
 

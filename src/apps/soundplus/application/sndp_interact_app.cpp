@@ -983,7 +983,9 @@ void sndp_sleep_comm_disconnect_timer_handler(void)
         sndp_sleep_comm_cmd_analysis_stop();
     }
     if(sndp_dev_sleep_app_get_proximity_onoff(false)){
-        sndp_sensor_service_stop_proximity_local();
+        /* 必须走带TWS同步的停止: 纯local版本不会通知从耳, 从耳tap门控
+         * (acc_tap_hr_hold)将永久挂起, 杀后台后从耳敲击一直无法触发 */
+        sndp_comm_cmd_sleepapp_stop_proximity();
     }
     if(sndp_dev_sleep_app_get_heartrate_onoff(false)){
         sndp_sensor_service_stop_heartrate_local();

@@ -703,13 +703,19 @@ void sndp_hr_switch_reading_acc_raw_data(uint32_t user, bool onoff)
     }
 
     if (after_on) {
-        sndp_hal_acc_stop_single_tap_interrupt();
+        /* 不再停软件敲击。手势与心率共享同一 FIFO；
+         * 适配层会为仍在使用的用户保持水印中断。 */
         sndp_hal_acc_set_reading_raw_data_callback(sndp_hr_acc_read_raw_data_callback);
         sndp_hal_set_acc_fifo_ready_callback(sndp_hr_notify_acc_fifo_ready);
         sndp_hal_acc_start_reading_raw_data();
     } else {
+        /* 先摘掉心率监听，再释放心率 FIFO 用户；否则 INT2 仍指向一个
+         * 会忽略该信号的线程。读回调一并摘除：tap(GESTURE)用户仍会驱动
+         * FIFO 水位线读，不清则残留回调把数据持续灌入无消费者的心率队列，
+         * 导致退出会话后与开机 tap-only 阶段行为不一致。 */
+        sndp_hal_set_acc_fifo_ready_callback(NULL);
+        sndp_hal_acc_set_reading_raw_data_callback(NULL);
         sndp_hal_acc_stop_reading_raw_data();
-        sndp_hal_acc_start_single_tap_interrupt();
     }
 #endif
 }
@@ -740,6 +746,7 @@ void sndp_hr_mearsuring_start(int8_t ppg_sampling_rate, uint8_t dump_state)
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_WEAR_SUSPEND_ACC, true);
         sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG|SENSOR_OP_USER_WEAR_SUSPEND_PPG, true);
     }
+    sndp_dev_acc_tap_pause_for_hr();
 }
 
 void sndp_hr_mearsuring_stop(void)
@@ -758,6 +765,7 @@ void sndp_hr_mearsuring_stop(void)
         sndp_hr_switch_reading_acc_raw_data(SENSOR_OP_USER_HR_ACC|SENSOR_OP_USER_WEAR_SUSPEND_ACC, false);
         sndp_hr_switch_reading_ppg_raw_data(SENSOR_OP_USER_HR_PPG|SENSOR_OP_USER_WEAR_SUSPEND_PPG, false);
     }
+    sndp_dev_acc_tap_resume_after_hr();
 
     app_sysfreq_req(APP_SYSFREQ_USER_SNDP_HR_PROCESS, APP_SYSFREQ_32K);
 

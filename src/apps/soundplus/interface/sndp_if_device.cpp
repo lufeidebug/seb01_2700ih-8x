@@ -1800,16 +1800,23 @@ void sndp_dev_acc_enter_detection_mode(void)
 #endif
 }
 
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+/* wanted：佩戴/产测要求开启敲击。hr_hold：睡眠app会话期间(HR测量/proximity)，
+ * 即使 wanted 为真检测器也保持关闭。主耳由 HR start/stop 置位/清除，
+ * 从耳由 proximity TWS 同步路径置位/清除(sndp_sensor_service)。 */
+static bool acc_tap_wanted = false;
+static bool acc_tap_hr_hold = false;
+#endif
+
 void sndp_dev_acc_start_single_tap_interrupt(void)
 {
 	SNDP_IF_TRACE_ENTER();
-#if defined(__SNDP_GSENSOR_SUPPORT__)	
-#if defined(__SNDP_HEART_RATE_MGR__)
-	if(sndp_hr_is_acc_enabled_check_every_user()){
-		SNDP_IF_TRACE(0, "acc is on, not start single tap interrupt");
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+	acc_tap_wanted = true;
+	if(acc_tap_hr_hold) {
+		SNDP_IF_TRACE(0, "sleep session on, tap stays off");
 		return;
 	}
-#endif
 	sndp_hal_acc_start_single_tap_interrupt();
 #endif
 }
@@ -1817,8 +1824,29 @@ void sndp_dev_acc_start_single_tap_interrupt(void)
 void sndp_dev_acc_stop_single_tap_interrupt(void)
 {
 	SNDP_IF_TRACE_ENTER();
-#if defined(__SNDP_GSENSOR_SUPPORT__)	
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+	acc_tap_wanted = false;
 	sndp_hal_acc_stop_single_tap_interrupt();
+#endif
+}
+
+void sndp_dev_acc_tap_pause_for_hr(void)
+{
+	SNDP_IF_TRACE_ENTER();
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+	acc_tap_hr_hold = true;
+	sndp_hal_acc_stop_single_tap_interrupt();
+#endif
+}
+
+void sndp_dev_acc_tap_resume_after_hr(void)
+{
+	SNDP_IF_TRACE_ENTER();
+#if defined(__SNDP_GSENSOR_SUPPORT__)
+	acc_tap_hr_hold = false;
+	if(acc_tap_wanted) {
+		sndp_hal_acc_start_single_tap_interrupt();
+	}
 #endif
 }
 
