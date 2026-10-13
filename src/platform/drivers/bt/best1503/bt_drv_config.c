@@ -610,7 +610,7 @@ const uint8_t bt_common_setting_1503[38] =
     0x01, //msbc_pcmdout_zero_flag
     0x01, //master_2_poll
     0x01, //pca_disable_in_nosync
-    BT54_VERSION, //version_major
+    BT61_VERSION, //version_major
     0x03, //version_minor
     0x15, //version_build chip=1503
     0x00, //address_reset

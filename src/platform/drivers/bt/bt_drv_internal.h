@@ -44,6 +44,7 @@ extern "C" {
 #define BT52_VERSION                      (11)
 #define BT53_VERSION                      (12)
 #define BT54_VERSION                      (13)
+#define BT61_VERSION                      (15)
 
 #ifndef ASSERT_ERR
 #define ASSERT_ERR(cond)                             { if (!(cond)) { DRIVERS_TRACE(2,"line is %d file is %s", __LINE__, __FILE__); } }
